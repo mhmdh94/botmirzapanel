@@ -181,7 +181,22 @@ class ManagePanel
             if (!preg_match('/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?((\/[^\s\/]+)+)?$/', $UsernameData['subscription_url'])) {
                 $UsernameData['subscription_url'] = $Get_Data_Panel['url_panel'] . "/" . ltrim($UsernameData['subscription_url'], "/");
             }
-            $UsernameData['expire'] = $UsernameData['status'] == 'on_hold' ? 0 : $UsernameData['expire'];
+            // نرمال‌سازی تاریخ انقضا برای پاسارگارد / مرزبان جدید
+            if ($UsernameData['status'] == 'on_hold') {
+                $UsernameData['expire'] = 0;
+            } elseif (!empty($UsernameData['expire'])) {
+                if (!is_numeric($UsernameData['expire'])) {
+                    $parsed = strtotime($UsernameData['expire']);
+                    $UsernameData['expire'] = $parsed !== false ? $parsed : 0;
+                } else {
+                    $UsernameData['expire'] = intval($UsernameData['expire']);
+                    if ($UsernameData['expire'] > 9999999999) {
+                        $UsernameData['expire'] = intval($UsernameData['expire'] / 1000);
+                    }
+                }
+            } else {
+                $UsernameData['expire'] = 0;
+            }
             $Output = array(
                 'status' => $UsernameData['status'],
                 'username' => $UsernameData['username'],

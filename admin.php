@@ -768,10 +768,14 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         return;
     }
     DirectPayment($order_id);
+    $id_user_pay = $Payment_report['id_user'];
     $keyboard_accept = json_encode([
         'inline_keyboard' => [
             [
                 ['text' => $textbotlang['users']['moeny']['paymentaccepted'], 'callback_data' => "none"],
+            ],
+            [
+                ['text' => '👤 اطلاعات کاربر', 'callback_data' => "userinfo_pay_{$id_user_pay}"],
             ],
         ]
     ]);

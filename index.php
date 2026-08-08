@@ -504,6 +504,12 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             'callback_data' => 'usernotlist'
         ]
     ];
+    $search_button = [
+        [
+            'text' => '🔎  جستجوی سرویس  🔎',
+            'callback_data' => 'search_myservice'
+        ]
+    ];
     $pagination_buttons = [
         [
             'text' => $textbotlang['users']['page']['next'],
@@ -514,6 +520,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             'callback_data' => 'previous_page'
         ]
     ];
+    $keyboardlists['inline_keyboard'][] = $search_button;
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -560,12 +567,19 @@ if ($datain == 'next_page') {
             'callback_data' => 'previous_page'
         ]
     ];
+    $search_button = [
+        [
+            'text' => '🔎  جستجوی سرویس  🔎',
+            'callback_data' => 'search_myservice'
+        ]
+    ];
     $usernotlist = [
         [
             'text' => $textbotlang['Admin']['Status']['notusenameinbot'],
             'callback_data' => 'usernotlist'
         ]
     ];
+    $keyboardlists['inline_keyboard'][] = $search_button;
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -606,12 +620,19 @@ if ($datain == 'next_page') {
             'callback_data' => 'previous_page'
         ]
     ];
+    $search_button = [
+        [
+            'text' => '🔎  جستجوی سرویس  🔎',
+            'callback_data' => 'search_myservice'
+        ]
+    ];
     $usernotlist = [
         [
             'text' => $textbotlang['Admin']['Status']['notusenameinbot'],
             'callback_data' => 'usernotlist'
         ]
     ];
+    $keyboardlists['inline_keyboard'][] = $search_button;
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -623,6 +644,67 @@ if ($datain == 'next_page') {
 if ($datain == "usernotlist") {
     sendmessage($from_id, $textbotlang['users']['status']['SendUsername'], $backuser, 'html');
     step('getusernameinfo', $from_id);
+}
+#----------- Search My Service ------------#
+if ($datain == "search_myservice") {
+    sendmessage($from_id, "🔍 نام کاربری سرویسی که می‌خواهید پیدا کنید را ارسال نمایید:\n\nمثال: <code>user123_1</code>", $backuser, 'HTML');
+    step('search_myservice', $from_id);
+}
+if ($user['step'] == "search_myservice") {
+    if ($text == $textbotlang['users']['backhome'] || $text == "/start") {
+        step('home', $from_id);
+        sendmessage($from_id, $textbotlang['users']['back'], $keyboard, 'HTML');
+        return;
+    }
+    $username = trim($text);
+    $username = ltrim($username, '@');
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND username = :username AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') LIMIT 1");
+    $stmt->bindParam(':id_user', $from_id);
+    $stmt->bindParam(':username', $username);
+    $stmt->execute();
+    $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$invoice) {
+        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND username LIKE :username AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT 10");
+        $like = '%' . $username . '%';
+        $stmt->bindParam(':id_user', $from_id);
+        $stmt->bindParam(':username', $like);
+        $stmt->execute();
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (count($results) == 0) {
+            sendmessage($from_id, "❌ سرویسی با این نام کاربری برای شما پیدا نشد.\n\nفقط می‌توانید سرویس‌هایی که خودتان خریده‌اید را جستجو کنید.", $backuser, 'HTML');
+            return;
+        }
+        $keyboardlists = ['inline_keyboard' => []];
+        foreach ($results as $row) {
+            $keyboardlists['inline_keyboard'][] = [
+                ['text' => "🌟" . $row['username'] . "🌟", 'callback_data' => "product_" . $row['username']]
+            ];
+        }
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => '🔎  جستجوی مجدد  🔎', 'callback_data' => 'search_myservice']
+        ];
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']
+        ];
+        step('home', $from_id);
+        sendmessage($from_id, "✅ چند سرویس مشابه از خریدهای شما پیدا شد. یکی را انتخاب کنید:", json_encode($keyboardlists), 'HTML');
+        return;
+    }
+    step('home', $from_id);
+    $keyboardfound = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => "🌟" . $invoice['username'] . "🌟", 'callback_data' => "product_" . $invoice['username']]
+            ],
+            [
+                ['text' => '🔎  جستجوی مجدد  🔎', 'callback_data' => 'search_myservice']
+            ],
+            [
+                ['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']
+            ]
+        ]
+    ]);
+    sendmessage($from_id, "✅ سرویس پیدا شد.\nبرای مشاهده اطلاعات، تمدید یا مدیریت روی دکمه زیر کلیک کنید:", $keyboardfound, 'HTML');
 }
 if ($user['step'] == "getusernameinfo") {
     if (!preg_match('/^\w{3,32}$/', $text)) {
@@ -981,6 +1063,13 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     if ($user['Balance'] < $product['price_product']) {
         $Balance_prim = $product['price_product'] - $user['Balance'];
+        if ($Balance_prim < 300000) {
+            sendmessage($from_id, "❌ مبلغ پرداختی این خرید کمتر از ۳۰۰٬۰۰۰ تومان است.
+
+ابتدا از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید، سپس دوباره برای تمدید اقدام نمایید.", $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
         sendmessage($from_id, $textbotlang['users']['sell']['selectpayment'], $backuser, 'HTML');
@@ -1193,6 +1282,13 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     if ($user['Balance'] < $price_extra && intval($setting['Extra_volume']) != 0) {
         $Balance_prim = $price_extra - $user['Balance'];
+        if ($Balance_prim < 300000) {
+            sendmessage($from_id, "❌ مبلغ پرداختی این خرید کمتر از ۳۰۰٬۰۰۰ تومان است.
+
+ابتدا از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید، سپس دوباره حجم اضافه بخرید.", $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
         step('get_step_payment', $from_id);
@@ -1759,6 +1855,13 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     }
     if ($priceproduct > $user['Balance']) {
         $Balance_prim = $priceproduct - $user['Balance'];
+        if ($Balance_prim < 300000) {
+            sendmessage($from_id, "❌ مبلغ پرداختی این خرید کمتر از ۳۰۰٬۰۰۰ تومان است.
+
+ابتدا از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید، سپس دوباره برای خرید سرویس اقدام نمایید.", $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
         step('get_step_payment', $from_id);
@@ -2008,12 +2111,19 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
 } elseif ($user['step'] == "getprice") {
     if (!is_numeric($text))
         return sendmessage($from_id, $textbotlang['users']['Balance']['errorprice'], null, 'HTML');
-    if ($text > 10000000 or $text < 20000)
+    if ($text > 10000000 or $text < 300000)
         return sendmessage($from_id, $textbotlang['users']['Balance']['errorpricelimit'], null, 'HTML');
     update("user", "Processing_value", $text, "id", $from_id);
     sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "get_step_payment") {
+    if (isset($user['Processing_value']) && is_numeric($user['Processing_value']) && intval($user['Processing_value']) > 0 && intval($user['Processing_value']) < 300000) {
+        sendmessage($from_id, "❌ مبلغ این پرداخت کمتر از ۳۰۰٬۰۰۰ تومان است و امکان ثبت فاکتور وجود ندارد.
+
+لطفاً از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید.", $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
     if ($datain == "cart_to_offline") {
         $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select")['ValuePay'];
         $Processing_value = number_format($user['Processing_value']);
@@ -2287,6 +2397,9 @@ if (preg_match('/Confirmpay_user_(\w+)_(\w+)/', $datain, $dataget)) {
             [
                 ['text' => $textbotlang['users']['Balance']['Confirmpaying'], 'callback_data' => "Confirm_pay_{$randomString}"],
                 ['text' => $textbotlang['users']['Balance']['reject_pay'], 'callback_data' => "reject_pay_{$randomString}"],
+            ],
+            [
+                ['text' => '👤 اطلاعات کاربر', 'callback_data' => "userinfo_pay_{$from_id}"],
             ]
         ]
     ]);
@@ -2302,6 +2415,66 @@ if (preg_match('/Confirmpay_user_(\w+)_(\w+)/', $datain, $dataget)) {
         ]);
     }
     step('home', $from_id);
+}
+
+#----------- اطلاعات کاربر از روی رسید پرداخت ------------#
+if (preg_match('/userinfo_pay_(\d+)/', $datain, $dataget)) {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    $id_user_info = $dataget[1];
+    $userinfo = select("user", "*", "id", $id_user_info, "select");
+    if ($userinfo == false) {
+        sendmessage($from_id, "❌ کاربر یافت نشد.", null, 'HTML');
+        return;
+    }
+    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM invoice WHERE (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') AND id_user = :id_user");
+    $stmt->bindParam(':id_user', $id_user_info);
+    $stmt->execute();
+    $dayListSell = $stmt->fetch(PDO::FETCH_ASSOC)['cnt'];
+    $stmt = $pdo->prepare("SELECT SUM(price) as total FROM Payment_report WHERE payment_Status = 'paid' AND id_user = :id_user");
+    $stmt->bindParam(':id_user', $id_user_info);
+    $stmt->execute();
+    $balanceall = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $balanceall = $balanceall ? number_format($balanceall) : "0";
+    $stmt = $pdo->prepare("SELECT SUM(price_product) as total FROM invoice WHERE (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') AND id_user = :id_user");
+    $stmt->bindParam(':id_user', $id_user_info);
+    $stmt->execute();
+    $subbuyuser = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $subbuyuser = $subbuyuser ? number_format($subbuyuser) : "0";
+    $Balance_fmt = number_format($userinfo['Balance']);
+    $lastmessage = !empty($userinfo['last_message_time']) ? jdate('Y/m/d H:i:s', $userinfo['last_message_time']) : "-";
+    $roll_Status = (isset($userinfo['roll_Status']) && $userinfo['roll_Status']) ? "✅" : "❌";
+    $verify_status = (isset($userinfo['verify']) && intval($userinfo['verify']) == 1) ? "✅" : "❌";
+    $uname = !empty($userinfo['username']) && $userinfo['username'] != "none" ? "@" . $userinfo['username'] : "ندارد";
+    $number = !empty($userinfo['number']) && $userinfo['number'] != "none" ? $userinfo['number'] : "ندارد";
+    $textinfo = "👤 <b>اطلاعات کاربر</b>
+
+🆔 آیدی: <code>{$id_user_info}</code>
+👤 یوزرنیم: {$uname}
+📊 وضعیت: {$userinfo['User_Status']}
+💰 موجودی کیف پول: {$Balance_fmt} تومان
+🛒 تعداد سرویس فعال: {$dayListSell}
+💳 مجموع پرداخت‌ها: {$balanceall} تومان
+📦 مجموع خرید سرویس: {$subbuyuser} تومان
+📱 شماره: {$number}
+📜 قوانین: {$roll_Status}
+✅ احراز: {$verify_status}
+🕐 آخرین پیام: {$lastmessage}
+👥 تعداد زیرمجموعه: {$userinfo['affiliatescount']}
+🔗 معرف: {$userinfo['affiliates']}";
+    $keyboardmanage = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => '➕ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $id_user_info],
+                ['text' => '➖ کاهش موجودی', 'callback_data' => "lowbalanceuser_" . $id_user_info],
+            ],
+            [
+                ['text' => '✉️ پیام به کاربر', 'callback_data' => "Response_" . $id_user_info],
+            ]
+        ]
+    ]);
+    sendmessage($from_id, $textinfo, $keyboardmanage, 'HTML');
 }
 
 #----------------Discount------------------#
