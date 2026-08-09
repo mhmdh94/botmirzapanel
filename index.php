@@ -2404,7 +2404,8 @@ if (preg_match('/Confirmpay_user_(\w+)_(\w+)/', $datain, $dataget)) {
         ]
     ]);
     $Processing_value = number_format($user['Processing_value']);
-    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $Processing_value, $caption);
+    $user_balance_fmt = number_format(intval($user['Balance']));
+    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $Processing_value, $user_balance_fmt, $caption);
     foreach ($admin_ids as $id_admin) {
         telegram('sendphoto', [
             'chat_id' => $id_admin,
