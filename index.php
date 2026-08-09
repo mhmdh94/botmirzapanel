@@ -42,8 +42,8 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
     $Response = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang['Admin']['ManageUser']['sendmessageUser'], 'callback_data' => 'Response_' . $from_id],
-            ]
+                ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $from_id],
+            ],
         ]
     ]);
     $newuser = sprintf($textbotlang['Admin']['ManageUser']['NewUserMessage'], $first_name, $username, $from_id, $from_id);
@@ -2466,12 +2466,16 @@ if (preg_match('/userinfo_pay_(\d+)/', $datain, $dataget)) {
     $keyboardmanage = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => '➕ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $id_user_info],
-                ['text' => '➖ کاهش موجودی', 'callback_data' => "lowbalanceuser_" . $id_user_info],
+                ['text' => '✉️ ارسال پیام', 'callback_data' => "Response_" . $id_user_info],
             ],
             [
-                ['text' => '✉️ پیام به کاربر', 'callback_data' => "Response_" . $id_user_info],
-            ]
+                ['text' => '⬆️ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $id_user_info],
+                ['text' => '⬇️ کم کردن موجودی', 'callback_data' => "lowbalanceuser_" . $id_user_info],
+            ],
+            [
+                ['text' => '🔒 مسدود کردن', 'callback_data' => "banuserlist_" . $id_user_info],
+                ['text' => '🔓 رفع مسدودی', 'callback_data' => "unbanuserr_" . $id_user_info],
+            ],
         ]
     ]);
     sendmessage($from_id, $textinfo, $keyboardmanage, 'HTML');
