@@ -1,5 +1,16 @@
 <?php
 require_once 'functions.php';
+
+# timeoutهای مشترک برای جلوگیری از گیر کردن workerها
+function marzban_curl_init()
+{
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // حداکثر ۵ ثانیه برای اتصال
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);         // حداکثر ۱۰ ثانیه کل درخواست
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    return $ch;
+}
 #-----------------------------#
 function token_panel($code_panel){
     $panel = select("marzban_panel","*","id",$code_panel,"select");
@@ -21,7 +32,10 @@ function token_panel($code_panel){
     $options = array(
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
-        CURLOPT_TIMEOUT_MS => 6000,
+        CURLOPT_CONNECTTIMEOUT_MS => 5000,
+        CURLOPT_TIMEOUT_MS => 10000,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
         CURLOPT_POSTFIELDS => http_build_query($data_token),
         CURLOPT_HTTPHEADER => array(
             'Content-Type: application/x-www-form-urlencoded',
@@ -59,7 +73,7 @@ function getuser($usernameac,$location)
     $url =  $marzban_list_get['url_panel'].'/api/user/' . $usernameac;
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPGET, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -81,7 +95,7 @@ function ResetUserDataUsage($usernameac,$location)
     $url =  $marzban_list_get['url_panel'].'/api/user/' . $usernameac.'/reset';
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST , true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -146,7 +160,7 @@ function adduser($username,$expire,$data_limit,$location,$is_test = false)
     }
     $payload = json_encode($data);
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -169,7 +183,7 @@ function Get_System_Stats($location){
     $url =  $marzban_list_get['url_panel'].'/api/system';
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPGET, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -191,7 +205,7 @@ function removeuser($location,$username)
     $url =  $marzban_list_get['url_panel'].'/api/user/'.$username;
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
     curl_setopt($ch, CURLOPT_HTTPGET, true);
@@ -213,7 +227,7 @@ function Modifyuser($location,$username,array $data)
     $Check_token = token_panel($marzban_list_get['id']);
     $url =  $marzban_list_get['url_panel'].'/api/user/'.$username;
     $payload = json_encode($data);
-$ch = curl_init();
+$ch = marzban_curl_init();
 curl_setopt($ch, CURLOPT_URL, $url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
@@ -240,7 +254,7 @@ function revoke_sub($username,$location)
     $url =  $marzban_list_get['url_panel'].'/api/user/' . $usernameac.'/revoke_sub';
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST , true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -284,7 +298,7 @@ function get_all_inbounds($location) {
     $url = $marzban_list_get['url_panel'] . '/api/inbounds';
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPGET, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -318,7 +332,7 @@ function get_inbound_tags_from_cores($location) {
     $url = rtrim($marzban_list_get['url_panel'], '/') . '/api/cores';
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPGET, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -408,7 +422,7 @@ function create_group($location, $group_name, $inbound_tags = null) {
 
     $payload = json_encode($data);
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -439,7 +453,7 @@ function get_groups($location) {
     $url = $marzban_list_get['url_panel'] . '/api/groups';
     $header_value = 'Bearer ';
 
-    $ch = curl_init();
+    $ch = marzban_curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPGET, true);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
