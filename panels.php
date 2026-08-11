@@ -39,7 +39,7 @@ class ManagePanel
                 $Output['status'] = 'successful';
                 $Output['username'] = $data_Output['username'];
                 $Output['subscription_url'] = $data_Output['subscription_url'];
-                $Output['configs'] = $data_Output['links'];
+                $Output['configs'] = ($data_Output['links'] ?? []);
             }
         } elseif ($Get_Data_Panel['type'] == "marzneshin") {
             //create user
@@ -204,7 +204,7 @@ class ManagePanel
                 'expire' => $UsernameData['expire'],
                 'online_at' => $UsernameData['online_at'],
                 'used_traffic' => $UsernameData['used_traffic'],
-                'links' => $UsernameData['links'],
+                'links' => ($UsernameData['links'] ?? []),
                 'subscription_url' => $UsernameData['subscription_url'],
             );
         } elseif ($Get_Data_Panel['type'] == "marzneshin") {
@@ -324,8 +324,8 @@ class ManagePanel
                 );
             }
             $links = [];
-            if (is_array($UsernameData['links'])) {
-                foreach ($UsernameData['links'] as $config) {
+            if (is_array(($UsernameData['links'] ?? []))) {
+                foreach (($UsernameData['links'] ?? []) as $config) {
                     $links[] = $config['uri'];
                 }
             }
