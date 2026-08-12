@@ -473,8 +473,10 @@ function channel($id_channel)
         "chat_id" => "@$id_channel",
         "user_id" => $from_id,
     ]);
-    if ($response['ok']) {
-        if (!in_array($response['result']['status'], ['member', 'creator', 'administrator'])) {
+    // telegram() ممکن است false برگرداند (timeout/SSL)
+    if (is_array($response) && !empty($response['ok'])) {
+        $status = $response['result']['status'] ?? '';
+        if (!in_array($status, ['member', 'creator', 'administrator'])) {
             $channel_link[] = $id_channel;
         }
     }
