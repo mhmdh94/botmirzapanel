@@ -1,13 +1,9 @@
 <?php
-
-if (function_exists('fastcgi_finish_request')) {
-    fastcgi_finish_request();
-} elseif (function_exists('litespeed_finish_request')) {
-    litespeed_finish_request();
-} else {
-    error_log('Neither fastcgi_finish_request nor litespeed_finish_request is available.');
-}
-
+/**
+ * توجه: fastcgi_finish_request را نباید اول اسکریپت صدا زد.
+ * اول کار را انجام می‌دهیم؛ در صورت نیاز در انتهای مسیرهای سنگین می‌توان صدا زد.
+ * لاگ تکراری «Neither fastcgi...» حذف شد تا هر پیام دیسک را پر نکند.
+ */
 ini_set('error_log', 'error_log');
 $version = "5.9.11";
 date_default_timezone_set('Asia/Tehran');
@@ -19,6 +15,26 @@ require_once 'keyboard.php';
 require_once 'functions.php';
 require_once 'panels.php';
 require_once 'vendor/autoload.php';
+
+// ---- دیباگ زمان‌بندی: برای فعال‌سازی فایل خالی debug_timing.on بساز در پوشه ربات ----
+$__bot_t0 = microtime(true);
+$__bot_marks = [];
+function bot_dbg($label) {
+    global $__bot_t0, $__bot_marks;
+    if (!file_exists(__DIR__ . '/debug_timing.on')) return;
+    $__bot_marks[] = sprintf('%6.3fs | %s', microtime(true) - $__bot_t0, $label);
+}
+register_shutdown_function(function () {
+    global $__bot_t0, $__bot_marks, $from_id, $text, $datain;
+    if (!file_exists(__DIR__ . '/debug_timing.on')) return;
+    $total = microtime(true) - $__bot_t0;
+    $lines = $__bot_marks;
+    $lines[] = sprintf('%6.3fs | TOTAL (shutdown)', $total);
+    $cmd = isset($text) && $text !== '' ? $text : (isset($datain) ? ('cb:' . $datain) : '-');
+    error_log("[BOT_TIMING] uid=" . ($from_id ?? 0) . " cmd=" . substr((string)$cmd, 0, 40) . "
+" . implode("\n", $lines));
+});
+bot_dbg('after requires');
 
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
@@ -34,11 +50,15 @@ if (!in_array($Chat_type, ["private"]))
 #-----------telegram_ip_ranges------------#
 if (!checktelegramip())
     die("Unauthorized access");
+bot_dbg('after ip check');
 #-------------Variable----------#
-$users_ids = select("user", "id", null, null, "FETCH_COLUMN");
+bot_dbg('before setting select');
 $setting = select("setting", "*");
+bot_dbg('after setting select');
 $admin_ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
-if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
+// به جای لود کل جدول user فقط وجود همین کاربر چک می‌شود (جلوگیری از کندی شدید)
+$__user_row_exists = (intval($from_id) != 0) ? select("user", "id", "id", $from_id, "select") : true;
+if (!$__user_row_exists && intval($from_id) != 0) {
     $Response = json_encode([
         'inline_keyboard' => [
             [
@@ -103,14 +123,13 @@ if (($setting['status_verify'] == "1" && intval($user['verify']) == 0) && !in_ar
 $channels = array();
 $helpdata = select("help", "*");
 $datatextbotget = select("textbot", "*", null, null, "fetchAll");
-$id_invoice = select("invoice", "id_invoice", null, null, "FETCH_COLUMN");
+// لود کامل جدول‌های invoice/product روی هر پیام حذف شد (علت اصلی کندی استارت)
 $channels = select("channels", "*");
-$usernameinvoice = select("invoice", "username", null, null, "FETCH_COLUMN");
-$code_Discount = select("Discount", "code", null, null, "FETCH_COLUMN");
-$users_ids = select("user", "id", null, null, "FETCH_COLUMN");
-$marzban_list = select("marzban_panel", "name_panel", null, null, "FETCH_COLUMN");
-$name_product = select("product", "name_product", null, null, "FETCH_COLUMN");
-$SellDiscount = select("DiscountSell", "codeDiscount", null, null, "FETCH_COLUMN");
+$code_Discount = select("Discount", "code", null, null, "FETCH_COLUMN"); // معمولاً کم‌تعداد
+$users_ids = [];
+$marzban_list = select("marzban_panel", "name_panel", null, null, "FETCH_COLUMN"); // معمولاً کم‌تعداد
+$name_product = select("product", "name_product", null, null, "FETCH_COLUMN"); // معمولاً کم‌تعداد
+$SellDiscount = select("DiscountSell", "codeDiscount", null, null, "FETCH_COLUMN"); // معمولاً کم‌تعداد
 $ManagePanel = new ManagePanel();
 $datatxtbot = array();
 foreach ($datatextbotget as $row) {
@@ -143,13 +162,17 @@ foreach ($datatxtbot as $item) {
         $datatextbot[$item['id_text']] = $item['text'];
     }
 }
+// نصب کرون فقط یک‌بار (نه در هر پیام کاربر) — قبلاً هر پیام shell_exec می‌زد و ربات را کند/هنگ می‌کرد
 if (function_exists('shell_exec') && is_callable('shell_exec')) {
-    $existingCronCommands = shell_exec('crontab -l');
-    $phpFilePath = "https://$domainhosts/cron/sendmessage.php";
-    $cronCommand = "*/1 * * * * curl $phpFilePath";
-    if (strpos($existingCronCommands, $cronCommand) === false) {
-        $command = "(crontab -l ; echo '$cronCommand') | crontab -";
-        shell_exec($command);
+    $cronFlag = __DIR__ . '/cron_sendmessage.installed';
+    if (!file_exists($cronFlag)) {
+        $existingCronCommands = @shell_exec('crontab -l 2>/dev/null') ?: '';
+        $phpFilePath = "https://$domainhosts/cron/sendmessage.php";
+        $cronCommand = "*/1 * * * * curl $phpFilePath";
+        if (strpos($existingCronCommands, $cronCommand) === false) {
+            @shell_exec("(crontab -l 2>/dev/null; echo '$cronCommand') | crontab -");
+        }
+        @file_put_contents($cronFlag, date('c'));
     }
 }
 #---------channel--------------#
@@ -184,7 +207,7 @@ if (strpos($text, "/start ") !== false) {
         $affiliatesid = 0;                             // will fail the in_array() test below
     }
     if (ctype_digit($affiliatesid)) {
-        if (!in_array($affiliatesid, $users_ids)) {
+        if (!select("user", "id", "id", $affiliatesid, "select")) {
             sendmessage($from_id, $textbotlang['users']['affiliates']['affiliatesyou'], null, 'html');
             return;
         }
@@ -243,7 +266,9 @@ if (floor($TimeLastMessage / 60) >= 1) {
         return;
     }
 } #-----------Channel------------#
+bot_dbg('before channel check');
 $chanelcheck = channel($channels['link']);
+bot_dbg('after channel check');
 if ($datain == "confirmchannel") {
     if (count($chanelcheck) != 0 && !in_array($from_id, $admin_ids)) {
         telegram(
@@ -1514,7 +1539,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     }
     $username_ac = strtolower(generateUsername($from_id, $marzban_list_get['MethodUsername'], $user['username'], $randomString, $text));
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $username_ac);
-    if (isset($DataUserOut['username']) || in_array($username_ac, $usernameinvoice)) {
+    if (isset($DataUserOut['username']) || select("invoice", "id", "username", $username_ac, "select")) {
         $random_number = random_int(1000000, 9999999);
         $username_ac = $username_ac . $random_number;
     }
@@ -1808,7 +1833,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $username_ac = strtolower(generateUsername($from_id, $panellist['MethodUsername'], $username, $randomString, $text));
     $DataUserOut = $ManagePanel->DataUser($panellist['name_panel'], $username_ac);
     $random_number = random_int(1000000, 9999999);
-    if (isset($DataUserOut['username']) || in_array($username_ac, $usernameinvoice)) {
+    if (isset($DataUserOut['username']) || select("invoice", "id", "username", $username_ac, "select")) {
         $username_ac = $random_number . $username_ac;
     }
     update("user", "Processing_value_tow", $username_ac, "id", $from_id);
@@ -1874,7 +1899,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         update("user", "Processing_value_tow", "getconfigafterpay", "id", $from_id);
         return;
     }
-    if (in_array($randomString, $id_invoice)) {
+    if (select("invoice", "id_invoice", "id_invoice", $randomString, "select")) {
         $random_number = random_int(1000000, 9999999);
         $randomString = $random_number . $randomString;
     }
