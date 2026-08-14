@@ -303,10 +303,12 @@ $textbotlang['users']['support']['sendmessageadmin'] = "🚀 پیام شما ا�
 $textbotlang['users']['support']['answermessage'] = "پاسخ به پیام";
 $textbotlang['users']['support']['sendmessageuser'] = "📨 برای ارتباط با پشتیبانی پیام خود را ارسال کنید";
 $textbotlang['users']['support']['btnsupport'] = "☎️  در دکمه زیر ( سوالات متداول ) سوالات پرتکرار شما آمده است. روی دکمه زیر کلیک کنید در صورت نیافتن سوال خود روی دکمه پشتیبانی کلیک کنید";
-$textbotlang['users']['support']['GetMessageOfUser'] = "📥 یک پیام از کاربر دریافت شد برای پاسخ روی دکمه زیر کلیک کنید  و پیام خود را ارسال کنید
+$textbotlang['users']['support']['GetMessageOfUser'] = "📥 یک پیام از کاربر دریافت شد
 آیدی عددی : %s
 نام کاربری کاربر : @%s
-📝 متن پیام : %s";
+
+📝 متن پیام :
+%s";
 
 
 $textbotlang['users']['Balance']['priceinput'] = "💸 مبلغ را  به تومان وارد کنید:

@@ -1639,9 +1639,8 @@ if ($text == $datatextbot['text_help'] || $datain == "helpbtn" || $text == "/hel
 }
 
 #-----------support------------#
-if ($text == $datatextbot['text_support'] || $text == "/support") {
-    sendmessage($from_id, $textbotlang['users']['support']['btnsupport'], $supportoption, 'HTML');
-} elseif ($datain == "support") {
+if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "support") {
+    // مستقیم درخواست پیام پشتیبانی — بدون منوی وسط سوالات متداول
     sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
     step('gettextpm', $from_id);
 } elseif ($user['step'] == 'gettextpm') {
@@ -1650,6 +1649,9 @@ if ($text == $datatextbot['text_support'] || $text == "/support") {
         'inline_keyboard' => [
             [
                 ['text' => $textbotlang['users']['support']['answermessage'], 'callback_data' => 'Response_' . $from_id],
+            ],
+            [
+                ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $from_id],
             ],
         ]
     ]);
