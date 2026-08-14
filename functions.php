@@ -248,12 +248,21 @@ function DirectPayment($order_id)
         $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], $username_ac, $datac);
 
         if ($dataoutput['username'] == null) {
-            $dataoutput['msg'] = json_encode($dataoutput['msg']);
-            sendmessage($Balance_id['id'], $textbotlang['users']['sell']['ErrorConfig'], $keyboard, 'HTML');
+            $dataoutput['msg'] = json_encode($dataoutput['msg'] ?? $dataoutput);
+            // کارت‌به‌کارت تایید شده ولی ساخت سرویس ناموفق → مبلغ به کیف پول برمی‌گردد تا کاربر ضرر نکند
+            $credit = intval($Balance_id['Balance']) + intval($Payment_report['price']);
+            update("user", "Balance", $credit, "id", $Payment_report['id_user']);
+            update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
+            $price_fmt = number_format(intval($Payment_report['price']));
+            $msg_user = "❌ در ساخت سرویس خطایی رخ داد.\n\n"
+                . "💰 مبلغ {$price_fmt} تومان به کیف پول شما برگشت داده شد.\n"
+                . "لطفاً دوباره از منو مراحل خرید را انجام دهید.\n\n"
+                . "🛒 کد پیگیری: {$order_id}";
+            sendmessage($Balance_id['id'], $msg_user, $keyboard, 'HTML');
             $texterros = sprintf($textbotlang['users']['buy']['errorInCreate'], $dataoutput['msg'], $Balance_id['id'], $Balance_id['username']);
+            $texterros .= "\n\n💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
             foreach ($admin_ids as $admin) {
                 sendmessage($admin, $texterros, null, 'HTML');
-                step('home', $admin);
             }
             return;
         }
