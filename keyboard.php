@@ -47,8 +47,8 @@ $keyboard = [
         [['text' => $datatextbot['text_sell']], ['text' => $datatextbot['text_usertest']]],
         [['text' => $datatextbot['text_Purchased_services']], ['text' => $datatextbot['text_Tariff_list']]],
         [['text' => $datatextbot['text_account']], ['text' => $datatextbot['text_Add_Balance']]],
-        [['text' => $textbotlang['users']['affiliates']['btn']]],
         [['text' => $datatextbot['text_support']], ['text' => $datatextbot['text_help']]],
+        [['text' => $textbotlang['users']['affiliates']['btn']]],
     ],
     'resize_keyboard' => true
 ];
