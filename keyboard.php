@@ -62,7 +62,6 @@ $keyboard = json_encode($keyboard);
 
 $keyboardPanel = json_encode([
     'inline_keyboard' => [
-        [['text' => $datatextbot['text_Discount'], 'callback_data' => "Discount"]],
     ],
     'resize_keyboard' => true
 ]);
