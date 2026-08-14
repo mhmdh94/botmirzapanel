@@ -111,11 +111,19 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
     $invoicesum = $stmt->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'];
-    $sql = "SELECT SUM(price_product) FROM invoice WHERE time_sell > :time_sell AND (Status = 'active' OR Status = 'end_of_time'  OR Status = 'end_of_volume' OR status = 'sendedwarn') AND name_product != 'usertest'";
+    // تعداد فروش ۲۴ ساعت اخیر (time_sell به صورت یونیکس ذخیره می‌شود)
+    $datefirstday = time() - 86400;
+    $sql = "SELECT COUNT(*) AS cnt FROM invoice
+        WHERE CAST(time_sell AS UNSIGNED) > :time_sell
+        AND CAST(time_sell AS UNSIGNED) <= :time_now
+        AND (Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn')
+        AND (name_product IS NULL OR name_product <> 'usertest')";
     $stmt = $pdo->prepare($sql);
-    $stmt->bindParam(':time_sell', $datefirstday);
+    $time_now = time();
+    $stmt->bindValue(':time_sell', $datefirstday, PDO::PARAM_INT);
+    $stmt->bindValue(':time_now', $time_now, PDO::PARAM_INT);
     $stmt->execute();
-    $dayListSell = $stmt->rowCount();
+    $dayListSell = intval($stmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
     $count_usertest = select("invoice", "*", "name_product", "usertest", "count");
     $ping = sys_getloadavg();
     $ping = number_format(floatval($ping[0]), 2);
