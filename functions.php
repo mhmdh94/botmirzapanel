@@ -229,6 +229,85 @@ function generateAvailableUsername($panel_name)
     return 'user' . bin2hex(random_bytes(5)) . random_int(10, 99);
 }
 
+
+/**
+ * تلاش مجدد فقط برای دو حالت:
+ * 1) Panel Not Found → تا ۳ بار با همان یوزرنیم
+ * 2) یوزرنیم تکراری → دو رقم رندوم به انتها + ساخت دوباره (تا ۳ بار)
+ * سایر ارورها: بدون تلاش اضافه (مسیر برگشت پول و ... مثل قبل می‌ماند)
+ */
+function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test = false)
+{
+    global $ManagePanel;
+    $max_panel_tries = 3;
+    $max_username_tries = 3;
+    $panel_try = 0;
+    $username_try = 0;
+    $current_username = $username_ac;
+    $dataoutput = ['username' => null, 'msg' => '', 'status' => 'Unsuccessful'];
+
+    while ($panel_try < $max_panel_tries && $username_try < $max_username_tries) {
+        $dataoutput = $ManagePanel->createUser($panel_name, $current_username, $datac, $is_test);
+        if (!is_array($dataoutput)) {
+            $dataoutput = ['username' => null, 'msg' => 'Invalid panel response', 'status' => 'Unsuccessful'];
+        }
+
+        if (!empty($dataoutput['username'])) {
+            $dataoutput['username_final'] = $dataoutput['username'];
+            return $dataoutput;
+        }
+
+        $msg = $dataoutput['msg'] ?? '';
+        if (is_array($msg) || is_object($msg)) {
+            $msg = json_encode($msg, JSON_UNESCAPED_UNICODE);
+        }
+        $msg = (string) $msg;
+        $msg_l = mb_strtolower($msg, 'UTF-8');
+
+        // فقط Panel Not Found
+        $is_panel_not_found = (
+            stripos($msg, 'Panel Not Found') !== false
+            || stripos($msg_l, 'panel not found') !== false
+        );
+
+        // فقط تکراری بودن یوزرنیم
+        $is_user_duplicate = (
+            strpos($msg_l, 'already') !== false
+            || strpos($msg_l, 'exist') !== false
+            || strpos($msg_l, 'duplicate') !== false
+            || strpos($msg_l, 'taken') !== false
+            || strpos($msg_l, 'in use') !== false
+            || strpos($msg, 'وجود') !== false
+            || strpos($msg, 'تکراری') !== false
+            || strpos($msg, 'قبلا') !== false
+        );
+
+        if ($is_panel_not_found) {
+            $panel_try++;
+            if ($panel_try >= $max_panel_tries) {
+                break;
+            }
+            usleep(400000);
+            continue;
+        }
+
+        if ($is_user_duplicate) {
+            $username_try++;
+            if ($username_try >= $max_username_tries) {
+                break;
+            }
+            $current_username = $current_username . random_int(10, 99);
+            continue;
+        }
+
+        // هر ارور دیگری → همان‌جا قطع؛ caller مثل قبل (برگشت پول و ...)
+        break;
+    }
+
+    $dataoutput['username_final'] = $current_username;
+    return $dataoutput;
+}
+
 function removeReplyKeyboard($chat_id)
 {
     // باید با sendmessage و remove_keyboard باشد تا کیبورد پایین تلگرام واقعاً حذف شود
@@ -285,7 +364,10 @@ function DirectPayment($order_id)
             'expire' => $timestamp,
             'data_limit' => $get_invoice['Volume'] * pow(1024, 3),
         );
-        $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], $username_ac, $datac);
+        $dataoutput = createUserWithRetry($marzban_list_get['name_panel'], $username_ac, $datac);
+        if (!empty($dataoutput['username_final'])) {
+            $username_ac = $dataoutput['username_final'];
+        }
 
         if ($dataoutput['username'] == null) {
             $dataoutput['msg'] = json_encode($dataoutput['msg'] ?? $dataoutput);
@@ -305,6 +387,9 @@ function DirectPayment($order_id)
                 sendmessage($admin, $texterros, null, 'HTML');
             }
             return;
+        }
+        if (!empty($get_invoice['username']) && $get_invoice['username'] !== $username_ac) {
+            update("invoice", "username", $username_ac, "id_invoice", $get_invoice['id_invoice']);
         }
         $output_config_link = "";
         $config = "";

@@ -1526,7 +1526,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
         'expire' => strtotime(date("Y-m-d H:i:s", strtotime("+" . $setting['time_usertest'] . "hours"))),
         'data_limit' => $setting['val_usertest'] * 1048576,
     );
-    $dataoutput = $ManagePanel->createUser($name_panel, $username_ac, $datac, true);
+    $dataoutput = createUserWithRetry($name_panel, $username_ac, $datac, true);
+    if (!empty($dataoutput['username_final'])) {
+        $username_ac = $dataoutput['username_final'];
+    }
     if ($dataoutput['username'] == null) {
         $dataoutput['msg'] = json_encode($dataoutput['msg']);
         sendmessage($from_id, $textbotlang['users']['usertest']['errorcreat'], $keyboard, 'html');
@@ -1914,7 +1917,10 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         'expire' => $data,
         'data_limit' => $info_product['Volume_constraint'] * pow(1024, 3),
     );
-    $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], $username_ac, $datac);
+    $dataoutput = createUserWithRetry($marzban_list_get['name_panel'], $username_ac, $datac);
+    if (!empty($dataoutput['username_final'])) {
+        $username_ac = $dataoutput['username_final'];
+    }
     if ($dataoutput['username'] == null) {
         $dataoutput['msg'] = json_encode($dataoutput['msg']);
         sendmessage($from_id, $textbotlang['users']['sell']['ErrorConfig'], $keyboard, 'HTML');
@@ -1924,6 +1930,10 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         }
         step('home', $from_id);
         return;
+    }
+    if (!empty($dataoutput['username']) && isset($randomString)) {
+        update("invoice", "username", $dataoutput['username'], "id_invoice", $randomString);
+        $username_ac = $dataoutput['username'];
     }
     if ($datain == "confirmandgetserviceDiscount") {
         $SellDiscountlimit = select("DiscountSell", "*", "codeDiscount", $partsdic[0], "select");
