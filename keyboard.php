@@ -220,6 +220,13 @@ $backuser = json_encode([
     ],
     'resize_keyboard' => true,
 ]);
+$keyboard_getusername = json_encode([
+    'keyboard' => [
+        [['text' => '🎲 خودکار انتخاب کن']],
+        [['text' => $textbotlang['users']['backhome']]],
+    ],
+    'resize_keyboard' => true,
+]);
 $backadmin = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['Back-Adminment']]]

@@ -196,6 +196,46 @@ function generateUsername($from_id, $Metode, $username, $randomString, $text)
         return $setting['namecustome'] . "_" . $randomString;
 }
 
+/**
+ * ساخت نام کاربری رندوم که در پنل و جدول invoice موجود نباشد
+ */
+function generateAvailableUsername($panel_name)
+{
+    global $ManagePanel, $usernameinvoice;
+    for ($i = 0; $i < 12; $i++) {
+        $candidate = 'user' . bin2hex(random_bytes(4));
+        if (is_array($usernameinvoice) && in_array($candidate, $usernameinvoice)) {
+            continue;
+        }
+        $row = select("invoice", "username", "username", $candidate, "select");
+        if ($row) {
+            continue;
+        }
+        $DataUserOut = $ManagePanel->DataUser($panel_name, $candidate);
+        if (isset($DataUserOut['username']) && $DataUserOut['username'] && ($DataUserOut['msg'] ?? '') !== 'User not found') {
+            if (($DataUserOut['status'] ?? '') === 'Unsuccessful' && ($DataUserOut['msg'] ?? '') === 'User not found') {
+                return $candidate;
+            }
+            if (($DataUserOut['status'] ?? '') !== 'Unsuccessful') {
+                continue;
+            }
+            if (($DataUserOut['msg'] ?? '') === 'User not found') {
+                return $candidate;
+            }
+            continue;
+        }
+        return $candidate;
+    }
+    return 'user' . bin2hex(random_bytes(5)) . random_int(10, 99);
+}
+
+function removeReplyKeyboard($chat_id)
+{
+    // باید با sendmessage و remove_keyboard باشد تا کیبورد پایین تلگرام واقعاً حذف شود
+    sendmessage($chat_id, "✅", json_encode(['remove_keyboard' => true]), 'HTML');
+}
+
+
 function outputlink($text)
 {
     $ch = curl_init();

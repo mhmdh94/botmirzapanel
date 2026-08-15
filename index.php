@@ -1072,7 +1072,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['sell']['selectpayment'], $backuser, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
         step('get_step_payment', $from_id);
         return;
     }
@@ -1291,6 +1291,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
         step('get_step_payment', $from_id);
         return;
     }
@@ -1508,9 +1509,12 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
         if ($user['step'] != "createusertest") {
             step('createusertest', $from_id);
             update("user", "Processing_value_one", $name_panel, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['selectusername'], $backuser, 'html');
+            sendmessage($from_id, $textbotlang['users']['selectusername'], $keyboard_getusername, 'html');
             return;
         }
+    }
+        if ($marzban_list_get['MethodUsername'] == $textbotlang['users']['customusername'] && ($text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن')) {
+        $text = generateAvailableUsername($marzban_list_get['name_panel']);
     }
     $username_ac = strtolower(generateUsername($from_id, $marzban_list_get['MethodUsername'], $user['username'], $randomString, $text));
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $username_ac);
@@ -1767,7 +1771,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
 } elseif (preg_match('/^prodcutservices_(.*)/', $datain, $dataget)) {
     $prodcut = $dataget[1];
     update("user", "Processing_value_one", $prodcut, "id", $from_id);
-    sendmessage($from_id, $textbotlang['users']['selectusername'], $backuser, 'html');
+    sendmessage($from_id, $textbotlang['users']['selectusername'], $keyboard_getusername, 'html');
     step('endstepuser', $from_id);
 } elseif ($user['step'] == "endstepuser" || preg_match('/prodcutservice_(.*)/', $datain, $dataget)) {
     if ($user['step'] != "endstepuser") {
@@ -1780,8 +1784,11 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         return;
     }
     if ($panellist['MethodUsername'] == $textbotlang['users']['customusername']) {
+        if ($text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن') {
+            $text = generateAvailableUsername($panellist['name_panel']);
+        }
         if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
-            sendmessage($from_id, $textbotlang['users']['invalidusername'], $backuser, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['invalidusername'], $keyboard_getusername, 'HTML');
             return;
         }
         $loc = $user['Processing_value_one'];
@@ -1819,6 +1826,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $info_product['price_product'] = number_format($info_product['price_product'], 0);
     $user['Balance'] = number_format($user['Balance']);
     $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $info_product['price_product'], $info_product['Volume_constraint'], $user['Balance']);
+    // اول کیبورد پایین حذف شود، بعد فاکتور مثل قبل با دکمه‌های پرداخت زیر خودش
+    sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
     sendmessage($from_id, $textin, $payment, 'HTML');
     step('payment', $from_id);
 } elseif ($user['step'] == "payment" && $datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount") {
@@ -1865,6 +1874,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             return;
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
+        sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
         sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
         step('get_step_payment', $from_id);
         $stmt = $connect->prepare("INSERT IGNORE INTO invoice(id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)");
