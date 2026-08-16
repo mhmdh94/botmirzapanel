@@ -954,9 +954,25 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 } elseif (preg_match('/config_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
-    $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
+    if ($nameloc == false) {
+        sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
+        return;
+    }
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
-    foreach ($DataUserOut['links'] as $configs) {
+    $links = [];
+    if (is_array($DataUserOut) && isset($DataUserOut['links']) && is_array($DataUserOut['links'])) {
+        $links = $DataUserOut['links'];
+    }
+    // فیلتر لینک‌های معتبر
+    $links = array_values(array_filter($links, function ($l) {
+        $l = trim((string) $l);
+        return $l !== '' && preg_match('/^(vless|vmess|trojan|ss|ssr|hysteria2?|tuic|wireguard):\/\//i', $l);
+    }));
+    if (count($links) == 0) {
+        sendmessage($from_id, "❌ کانفیگ دستی برای این سرویس در دسترس نیست.\nاز دکمه «لینک اشتراک» استفاده کنید.", null, 'HTML');
+        return;
+    }
+    foreach ($links as $configs) {
         $randomString = bin2hex(random_bytes(2));
         $urlimage = "$from_id$randomString.png";
         $writer = new PngWriter();

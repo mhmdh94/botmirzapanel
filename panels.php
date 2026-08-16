@@ -197,6 +197,44 @@ class ManagePanel
             } else {
                 $UsernameData['expire'] = 0;
             }
+            $links = $UsernameData['links'] ?? [];
+            if ((!is_array($links) || count($links) == 0) && !empty($UsernameData['subscription_url'])) {
+                $sub = $UsernameData['subscription_url'];
+                // پاسارگارد / مرزبان جدید: کانفیگ‌های تکی از /links
+                $try_urls = [
+                    rtrim($sub, '/') . '/links',
+                    rtrim($sub, '/') . '?format=links',
+                    rtrim($sub, '/') . '/links_base64',
+                ];
+                foreach ($try_urls as $u) {
+                    $body = @outputlink($u);
+                    if (!$body || strlen(trim($body)) < 10) {
+                        continue;
+                    }
+                    $body = trim($body);
+                    // اگر base64 بود decode کن
+                    $decoded = @base64_decode($body, true);
+                    if ($decoded !== false && (strpos($decoded, 'vless://') !== false || strpos($decoded, 'vmess://') !== false || strpos($decoded, 'trojan://') !== false || strpos($decoded, 'ss://') !== false)) {
+                        $body = $decoded;
+                    }
+                    $parts = preg_split('/\r\n|\r|\n/', $body);
+                    $parsed = [];
+                    foreach ($parts as $line) {
+                        $line = trim($line);
+                        if ($line === '') continue;
+                        if (preg_match('/^(vless|vmess|trojan|ss|ssr|hysteria2?|tuic|wireguard):\/\//i', $line)) {
+                            $parsed[] = $line;
+                        }
+                    }
+                    if (count($parsed) > 0) {
+                        $links = $parsed;
+                        break;
+                    }
+                }
+            }
+            if (!is_array($links)) {
+                $links = [];
+            }
             $Output = array(
                 'status' => $UsernameData['status'],
                 'username' => $UsernameData['username'],
@@ -204,7 +242,7 @@ class ManagePanel
                 'expire' => $UsernameData['expire'],
                 'online_at' => $UsernameData['online_at'],
                 'used_traffic' => $UsernameData['used_traffic'],
-                'links' => ($UsernameData['links'] ?? []),
+                'links' => $links,
                 'subscription_url' => $UsernameData['subscription_url'],
             );
         } elseif ($Get_Data_Panel['type'] == "marzneshin") {
