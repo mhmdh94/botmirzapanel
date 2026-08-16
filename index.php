@@ -842,6 +842,9 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
                     ['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username],
                 ],
                 [
+                    ['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username],
+                ],
+                [
                     ['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username],
                     ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username],
                 ],
@@ -869,6 +872,12 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
                 'text' => $textbotlang['users']['changelink']['btntitle'],
                 'callback_data' => "changelink_"
             ),
+            'togglestatus' => array(
+                'text' => ($status === 'disabled'
+                    ? $textbotlang['users']['togglestatus']['enable_btn']
+                    : $textbotlang['users']['togglestatus']['disable_btn']),
+                'callback_data' => "toggleserv_"
+            ),
             'removeservice' => array(
                 'text' => $textbotlang['users']['removeconfig']['btnremoveuser'],
                 'callback_data' => "removeserviceuserco-"
@@ -882,6 +891,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         if ($marzban_list_get['type'] == "wgdashboard") {
             unset($keyboarddate['config']);
             unset($keyboarddate['changelink']);
+            unset($keyboarddate['togglestatus']);
         }
         if ($marzban_list_get['type'] == "mikrotik") {
             unset($keyboarddate['Extra_volume']);
@@ -889,6 +899,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
             unset($keyboarddate['config']);
             unset($keyboarddate['extend']);
             unset($keyboarddate['changelink']);
+            unset($keyboarddate['togglestatus']);
             unset($keyboarddate['Extra_volume']);
         }
         if ($nameloc['name_product'] == "usertest") {
@@ -954,25 +965,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 } elseif (preg_match('/config_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
-    if ($nameloc == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
-        return;
-    }
+    $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
-    $links = [];
-    if (is_array($DataUserOut) && isset($DataUserOut['links']) && is_array($DataUserOut['links'])) {
-        $links = $DataUserOut['links'];
-    }
-    // فیلتر لینک‌های معتبر
-    $links = array_values(array_filter($links, function ($l) {
-        $l = trim((string) $l);
-        return $l !== '' && preg_match('/^(vless|vmess|trojan|ss|ssr|hysteria2?|tuic|wireguard):\/\//i', $l);
-    }));
-    if (count($links) == 0) {
-        sendmessage($from_id, "❌ کانفیگ دستی برای این سرویس در دسترس نیست.\nاز دکمه «لینک اشتراک» استفاده کنید.", null, 'HTML');
-        return;
-    }
-    foreach ($links as $configs) {
+    foreach ($DataUserOut['links'] as $configs) {
         $randomString = bin2hex(random_bytes(2));
         $urlimage = "$from_id$randomString.png";
         $writer = new PngWriter();
@@ -1254,6 +1249,93 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         ]
     ]);
     Editmessagetext($from_id, $message_id, $textbotlang['users']['changelink']['confirmed'], $keyboardchange);
+} elseif (preg_match('/toggleserv_(\w+)/', $datain, $dataget)) {
+    $usernameconfig = $dataget[1];
+    $nameloc = select("invoice", "*", "username", $usernameconfig, "select");
+    if ($nameloc == false || intval($nameloc['id_user']) !== intval($from_id)) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['togglestatus']['notowner'],
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $invStatus = isset($nameloc['Status']) ? $nameloc['Status'] : (isset($nameloc['status']) ? $nameloc['status'] : '');
+    if (!in_array($invStatus, ['active', 'end_of_time', 'end_of_volume', 'sendedwarn'])) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['togglestatus']['notallowed'],
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
+    if ($marzban_list_get == false || in_array($marzban_list_get['type'], ['mikrotik', 'wgdashboard'])) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['togglestatus']['notallowed'],
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $usernameconfig);
+    if (!is_array($DataUserOut) || ($DataUserOut['status'] ?? '') === 'Unsuccessful') {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['togglestatus']['error'],
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $cur = $DataUserOut['status'] ?? 'active';
+    if (in_array($cur, ['expired', 'limtied', 'limited'])) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['togglestatus']['notallowed'],
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $ptype = $marzban_list_get['type'];
+    $enabled_now = false;
+    if (in_array($ptype, ['marzban', 'marzneshin'])) {
+        $newstatus = ($cur === 'disabled') ? 'active' : 'disabled';
+        $ManagePanel->Modifyuser($usernameconfig, $marzban_list_get['name_panel'], ['status' => $newstatus]);
+        $enabled_now = ($newstatus === 'active');
+    } elseif (in_array($ptype, ['x-ui_single', 'alireza'])) {
+        $new_enable = ($cur === 'disabled') ? true : false;
+        $config = [
+            'settings' => json_encode([
+                'clients' => [[
+                    'enable' => $new_enable,
+                ]],
+            ]),
+        ];
+        $ManagePanel->Modifyuser($usernameconfig, $marzban_list_get['name_panel'], $config);
+        $enabled_now = $new_enable;
+    } elseif ($ptype == 's_ui') {
+        $new_enable = ($cur === 'disabled') ? true : false;
+        $ManagePanel->Modifyuser($usernameconfig, $marzban_list_get['name_panel'], ['enable' => $new_enable]);
+        $enabled_now = $new_enable;
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['togglestatus']['notallowed'],
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $msg = $enabled_now
+        ? $textbotlang['users']['togglestatus']['enabled_ok']
+        : $textbotlang['users']['togglestatus']['disabled_ok'];
+    $keyboardchange = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang['users']['status']['backservice'], 'callback_data' => "product_" . $usernameconfig],
+            ]
+        ]
+    ]);
+    Editmessagetext($from_id, $message_id, $msg, $keyboardchange);
 } elseif (preg_match('/Extra_volume_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     update("user", "Processing_value", $username, "id", $from_id);

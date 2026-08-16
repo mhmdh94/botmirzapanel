@@ -347,6 +347,14 @@ $textbotlang['users']['changelink']['warnchange'] = "⚠️ در صورت برو
 $textbotlang['users']['changelink']['confirm'] = "تغییر لینک اتصال";
 $textbotlang['users']['changelink']['confirmed'] = "✅ لینک اتصال شما بروزرسانی و کانفیگ قبلی قطع گردید برای دریافت کانفیگ جدید منوی تنظمیات سرویس مراجعه کرده و کانفیگ جدید را تهیه کنید.";
 
+$textbotlang['users']['togglestatus']['disable_btn'] = "⏸ غیرفعال کردن سرویس";
+$textbotlang['users']['togglestatus']['enable_btn'] = "▶️ فعال کردن سرویس";
+$textbotlang['users']['togglestatus']['disabled_ok'] = "✅ سرویس شما غیرفعال شد.\nهر زمان بخواهید می‌توانید دوباره فعالش کنید.";
+$textbotlang['users']['togglestatus']['enabled_ok'] = "✅ سرویس شما دوباره فعال شد.";
+$textbotlang['users']['togglestatus']['notallowed'] = "❌ امکان تغییر وضعیت این سرویس وجود ندارد.";
+$textbotlang['users']['togglestatus']['notowner'] = "❌ این سرویس متعلق به شما نیست.";
+$textbotlang['users']['togglestatus']['error'] = "❌ خطا در تغییر وضعیت سرویس. لطفاً بعداً دوباره تلاش کنید.";
+
 
 
 $textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وجه ";
