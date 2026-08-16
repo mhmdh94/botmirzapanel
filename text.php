@@ -342,7 +342,7 @@ $textbotlang['users']['Balance']['Send-receip-buy'] ="🚀 رسید پرداخت
 
 
 
-$textbotlang['users']['changelink']['btntitle'] = "⚙️ بروزرسانی اشتراک ";
+$textbotlang['users']['changelink']['btntitle'] = "🔄 تغییر لینک اتصال";
 $textbotlang['users']['changelink']['warnchange'] = "⚠️ در صورت بروزرسانی لینک اشتراک کانفیگ ها سرویس شما قطع شده و باید از بخش تنظیمات سرویس کانفیگ یا لینک اشتراک جدید را دریافت کنید.";
 $textbotlang['users']['changelink']['confirm'] = "تغییر لینک اتصال";
 $textbotlang['users']['changelink']['confirmed'] = "✅ لینک اتصال شما بروزرسانی و کانفیگ قبلی قطع گردید برای دریافت کانفیگ جدید منوی تنظمیات سرویس مراجعه کرده و کانفیگ جدید را تهیه کنید.";
@@ -379,7 +379,7 @@ $textbotlang['users']['status']['InfoSerivceActive'] = "وضعیت سرویس : 
 
 📅 فعال تا تاریخ : %s (%s)
     
-🚫 برای تغییر لینک و قطع دسترسی دیگران کافیست روی گزینه ' بروزرسانی اشتراک ' کلیک کنید.";
+🚫 برای تغییر لینک و قطع دسترسی دیگران کافیست روی گزینه ' تغییر لینک اتصال ' کلیک کنید.";
 $textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "وضعیت سرویس : %s
 نام کاربری سرویس : <code>%s</code>
 رمز عبور سرویس: %s
@@ -391,7 +391,7 @@ $textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "وضعیت سر
 
 📅 فعال تا تاریخ : %s (%s)
     
-🚫 برای تغییر لینک و قطع دسترسی دیگران کافیست روی گزینه ' بروزرسانی اشتراک ' کلیک کنید.";
+🚫 برای تغییر لینک و قطع دسترسی دیگران کافیست روی گزینه ' تغییر لینک اتصال ' کلیک کنید.";
 $textbotlang['users']['status']['RequestRemove'] = "✅  درخواست حذف سرویس را دارم";
 $textbotlang['users']['status']['RemovedService'] = "📌 سرویس با موفقیت حذف شد";
 $textbotlang['users']['status']['RequestInfoRemove'] = "سلام ادمین 👋
