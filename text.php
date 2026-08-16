@@ -302,6 +302,7 @@ $textbotlang['users']['support']['title'] = "☎️ پشتیبانی";
 $textbotlang['users']['support']['sendmessageadmin'] = "🚀 پیام شما ارسال شد منتظر پاسخ مدیریت باشید";
 $textbotlang['users']['support']['answermessage'] = "پاسخ به پیام";
 $textbotlang['users']['support']['sendmessageuser'] = "📨 برای ارتباط با پشتیبانی پیام خود را ارسال کنید";
+$textbotlang['users']['support']['reply_btn'] = "💬 پاسخ به پشتیبانی";
 $textbotlang['users']['support']['btnsupport'] = "☎️  در دکمه زیر ( سوالات متداول ) سوالات پرتکرار شما آمده است. روی دکمه زیر کلیک کنید در صورت نیافتن سوال خود روی دکمه پشتیبانی کلیک کنید";
 $textbotlang['users']['support']['GetMessageOfUser'] = "📥 یک پیام از کاربر دریافت شد
 آیدی عددی : %s
@@ -979,7 +980,8 @@ $textbotlang['Admin']['systemsms']['canceledmessage'] = "📌 ارسال پیا�
 $textbotlang['Admin']['systemsms']['sendingforward'] = "درحال ارسال پیام";
 $textbotlang['Admin']['systemsms']['sendforwardtousers'] = "✅ پیام به تمامی کاربران ارسال شد";
 $textbotlang['Admin']['systemsms']['sendmessageauser'] = "✍️ ارسال پیام برای یک کاربر";
-$textbotlang['Admin']['systemsms']['sendedmessagetouser'] = "📩 یک پیام از طرف مدیریت ارسال شده است  
+$textbotlang['Admin']['systemsms']['sendedmessagetouser'] = "📩 یک پیام از طرف مدیریت ارسال شده است
+
 متن پیام: %s";
 
 

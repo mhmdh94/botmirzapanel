@@ -544,19 +544,34 @@ if (preg_match('/Response_(\w+)/', $datain, $dataget)) {
     step('getmessageAsAdmin', $from_id);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetTextResponse'], $backadmin, 'HTML');
 } elseif ($user['step'] == "getmessageAsAdmin") {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SendMessageuser'], null, 'HTML');
+    $btn_reply = $textbotlang['users']['support']['reply_btn'] ?? '💬 پاسخ به پشتیبانی';
+    $reply_support_kb = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $btn_reply, 'callback_data' => 'support'],
+            ],
+        ]
+    ], JSON_UNESCAPED_UNICODE);
+    $target_user = $user['Processing_value'];
+    $sent_ok = false;
     if ($text) {
         $textSendAdminToUser = sprintf($textbotlang['Admin']['systemsms']['sendedmessagetouser'], $text);
-        sendmessage($user['Processing_value'], $textSendAdminToUser, null, 'HTML');
+        sendmessage($target_user, $textSendAdminToUser, $reply_support_kb, 'HTML');
+        $sent_ok = true;
     }
     if ($photo) {
         $textSendAdminToUser = sprintf($textbotlang['Admin']['systemsms']['sendedmessagetouser'], $caption);
         telegram('sendphoto', [
-            'chat_id' => $user['Processing_value'],
+            'chat_id' => $target_user,
             'photo' => $photoid,
             'caption' => $textSendAdminToUser,
             'parse_mode' => "HTML",
+            'reply_markup' => $reply_support_kb,
         ]);
+        $sent_ok = true;
+    }
+    if ($sent_ok) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SendMessageuser'], null, 'HTML');
     }
     step('home', $from_id);
 }
