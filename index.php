@@ -1590,8 +1590,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     }
     if ($user['step'] == "createusertest") {
         $name_panel = $user['Processing_value_one'];
-        if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
-            sendmessage($from_id, $textbotlang['users']['invalidusername'], $backuser, 'HTML');
+        // دکمه خودکار انتخاب کن نباید با اعتبارسنجی نام کاربری رد شود
+        $is_auto_username = ($text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن');
+        if (!$is_auto_username && !preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
+            sendmessage($from_id, $textbotlang['users']['invalidusername'], $keyboard_getusername, 'HTML');
             return;
         }
     } else {
