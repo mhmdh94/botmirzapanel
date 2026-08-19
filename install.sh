@@ -419,14 +419,23 @@ function install_bot() {
         exit 1
     fi
 
-    # Always download from main branch of fork
+    # Default to latest release
     ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-    echo -e "\e[36mDownloading bot from: $ZIP_URL\033[0m"
+
+# Check for version flag
+if [[ "$1" == "-v" && "$2" == "beta" ]] || [[ "$1" == "-beta" ]] || [[ "$1" == "-" && "$2" == "beta" ]]; then
+    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+elif [[ "$1" == "-v" && -n "$2" ]]; then
+    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/tags/$2.zip"
+fi
 
     # Download and extract the repository
     TEMP_DIR="/tmp/mirzabot"
-    rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
+    if [ -z "$ZIP_URL" ]; then
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    fi
+    echo -e "\e[36mDownloading: $ZIP_URL\033[0m"
     wget -O "$TEMP_DIR/bot.zip" "$ZIP_URL" || {
         echo -e "\e[91mError: Failed to download the specified version.\033[0m"
         exit 1
@@ -550,18 +559,18 @@ done
         echo -e "\e[91mError: Failed to enable certbot timer.\033[0m"
         exit 1
     }
-    sudo certbot certonly --standalone --agree-tos --preferred-challenges http -d $DOMAIN_NAME || {
-        echo -e "\e[91mError: Failed to generate SSL certificate.\033[0m"
-        exit 1
-    }
+    if ! sudo certbot certonly --standalone --agree-tos --preferred-challenges http -d "$DOMAIN_NAME"; then
+        echo -e "\e[91mWarning: Failed to generate SSL certificate.\033[0m"
+        echo -e "\e[93mContinuing install. You can run SSL later: certbot --apache -d YOUR_DOMAIN\033[0m"
+    fi
     sudo apt install python3-certbot-apache -y || {
         echo -e "\e[91mError: Failed to install python3-certbot-apache.\033[0m"
         exit 1
     }
-    sudo certbot --apache --agree-tos --preferred-challenges http -d $DOMAIN_NAME || {
-        echo -e "\e[91mError: Failed to configure SSL with Certbot.\033[0m"
-        exit 1
-    }
+    if ! sudo certbot --apache --agree-tos --preferred-challenges http -d "$DOMAIN_NAME"; then
+        echo -e "\e[91mWarning: Failed to configure SSL with Certbot.\033[0m"
+        echo -e "\e[93mInstall continues. Fix SSL later if needed.\033[0m"
+    fi
 
     echo " "
     echo -e "\033[33mEnable apache2\033[0m"
@@ -1008,13 +1017,20 @@ function install_bot_with_marzban() {
         exit 1
     }
 
-    # Always download from main branch of fork
+    # Download bot files
     ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-    echo -e "\e[36mDownloading bot from: $ZIP_URL\033[0m"
+    if [[ "$1" == "-v" && "$2" == "beta" ]] || [[ "$1" == "-beta" ]] || [[ "$1" == "-" && "$2" == "beta" ]]; then
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    elif [[ "$1" == "-v" && -n "$2" ]]; then
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/tags/$2.zip"
+    fi
 
     TEMP_DIR="/tmp/mirzabot"
-    rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
+    if [ -z "$ZIP_URL" ]; then
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    fi
+    echo -e "\e[36mDownloading: $ZIP_URL\033[0m"
     wget -O "$TEMP_DIR/bot.zip" "$ZIP_URL" || {
         echo -e "\e[91mError: Failed to download bot files.\033[0m"
         exit 1
@@ -1294,16 +1310,23 @@ function update_bot() {
         exit 1
     fi
 
-    # Always download update from main branch of fork
-    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-    echo -e "\e[36mDownloading update from: $ZIP_URL\033[0m"
+    # Fetch latest release from GitHub
+    # Check for version flag
+    if [[ "$1" == "-beta" ]] || [[ "$1" == "-v" && "$2" == "beta" ]]; then
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    else
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    fi
 
     # Create temporary directory
     TEMP_DIR="/tmp/mirzabot_update"
-    rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
 
     # Download and extract
+    if [ -z "$ZIP_URL" ]; then
+        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    fi
+    echo -e "\e[36mDownloading: $ZIP_URL\033[0m"
     wget -O "$TEMP_DIR/bot.zip" "$ZIP_URL" || {
         echo -e "\e[91mError: Failed to download update package.\033[0m"
         exit 1
