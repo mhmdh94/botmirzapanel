@@ -419,18 +419,13 @@ function install_bot() {
         exit 1
     fi
 
-    # Default to latest release
-    ZIP_URL=$(curl -s https://api.github.com/repos/mhmdh94/botmirzapanel/releases/latest | grep "zipball_url" | cut -d '"' -f 4)
-
-# Check for version flag
-if [[ "$1" == "-v" && "$2" == "beta" ]] || [[ "$1" == "-beta" ]] || [[ "$1" == "-" && "$2" == "beta" ]]; then
+    # Always download from main branch of fork
     ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-elif [[ "$1" == "-v" && -n "$2" ]]; then
-    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/tags/$2.zip"
-fi
+    echo -e "\e[36mDownloading bot from: $ZIP_URL\033[0m"
 
     # Download and extract the repository
     TEMP_DIR="/tmp/mirzabot"
+    rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
     wget -O "$TEMP_DIR/bot.zip" "$ZIP_URL" || {
         echo -e "\e[91mError: Failed to download the specified version.\033[0m"
@@ -1013,15 +1008,12 @@ function install_bot_with_marzban() {
         exit 1
     }
 
-    # Download bot files
-    ZIP_URL=$(curl -s https://api.github.com/repos/mhmdh94/botmirzapanel/releases/latest | grep "zipball_url" | cut -d '"' -f 4)
-    if [[ "$1" == "-v" && "$2" == "beta" ]] || [[ "$1" == "-beta" ]] || [[ "$1" == "-" && "$2" == "beta" ]]; then
-        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-    elif [[ "$1" == "-v" && -n "$2" ]]; then
-        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/tags/$2.zip"
-    fi
+    # Always download from main branch of fork
+    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    echo -e "\e[36mDownloading bot from: $ZIP_URL\033[0m"
 
     TEMP_DIR="/tmp/mirzabot"
+    rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
     wget -O "$TEMP_DIR/bot.zip" "$ZIP_URL" || {
         echo -e "\e[91mError: Failed to download bot files.\033[0m"
@@ -1302,16 +1294,13 @@ function update_bot() {
         exit 1
     fi
 
-    # Fetch latest release from GitHub
-    # Check for version flag
-    if [[ "$1" == "-beta" ]] || [[ "$1" == "-v" && "$2" == "beta" ]]; then
-        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-    else
-        ZIP_URL=$(curl -s https://api.github.com/repos/mhmdh94/botmirzapanel/releases/latest | grep "zipball_url" | cut -d '"' -f4)
-    fi
+    # Always download update from main branch of fork
+    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    echo -e "\e[36mDownloading update from: $ZIP_URL\033[0m"
 
     # Create temporary directory
     TEMP_DIR="/tmp/mirzabot_update"
+    rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
 
     # Download and extract
