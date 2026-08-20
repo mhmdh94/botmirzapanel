@@ -47,6 +47,27 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
         ]
     ]);
     $newuser = sprintf($textbotlang['Admin']['ManageUser']['NewUserMessage'], $first_name, $username, $from_id, $from_id);
+    // اگر با لینک زیرمجموعه‌گیری آمده، فقط در این حالت معرف را بنویس
+    if (isset($text) && is_string($text) && strpos($text, "/start ") === 0) {
+        $token = trim(str_replace("/start ", "", $text));
+        $affiliatesid = 0;
+        if ($token !== '') {
+            $refRow = select("user", "id", "ref_code", $token, "select");
+            if ($refRow !== false && isset($refRow['id'])) {
+                $affiliatesid = intval($refRow['id']);
+            } elseif (ctype_digit($token)) {
+                $affiliatesid = intval($token);
+            }
+        }
+        if ($affiliatesid > 0 && $affiliatesid != intval($from_id) && in_array($affiliatesid, $users_ids)) {
+            $inv = select("user", "*", "id", $affiliatesid, "select");
+            $inv_user = is_array($inv) && !empty($inv['username']) ? '@' . $inv['username'] : '';
+            $newuser .= "\n👥 زیرمجموعهٔ: <a href=\"tg://user?id={$affiliatesid}\">{$affiliatesid}</a>";
+            if ($inv_user !== '') {
+                $newuser .= " ({$inv_user})";
+            }
+        }
+    }
     foreach ($admin_ids as $admin) {
         sendmessage($admin, $newuser, $Response, 'html');
     }
