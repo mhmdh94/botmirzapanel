@@ -78,6 +78,14 @@ $keyboardadmin = json_encode([
     'resize_keyboard' => true
 ]);
 
+
+$CurrencyWalletManage = json_encode([
+    'keyboard' => [
+        [['text' => $textbotlang['Admin']['Back-Adminment']]]
+    ],
+    'resize_keyboard' => true
+]);
+
 $CartManage = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['users']['moeny']['card_number_settings']]],
@@ -139,19 +147,9 @@ if ($PaySettingcard == "oncard") {
         ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'], 'callback_data' => "cart_to_offline"],
     ];
 }
-if ($PaySettingnow == "onnowpayment") {
-    $step_payment['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['moeny']['nowpaymentbtn'], 'callback_data' => "nowpayments"]
-    ];
-}
 if ($PaySettingdigi == "ondigi") {
     $step_payment['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'], 'callback_data' => "iranpay"]
-    ];
-}
-if ($PaySettingaqayepardakht == "onaqayepardakht") {
-    $step_payment['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['moeny']['mr_payment_gateway'], 'callback_data' => "aqayepardakht"]
     ];
 }
 $step_payment['inline_keyboard'][] = [

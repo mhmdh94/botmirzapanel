@@ -1074,10 +1074,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     if ($user['Balance'] < $product['price_product']) {
         $Balance_prim = $product['price_product'] - $user['Balance'];
-        if ($Balance_prim < 300000) {
-            sendmessage($from_id, "❌ مبلغ پرداختی این خرید کمتر از ۳۰۰٬۰۰۰ تومان است.
-
-ابتدا از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید، سپس دوباره برای تمدید اقدام نمایید.", $keyboard, 'HTML');
+        if ($Balance_prim < getDepositLimits()['min']) {
+            sendmessage($from_id, msgShortfallBelowMin('extend'), $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
@@ -1380,10 +1378,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     if ($user['Balance'] < $price_extra && intval($setting['Extra_volume']) != 0) {
         $Balance_prim = $price_extra - $user['Balance'];
-        if ($Balance_prim < 300000) {
-            sendmessage($from_id, "❌ مبلغ پرداختی این خرید کمتر از ۳۰۰٬۰۰۰ تومان است.
-
-ابتدا از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید، سپس دوباره حجم اضافه بخرید.", $keyboard, 'HTML');
+        if ($Balance_prim < getDepositLimits()['min']) {
+            sendmessage($from_id, msgShortfallBelowMin('extra'), $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
@@ -1969,10 +1965,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     }
     if ($priceproduct > $user['Balance']) {
         $Balance_prim = $priceproduct - $user['Balance'];
-        if ($Balance_prim < 300000) {
-            sendmessage($from_id, "❌ مبلغ پرداختی این خرید کمتر از ۳۰۰٬۰۰۰ تومان است.
-
-ابتدا از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید، سپس دوباره برای خرید سرویس اقدام نمایید.", $keyboard, 'HTML');
+        if ($Balance_prim < getDepositLimits()['min']) {
+            sendmessage($from_id, msgShortfallBelowMin('buy'), $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
@@ -2228,21 +2222,22 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     }
     if ($user['number'] == "none" && $setting['get_number'] == "1")
         return;
-    sendmessage($from_id, $textbotlang['users']['Balance']['priceinput'], $backuser, 'HTML');
+    $depLim = getDepositLimits();
+    sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
     step('getprice', $from_id);
 } elseif ($user['step'] == "getprice") {
     if (!is_numeric($text))
         return sendmessage($from_id, $textbotlang['users']['Balance']['errorprice'], null, 'HTML');
-    if ($text > 10000000 or $text < 300000)
-        return sendmessage($from_id, $textbotlang['users']['Balance']['errorpricelimit'], null, 'HTML');
+    $depLim = getDepositLimits();
+    if (intval($text) > $depLim['max'] || intval($text) < $depLim['min']) {
+        return sendmessage($from_id, sprintf($textbotlang['users']['Balance']['errorpricelimit'], formatToman($depLim['min']), formatToman($depLim['max'])), null, 'HTML');
+    }
     update("user", "Processing_value", $text, "id", $from_id);
     sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "get_step_payment") {
-    if (isset($user['Processing_value']) && is_numeric($user['Processing_value']) && intval($user['Processing_value']) > 0 && intval($user['Processing_value']) < 300000) {
-        sendmessage($from_id, "❌ مبلغ این پرداخت کمتر از ۳۰۰٬۰۰۰ تومان است و امکان ثبت فاکتور وجود ندارد.
-
-لطفاً از بخش افزایش اعتبار حداقل ۳۰۰٬۰۰۰ تومان واریز کنید.", $keyboard, 'HTML');
+    if (isset($user['Processing_value']) && is_numeric($user['Processing_value']) && intval($user['Processing_value']) > 0 && intval($user['Processing_value']) < getDepositLimits()['min']) {
+        sendmessage($from_id, msgShortfallBelowMin('pay'), $keyboard, 'HTML');
         step('home', $from_id);
         return;
     }
@@ -2262,230 +2257,23 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         }
         step('cart_to_cart_user', $from_id);
     }
-    if ($datain == "aqayepardakht") {
-        if ($user['Processing_value'] < 5000) {
-            sendmessage($from_id, $textbotlang['users']['Balance']['zarinpal'], null, 'HTML');
-            return;
-        }
-        sendmessage($from_id, $textbotlang['users']['Balance']['linkpayments'], $keyboard, 'HTML');
-        $dateacc = date('Y/m/d H:i:s');
-        $randomString = bin2hex(random_bytes(5));
-        $payment_Status = "Unpaid";
-        $Payment_Method = "aqayepardakht";
-        if ($user['Processing_value_tow'] == "getconfigafterpay") {
-            $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        } else {
-            $invoice = "0|0";
-        }
-        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user, id_order, time, price, payment_Status, Payment_Method,invoice) VALUES (?, ?, ?, ?, ?, ?,?)");
-        $stmt->bindParam(1, $from_id);
-        $stmt->bindParam(2, $randomString);
-        $stmt->bindParam(3, $dateacc);
-        $stmt->bindParam(4, $user['Processing_value'], PDO::PARAM_STR);
-        $stmt->bindParam(5, $payment_Status);
-        $stmt->bindParam(6, $Payment_Method);
-        $stmt->bindParam(7, $invoice);
-        $stmt->execute();
-        $paymentkeyboard = json_encode([
-            'inline_keyboard' => [
-                [
-                    ['text' => $textbotlang['users']['Balance']['payments'], 'url' => "https://" . "$domainhosts" . "/payment/aqayepardakht/aqayepardakht.php?price={$user['Processing_value']}&order_id=$randomString"],
-                ]
-            ]
-        ]);
-        $user['Processing_value'] = number_format($user['Processing_value'], 0);
-        $textnowpayments = sprintf($textbotlang['users']['moeny']['aqayepardakht'], $randomString, $user['Processing_value']);
-        sendmessage($from_id, $textnowpayments, $paymentkeyboard, 'HTML');
-    }
-    if ($datain == "nowpayments") {
-        deletemessage($from_id, $message_id);
-        sendmessage($from_id, $textbotlang['users']['Balance']['linkpayments'], $keyboard, 'HTML');
-        $price_rate = tronratee();
-        $USD = $price_rate['result']['USD'];
-        $usdprice = round($user['Processing_value'] / $USD, 2);
-        $dateacc = date('Y/m/d H:i:s');
-        $randomString = bin2hex(random_bytes(5));
-        $payment_Status = "Unpaid";
-        $Payment_Method = "Nowpayments";
-        $invoice = $user['Processing_value_tow'] == "getconfigafterpay" ? "{$user['Processing_value_tow']}|{$user['Processing_value_one']}" : "0|0";
-        $pay = nowPayments('invoice', $usdprice, $randomString, "order");
-        if (!isset($pay['id'])) {
-            $text_error = json_encode($pay);
-            sendmessage($from_id, $textbotlang['users']['Balance']['errorLinkPayment'], $keyboard, 'HTML');
-            step('home', $from_id);
-            if (strlen($setting['Channel_Report']) > 0) {
-                sendmessage($setting['Channel_Report'], sprintf($textbotlang['users']['moeny']['nowpayments_create_link_error'], $text_error, $from_id, $username), null, 'HTML');
-            }
-            return;
-        }
-        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user, id_order, time, price, payment_Status, Payment_Method,invoice) VALUES (?, ?, ?, ?, ?, ?,?)");
-        $stmt->bindParam(1, $from_id);
-        $stmt->bindParam(2, $randomString);
-        $stmt->bindParam(3, $dateacc);
-        $stmt->bindParam(4, $user['Processing_value'], PDO::PARAM_STR);
-        $stmt->bindParam(5, $payment_Status);
-        $stmt->bindParam(6, $Payment_Method);
-        $stmt->bindParam(7, $invoice);
-        $stmt->execute();
-        $paymentkeyboard = json_encode([
-            'inline_keyboard' => [
-                [
-                    ['text' => $textbotlang['users']['Balance']['payments'], 'url' => $pay['invoice_url']],
-                ]
-            ]
-        ]);
-        $Processing_value = number_format($user['Processing_value'], 0);
-        $USD = number_format($USD, 0);
-        $textnowpayments = sprintf($textbotlang['users']['moeny']['nowpayment'], $randomString, $Processing_value, $USD, $usdprice);
-        sendmessage($from_id, $textnowpayments, $paymentkeyboard, 'HTML');
-    }
     if ($datain == "iranpay") {
-        $price_rate = tronratee();
-        $trx = $price_rate['result']['TRX'];
-        $usd = $price_rate['result']['USD'];
-        $trxprice = round($user['Processing_value'] / $trx, 2);
-        $usdprice = round($user['Processing_value'] / $usd, 2);
-        if ($trxprice <= 1) {
-            sendmessage($from_id, $textbotlang['users']['Balance']['changeto'], null, 'HTML');
-            return;
-        }
-        sendmessage($from_id, $textbotlang['users']['Balance']['linkpayments'], $keyboard, 'HTML');
-        $dateacc = date('Y/m/d H:i:s');
-        $randomString = bin2hex(random_bytes(5));
-        $payment_Status = "Unpaid";
-        $Payment_Method = "Currency Rial gateway";
-        if ($user['Processing_value_tow'] == "getconfigafterpay") {
-            $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-        } else {
-            $invoice = "0|0";
-        }
-        $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user, id_order, time, price, payment_Status, Payment_Method,invoice) VALUES (?, ?, ?, ?, ?, ?,?)");
-        $stmt->bindParam(1, $from_id);
-        $stmt->bindParam(2, $randomString);
-        $stmt->bindParam(3, $dateacc);
-        $stmt->bindParam(4, $user['Processing_value'], PDO::PARAM_STR);
-        $stmt->bindParam(5, $payment_Status);
-        $stmt->bindParam(6, $Payment_Method);
-        $stmt->bindParam(7, $invoice);
-        $stmt->execute();
-        $order_description = "SwapinoBot_" . $randomString . "_" . $trxprice;
-        $pay = nowPayments('payment', $usdprice, $randomString, $order_description);
-        if (!isset($pay->pay_address)) {
-            $text_error = $pay->message;
-            sendmessage($from_id, $textbotlang['users']['Balance']['errorLinkPayment'], $keyboard, 'HTML');
-            step('home', $from_id);
-            foreach ($admin_ids as $admin) {
-                $ErrorsLinkPayment = sprintf($textbotlang['users']['moeny']['eror'], $text_error, $from_id, $username);
-                sendmessage($admin, $ErrorsLinkPayment, $keyboard, 'HTML');
+        $amount_toman = intval($user['Processing_value']);
+        $built = buildCurrencyPaymentText($amount_toman);
+        if (!$built['ok']) {
+            if (($built['error'] ?? '') === 'rate') {
+                sendmessage($from_id, $textbotlang['users']['moeny']['currency_rate_error'], $keyboard, 'HTML');
+            } else {
+                sendmessage($from_id, $textbotlang['users']['moeny']['currency_empty'], $keyboard, 'HTML');
             }
+            step('home', $from_id);
             return;
         }
-        $trxprice = str_replace('.', "_", strval($pay->pay_amount));
-        $pay_address = $pay->pay_address;
-        $payment_id = $pay->payment_id;
-        $paymentkeyboard = json_encode([
-            'inline_keyboard' => [
-                [
-                    ['text' => $textbotlang['users']['Balance']['payments'], 'url' => "https://t.me/SwapinoBot?start=trx-$pay_address-$trxprice-Tron"]
-                ],
-                [
-                    ['text' => $textbotlang['users']['Balance']['Confirmpaying'], 'callback_data' => "Confirmpay_user_{$payment_id}_{$randomString}"]
-                ]
-            ]
-        ]);
-        $pricetoman = number_format($user['Processing_value'], 0);
-        $textnowpayments = sprintf($textbotlang['users']['moeny']['iranpay'], $randomString, $pay_address, $trxprice, $pricetoman, $trx, $pricetoman);
-        sendmessage($from_id, $textnowpayments, $paymentkeyboard, 'HTML');
+        deletemessage($from_id, $message_id);
+        sendmessage($from_id, $built['text'], $backuser, 'HTML');
+        step('cart_to_cart_user', $from_id);
     }
-}
-if (preg_match('/Confirmpay_user_(\w+)_(\w+)/', $datain, $dataget)) {
-    $id_payment = $dataget[1];
-    $id_order = $dataget[2];
-    $Payment_report = select("Payment_report", "*", "id_order", $id_order, "select");
-    if ($Payment_report['payment_Status'] == "paid") {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['Confirmpayadmin'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-        return;
-    }
-    $StatusPayment = StatusPayment($id_payment);
-    if ($StatusPayment['payment_status'] == "finished") {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['finished'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-        $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
-        $Balance_confrim = intval($Balance_id['Balance']) + intval($Payment_report['price']);
-        update("user", "Balance", $Balance_confrim, "id", $Payment_report['id_user']);
-        update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
-        sendmessage($from_id, $textbotlang['users']['Balance']['Confirmpay'], null, 'HTML');
-        $Payment_report['price'] = number_format($Payment_report['price']);
-        $text_report = sprintf($textbotlang['users']['Report']['reportpayiranpay'], $from_id, $Payment_report['price']);
-        if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
-            sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
-        }
-    } elseif ($StatusPayment['payment_status'] == "expired") {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['expired'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-    } elseif ($StatusPayment['payment_status'] == "refunded") {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['refunded'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-    } elseif ($StatusPayment['payment_status'] == "waiting") {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['waiting'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-    } elseif ($StatusPayment['payment_status'] == "sending") {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['sending'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-    } else {
-        telegram(
-            'answerCallbackQuery',
-            array(
-                'callback_query_id' => $callback_query_id,
-                'text' => $textbotlang['users']['Balance']['Failed'],
-                'show_alert' => true,
-                'cache_time' => 5,
-            )
-        );
-    }
+
 } elseif ($user['step'] == "cart_to_cart_user") {
     if (!$photo) {
         sendmessage($from_id, $textbotlang['users']['Balance']['Invalid-receipt'], null, 'HTML');

@@ -312,13 +312,13 @@ $textbotlang['users']['support']['GetMessageOfUser'] = "📥 یک پیام از 
 %s";
 
 
-$textbotlang['users']['Balance']['priceinput'] = "💸 مبلغ را  به تومان وارد کنید:
-✅ حداکثر مبلغ 10.000.000 میلیون و حداقل 300.000 تومان می باشد";
+$textbotlang['users']['Balance']['priceinput'] = "💸 مبلغ را به تومان وارد کنید:
+✅ حداقل %s و حداکثر %s تومان";
 $textbotlang['users']['Balance']['errorprice'] = "❌ خطا 
 💬 لطفا فقط عدد وارد کنید
 اعداد به صورت لاتین (کیبورد روی انگلیسی) باشد";
-$textbotlang['users']['Balance']['errorpricelimit'] = "❌ خطا 
-        💬 مبلغ باید کمتر 10 میلیون تومان و بیشتر از 300.000 تومان باشد";
+$textbotlang['users']['Balance']['errorpricelimit'] = "❌ خطا
+💬 مبلغ باید حداقل %s و حداکثر %s تومان باشد";
 $textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت خود را انتخاب نمایید";
 $textbotlang['users']['Balance']['zarinpal'] = "❌ خطا 
     کمترین مبلغ برای  پرداخت در این درگاه 5000 تومان می باشد.";
@@ -1383,3 +1383,66 @@ $textbotlang['users']['Report']['discountuser'] = "کد هدیه %s استفاد
 🪪 آیدی عددی : <code>%s</code>
 🪪  نام کاربری : @%s
 💰 مبلغ هدیه %s تومان";
+
+$textbotlang['Admin']['deposit']['menu'] = "💰 حداقل / حداکثر واریز";
+$textbotlang['Admin']['deposit']['current'] = "⚙️ تنظیم محدوده واریز
+
+حداقل فعلی: <code>%s</code> تومان
+حداکثر فعلی: <code>%s</code> تومان
+
+حداقل جدید را به تومان (فقط عدد) ارسال کنید:";
+$textbotlang['Admin']['deposit']['getmax'] = "✅ حداقل ذخیره شد: <code>%s</code> تومان
+
+حالا حداکثر را به تومان (فقط عدد) ارسال کنید:";
+$textbotlang['Admin']['deposit']['saved'] = "✅ ذخیره شد
+
+حداقل واریز: <code>%s</code> تومان
+حداکثر واریز: <code>%s</code> تومان
+
+این مقادیر در افزایش اعتبار، خرید سرویس، تمدید و حجم اضافه اعمال می‌شوند.";
+$textbotlang['Admin']['deposit']['invalid'] = "❌ فقط عدد لاتین معتبر وارد کنید.";
+
+
+$textbotlang['Admin']['currency']['set_tron'] = "🔶 آدرس TRON (TRX)";
+$textbotlang['Admin']['currency']['set_gram'] = "💎 آدرس GRAM (گرام)";
+$textbotlang['Admin']['currency']['set_usdt'] = "🟢 آدرس USDT (BEP20)";
+$textbotlang['Admin']['currency']['set_bnb'] = "🟡 آدرس BNB (BEP20)";
+$textbotlang['Admin']['currency']['get_address'] = "📌 آدرس فعلی:
+<code>%s</code>
+
+آدرس جدید را ارسال کنید (یا - برای پاک کردن):";
+$textbotlang['Admin']['currency']['saved'] = "✅ آدرس ذخیره شد.";
+$textbotlang['Admin']['currency']['menu'] = "💎 تنظیم کیف‌پول ارزی ریالی";
+$textbotlang['users']['moeny']['currency_text'] = "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.
+نرخ تقریبی از والکس:
+
+🔶 <b>TRON (TRX)</b>
+مبلغ واریزی: <code>%s</code> TRX
+آدرس:
+<code>%s</code>
+
+💎 <b>TON</b>
+مبلغ واریزی: <code>%s</code> TON
+آدرس:
+<code>%s</code>
+
+🟢 <b>USDT (BEP20)</b>
+مبلغ واریزی: <code>%s</code> USDT
+آدرس:
+<code>%s</code>
+
+⚠️ مبلغ را دقیقاً مطابق عدد بالا واریز کنید.
+🌅 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.";
+$textbotlang['users']['moeny']['currency_rate_error'] = "❌ دریافت نرخ از والکس ممکن نشد. لطفاً چند دقیقه بعد دوباره تلاش کنید.";
+$textbotlang['users']['moeny']['currency_empty'] = "❌ در حال حاضر آدرس کیف‌پول ارزی تنظیم نشده است. با پشتیبانی در ارتباط باشید.";
+
+
+$textbotlang['users']['moeny']['currency_text_header'] = "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.
+نرخ تقریبی از والکس:
+";
+$textbotlang['users']['moeny']['currency_text_footer'] = "
+
+⚠️ مبلغ را دقیقاً مطابق عدد بالا واریز کنید.
+🌅 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.";
+$textbotlang['Admin']['currency']['toggle_hint'] = "برای روشن/خاموش کردن نمایش هر ارز روی دکمه وضعیت بزنید.
+برای ثبت آدرس، روی نام ارز بزنید.";

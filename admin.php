@@ -1219,25 +1219,15 @@ if ($text == $textbotlang['Admin']['managepanel']['methodusername']) {
 
 if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
     $sqlstatus_cart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select")['ValuePay'];
-    $sqlstatus_nowpayment = select("PaySetting", "ValuePay", "NamePay", "nowpaymentstatus", "select")['ValuePay'];
     $sqlstatus_iranpay = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select")['ValuePay'];
-    $sqlstatus_aqayepardakht = select("PaySetting", "ValuePay", "NamePay", "statusaqayepardakht", "select")['ValuePay'];
     $status_cart = [
         'oncard' => $textbotlang['Admin']['turnon'],
         'offcard' => $textbotlang['Admin']['turnoff'],
     ][$sqlstatus_cart];
-    $status_nowpayment = [
-        'onnowpayment' => $textbotlang['Admin']['turnon'],
-        'offnowpayment' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_nowpayment];
     $status_iranpay = [
         'ondigi' => $textbotlang['Admin']['turnon'],
         'offdigi' => $textbotlang['Admin']['turnoff'],
     ][$sqlstatus_iranpay];
-    $status_qayepardakht = [
-        'onaqayepardakht' => $textbotlang['Admin']['turnon'],
-        'offaqayepardakht' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_aqayepardakht];
     $keyboardmoeny = json_encode([
         'inline_keyboard' => [
             [
@@ -1246,18 +1236,12 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
                 ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'], 'callback_data' => "none"],
             ],
             [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "SettingnowPayment"],
-                ['text' => $status_nowpayment, 'callback_data' => "editpay-nowpayment-" . $sqlstatus_nowpayment],
-                ['text' => $textbotlang['users']['moeny']['nowpayment_gateway_status'], 'callback_data' => "none"],
-            ],
-            [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "Settingaqayepardakht"],
-                ['text' => $status_qayepardakht, 'callback_data' => "editpay-aqayepardakht-" . $sqlstatus_aqayepardakht],
-                ['text' => $textbotlang['users']['moeny']['mr_payment_gateway'], 'callback_data' => "none"],
-            ],
-            [
+                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "setting_currency_wallets"],
                 ['text' => $status_iranpay, 'callback_data' => "editpay-iranpay-" . $sqlstatus_iranpay],
                 ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'], 'callback_data' => "none"],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['deposit']['menu'], 'callback_data' => "deposit_limits_settings"],
             ],
         ]
     ]);
@@ -1295,25 +1279,15 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
         update("PaySetting", "ValuePay", $value, "NamePay", "statusaqayepardakht");
     }
     $sqlstatus_cart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select")['ValuePay'];
-    $sqlstatus_nowpayment = select("PaySetting", "ValuePay", "NamePay", "nowpaymentstatus", "select")['ValuePay'];
     $sqlstatus_iranpay = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select")['ValuePay'];
-    $sqlstatus_aqayepardakht = select("PaySetting", "ValuePay", "NamePay", "statusaqayepardakht", "select")['ValuePay'];
     $status_cart = [
         'oncard' => $textbotlang['Admin']['turnon'],
         'offcard' => $textbotlang['Admin']['turnoff'],
     ][$sqlstatus_cart];
-    $status_nowpayment = [
-        'onnowpayment' => $textbotlang['Admin']['turnon'],
-        'offnowpayment' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_nowpayment];
     $status_iranpay = [
         'ondigi' => $textbotlang['Admin']['turnon'],
         'offdigi' => $textbotlang['Admin']['turnoff'],
     ][$sqlstatus_iranpay];
-    $status_qayepardakht = [
-        'onaqayepardakht' => $textbotlang['Admin']['turnon'],
-        'offaqayepardakht' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_aqayepardakht];
     $keyboardmoeny = json_encode([
         'inline_keyboard' => [
             [
@@ -1322,18 +1296,12 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
                 ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'], 'callback_data' => "none"],
             ],
             [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "SettingnowPayment"],
-                ['text' => $status_nowpayment, 'callback_data' => "editpay-nowpayment-" . $sqlstatus_nowpayment],
-                ['text' => $textbotlang['users']['moeny']['nowpayment_gateway_status'], 'callback_data' => "none"],
-            ],
-            [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "Settingaqayepardakht"],
-                ['text' => $status_qayepardakht, 'callback_data' => "editpay-aqayepardakht-" . $sqlstatus_aqayepardakht],
-                ['text' => $textbotlang['users']['moeny']['mr_payment_gateway'], 'callback_data' => "none"],
-            ],
-            [
+                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "setting_currency_wallets"],
                 ['text' => $status_iranpay, 'callback_data' => "editpay-iranpay-" . $sqlstatus_iranpay],
                 ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'], 'callback_data' => "none"],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['deposit']['menu'], 'callback_data' => "deposit_limits_settings"],
             ],
         ]
     ]);
@@ -2480,3 +2448,97 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     sendmessage($from_id, $textbotlang['Admin']['addorder']['added_order'], $keyboardadmin, 'HTML');
     step('home', $from_id);
 }
+
+#----------------[ Deposit min/max ]------------------#
+if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_limits_settings") {
+    ensurePaySetting('min_deposit', '300000');
+    ensurePaySetting('max_deposit', '10000000');
+    $lim = getDepositLimits();
+    sendmessage($from_id, sprintf(
+        $textbotlang['Admin']['deposit']['current'],
+        formatToman($lim['min']),
+        formatToman($lim['max'])
+    ), $backadmin, 'HTML');
+    step('deposit_set_min', $from_id);
+} elseif ($user['step'] == 'deposit_set_min') {
+    if (!is_numeric($text) || intval($text) < 1000) {
+        sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'], $backadmin, 'HTML');
+        return;
+    }
+    ensurePaySetting('min_deposit', '300000');
+    update("PaySetting", "ValuePay", strval(intval($text)), "NamePay", "min_deposit");
+    sendmessage($from_id, sprintf($textbotlang['Admin']['deposit']['getmax'], formatToman(intval($text))), $backadmin, 'HTML');
+    step('deposit_set_max', $from_id);
+} elseif ($user['step'] == 'deposit_set_max') {
+    if (!is_numeric($text) || intval($text) < 1000) {
+        sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'], $backadmin, 'HTML');
+        return;
+    }
+    $min = intval(getPaySettingValue('min_deposit', '300000'));
+    $max = intval($text);
+    if ($max < $min) {
+        sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'] . "\nحداکثر باید بزرگ‌تر یا مساوی حداقل باشد.", $backadmin, 'HTML');
+        return;
+    }
+    ensurePaySetting('max_deposit', '10000000');
+    update("PaySetting", "ValuePay", strval($max), "NamePay", "max_deposit");
+    $lim = getDepositLimits();
+    sendmessage($from_id, sprintf(
+        $textbotlang['Admin']['deposit']['saved'],
+        formatToman($lim['min']),
+        formatToman($lim['max'])
+    ), $keyboardadmin, 'HTML');
+    step('home', $from_id);
+}
+
+
+
+
+#----------------[ Currency wallets ]------------------#
+if ($datain == "setting_currency_wallets") {
+    ensureCurrencyPaySettings();
+    sendmessage(
+        $from_id,
+        ($textbotlang['Admin']['currency']['menu'] ?? 'تنظیم کیف‌پول ارزی') . "\n\n" . ($textbotlang['Admin']['currency']['toggle_hint'] ?? ''),
+        buildCurrencyAdminKeyboard(),
+        'HTML'
+    );
+}
+if (preg_match('/^cur_toggle_(\w+)$/', strval($datain), $mcur)) {
+    $coin = $mcur[1];
+    $meta = getCurrencyCoinsMeta()[$coin] ?? null;
+    if ($meta) {
+        ensurePaySetting($meta['enabled_key'], '1');
+        $cur = isCurrencyCoinEnabled($coin) ? '0' : '1';
+        update("PaySetting", "ValuePay", $cur, "NamePay", $meta['enabled_key']);
+        telegram('editMessageReplyMarkup', [
+            'chat_id' => $from_id,
+            'message_id' => $message_id,
+            'reply_markup' => buildCurrencyAdminKeyboard(),
+        ]);
+    }
+}
+if (preg_match('/^cur_setaddr_(\w+)$/', strval($datain), $mcur)) {
+    $coin = $mcur[1];
+    $meta = getCurrencyCoinsMeta()[$coin] ?? null;
+    if ($meta) {
+        update("user", "Processing_value", $coin, "id", $from_id);
+        $cur = getCurrencyWalletAddress($coin);
+        if ($cur === '') $cur = '-';
+        sendmessage($from_id, sprintf($textbotlang['Admin']['currency']['get_address'], $cur), $backadmin, 'HTML');
+        step('set_wallet_coin', $from_id);
+    }
+} elseif ($user['step'] == 'set_wallet_coin') {
+    $coin = $user['Processing_value'];
+    $meta = getCurrencyCoinsMeta()[$coin] ?? null;
+    if (!$meta) {
+        step('home', $from_id);
+        return;
+    }
+    $val = ($text === '-') ? '' : trim($text);
+    ensurePaySetting($meta['wallet_key'], '');
+    update("PaySetting", "ValuePay", $val, "NamePay", $meta['wallet_key']);
+    sendmessage($from_id, $textbotlang['Admin']['currency']['saved'], buildCurrencyAdminKeyboard(), 'HTML');
+    step('home', $from_id);
+}
+

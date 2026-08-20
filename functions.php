@@ -115,6 +115,234 @@ function tronratee()
     $tronrate['result']['TRX'] = intval($requeststron['Price'] * $tronrate['result']['USD']);
     return $tronrate;
 }
+
+/**
+ * نرخ‌های تومانی از نوبیتکس (قیمت هر واحد ارز به تومان)
+ * کلیدها: usdt, trx, ton  — در صورت خطا null
+ */
+
+/**
+ * نرخ تومانی هر واحد ارز از والکس
+ * @return array{usdt:?float,trx:?float,ton:?float}
+ */
+
+/**
+ * تنظیمات ارزهای قابل واریز (ارزی ریالی)
+ * enabled_key / wallet_key در PaySetting
+ */
+function getCurrencyCoinsMeta()
+{
+    return [
+        'trx' => [
+            'title' => '🔶 TRON (TRX)',
+            'unit' => 'TRX',
+            'wallet_key' => 'wallet_tron',
+            'enabled_key' => 'currency_show_trx',
+            'rate_symbols' => ['TRXTMN', 'TRXIRT', 'TRX-TMN'],
+        ],
+        'gram' => [
+            'title' => '💎 GRAM (گرام)',
+            'unit' => 'GRAM',
+            'wallet_key' => 'wallet_gram',
+            'enabled_key' => 'currency_show_gram',
+            // گرام جایگزین TON در والکس — نمادهای احتمالی
+            'rate_symbols' => ['GRAMTMN', 'GRAMIRT', 'TONTMN', 'TONIRT', 'TON-TMN'],
+            'legacy_wallet_key' => 'wallet_ton',
+        ],
+        'usdt' => [
+            'title' => '🟢 USDT (BEP20)',
+            'unit' => 'USDT',
+            'wallet_key' => 'wallet_usdt_bep20',
+            'enabled_key' => 'currency_show_usdt',
+            'rate_symbols' => ['USDTTMN', 'USDTIRT', 'USDT-TMN'],
+        ],
+        'bnb' => [
+            'title' => '🟡 BNB (BEP20)',
+            'unit' => 'BNB',
+            'wallet_key' => 'wallet_bnb',
+            'enabled_key' => 'currency_show_bnb',
+            'rate_symbols' => ['BNBTMN', 'BNBIRT', 'BNB-TMN'],
+        ],
+    ];
+}
+
+function ensureCurrencyPaySettings()
+{
+    foreach (getCurrencyCoinsMeta() as $coin => $meta) {
+        ensurePaySetting($meta['wallet_key'], '');
+        ensurePaySetting($meta['enabled_key'], '1'); // پیش‌فرض روشن
+        if (!empty($meta['legacy_wallet_key'])) {
+            ensurePaySetting($meta['legacy_wallet_key'], '');
+        }
+    }
+}
+
+function getCurrencyWalletAddress($coin)
+{
+    $meta = getCurrencyCoinsMeta()[$coin] ?? null;
+    if (!$meta) {
+        return '';
+    }
+    $addr = trim((string) getPaySettingValue($meta['wallet_key'], ''));
+    if ($addr === '' && !empty($meta['legacy_wallet_key'])) {
+        $addr = trim((string) getPaySettingValue($meta['legacy_wallet_key'], ''));
+    }
+    return $addr;
+}
+
+function isCurrencyCoinEnabled($coin)
+{
+    $meta = getCurrencyCoinsMeta()[$coin] ?? null;
+    if (!$meta) {
+        return false;
+    }
+    ensurePaySetting($meta['enabled_key'], '1');
+    $v = getPaySettingValue($meta['enabled_key'], '1');
+    return ($v === '1' || $v === 'on' || $v === 'true');
+}
+
+/**
+ * نرخ تومانی از والکس
+ * @return array<string,?float>
+ */
+function getCryptoRatesToman()
+{
+    $meta = getCurrencyCoinsMeta();
+    $out = [];
+    foreach ($meta as $coin => $_) {
+        $out[$coin] = null;
+    }
+    $raw = null;
+    if (function_exists('curl_init')) {
+        $ch = curl_init('https://api.wallex.ir/v1/markets');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 8,
+            CURLOPT_HTTPHEADER => ['Accept: application/json', 'User-Agent: MirzaBot'],
+        ]);
+        $raw = curl_exec($ch);
+        $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+        curl_close($ch);
+        if ($code < 200 || $code >= 300) {
+            $raw = null;
+        }
+    }
+    if (!$raw) {
+        $raw = @file_get_contents('https://api.wallex.ir/v1/markets', false, stream_context_create([
+            'http' => ['timeout' => 10, 'header' => "Accept: application/json\r\nUser-Agent: MirzaBot\r\n"],
+        ]));
+    }
+    if (!$raw) {
+        return $out;
+    }
+    $data = json_decode($raw, true);
+    if (!is_array($data)) {
+        return $out;
+    }
+    $symbols = $data['result']['symbols'] ?? $data['symbols'] ?? null;
+    if (!is_array($symbols)) {
+        return $out;
+    }
+    foreach ($meta as $coin => $info) {
+        foreach ($info['rate_symbols'] as $sym) {
+            if (!isset($symbols[$sym]) || !is_array($symbols[$sym])) {
+                continue;
+            }
+            $st = $symbols[$sym]['stats'] ?? $symbols[$sym];
+            foreach (['lastPrice', 'bidPrice', 'askPrice'] as $fk) {
+                if (isset($st[$fk]) && is_numeric($st[$fk]) && floatval($st[$fk]) > 0) {
+                    $out[$coin] = floatval($st[$fk]);
+                    break 2;
+                }
+            }
+        }
+    }
+    return $out;
+}
+
+
+function buildCurrencyAdminKeyboard()
+{
+    global $textbotlang;
+    ensureCurrencyPaySettings();
+    $rows = [];
+    foreach (getCurrencyCoinsMeta() as $coin => $meta) {
+        $enabled = isCurrencyCoinEnabled($coin);
+        $status = $enabled ? '✅ نمایش' : '❌ مخفی';
+        $addr = getCurrencyWalletAddress($coin);
+        $addr_short = $addr !== '' ? (mb_substr($addr, 0, 10) . '…') : 'بدون آدرس';
+        $rows[] = [
+            ['text' => $meta['title'] . ' | ' . $addr_short, 'callback_data' => 'cur_setaddr_' . $coin],
+            ['text' => $status, 'callback_data' => 'cur_toggle_' . $coin],
+        ];
+    }
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+
+function getNobitexRates()
+{
+    return getCryptoRatesToman();
+}
+
+function formatCryptoAmount($tomanAmount, $rateToman)
+{
+    if ($rateToman === null || $rateToman <= 0) {
+        return '—';
+    }
+    $amt = floatval($tomanAmount) / floatval($rateToman);
+    if ($amt >= 100) {
+        return rtrim(rtrim(number_format($amt, 2, '.', ''), '0'), '.');
+    }
+    if ($amt >= 1) {
+        return rtrim(rtrim(number_format($amt, 4, '.', ''), '0'), '.');
+    }
+    return rtrim(rtrim(number_format($amt, 6, '.', ''), '0'), '.');
+}
+
+/**
+ * ساخت متن پرداخت ارزی برای کاربر
+ */
+function buildCurrencyPaymentText($amount_toman)
+{
+    global $textbotlang;
+    ensureCurrencyPaySettings();
+    $rates = getCryptoRatesToman();
+    $lines = [];
+    $any = false;
+    $has_rate = false;
+    foreach (getCurrencyCoinsMeta() as $coin => $meta) {
+        if (!isCurrencyCoinEnabled($coin)) {
+            continue;
+        }
+        $addr = getCurrencyWalletAddress($coin);
+        if ($addr === '') {
+            continue;
+        }
+        $any = true;
+        $rate = $rates[$coin] ?? null;
+        if ($rate !== null) {
+            $has_rate = true;
+        }
+        $amt = formatCryptoAmount($amount_toman, $rate);
+        $lines[] = $meta['title']
+            . "\nمبلغ واریزی: <code>{$amt}</code> {$meta['unit']}"
+            . "\nآدرس:\n<code>{$addr}</code>";
+    }
+    if (!$any) {
+        return ['ok' => false, 'error' => 'empty'];
+    }
+    if (!$has_rate) {
+        return ['ok' => false, 'error' => 'rate'];
+    }
+    $header = sprintf(
+        $textbotlang['users']['moeny']['currency_text_header'] ?? "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.\nنرخ تقریبی از والکس:\n",
+        number_format(intval($amount_toman), 0)
+    );
+    $footer = $textbotlang['users']['moeny']['currency_text_footer'] ?? "\n\n⚠️ مبلغ را دقیقاً مطابق عدد بالا واریز کنید.\n🌅 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.";
+    return ['ok' => true, 'text' => $header . "\n" . implode("\n\n", $lines) . $footer];
+}
+
 function nowPayments($payment, $price_amount, $order_id, $order_description)
 {
     global $domainhosts;
@@ -620,6 +848,85 @@ function channel($id_channel)
         return $channel_link;
     }
 }
+
+function ensurePaySetting($name, $value)
+{
+    global $pdo;
+    $row = select("PaySetting", "ValuePay", "NamePay", $name, "select");
+    if ($row === false || $row === null) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO PaySetting (NamePay, ValuePay) VALUES (?, ?)");
+            $stmt->execute([$name, $value]);
+        } catch (Throwable $e) {
+        }
+    }
+}
+
+function getPaySettingValue($name, $default = '')
+{
+    $row = select("PaySetting", "ValuePay", "NamePay", $name, "select");
+    if ($row === false || $row === null || !isset($row['ValuePay']) || $row['ValuePay'] === '') {
+        return $default;
+    }
+    return $row['ValuePay'];
+}
+
+/** حداقل و حداکثر مبلغ واریز/فاکتور (تومان) */
+function getDepositLimits()
+{
+    ensurePaySetting('min_deposit', '300000');
+    ensurePaySetting('max_deposit', '10000000');
+    $min = intval(getPaySettingValue('min_deposit', '300000'));
+    $max = intval(getPaySettingValue('max_deposit', '10000000'));
+    if ($min < 1000) {
+        $min = 1000;
+    }
+    if ($max < $min) {
+        $max = $min;
+    }
+    return ['min' => $min, 'max' => $max];
+}
+
+function formatToman($amount)
+{
+    return number_format(intval($amount), 0);
+}
+
+/**
+ * مبلغ برای ساخت فاکتور پرداخت مجاز است؟
+ * @return true|string  true یا متن خطا
+ */
+function validateDepositAmount($amount)
+{
+    $lim = getDepositLimits();
+    $amount = intval($amount);
+    if ($amount < $lim['min'] || $amount > $lim['max']) {
+        return sprintf(
+            "❌ مبلغ باید حداقل %s و حداکثر %s تومان باشد.",
+            formatToman($lim['min']),
+            formatToman($lim['max'])
+        );
+    }
+    return true;
+}
+
+/**
+ * وقتی کسری موجودی کمتر از حداقل واریز است — نمی‌توان فاکتور ساخت
+ */
+function msgShortfallBelowMin($context = 'buy')
+{
+    $lim = getDepositLimits();
+    $minf = formatToman($lim['min']);
+    $map = [
+        'buy' => "سپس دوباره برای خرید سرویس اقدام نمایید.",
+        'extend' => "سپس دوباره برای تمدید اقدام نمایید.",
+        'extra' => "سپس دوباره حجم اضافه بخرید.",
+        'pay' => "لطفاً از بخش افزایش اعتبار حداقل این مبلغ را واریز کنید.",
+    ];
+    $tail = $map[$context] ?? $map['pay'];
+    return "❌ مبلغ پرداختی این خرید کمتر از {$minf} تومان است.\n\nابتدا از بخش افزایش اعتبار حداقل {$minf} تومان واریز کنید، {$tail}";
+}
+
 function addFieldToTable($tableName, $fieldName, $defaultValue = null, $datatype = "VARCHAR(500)")
 {
     global $pdo;
