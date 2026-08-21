@@ -1,5 +1,41 @@
 #!/bin/bash
 
+
+# Ensure /root/install.sh exists and mirza command is linked
+ensure_mirza_cli() {
+    local src=""
+    # Prefer current script path if running from a real file
+    if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+        src="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+    fi
+    if [ -z "$src" ] || [ ! -f "$src" ]; then
+        if [ -f "/var/www/html/mirzabotconfig/install.sh" ]; then
+            src="/var/www/html/mirzabotconfig/install.sh"
+        elif [ -f "/root/install.sh" ]; then
+            src="/root/install.sh"
+        fi
+    fi
+    if [ -n "$src" ] && [ -f "$src" ]; then
+        if [ "$src" != "/root/install.sh" ]; then
+            sudo cp -f "$src" /root/install.sh 2>/dev/null || cp -f "$src" /root/install.sh
+        fi
+    fi
+    # Last resort: download from GitHub fork
+    if [ ! -f "/root/install.sh" ]; then
+        echo -e "\e[33mDownloading install.sh to /root/install.sh ...\033[0m"
+        curl -fsSL -o /root/install.sh "https://raw.githubusercontent.com/mhmdh94/botmirzapanel/main/install.sh" 2>/dev/null \
+            || wget -q -O /root/install.sh "https://raw.githubusercontent.com/mhmdh94/botmirzapanel/main/install.sh" 2>/dev/null || true
+    fi
+    if [ -f "/root/install.sh" ]; then
+        sudo chmod +x /root/install.sh 2>/dev/null || chmod +x /root/install.sh
+        sudo ln -vsf /root/install.sh /usr/local/bin/mirza 2>/dev/null || ln -vsf /root/install.sh /usr/local/bin/mirza
+        echo -e "\e[92mmirza command linked successfully.\033[0m"
+    else
+        echo -e "\e[93mWarning: Could not set up /root/install.sh — bot install is fine; run install manually later if needed.\033[0m"
+    fi
+}
+
+
 # echo ""
 # echo "███╗   ███╗██╗██████╗ ███████╗ █████╗  ██████╗  █████╗ ███╗   ██╗███████╗██╗   "
 # echo "████╗ ████║██║██╔══██╗╚══███╔╝██╔══██╗ ██╔══██╗██╔══██╗████╗  ██║██╔════╝██║   "
@@ -759,8 +795,7 @@ echo -e "$text_to_save" >> /var/www/html/mirzabotconfig/config.php
     fi
 
     # Add executable permission and link
-    chmod +x /root/install.sh
-    ln -vs /root/install.sh /usr/local/bin/mirza
+    ensure_mirza_cli
 
 }
 
@@ -1288,8 +1323,7 @@ EOF
     echo -e "\033[33mDatabase password: \033[36m$DB_PASSWORD\033[0m"
 
     # Add executable permission and link
-    chmod +x /root/install.sh
-    ln -vs /root/install.sh /usr/local/bin/mirza
+    ensure_mirza_cli
 }
 
 # Update Function
@@ -1391,13 +1425,7 @@ function update_bot() {
     echo -e "\n\e[92mMirza Bot updated to latest version successfully!\033[0m"
 
     # Ensure /root/install.sh is executable and linked
-    if [ -f "/root/install.sh" ]; then
-        sudo chmod +x /root/install.sh
-        sudo ln -vsf /root/install.sh /usr/local/bin/mirza
-        echo -e "\e[92mEnsured /root/install.sh is executable and 'mirza' command is linked.\033[0m"
-    else
-        echo -e "\e[91mError: /root/install.sh not found after update attempt. Cannot make it executable or link 'mirza' command.\033[0m"
-    fi
+    ensure_mirza_cli
 }
 
 # Delete Function
