@@ -2037,9 +2037,33 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $username_ac = $dataoutput['username_final'];
     }
     if ($dataoutput['username'] == null) {
-        $dataoutput['msg'] = json_encode($dataoutput['msg']);
-        sendmessage($from_id, $textbotlang['users']['sell']['ErrorConfig'], $keyboard, 'HTML');
-        $texterros = sprintf($textbotlang['users']['buy']['errorInCreate'], $dataoutput['msg'], $from_id, $username);
+        $err_msg = formatPanelErrorMsg($dataoutput['msg'] ?? null);
+        // در این مسیر موجودی بعد از ساخت موفق کم می‌شود؛ پس اگر به اینجا رسیده‌ایم معمولاً پولی کم نشده
+        $price_try = intval($priceproduct ?? 0);
+        $bal_before = intval($user['Balance'] ?? 0);
+        $bal_now_row = select("user", "Balance", "id", $from_id, "select");
+        $bal_now = is_array($bal_now_row) ? intval($bal_now_row['Balance'] ?? 0) : $bal_before;
+        $refunded = 0;
+        if ($price_try > 0 && $bal_now < $bal_before) {
+            $refunded = refundBalanceIfDeducted($from_id, $price_try, $bal_before);
+        }
+        if ($refunded > 0) {
+            $price_fmt = number_format($refunded);
+            sendmessage($from_id, "❌ در ساخت سرویس خطایی رخ داد.
+
+💰 مبلغ {$price_fmt} تومان به کیف پول شما برگشت داده شد.
+لطفاً دوباره تلاش کنید.", $keyboard, 'HTML');
+            $admin_extra = "
+
+💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
+        } else {
+            sendmessage($from_id, $textbotlang['users']['sell']['ErrorConfig'], $keyboard, 'HTML');
+            $admin_extra = "
+
+ℹ️ موجودی کاربر کم نشده بود؛ برگشت وجه انجام نشد.";
+        }
+        $texterros = sprintf($textbotlang['users']['buy']['errorInCreate'], $err_msg, $from_id, $username);
+        $texterros .= $admin_extra;
         foreach ($admin_ids as $admin) {
             sendmessage($admin, $texterros, null, 'HTML');
         }

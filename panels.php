@@ -29,10 +29,22 @@ class ManagePanel
             //create user
             $ConnectToPanel = adduser($usernameC, $expire, $data_limit, $Get_Data_Panel['name_panel'], $is_test);
             $data_Output = json_decode($ConnectToPanel, true);
-            if (isset($data_Output['detail']) && $data_Output['detail']) {
+            if (!is_array($data_Output)) {
+                $Output['status'] = 'Unsuccessful';
+                $Output['msg'] = 'پاسخ خالی یا نامعتبر از پنل';
+                $Output['username'] = null;
+            } elseif (isset($data_Output['detail']) && $data_Output['detail']) {
                 $Output['status'] = 'Unsuccessful';
                 $Output['msg'] = $data_Output['detail'];
+                $Output['username'] = null;
+            } elseif (empty($data_Output['username'])) {
+                $Output['status'] = 'Unsuccessful';
+                $Output['msg'] = $data_Output['msg'] ?? $data_Output['message'] ?? 'ساخت کاربر ناموفق (بدون نام کاربری در پاسخ پنل)';
+                $Output['username'] = null;
             } else {
+                if (!isset($data_Output['subscription_url'])) {
+                    $data_Output['subscription_url'] = '';
+                }
                 if (!preg_match('/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?((\/[^\s\/]+)+)?$/', $data_Output['subscription_url'])) {
                     $data_Output['subscription_url'] = $Get_Data_Panel['url_panel'] . "/" . ltrim($data_Output['subscription_url'], "/");
                 }

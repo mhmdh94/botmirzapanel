@@ -464,6 +464,64 @@ function generateAvailableUsername($panel_name)
  * 2) یوزرنیم تکراری → دو رقم رندوم به انتها + ساخت دوباره (تا ۳ بار)
  * سایر ارورها: بدون تلاش اضافه (مسیر برگشت پول و ... مثل قبل می‌ماند)
  */
+
+/**
+ * نرمال‌سازی پیام خطای پنل برای نمایش به ادمین/کاربر
+ */
+function formatPanelErrorMsg($msg)
+{
+    if (is_array($msg) || is_object($msg)) {
+        $msg = json_encode($msg, JSON_UNESCAPED_UNICODE);
+    }
+    if ($msg === null || $msg === '' || $msg === false) {
+        return 'پاسخ نامعتبر از پنل (بدون متن خطا)';
+    }
+    $msg = trim((string) $msg);
+    if ($msg === '' || strtolower($msg) === 'null' || $msg === '[]' || $msg === '{}') {
+        return 'پاسخ نامعتبر از پنل (بدون متن خطا)';
+    }
+    // جلوگیری از پیام خیلی بلند
+    if (mb_strlen($msg, 'UTF-8') > 500) {
+        $msg = mb_substr($msg, 0, 500, 'UTF-8') . '…';
+    }
+    return $msg;
+}
+
+/**
+ * برگشت مبلغ به کیف پول فقط اگر واقعاً از موجودی کم شده باشد
+ * (با مقایسه موجودی قبل/بعد یا مبلغ مشخص)
+ * @return int مبلغ برگشتی (0 اگر برنگشت)
+ */
+function refundBalanceIfDeducted($user_id, $amount, $balance_before = null)
+{
+    $amount = intval($amount);
+    if ($amount <= 0) {
+        return 0;
+    }
+    $row = select("user", "Balance", "id", $user_id, "select");
+    if (!is_array($row)) {
+        return 0;
+    }
+    $current = intval($row['Balance'] ?? 0);
+    // اگر موجودی قبل داده شده و کم نشده → چیزی برنگردان
+    if ($balance_before !== null) {
+        $before = intval($balance_before);
+        if ($current >= $before) {
+            return 0;
+        }
+        // فقط به اندازه کسری واقعی (حداکثر amount)
+        $need = min($amount, $before - $current);
+        if ($need <= 0) {
+            return 0;
+        }
+        update("user", "Balance", $current + $need, "id", $user_id);
+        return $need;
+    }
+    // بدون balance_before: فرض بر این است که caller مطمئن است باید برگردد
+    update("user", "Balance", $current + $amount, "id", $user_id);
+    return $amount;
+}
+
 function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test = false)
 {
     global $ManagePanel;
@@ -598,19 +656,39 @@ function DirectPayment($order_id)
         }
 
         if ($dataoutput['username'] == null) {
-            $dataoutput['msg'] = json_encode($dataoutput['msg'] ?? $dataoutput);
-            // کارت‌به‌کارت تایید شده ولی ساخت سرویس ناموفق → مبلغ به کیف پول برمی‌گردد تا کاربر ضرر نکند
-            $credit = intval($Balance_id['Balance']) + intval($Payment_report['price']);
-            update("user", "Balance", $credit, "id", $Payment_report['id_user']);
+            $err_msg = formatPanelErrorMsg($dataoutput['msg'] ?? null);
+            $pay_amount = intval($Payment_report['price']);
+            $refunded = refundBalanceIfDeducted($Payment_report['id_user'], $pay_amount, null);
             update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
-            $price_fmt = number_format(intval($Payment_report['price']));
-            $msg_user = "❌ در ساخت سرویس خطایی رخ داد.\n\n"
-                . "💰 مبلغ {$price_fmt} تومان به کیف پول شما برگشت داده شد.\n"
-                . "لطفاً دوباره از منو مراحل خرید را انجام دهید.\n\n"
-                . "🛒 کد پیگیری: {$order_id}";
+            $price_fmt = number_format($pay_amount);
+            if ($refunded > 0) {
+                $msg_user = "❌ در ساخت سرویس خطایی رخ داد.
+
+"
+                    . "💰 مبلغ {$price_fmt} تومان به کیف پول شما برگشت داده شد.
+"
+                    . "لطفاً دوباره از منو مراحل خرید را انجام دهید.
+
+"
+                    . "🛒 کد پیگیری: {$order_id}";
+                $admin_extra = "
+
+💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
+            } else {
+                $msg_user = "❌ در ساخت سرویس خطایی رخ داد.
+
+"
+                    . "لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.
+
+"
+                    . "🛒 کد پیگیری: {$order_id}";
+                $admin_extra = "
+
+ℹ️ مبلغی به کیف پول اضافه نشد.";
+            }
             sendmessage($Balance_id['id'], $msg_user, $keyboard, 'HTML');
-            $texterros = sprintf($textbotlang['users']['buy']['errorInCreate'], $dataoutput['msg'], $Balance_id['id'], $Balance_id['username']);
-            $texterros .= "\n\n💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
+            $texterros = sprintf($textbotlang['users']['buy']['errorInCreate'], $err_msg, $Balance_id['id'], $Balance_id['username']);
+            $texterros .= $admin_extra;
             foreach ($admin_ids as $admin) {
                 sendmessage($admin, $texterros, null, 'HTML');
             }
