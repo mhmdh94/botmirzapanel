@@ -1243,6 +1243,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
             [
                 ['text' => $textbotlang['Admin']['deposit']['menu'], 'callback_data' => "deposit_limits_settings"],
             ],
+            [
+                ['text' => $textbotlang['Admin']['balance_pkg']['menu'], 'callback_data' => "balance_packages_settings"],
+            ],
         ]
     ]);
     sendmessage($from_id, $textbotlang['users']['moeny']['settingpay'], $keyboardmoeny, 'HTML');
@@ -1302,6 +1305,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
             ],
             [
                 ['text' => $textbotlang['Admin']['deposit']['menu'], 'callback_data' => "deposit_limits_settings"],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['balance_pkg']['menu'], 'callback_data' => "balance_packages_settings"],
             ],
         ]
     ]);
@@ -2574,4 +2580,66 @@ if ($datain == "cur_discount_set") {
     $pshow = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.');
     sendmessage($from_id, sprintf($textbotlang['Admin']['currency']['discount_saved'], $pshow), buildCurrencyAdminKeyboard(), 'HTML');
     step('home', $from_id);
+}
+
+
+#----------------[ Balance packages ]------------------#
+if ($datain == "balance_packages_settings") {
+    $list = getBalancePackages();
+    $msg = $textbotlang['Admin']['balance_pkg']['list'];
+    if (count($list) == 0) {
+        $msg .= "\n\n" . ($textbotlang['Admin']['balance_pkg']['empty'] ?? '');
+    }
+    sendmessage($from_id, $msg, buildBalancePackageAdminKeyboard(), 'HTML');
+}
+if ($datain == "balpkgadm_back") {
+    sendmessage($from_id, $textbotlang['users']['selectoption'] ?? "یک گزینه را انتخاب کنید", $keyboardadmin, 'HTML');
+    step('home', $from_id);
+}
+if ($datain == "balpkgadm_add") {
+
+    sendmessage($from_id, $textbotlang['Admin']['balance_pkg']['get_amount'], $backadmin, 'HTML');
+    step('balpkg_add_amount', $from_id);
+} elseif ($user['step'] == 'balpkg_add_amount') {
+    if (!is_numeric($text) || intval($text) < 1000) {
+        sendmessage($from_id, "❌ مبلغ معتبر وارد کنید.", $backadmin, 'HTML');
+        return;
+    }
+    update("user", "Processing_value", strval(intval($text)), "id", $from_id);
+    sendmessage($from_id, $textbotlang['Admin']['balance_pkg']['get_discount'], $backadmin, 'HTML');
+    step('balpkg_add_discount', $from_id);
+} elseif ($user['step'] == 'balpkg_add_discount') {
+    if (!is_numeric($text) || floatval($text) < 0 || floatval($text) > 90) {
+        sendmessage($from_id, "❌ درصد بین 0 تا 90 باشد.", $backadmin, 'HTML');
+        return;
+    }
+    $amount = intval($user['Processing_value']);
+    $discount = floatval($text);
+    $list = getBalancePackages();
+    $list[] = [
+        'id' => bin2hex(random_bytes(4)),
+        'amount' => $amount,
+        'discount' => $discount,
+        'title' => '',
+    ];
+    saveBalancePackages($list);
+    sendmessage($from_id, $textbotlang['Admin']['balance_pkg']['saved'], buildBalancePackageAdminKeyboard(), 'HTML');
+    step('home', $from_id);
+}
+if (preg_match('/^balpkgadm_del_(.+)$/', strval($datain), $m_del)) {
+    $id = $m_del[1];
+    $list = array_values(array_filter(getBalancePackages(), function ($p) use ($id) {
+        return $p['id'] !== $id;
+    }));
+    saveBalancePackages($list);
+    telegram('editMessageReplyMarkup', [
+        'chat_id' => $from_id,
+        'message_id' => $message_id,
+        'reply_markup' => buildBalancePackageAdminKeyboard(),
+    ]);
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => $callback_query_id,
+        'text' => $textbotlang['Admin']['balance_pkg']['deleted'] ?? 'حذف شد',
+        'show_alert' => false,
+    ]);
 }

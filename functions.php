@@ -910,11 +910,13 @@ function DirectPayment($order_id)
             update("invoice", "Status", "active", "id_invoice", $get_invoice['id_invoice']);
         }
     } else {
-        $Balance_confrim = intval($Balance_id['Balance']) + intval($Payment_report['price']);
+        $credit_amount = getPaymentCreditAmount($Payment_report);
+        $Balance_confrim = intval($Balance_id['Balance']) + intval($credit_amount);
         update("user", "Balance", $Balance_confrim, "id", $Payment_report['id_user']);
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
-        $Payment_report['price'] = number_format($Payment_report['price'], 0);
-        $format_price_cart = $Payment_report['price'];
+        $credit_fmt = number_format($credit_amount, 0);
+        $pay_fmt = number_format(intval($Payment_report['price']), 0);
+        $format_price_cart = $credit_fmt;
         if ($Payment_report['Payment_Method'] == "cart to cart") {
             telegram(
                 'answerCallbackQuery',
@@ -926,7 +928,10 @@ function DirectPayment($order_id)
                 )
             );
         }
-        $textpay = sprintf($textbotlang['users']['moeny']['Charged.'], $Payment_report['price'], $Payment_report['id_order']);
+        $textpay = sprintf($textbotlang['users']['moeny']['Charged.'], $credit_fmt, $Payment_report['id_order']);
+        if ($credit_amount > intval($Payment_report['price'])) {
+            $textpay .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
+        }
         sendmessage($Payment_report['id_user'], $textpay, null, 'HTML');
     }
 }
@@ -995,6 +1000,118 @@ function channel($id_channel)
     } else {
         return $channel_link;
     }
+}
+
+
+/** پکیج‌های افزایش موجودی: [{id, amount, discount, title}] */
+function getBalancePackages()
+{
+    ensurePaySetting('balance_packages', '[]');
+    $raw = getPaySettingValue('balance_packages', '[]');
+    $list = json_decode($raw, true);
+    if (!is_array($list)) {
+        return [];
+    }
+    $out = [];
+    foreach ($list as $row) {
+        if (!is_array($row) || empty($row['id'])) {
+            continue;
+        }
+        $amount = intval($row['amount'] ?? 0);
+        $discount = floatval($row['discount'] ?? 0);
+        if ($amount <= 0) {
+            continue;
+        }
+        if ($discount < 0) {
+            $discount = 0;
+        }
+        if ($discount > 90) {
+            $discount = 90;
+        }
+        $out[] = [
+            'id' => strval($row['id']),
+            'amount' => $amount,
+            'discount' => $discount,
+            'title' => strval($row['title'] ?? ''),
+        ];
+    }
+    return $out;
+}
+
+function saveBalancePackages(array $list)
+{
+    ensurePaySetting('balance_packages', '[]');
+    update("PaySetting", "ValuePay", json_encode(array_values($list), JSON_UNESCAPED_UNICODE), "NamePay", "balance_packages");
+}
+
+function getBalancePackageById($id)
+{
+    foreach (getBalancePackages() as $p) {
+        if ($p['id'] === strval($id)) {
+            return $p;
+        }
+    }
+    return null;
+}
+
+/** مبلغ پرداختی پکیج پس از تخفیف */
+function getBalancePackagePayAmount($amount, $discount)
+{
+    $amount = floatval($amount);
+    $discount = floatval($discount);
+    if ($discount < 0) {
+        $discount = 0;
+    }
+    if ($discount > 90) {
+        $discount = 90;
+    }
+    return max(1, intval(round($amount * (100.0 - $discount) / 100.0)));
+}
+
+/** مبلغ اعتبار نهایی که باید به کیف پول اضافه شود */
+function getPaymentCreditAmount($Payment_report)
+{
+    $invoice = strval($Payment_report['invoice'] ?? '');
+    $parts = explode('|', $invoice);
+    if (($parts[0] ?? '') === 'balpkg' && isset($parts[1]) && intval($parts[1]) > 0) {
+        return intval($parts[1]);
+    }
+    return intval($Payment_report['price'] ?? 0);
+}
+
+function buildBalancePackageUserKeyboard()
+{
+    global $textbotlang;
+    $rows = [];
+    foreach (getBalancePackages() as $p) {
+        $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
+        $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
+        $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
+        $label .= formatToman($p['amount']) . ' ت';
+        if ($p['discount'] > 0) {
+            $label .= " | 🎁 {$disc}٪ | پرداخت " . formatToman($pay);
+        }
+        $rows[] = [['text' => $label, 'callback_data' => 'balpkg_' . $p['id']]];
+    }
+    $rows[] = [['text' => $textbotlang['users']['Balance']['custom_amount_btn'] ?? '✍️ مبلغ دلخواه', 'callback_data' => 'balpkg_custom']];
+    $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠', 'callback_data' => 'backuser']];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+
+function buildBalancePackageAdminKeyboard()
+{
+    global $textbotlang;
+    $rows = [];
+    foreach (getBalancePackages() as $p) {
+        $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
+        $rows[] = [[
+            'text' => formatToman($p['amount']) . " ت | {$disc}٪ تخفیف",
+            'callback_data' => 'balpkgadm_del_' . $p['id'],
+        ]];
+    }
+    $rows[] = [['text' => '➕ افزودن پکیج', 'callback_data' => 'balpkgadm_add']];
+    $rows[] = [['text' => $textbotlang['Admin']['Back-Adminment'] ?? 'بازگشت', 'callback_data' => 'balpkgadm_back']];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
 function ensurePaySetting($name, $value)

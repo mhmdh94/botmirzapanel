@@ -1456,3 +1456,27 @@ $textbotlang['users']['moeny']['currency_text_header_discount'] = "🎁 با پ�
 $textbotlang['Admin']['currency']['discount_get'] = "🎁 درصد تخفیف پرداخت کریپتو را ارسال کنید (مثلاً 10)
 مقدار فعلی: <code>%s</code>";
 $textbotlang['Admin']['currency']['discount_saved'] = "✅ درصد تخفیف ذخیره شد: <code>%s٪</code>";
+
+
+$textbotlang['users']['Balance']['choose_package'] = "💰 افزایش موجودی
+
+یک پکیج با تخفیف انتخاب کنید یا مبلغ دلخواه وارد نمایید:";
+$textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه";
+$textbotlang['users']['Balance']['package_selected'] = "🎁 پکیج انتخاب شد
+
+📦 اعتبار دریافتی: <b>%s</b> تومان
+🏷 تخفیف: <b>%s٪</b>
+💵 مبلغ قابل پرداخت: <b>%s</b> تومان
+
+روش پرداخت را انتخاب کنید:";
+$textbotlang['Admin']['balance_pkg']['menu'] = "🎁 پکیج افزایش موجودی";
+$textbotlang['Admin']['balance_pkg']['list'] = "📦 پکیج‌های افزایش موجودی
+
+روی هر پکیج بزنید تا حذف شود.
+➕ برای افزودن پکیج جدید.";
+$textbotlang['Admin']['balance_pkg']['get_amount'] = "مبلغ اعتبار پکیج را به تومان بفرستید (مثلاً 2000000):";
+$textbotlang['Admin']['balance_pkg']['get_discount'] = "درصد تخفیف این پکیج را بفرستید (مثلاً 15):
+کاربر این درصد کمتر پرداخت می‌کند و همان مبلغ اعتبار را می‌گیرد.";
+$textbotlang['Admin']['balance_pkg']['saved'] = "✅ پکیج ذخیره شد.";
+$textbotlang['Admin']['balance_pkg']['deleted'] = "✅ پکیج حذف شد.";
+$textbotlang['Admin']['balance_pkg']['empty'] = "هنوز پکیجی تعریف نشده.";

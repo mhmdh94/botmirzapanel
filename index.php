@@ -2267,9 +2267,52 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     }
     if ($user['number'] == "none" && $setting['get_number'] == "1")
         return;
+    $pkgs = getBalancePackages();
+    if (count($pkgs) > 0) {
+        sendmessage($from_id, $textbotlang['users']['Balance']['choose_package'] ?? "یک پکیج انتخاب کنید یا مبلغ دلخواه وارد کنید:", buildBalancePackageUserKeyboard(), 'HTML');
+        step('home', $from_id);
+    } else {
+        $depLim = getDepositLimits();
+        sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
+        step('getprice', $from_id);
+    }
+} elseif ($datain == "balpkg_custom") {
     $depLim = getDepositLimits();
+    deletemessage($from_id, $message_id);
+    update("user", "Processing_value_tow", "0", "id", $from_id);
+    update("user", "Processing_value_one", "0", "id", $from_id);
     sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
     step('getprice', $from_id);
+} elseif (preg_match('/^balpkg_(.+)$/', strval($datain), $m_bp) && $datain != "balpkg_custom") {
+    $pkg = getBalancePackageById($m_bp[1]);
+    if (!$pkg) {
+        sendmessage($from_id, "❌ پکیج یافت نشد.", $keyboard, 'HTML');
+        return;
+    }
+    $pay = getBalancePackagePayAmount($pkg['amount'], $pkg['discount']);
+    $depLim = getDepositLimits();
+    if ($pay < $depLim['min'] || $pay > $depLim['max']) {
+        sendmessage($from_id, sprintf($textbotlang['users']['Balance']['errorpricelimit'], formatToman($depLim['min']), formatToman($depLim['max'])), $keyboard, 'HTML');
+        return;
+    }
+    update("user", "Processing_value", strval($pay), "id", $from_id);
+    update("user", "Processing_value_one", strval($pkg['amount']), "id", $from_id);
+    update("user", "Processing_value_tow", "balpkg", "id", $from_id);
+    deletemessage($from_id, $message_id);
+    $disc = rtrim(rtrim(number_format($pkg['discount'], 1, '.', ''), '0'), '.');
+    $info = sprintf(
+        $textbotlang['users']['Balance']['package_selected'] ?? "🎁 پکیج انتخاب شد
+اعتبار: %s تومان
+تخفیف: %s٪
+مبلغ قابل پرداخت: %s تومان
+
+روش پرداخت را انتخاب کنید:",
+        formatToman($pkg['amount']),
+        $disc,
+        formatToman($pay)
+    );
+    sendmessage($from_id, $info, $step_payment, 'HTML');
+    step('get_step_payment', $from_id);
 } elseif ($user['step'] == "getprice") {
     if (!is_numeric($text))
         return sendmessage($from_id, $textbotlang['users']['Balance']['errorprice'], null, 'HTML');
@@ -2278,6 +2321,8 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         return sendmessage($from_id, sprintf($textbotlang['users']['Balance']['errorpricelimit'], formatToman($depLim['min']), formatToman($depLim['max'])), null, 'HTML');
     }
     update("user", "Processing_value", $text, "id", $from_id);
+    update("user", "Processing_value_one", "0", "id", $from_id);
+    update("user", "Processing_value_tow", "0", "id", $from_id);
     sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "get_step_payment") {
@@ -2330,6 +2375,8 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     $Payment_Method = "cart to cart";
     if ($user['Processing_value_tow'] == "getconfigafterpay") {
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
+    } elseif ($user['Processing_value_tow'] == "balpkg" && intval($user['Processing_value_one']) > 0) {
+        $invoice = "balpkg|" . intval($user['Processing_value_one']);
     } else {
         $invoice = "0|0";
     }
