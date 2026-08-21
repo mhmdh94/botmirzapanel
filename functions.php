@@ -175,7 +175,55 @@ function ensureCurrencyPaySettings()
             ensurePaySetting($meta['legacy_wallet_key'], '');
         }
     }
+    ensurePaySetting('currency_discount_status', '0');
+    ensurePaySetting('currency_discount_percent', '10');
 }
+
+function isCurrencyDiscountEnabled()
+{
+    ensureCurrencyPaySettings();
+    $v = getPaySettingValue('currency_discount_status', '0');
+    $p = floatval(getPaySettingValue('currency_discount_percent', '0'));
+    return ($v === '1' || $v === 'on') && $p > 0;
+}
+
+function getCurrencyDiscountPercent()
+{
+    ensureCurrencyPaySettings();
+    $p = floatval(getPaySettingValue('currency_discount_percent', '0'));
+    if ($p < 0) {
+        $p = 0;
+    }
+    if ($p > 90) {
+        $p = 90;
+    }
+    return $p;
+}
+
+/** مبلغ قابل پرداخت کریپتو پس از تخفیف (تومان) */
+function getCurrencyPayableAmount($amount_toman)
+{
+    $amount = floatval($amount_toman);
+    if (isCurrencyDiscountEnabled()) {
+        $p = getCurrencyDiscountPercent();
+        $amount = $amount * (100.0 - $p) / 100.0;
+    }
+    return max(1, intval(round($amount)));
+}
+
+/** متن دکمه روش پرداخت کریپتو */
+function getCurrencyPaymentButtonText()
+{
+    global $textbotlang;
+    $base = $textbotlang['users']['moeny']['currency_rial_gateway'] ?? '💎 کریپتو';
+    if (isCurrencyDiscountEnabled()) {
+        $p = getCurrencyDiscountPercent();
+        $pshow = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.');
+        return $base . " | 🎁 {$pshow}٪ تخفیف";
+    }
+    return $base;
+}
+
 
 function getCurrencyWalletAddress($coin)
 {
@@ -277,6 +325,15 @@ function buildCurrencyAdminKeyboard()
             ['text' => $status, 'callback_data' => 'cur_toggle_' . $coin],
         ];
     }
+    $disc_on = isCurrencyDiscountEnabled();
+    $p = getCurrencyDiscountPercent();
+    $pshow = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.');
+    $rows[] = [
+        ['text' => '🎁 تخفیف کریپتو: ' . ($disc_on ? "✅ {$pshow}٪" : '❌ خاموش'), 'callback_data' => 'cur_discount_toggle'],
+    ];
+    $rows[] = [
+        ['text' => '✏️ تنظیم درصد تخفیف', 'callback_data' => 'cur_discount_set'],
+    ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -307,6 +364,8 @@ function buildCurrencyPaymentText($amount_toman)
 {
     global $textbotlang;
     ensureCurrencyPaySettings();
+    $original = intval($amount_toman);
+    $payable = getCurrencyPayableAmount($original);
     $rates = getCryptoRatesToman();
     $lines = [];
     $any = false;
@@ -324,7 +383,7 @@ function buildCurrencyPaymentText($amount_toman)
         if ($rate !== null) {
             $has_rate = true;
         }
-        $amt = formatCryptoAmount($amount_toman, $rate);
+        $amt = formatCryptoAmount($payable, $rate);
         $lines[] = $meta['title']
             . "\nمبلغ واریزی: <code>{$amt}</code> {$meta['unit']}"
             . "\nآدرس:\n<code>{$addr}</code>";
@@ -335,10 +394,21 @@ function buildCurrencyPaymentText($amount_toman)
     if (!$has_rate) {
         return ['ok' => false, 'error' => 'rate'];
     }
-    $header = sprintf(
-        $textbotlang['users']['moeny']['currency_text_header'] ?? "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.\nنرخ تقریبی از والکس:\n",
-        number_format(intval($amount_toman), 0)
-    );
+    if (isCurrencyDiscountEnabled()) {
+        $p = getCurrencyDiscountPercent();
+        $pshow = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.');
+        $header = sprintf(
+            $textbotlang['users']['moeny']['currency_text_header_discount'] ?? "🎁 با پرداخت کریپتو <b>%s٪</b> تخفیف دارید!\nاعتبار درخواستی: <b>%s</b> تومان\nمبلغ قابل پرداخت: <b>%s</b> تومان\n\nیکی از ارزهای زیر را واریز کنید:\n",
+            $pshow,
+            number_format($original, 0),
+            number_format($payable, 0)
+        );
+    } else {
+        $header = sprintf(
+            $textbotlang['users']['moeny']['currency_text_header'] ?? "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید:\n",
+            number_format($original, 0)
+        );
+    }
     $footer = $textbotlang['users']['moeny']['currency_text_footer'] ?? "\n\n⚠️ مبلغ را دقیقاً مطابق عدد بالا واریز کنید.\n🌅 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.";
     return ['ok' => true, 'text' => $header . "\n" . implode("\n\n", $lines) . $footer];
 }

@@ -149,7 +149,7 @@ if ($PaySettingcard == "oncard") {
 }
 if ($PaySettingdigi == "ondigi") {
     $step_payment['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'], 'callback_data' => "iranpay"]
+        ['text' => getCurrencyPaymentButtonText(), 'callback_data' => "iranpay"]
     ];
 }
 $step_payment['inline_keyboard'][] = [

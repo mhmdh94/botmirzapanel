@@ -2542,3 +2542,36 @@ if (preg_match('/^cur_setaddr_(\w+)$/', strval($datain), $mcur)) {
     step('home', $from_id);
 }
 
+
+
+if ($datain == "cur_discount_toggle") {
+    ensureCurrencyPaySettings();
+    $cur = getPaySettingValue('currency_discount_status', '0');
+    $new = ($cur === '1' || $cur === 'on') ? '0' : '1';
+    update("PaySetting", "ValuePay", $new, "NamePay", "currency_discount_status");
+    telegram('editMessageReplyMarkup', [
+        'chat_id' => $from_id,
+        'message_id' => $message_id,
+        'reply_markup' => buildCurrencyAdminKeyboard(),
+    ]);
+}
+if ($datain == "cur_discount_set") {
+    ensureCurrencyPaySettings();
+    $p = getCurrencyDiscountPercent();
+    sendmessage($from_id, sprintf($textbotlang['Admin']['currency']['discount_get'], $p), $backadmin, 'HTML');
+    step('set_currency_discount', $from_id);
+} elseif ($user['step'] == 'set_currency_discount') {
+    if (!is_numeric($text) || floatval($text) < 0 || floatval($text) > 90) {
+        sendmessage($from_id, "❌ عدد بین 0 تا 90 وارد کنید.", $backadmin, 'HTML');
+        return;
+    }
+    ensureCurrencyPaySettings();
+    $p = floatval($text);
+    update("PaySetting", "ValuePay", strval($p), "NamePay", "currency_discount_percent");
+    if ($p > 0) {
+        update("PaySetting", "ValuePay", '1', "NamePay", "currency_discount_status");
+    }
+    $pshow = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.');
+    sendmessage($from_id, sprintf($textbotlang['Admin']['currency']['discount_saved'], $pshow), buildCurrencyAdminKeyboard(), 'HTML');
+    step('home', $from_id);
+}

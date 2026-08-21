@@ -447,7 +447,7 @@ $textbotlang['users']['Discount']['acceptdiscount']  = "کد هدیه با مو�
 
 $textbotlang['users']['moeny']['cart_to_Cart_btn'] = "💳 کارت به کارت";
 $textbotlang['users']['moeny']['nowpaymentbtn'] = "💵 پرداخت nowpayments";
-$textbotlang['users']['moeny']['currency_rial_gateway'] = "💎 ارزی ریالی";
+$textbotlang['users']['moeny']['currency_rial_gateway'] = "💎 کریپتو";
 $textbotlang['users']['moeny']['mr_payment_gateway'] = "🔵 آقای پرداخت";
 $textbotlang['users']['moeny']['card_number_settings'] = "💳 تنظیم شماره کارت";
 $textbotlang['users']['moeny']['alsat_merchant_settings'] = "تنظیم مرچنت";
@@ -1412,9 +1412,9 @@ $textbotlang['Admin']['currency']['get_address'] = "📌 آدرس فعلی:
 
 آدرس جدید را ارسال کنید (یا - برای پاک کردن):";
 $textbotlang['Admin']['currency']['saved'] = "✅ آدرس ذخیره شد.";
-$textbotlang['Admin']['currency']['menu'] = "💎 تنظیم کیف‌پول ارزی ریالی";
+$textbotlang['Admin']['currency']['menu'] = "💎 تنظیم پرداخت کریپتو";
 $textbotlang['users']['moeny']['currency_text'] = "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.
-نرخ تقریبی از والکس:
+:
 
 🔶 <b>TRON (TRX)</b>
 مبلغ واریزی: <code>%s</code> TRX
@@ -1433,12 +1433,11 @@ $textbotlang['users']['moeny']['currency_text'] = "برای افزایش موج�
 
 ⚠️ مبلغ را دقیقاً مطابق عدد بالا واریز کنید.
 🌅 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.";
-$textbotlang['users']['moeny']['currency_rate_error'] = "❌ دریافت نرخ از والکس ممکن نشد. لطفاً چند دقیقه بعد دوباره تلاش کنید.";
+$textbotlang['users']['moeny']['currency_rate_error'] = "❌ دریافت نرخ  ممکن نشد. لطفاً چند دقیقه بعد دوباره تلاش کنید.";
 $textbotlang['users']['moeny']['currency_empty'] = "❌ در حال حاضر آدرس کیف‌پول ارزی تنظیم نشده است. با پشتیبانی در ارتباط باشید.";
 
 
-$textbotlang['users']['moeny']['currency_text_header'] = "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.
-نرخ تقریبی از والکس:
+$textbotlang['users']['moeny']['currency_text_header'] = "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید:
 ";
 $textbotlang['users']['moeny']['currency_text_footer'] = "
 
@@ -1446,3 +1445,14 @@ $textbotlang['users']['moeny']['currency_text_footer'] = "
 🌅 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.";
 $textbotlang['Admin']['currency']['toggle_hint'] = "برای روشن/خاموش کردن نمایش هر ارز روی دکمه وضعیت بزنید.
 برای ثبت آدرس، روی نام ارز بزنید.";
+
+
+$textbotlang['users']['moeny']['currency_text_header_discount'] = "🎁 با پرداخت کریپتو <b>%s٪</b> تخفیف دارید!
+اعتبار درخواستی: <b>%s</b> تومان
+مبلغ قابل پرداخت با تخفیف: <b>%s</b> تومان
+
+یکی از ارزهای زیر را واریز کنید:
+";
+$textbotlang['Admin']['currency']['discount_get'] = "🎁 درصد تخفیف پرداخت کریپتو را ارسال کنید (مثلاً 10)
+مقدار فعلی: <code>%s</code>";
+$textbotlang['Admin']['currency']['discount_saved'] = "✅ درصد تخفیف ذخیره شد: <code>%s٪</code>";
