@@ -90,45 +90,59 @@ if ($text == $textbotlang['Admin']['channel']['setting']) {
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
-    $current_date_time = time();
-    $datefirst = $current_date_time - 86400;
-    $desired_date_time_start = $current_date_time - 3600;
-    $month_date_time_start = $current_date_time - 2592000;
-    $datefirstday = time() - 86400;
-    $dateacc = jdate('Y/m/d');
-    $sql = "SELECT * FROM invoice WHERE  (Status = 'active' OR Status = 'end_of_time'  OR Status = 'end_of_volume' OR status = 'sendedwarn') AND name_product != 'usertest'";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-    $dayListSell = $stmt->rowCount();
-    $Balanceall = select("user", "SUM(Balance)", null, null, "select");
-    $statistics = select("user", "*", null, null, "count");
-    $sumpanel = select("marzban_panel", "*", null, null, "count");
-    $sqlinvoice = "SELECT *  FROM invoice WHERE (Status = 'active' OR Status = 'end_of_time'  OR Status = 'end_of_volume' OR Status = 'sendedwarn') AND name_product != 'usertest'";
-    $stmt = $pdo->prepare($sqlinvoice);
-    $stmt->execute();
-    $invoice = $stmt->rowCount();
-    $sql = "SELECT SUM(price_product)  FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') AND name_product != 'usertest'";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-    $invoicesum = $stmt->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'];
-    // تعداد فروش ۲۴ ساعت اخیر (time_sell به صورت یونیکس ذخیره می‌شود)
-    $datefirstday = time() - 86400;
-    $sql = "SELECT COUNT(*) AS cnt FROM invoice
-        WHERE CAST(time_sell AS UNSIGNED) > :time_sell
-        AND CAST(time_sell AS UNSIGNED) <= :time_now
-        AND (Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn')
-        AND (name_product IS NULL OR name_product <> 'usertest')";
-    $stmt = $pdo->prepare($sql);
     $time_now = time();
-    $stmt->bindValue(':time_sell', $datefirstday, PDO::PARAM_INT);
-    $stmt->bindValue(':time_now', $time_now, PDO::PARAM_INT);
-    $stmt->execute();
-    $dayListSell = intval($stmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
-    $count_usertest = select("invoice", "*", "name_product", "usertest", "count");
-    $ping = sys_getloadavg();
-    $ping = number_format(floatval($ping[0]), 2);
-    $timeacc = jdate('H:i:s', time());
-    $statisticsall = sprintf($textbotlang['Admin']['Statistics']['info'], $statistics, $Balanceall['SUM(Balance)'], $ping, $count_usertest, $invoice, $invoicesum, $dayListSell, $sumpanel);
+    $day_ago = $time_now - 86400;
+    $week_ago = $time_now - 604800;
+    $status_ok = "(Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn' OR status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')";
+    $not_test = "(name_product IS NULL OR name_product <> 'usertest')";
+
+    $statistics = intval(select("user", "*", null, null, "count"));
+    $sumpanel = intval(select("marzban_panel", "*", null, null, "count"));
+    $count_usertest = intval(select("invoice", "*", "name_product", "usertest", "count"));
+
+    $Balanceall = select("user", "SUM(Balance)", null, null, "select");
+    $balance_sum = intval($Balanceall['SUM(Balance)'] ?? 0);
+
+    $stmt = $pdo->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice WHERE {$status_ok} AND {$not_test}");
+    $row_all = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $invoice_cnt = intval($row_all['cnt'] ?? 0);
+    $invoice_sum = intval($row_all['sm'] ?? 0);
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice
+        WHERE CAST(time_sell AS UNSIGNED) > :t0 AND CAST(time_sell AS UNSIGNED) <= :t1
+        AND {$status_ok} AND {$not_test}");
+    $stmt->execute([':t0' => $day_ago, ':t1' => $time_now]);
+    $row_day = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $day_cnt = intval($row_day['cnt'] ?? 0);
+    $day_sum = intval($row_day['sm'] ?? 0);
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice
+        WHERE CAST(time_sell AS UNSIGNED) > :t0 AND CAST(time_sell AS UNSIGNED) <= :t1
+        AND {$status_ok} AND {$not_test}");
+    $stmt->execute([':t0' => $week_ago, ':t1' => $time_now]);
+    $row_week = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $week_cnt = intval($row_week['cnt'] ?? 0);
+    $week_sum = intval($row_week['sm'] ?? 0);
+
+    $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
+    $load0 = number_format(floatval($load[0] ?? 0), 2);
+    $now_label = function_exists('jdate') ? (jdate('Y/m/d H:i:s') . ' (شمسی)') : date('Y-m-d H:i:s');
+
+    $statisticsall = sprintf(
+        $textbotlang['Admin']['Statistics']['info'],
+        $now_label,
+        number_format($statistics),
+        number_format($balance_sum),
+        number_format($invoice_cnt),
+        number_format($invoice_sum),
+        number_format($day_cnt),
+        number_format($day_sum),
+        number_format($week_cnt),
+        number_format($week_sum),
+        number_format($count_usertest),
+        number_format($sumpanel),
+        $load0
+    );
     sendmessage($from_id, $statisticsall, null, 'HTML');
 }
 
