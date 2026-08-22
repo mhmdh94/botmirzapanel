@@ -121,6 +121,7 @@ $keyboard_usertest = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['getlimitusertest']['setlimitallbtn']]],
         [['text' => $textbotlang['Admin']['Usertest']['settimeusertest']], ['text' => $textbotlang['Admin']['Usertest']['setvolumeusertest']]],
+        [['text' => $textbotlang['Admin']['Usertest']['reset_all_limits']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

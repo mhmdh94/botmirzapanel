@@ -773,6 +773,17 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {
 if ($text == $textbotlang['Admin']['keyboardadmin']['test_account_settings']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard_usertest, 'HTML');
 }
+
+if ($text == $textbotlang['Admin']['Usertest']['reset_all_limits']) {
+    $settingrow = select("setting", "*", null, null, "select");
+    $lim = intval($settingrow['limit_usertest_all'] ?? 1);
+    if ($lim < 0) {
+        $lim = 0;
+    }
+    update("user", "limit_usertest", strval($lim));
+    sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'], $lim), $keyboard_usertest, 'HTML');
+}
+
 #-------------------------#
 if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     $order_id = $dataget[1];
@@ -813,7 +824,7 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     update("user", "Processing_value_tow", "0", "id", $Balance_id['id']);
     update("Payment_report", "payment_Status", "paid", "id_order", $order_id);
     if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
-        sendmessage($setting['Channel_Report'], sprintf($textbotlang['Admin']['Report']['acceptcartresid'], $from_id, $Payment_report['price']), null, 'HTML');
+        sendmessage($setting['Channel_Report'], sprintf($textbotlang['Admin']['Report']['acceptcartresid'], $from_id, $Payment_report['id_user'], $Payment_report['price']), null, 'HTML');
     }
 }
 #-------------------------#
@@ -1788,15 +1799,9 @@ if ($datain == "ononhold") {
     Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['onstatus'], $onhold_Status);
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['settingscron']) {
-    if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
-        $crontest = "*/15 * * * * curl https://$domainhosts/cron/configtest.php";
-        $cronvolume = "*/1 * * * *  curl https://$domainhosts/cron/cronvolume.php";
-        $crontime = "*/1 * * * *  curl https://$domainhosts/cron/cronday.php";
-        $cronremove = "*/1 * * * *  curl https://$domainhosts/cron/removeexpire.php";
-        sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual'], $crontest, $cronvolume, $crontime, $cronremove), null, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardcronjob, 'HTML');
+    ensureSmartCronSettings();
+    ensureSmartCronStateTable();
+    sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($text == $textbotlang['Admin']['cron']['test']['active']) {
     sendmessage($from_id, $textbotlang['Admin']['cron']['test']['dec'], null, 'HTML');
@@ -2642,4 +2647,64 @@ if (preg_match('/^balpkgadm_del_(.+)$/', strval($datain), $m_del)) {
         'text' => $textbotlang['Admin']['balance_pkg']['deleted'] ?? 'حذف شد',
         'show_alert' => false,
     ]);
+}
+
+
+#----------------[ Smart cron settings ]------------------#
+if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg)$/', strval($datain), $m_sc)) {
+    ensureSmartCronSettings();
+    $map = [
+        'clean' => 'smart_clean_missing',
+        'vol' => 'smart_warn_volume',
+        'time' => 'smart_warn_time',
+        'exp' => 'smart_warn_expired',
+        'emg' => 'smart_emergency',
+        'dbg' => 'smart_debug',
+    ];
+    $key = $map[$m_sc[1]];
+    $cur = smartCronFlag($key, '0') ? '0' : '1';
+    update("PaySetting", "ValuePay", $cur, "NamePay", $key);
+    telegram('editMessageReplyMarkup', [
+        'chat_id' => $from_id,
+        'message_id' => $message_id,
+        'reply_markup' => buildSmartCronAdminKeyboard(),
+    ]);
+}
+if ($datain == "smartcron_set_vol") {
+    sendmessage($from_id, $textbotlang['Admin']['smartcron']['set_vol'], $backadmin, 'HTML');
+    step('smartcron_set_vol', $from_id);
+} elseif ($user['step'] == 'smartcron_set_vol') {
+    ensureSmartCronSettings();
+    update("PaySetting", "ValuePay", trim($text), "NamePay", "smart_vol_levels");
+    sendmessage($from_id, $textbotlang['Admin']['smartcron']['saved'], buildSmartCronAdminKeyboard(), 'HTML');
+    step('home', $from_id);
+}
+if ($datain == "smartcron_set_time") {
+    sendmessage($from_id, $textbotlang['Admin']['smartcron']['set_time'], $backadmin, 'HTML');
+    step('smartcron_set_time', $from_id);
+} elseif ($user['step'] == 'smartcron_set_time') {
+    ensureSmartCronSettings();
+    update("PaySetting", "ValuePay", trim($text), "NamePay", "smart_time_days");
+    sendmessage($from_id, $textbotlang['Admin']['smartcron']['saved'], buildSmartCronAdminKeyboard(), 'HTML');
+    step('home', $from_id);
+}
+if ($datain == "smartcron_show_cmd") {
+    global $domainhosts;
+    sendmessage($from_id, sprintf($textbotlang['Admin']['smartcron']['cmd'], $domainhosts), buildSmartCronAdminKeyboard(), 'HTML');
+}
+
+
+if ($datain == "smartcron_set_limit") {
+    sendmessage($from_id, "🔢 تعداد فاکتوری که در هر اجرای کرون بررسی می‌شود را بفرستید (عدد بین ۱ تا ۲۰۰، پیش‌فرض ۲۰):", $backadmin, 'HTML');
+    step('smartcron_set_limit', $from_id);
+} elseif ($user['step'] == 'smartcron_set_limit') {
+    $n = intval($text);
+    if ($n < 1 || $n > 200) {
+        sendmessage($from_id, "❌ عدد باید بین ۱ تا ۲۰۰ باشد.", $backadmin, 'HTML');
+        return;
+    }
+    ensurePaySetting('smart_batch_limit', '20');
+    update("PaySetting", "ValuePay", strval($n), "NamePay", "smart_batch_limit");
+    sendmessage($from_id, "✅ تعداد هر اجرا: <code>{$n}</code>", buildSmartCronAdminKeyboard(), 'HTML');
+    step('home', $from_id);
 }

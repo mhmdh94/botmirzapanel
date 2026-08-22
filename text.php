@@ -674,15 +674,7 @@ $textbotlang['Admin']['commendadmin'] = "ادمین";
 $textbotlang['Admin']['commendadminmanagment'] = "پنل مدیریت";
 $textbotlang['Admin']['login-admin'] = "
 سلام 😍
-⭕️ نسخه فعلی ربات شما : %s
-
-channel : @mirzapanel
-group : @mirzapanelgroup
-
-❓راهنمایی : 
-1 - برای اضافه کردن پنل دکمه پنل   را زده و دکمه اضافه کردن پنل را بزنید.
-2- از دکمه مالی میتوانید وضعیت درگاه و مرچنت ها را تنظیم کنید
-3-  درگاه ارزی ریالی باید فقط api nowpayments را تنظیم کنید و تمام تنظیمات کیف پول و... داخل سایت nowpayments است";
+⭕️ نسخه فعلی ربات شما : %s";
 $textbotlang['Admin']['Back-Admin'] = "به پنل ادمین بازگشتید!";
 $textbotlang['Admin']['Back-Adminment'] = "🏠 بازگشت به منوی مدیریت";
 $textbotlang['Admin']['Addedadmin'] = "👨‍💻 اضافه کردن ادمین";
@@ -1138,6 +1130,8 @@ $textbotlang['Admin']['Usertest']['sendvoluemusertest'] = "حجم سرویس ت�
 ⚠️ حجم بر حسب مگابایت است.";
 $textbotlang['Admin']['Usertest']['TimeUpdated'] = "✅ زمان سرویس تست بروزرسانی شد";
 $textbotlang['Admin']['Usertest']['VolumeUpdated'] = "✅ حجم سرویس تست بروزرسانی شد";
+$textbotlang['Admin']['Usertest']['reset_all_limits'] = "♻️ ریست محدودیت تست همه کاربران";
+$textbotlang['Admin']['Usertest']['reset_all_limits_ok'] = "✅ محدودیت اکانت تست همه کاربران به مقدار پیش‌فرض ریست شد.\nعدد اعمال‌شده: <code>%s</code>";
 
 
 $textbotlang['Admin']['Balance']['PriceBalance'] = "آیدی عددی دریافت شد مبلغی که میخواهید به کاربر اضافه کنید را ارسال کنید مبلغ به تومان باشد";
@@ -1289,100 +1283,99 @@ $textbotlang['Admin']['category']['added'] = "📌 دسته بندی خود را
 
 
 
-$textbotlang['Admin']['Report']['extend'] = "⭕️ یک کاربر سرویس خود را تمدید کرد.
-            
-اطلاعات کاربر : 
-            
-🪪 آیدی عددی : <code>%s</code>
-🪪  نام کاربری : @%s
-🛍 نام محصول :  %s
-💰 مبلغ تمدید %s تومان
-👤 نام کاربری مشتری در پنل  : %s
-موجودی کاربر :  %s تومان
-لوکیشن سرویس کاربر :  %s";
-$textbotlang['Admin']['Report']['Extra_volume'] = "⭕️ یک کاربر حجم اضافه خریده است
- اطلاعات کاربر : 
-🪪 آیدی عددی : %s
-🛍 حجم خریداری شده  : %s
-💰 مبلغ پرداختی : %s تومان";
-$textbotlang['Admin']['Report']['NotifRemoveByUser'] = "ادمین عزیز یک کاربر سرویس خود را پس از پایان حجم یا زمان حدف کرده است
-نام کاربری کانفیک : %s";
-$textbotlang['Admin']['Report']['ReportTestCreate'] = "📣 جزئیات ساخت اکانت تست در ربات شما ثبت شد .
+$textbotlang['Admin']['Report']['extend'] = "⭕️ تمدید سرویس
 
-▫️آیدی عددی کاربر : %s
-▫️نام کاربری کاربر :@%s
-▫️نام کاربری کانفیگ : %s
-▫️نام کاربر : %s
-▫️موقعیت سرویس سرویس : %s
-▫️شماره تلفن کاربر : %s";
-$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 یک ادمین رسید پرداخت کارت به کارت را تایید کرد.
-اطلاعات :
-👤آیدی عددی  ادمین تایید کننده : %s
-💰 مبلغ پرداخت : %s";
-$textbotlang['Admin']['Report']['reportremove'] = "⭕️ یک ادمین سرویس کاربر که درخواست حذف داشت را تایید کرد
-            
-اطلاعات کاربر تایید کننده  : 
-            
-🪪 آیدی عددی : <code>%s</code>
-💰 مبلغ بازگشتی : %s تومان
-👤 نام کاربری : %s
-آیدی عددی درخواست کننده کنسل کردن : %s";
-$textbotlang['Admin']['Report']['reportremovecron'] = "❌ سرویس با نام کاربری %s حذف گردید
-            دلیل حذف : %s ";
+🆔 آیدی عددی کاربر: <code>%s</code>
+👤 یوزرنیم تلگرام: @%s
+🛍 محصول: %s
+💰 مبلغ تمدید: %s تومان
+🔑 نام کاربری سرویس (پنل): <code>%s</code>
+💳 موجودی کاربر: %s تومان
+📍 پنل / لوکیشن: %s";
+$textbotlang['Admin']['Report']['Extra_volume'] = "⭕️ خرید حجم اضافه
+
+🆔 آیدی عددی کاربر: <code>%s</code>
+🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
+📦 حجم خریداری‌شده: %s گیگ
+💰 مبلغ پرداختی: %s تومان
+📍 پنل / لوکیشن: %s
+👤 یوزرنیم تلگرام: @%s
+💳 موجودی بعد از خرید: %s تومان";
+$textbotlang['Admin']['Report']['NotifRemoveByUser'] = "🗑 حذف سرویس توسط خود کاربر (پس از پایان حجم/زمان)
+
+🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
+🆔 آیدی عددی کاربر: <code>%s</code>
+📍 پنل / لوکیشن: %s";
+$textbotlang['Admin']['Report']['ReportTestCreate'] = "📣 ساخت اکانت تست
+
+🆔 آیدی عددی کاربر: <code>%s</code>
+👤 یوزرنیم تلگرام: @%s
+🔑 نام کاربری کانفیگ: <code>%s</code>
+📝 نام کاربر: %s
+📍 پنل / لوکیشن: %s
+📱 شماره تلفن: %s";
+$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 تأیید رسید کارت‌به‌کارت توسط ادمین
+
+👨‍💼 آیدی ادمین تأییدکننده: <code>%s</code>
+🆔 آیدی عددی مشتری: <code>%s</code>
+💰 مبلغ تأییدشده: %s تومان";
+$textbotlang['Admin']['Report']['reportremove'] = "⭕️ تأیید حذف سرویس + بازگشت وجه
+
+👨‍💼 آیدی ادمین تأییدکننده: <code>%s</code>
+💰 مبلغ بازگشتی به کیف پول: %s تومان
+🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
+🆔 آیدی عددی مشتری (درخواست‌کننده حذف): <code>%s</code>";
+$textbotlang['Admin']['Report']['reportremovecron'] = "❌ حذف سرویس (کرون)
+
+🔑 نام کاربری سرویس: <code>%s</code>
+📝 دلیل: %s";
 $textbotlang['Admin']['Report']['aqayepardakht'] = "💵 پرداخت جدید
-        
-آیدی عددی کاربر : %s
-مبلغ تراکنش %s
-روش پرداخت :  درگاه آقای پرداخت";
+
+🆔 آیدی عددی کاربر: <code>%s</code>
+💰 مبلغ تراکنش: %s تومان
+💳 روش پرداخت: درگاه آقای پرداخت";
 $textbotlang['Admin']['Report']['nowpayment'] = "💵 پرداخت جدید
-        
-آیدی عددی کاربر : %s
-مبلغ تراکنش %s
-روش پرداخت : nowpayment  ";
+
+🆔 آیدی عددی کاربر: <code>%s</code>
+💰 مبلغ تراکنش: %s تومان
+💳 روش پرداخت: NowPayments";
 $textbotlang['Admin']['Report']['autocart'] = "💵 پرداخت جدید
-        
-آیدی عددی کاربر : %s
-مبلغ تراکنش %s
-روش پرداخت : تایید خودکار بدون بررسی  ";
+
+🆔 آیدی عددی کاربر: <code>%s</code>
+💰 مبلغ تراکنش: %s تومان
+💳 روش پرداخت: تأیید خودکار بدون بررسی";
 $textbotlang['users']['Report']['discountused'] = "⭕️ یک کاربر با نام کاربری @%s  و آیدی عددی %s از کد تخفیف %s استفاده کرد.";
-$textbotlang['users']['Report']['reportbuy'] = " 🛍 خرید جدید
-            
-⚙️ یک کاربر اکانت  با نام کانفیگ <code>%s</code> خریداری کرد
-    
-قیمت محصول : %s تومان
-حجم محصول : %s
-آیدی عددی کاربر : <code>%s</code>
-شماره تلفن کاربر : %s
-موقعیت سرویس کاربر :%s
-موجودی کاربر : %s تومان
-    
-اطلاعات کاربر 👇👇
-⚜️ نام کاربری کاربر: @%s";
-$textbotlang['users']['Report']['reportbuyafterpay'] = " 🛍 خرید جدید بعد پرداخت  موفق
-            
-⚙️ یک کاربر اکانت  با نام کانفیگ <code>%s</code> خریداری کرد
-    
-قیمت محصول : %s تومان
-حجم محصول : %s
-آیدی عددی کاربر : <code>%s</code>
-شماره تلفن کاربر : %s
-موقعیت سرویس کاربر :%s
-موجودی کاربر : %s تومان
-    
-اطلاعات کاربر 👇👇
-⚜️ نام کاربری کاربر: @%s";
+$textbotlang['users']['Report']['reportbuy'] = "🛍 خرید جدید
+
+🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
+💰 قیمت محصول: %s تومان
+📦 حجم محصول: %s
+🆔 آیدی عددی کاربر: <code>%s</code>
+📱 شماره تلفن: %s
+📍 پنل / لوکیشن: %s
+💳 موجودی کاربر: %s تومان
+👤 یوزرنیم تلگرام: @%s";
+$textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 خرید جدید پس از پرداخت موفق
+
+🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
+💰 قیمت محصول: %s تومان
+📦 حجم محصول: %s
+🆔 آیدی عددی کاربر: <code>%s</code>
+📱 شماره تلفن: %s
+📍 پنل / لوکیشن: %s
+💳 موجودی کاربر: %s تومان
+👤 یوزرنیم تلگرام: @%s";
 $textbotlang['users']['Report']['reportpayiranpay'] = "💵 پرداخت جدید
-            
-آیدی عددی کاربر : %s
-مبلغ تراکنش : %s
-روش پرداخت :  درگاه ارزی ریالی";
-$textbotlang['users']['Report']['discountuser'] = "کد هدیه %s استفاده شد
-            
-اطلاعات کاربر : 
-            
-🪪 آیدی عددی : <code>%s</code>
-🪪  نام کاربری : @%s
-💰 مبلغ هدیه %s تومان";
+
+🆔 آیدی عددی کاربر: <code>%s</code>
+💰 مبلغ تراکنش: %s تومان
+💳 روش پرداخت: کریپتو / ارزی-ریالی";
+$textbotlang['users']['Report']['discountuser'] = "🎁 استفاده از کد هدیه
+
+🏷 کد: <code>%s</code>
+🆔 آیدی عددی کاربر: <code>%s</code>
+👤 یوزرنیم تلگرام: @%s
+💰 مبلغ هدیه: %s تومان";
 
 $textbotlang['Admin']['deposit']['menu'] = "💰 حداقل / حداکثر واریز";
 $textbotlang['Admin']['deposit']['current'] = "⚙️ تنظیم محدوده واریز
@@ -1480,3 +1473,35 @@ $textbotlang['Admin']['balance_pkg']['get_discount'] = "درصد تخفیف ای
 $textbotlang['Admin']['balance_pkg']['saved'] = "✅ پکیج ذخیره شد.";
 $textbotlang['Admin']['balance_pkg']['deleted'] = "✅ پکیج حذف شد.";
 $textbotlang['Admin']['balance_pkg']['empty'] = "هنوز پکیجی تعریف نشده.";
+
+
+$textbotlang['Admin']['smartcron']['menu'] = "🛡 کرون هوشمند
+
+از این بخش هشدارها و پاک‌سازی فاکتورهای بدون یوزر در پنل را مدیریت کنید.
+⚠️ این سیستم هیچ کاربری را از پنل حذف نمی‌کند.
+📌 پیش‌فرض همه گزینه‌ها خاموش است؛ هر کدام را جداگانه روشن کنید.";
+$textbotlang['Admin']['smartcron']['cmd'] = "برای فعال‌سازی روی سرور این خط را در crontab بگذارید (پیشنهاد: هر ۳۰ دقیقه):
+
+<code>*/30 * * * * curl -s https://%s/cron/smart_cron.php >/dev/null 2>&1</code>
+
+کرون‌های قدیمی volume/time/remove را می‌توانید غیرفعال کنید.";
+$textbotlang['Admin']['smartcron']['reset_test_ok'] = "✅ محدودیت اکانت تست برای همه کاربران به مقدار پیش‌فرض ریست شد.";
+$textbotlang['Admin']['smartcron']['set_vol'] = "درصدهای اخطار حجم را با کاما بفرستید (مثلاً 90,95,99):";
+$textbotlang['Admin']['smartcron']['set_time'] = "روزهای اخطار زمان را با کاما بفرستید (مثلاً 7,3,1):";
+$textbotlang['Admin']['smartcron']['saved'] = "✅ ذخیره شد.";
+$textbotlang['users']['cron']['warn_time'] = "⏰ از زمان سرویس <code>%s</code> حدود <b>%s</b> روز باقی مانده است.
+
+برای جلوگیری از قطعی سرویس را تمدید کنید.";
+$textbotlang['users']['cron']['warn_volume'] = "📊 از حجم سرویس <code>%s</code> حدود <b>%s%%</b> مصرف شده است.
+
+برای جلوگیری از قطعی، تمدید یا حجم اضافه تهیه کنید.";
+$textbotlang['users']['cron']['service_ended'] = "⛔️ سرویس <code>%s</code> به پایان رسیده است.
+
+برای ادامه استفاده، سرویس را تمدید کنید.";
+$textbotlang['users']['cron']['emergency_btn'] = "🆘 تمدید اضطراری (۱ روز / ۱ گیگ)";
+$textbotlang['users']['cron']['emergency_ok'] = "✅ تمدید اضطراری برای <code>%s</code> فعال شد.
+⏱ ۱ روز و 📦 ۱ گیگ به سرویس اضافه شد.
+این امکان فقط یک‌بار برای هر سرویس قابل استفاده است.";
+$textbotlang['users']['cron']['emergency_used'] = "❌ تمدید اضطراری این سرویس قبلاً استفاده شده است.";
+$textbotlang['users']['cron']['emergency_off'] = "❌ تمدید اضطراری توسط مدیر غیرفعال است.";
+$textbotlang['users']['cron']['emergency_fail'] = "❌ انجام تمدید اضطراری ممکن نشد. با پشتیبانی در ارتباط باشید.";

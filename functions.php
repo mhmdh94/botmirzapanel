@@ -1114,6 +1114,207 @@ function buildBalancePackageAdminKeyboard()
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
+
+/** تنظیمات کرون هوشمند */
+function ensureSmartCronSettings()
+{
+    // پیش‌فرض همه قابلیت‌ها خاموش — ادمین از ربات روشن می‌کند
+    ensurePaySetting('smart_clean_missing', '0');
+    ensurePaySetting('smart_warn_volume', '0');
+    ensurePaySetting('smart_warn_time', '0');
+    ensurePaySetting('smart_warn_expired', '0');
+    ensurePaySetting('smart_emergency', '0');
+    ensurePaySetting('smart_vol_levels', '90,95,99');
+    ensurePaySetting('smart_time_days', '7,3,1');
+    ensurePaySetting('smart_emergency_gb', '1');
+    ensurePaySetting('smart_emergency_days', '1');
+    ensurePaySetting('smart_debug', '0');
+    ensurePaySetting('smart_cron_cursor', '0');
+    ensurePaySetting('smart_batch_limit', '20');
+}
+
+function smartCronFlag($name, $default = '0')
+{
+    ensureSmartCronSettings();
+    $v = getPaySettingValue($name, $default);
+    return ($v === '1' || $v === 'on' || $v === 'true');
+}
+
+function smartCronLevelsVolume()
+{
+    ensureSmartCronSettings();
+    $raw = getPaySettingValue('smart_vol_levels', '90,95,99');
+    $out = [];
+    foreach (explode(',', $raw) as $p) {
+        $p = floatval(trim($p));
+        if ($p > 0 && $p <= 100) {
+            $out[] = $p;
+        }
+    }
+    sort($out);
+    return $out ?: [90, 95, 99];
+}
+
+function smartCronLevelsTime()
+{
+    ensureSmartCronSettings();
+    $raw = getPaySettingValue('smart_time_days', '7,3,1');
+    $out = [];
+    foreach (explode(',', $raw) as $p) {
+        $p = intval(trim($p));
+        if ($p > 0) {
+            $out[] = $p;
+        }
+    }
+    rsort($out); // 7,3,1
+    return $out ?: [7, 3, 1];
+}
+
+function ensureSmartCronStateTable()
+{
+    global $pdo;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $pdo->exec("CREATE TABLE IF NOT EXISTS smart_cron_state (
+        username VARCHAR(191) NOT NULL,
+        service_location VARCHAR(191) NOT NULL,
+        warn_time_level INT NOT NULL DEFAULT 0,
+        warn_vol_level INT NOT NULL DEFAULT 0,
+        expired_notified TINYINT NOT NULL DEFAULT 0,
+        emergency_used TINYINT NOT NULL DEFAULT 0,
+        PRIMARY KEY (username, service_location)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $done = true;
+}
+
+function getSmartCronState($username, $location)
+{
+    global $pdo;
+    ensureSmartCronStateTable();
+    $st = $pdo->prepare("SELECT * FROM smart_cron_state WHERE username = ? AND service_location = ? LIMIT 1");
+    $st->execute([$username, $location]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        return $row;
+    }
+    $ins = $pdo->prepare("INSERT IGNORE INTO smart_cron_state (username, service_location) VALUES (?, ?)");
+    $ins->execute([$username, $location]);
+    return [
+        'username' => $username,
+        'service_location' => $location,
+        'warn_time_level' => 0,
+        'warn_vol_level' => 0,
+        'expired_notified' => 0,
+        'emergency_used' => 0,
+    ];
+}
+
+function updateSmartCronState($username, $location, $field, $value)
+{
+    global $pdo;
+    ensureSmartCronStateTable();
+    getSmartCronState($username, $location);
+    $allowed = ['warn_time_level', 'warn_vol_level', 'expired_notified', 'emergency_used'];
+    if (!in_array($field, $allowed, true)) {
+        return;
+    }
+    $st = $pdo->prepare("UPDATE smart_cron_state SET {$field} = ? WHERE username = ? AND service_location = ?");
+    $st->execute([$value, $username, $location]);
+}
+
+
+function smartCronDebugLog($message)
+{
+    if (!smartCronFlag('smart_debug', '0')) {
+        return;
+    }
+    $setting = select("setting", "*", null, null, "select");
+    if (!$setting || empty($setting['Channel_Report'])) {
+        return;
+    }
+    $text = "🛠 <b>دیباگ کرون هوشمند</b>\n" . $message;
+    sendmessage($setting['Channel_Report'], $text, null, 'HTML');
+}
+
+
+function resetSmartCronWarnings($username, $location)
+{
+    if (!function_exists('updateSmartCronState')) {
+        return;
+    }
+    updateSmartCronState($username, $location, 'warn_time_level', 0);
+    updateSmartCronState($username, $location, 'warn_vol_level', 0);
+    updateSmartCronState($username, $location, 'expired_notified', 0);
+}
+
+function logChannelReport($message)
+{
+    $setting = select("setting", "*", null, null, "select");
+    if (!$setting || empty($setting['Channel_Report'])) {
+        return;
+    }
+    sendmessage($setting['Channel_Report'], $message, null, 'HTML');
+}
+
+function isPanelUserMissing($dataUser)
+{
+    if (!is_array($dataUser)) {
+        return false;
+    }
+    $status = strval($dataUser['status'] ?? '');
+    $msg = $dataUser['msg'] ?? ($dataUser['detail'] ?? '');
+    if (is_array($msg) || is_object($msg)) {
+        $msg = json_encode($msg, JSON_UNESCAPED_UNICODE);
+    }
+    $msg = mb_strtolower(trim((string) $msg), 'UTF-8');
+    if ($status === 'Unsuccessful') {
+        if (
+            strpos($msg, 'not found') !== false
+            || strpos($msg, 'does not exist') !== false
+            || strpos($msg, 'یافت نشد') !== false
+            || strpos($msg, 'وجود ندارد') !== false
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function buildServiceWarnKeyboard($username, $show_emergency = false)
+{
+    global $textbotlang;
+    $rows = [
+        [['text' => $textbotlang['users']['extend']['title'] ?? '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]],
+    ];
+    if ($show_emergency) {
+        $rows[] = [['text' => $textbotlang['users']['cron']['emergency_btn'] ?? '🆘 تمدید اضطراری (۱روز / ۱گیگ)', 'callback_data' => 'emergency_ext_' . $username]];
+    }
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+
+function buildSmartCronAdminKeyboard()
+{
+    global $textbotlang;
+    ensureSmartCronSettings();
+    $on = '✅';
+    $off = '❌';
+    $rows = [
+        [['text' => (smartCronFlag('smart_clean_missing', '0') ? $on : $off) . ' حذف فاکتور یوزر غایب پنل', 'callback_data' => 'smartcron_toggle_clean']],
+        [['text' => (smartCronFlag('smart_warn_volume', '0') ? $on : $off) . ' اخطار حجم', 'callback_data' => 'smartcron_toggle_vol']],
+        [['text' => (smartCronFlag('smart_warn_time', '0') ? $on : $off) . ' اخطار زمان', 'callback_data' => 'smartcron_toggle_time']],
+        [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']],
+        [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
+        [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
+        [['text' => '🔢 تعداد هر اجرا: ' . getPaySettingValue('smart_batch_limit', '20'), 'callback_data' => 'smartcron_set_limit']],
+        [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90,95,99'), 'callback_data' => 'smartcron_set_vol']],
+        [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '7,3,1'), 'callback_data' => 'smartcron_set_time']],
+        [['text' => '📋 دستور کرون سیستم', 'callback_data' => 'smartcron_show_cmd']],
+    ];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+
 function ensurePaySetting($name, $value)
 {
     global $pdo;

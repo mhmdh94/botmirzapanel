@@ -1008,7 +1008,80 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         ]);
         unlink($urlimage);
     }
+} elseif (preg_match('/emergency_ext_(.+)/', strval($datain), $emg)) {
+    $username_emg = $emg[1];
+    if (!smartCronFlag('smart_emergency', '0')) {
+        sendmessage($from_id, $textbotlang['users']['cron']['emergency_off'], $keyboard, 'HTML');
+        return;
+    }
+    $inv = null;
+    $stmt_e = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :u AND username = :un AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') LIMIT 1");
+    $stmt_e->execute([':u' => $from_id, ':un' => $username_emg]);
+    $inv = $stmt_e->fetch(PDO::FETCH_ASSOC);
+    if (!$inv) {
+        sendmessage($from_id, $textbotlang['users']['cron']['emergency_fail'], $keyboard, 'HTML');
+        return;
+    }
+    $state = getSmartCronState($username_emg, $inv['Service_location']);
+    if (intval($state['emergency_used']) === 1) {
+        sendmessage($from_id, $textbotlang['users']['cron']['emergency_used'], $keyboard, 'HTML');
+        return;
+    }
+    $DataUserOut = $ManagePanel->DataUser($inv['Service_location'], $username_emg);
+    if (!is_array($DataUserOut) || ($DataUserOut['status'] ?? '') === 'Unsuccessful') {
+        // حتی اگر منقضی باشد بعضی پنل‌ها داده می‌دهند؛ اگر کاملاً نیست خطا
+        if (isPanelUserMissing($DataUserOut)) {
+            sendmessage($from_id, $textbotlang['users']['cron']['emergency_fail'], $keyboard, 'HTML');
+            return;
+        }
+    }
+    $days = intval(getPaySettingValue('smart_emergency_days', '1'));
+    $gb = floatval(getPaySettingValue('smart_emergency_gb', '1'));
+    if ($days < 1) $days = 1;
+    if ($gb <= 0) $gb = 1;
+    $add_bytes = $gb * pow(1024, 3);
+    $used = floatval($DataUserOut['used_traffic'] ?? 0);
+    $old_limit = floatval($DataUserOut['data_limit'] ?? 0);
+    $new_limit = max($old_limit, $used) + $add_bytes;
+    $base_expire = intval($DataUserOut['expire'] ?? 0);
+    if ($base_expire < time()) {
+        $base_expire = time();
+    }
+    $new_expire = $base_expire + ($days * 86400);
+    $config = [
+        'expire' => $new_expire,
+        'data_limit' => $new_limit,
+        'status' => 'active',
+    ];
+    $ManagePanel->Modifyuser($username_emg, $inv['Service_location'], $config);
+    updateSmartCronState($username_emg, $inv['Service_location'], 'emergency_used', 1);
+    updateSmartCronState($username_emg, $inv['Service_location'], 'expired_notified', 0);
+    updateSmartCronState($username_emg, $inv['Service_location'], 'warn_time_level', 0);
+    updateSmartCronState($username_emg, $inv['Service_location'], 'warn_vol_level', 0);
+    update("invoice", "status", "active", "username", $username_emg);
+    sendmessage($from_id, sprintf($textbotlang['users']['cron']['emergency_ok'], $username_emg), $keyboard, 'HTML');
+    $emg_log = "🆘 تمدید اضطراری استفاده شد
+"
+        . "🔑 نام کاربری سرویس: <code>{$username_emg}</code>
+"
+        . "📍 پنل: {$inv['Service_location']}
+"
+        . "🆔 آیدی کاربر: <code>{$from_id}</code>
+"
+        . "👤 یوزرنیم تلگرام: @" . strval($user['username'] ?? '-');
+    if (function_exists('logChannelReport')) {
+        logChannelReport($emg_log);
+    } elseif (function_exists('smartCronDebugLog')) {
+        smartCronDebugLog($emg_log);
+    } else {
+        $setting_emg = select("setting", "*", null, null, "select");
+        if ($setting_emg && !empty($setting_emg['Channel_Report'])) {
+            sendmessage($setting_emg['Channel_Report'], $emg_log, null, 'HTML');
+        }
+    }
+    step('home', $from_id);
 } elseif (preg_match('/extend_(\w+)/', $datain, $dataget)) {
+
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
@@ -1236,8 +1309,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $priceproductformat = number_format($product['price_product']);
     $balanceformatsell = number_format(select("user", "Balance", "id", $from_id, "select")['Balance']);
     update("invoice", "Status", "active", "id_invoice", $nameloc['id_invoice']);
+    if (function_exists('resetSmartCronWarnings')) {
+        resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
+    }
     sendmessage($from_id, $textbotlang['users']['extend']['thanks'], $keyboardextendfnished, 'HTML');
-    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $username, $product['name_product'], $priceproductformat, $usernamepanel, $balanceformatsell, $nameloc['Service_location']);
+    $tg_name = $user['username'] ?? ($username ?? '');
+    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $product['name_product'], $priceproductformat, $nameloc['username'], $balanceformatsell, $nameloc['Service_location']);
     if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
@@ -1482,10 +1559,26 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             ]
         ]
     ]);
+    if (function_exists('resetSmartCronWarnings')) {
+        // فقط سطح حجم را صفر می‌کنیم؛ زمان را دست نمی‌زنیم — یا همه هشدارها
+        resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
+    }
     sendmessage($from_id, $textbotlang['users']['Extra_volume']['extraadded'], $keyboardextrafnished, 'HTML');
     $volumes = $volume;
-    $price_extra = number_format($price_extra);
-    $text_report = sprintf($textbotlang['Admin']['Report']['Extra_volume'], $from_id, $volumes, $price_extra);
+    $price_extra_fmt = number_format($price_extra);
+    $bal_after = select("user", "Balance", "id", $from_id, "select");
+    $bal_after = is_array($bal_after) ? ($bal_after['Balance'] ?? $bal_after) : $bal_after;
+    $tg_user = $username ?? ($user['username'] ?? '');
+    $text_report = sprintf(
+        $textbotlang['Admin']['Report']['Extra_volume'],
+        $from_id,
+        $nameloc['username'],
+        $volumes,
+        $price_extra_fmt,
+        $nameloc['Service_location'],
+        $tg_user,
+        number_format(intval($bal_after))
+    );
     if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
@@ -1517,7 +1610,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $ManagePanel->RemoveUser($nameloc['Service_location'], $nameloc['username']);
     update('invoice', 'status', 'removebyuser', 'id_invoice', $nameloc['id_invoice']);
-    $tetremove = sprintf($textbotlang['Admin']['Report']['NotifRemoveByUser'], $nameloc['username']);
+    $tetremove = sprintf(
+        $textbotlang['Admin']['Report']['NotifRemoveByUser'],
+        $nameloc['username'],
+        $nameloc['id_user'],
+        $nameloc['Service_location']
+    );
     if (strlen($setting['Channel_Report']) > 0) {
         telegram('sendmessage', [
             'chat_id' => $setting['Channel_Report'],
