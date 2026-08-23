@@ -56,7 +56,13 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         continue;
     }
     DirectPayment($Payment_report['id_order'],"../images.jpg");
-    $auto_txt = sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', number_format(intval($Payment_report['price'])), number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0)), $Payment_report['id_order']);
+    $pd = function_exists('describePaymentReport') ? describePaymentReport($Payment_report) : null;
+    $bal_after = number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0));
+    if ($pd) {
+        $auto_txt = sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', $pd['method_label'], $pd['type_label'], $pd['pay_fmt'], $pd['credit_fmt'], $bal_after, $Payment_report['id_order']);
+    } else {
+        $auto_txt = sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', '💳 کارت‌به‌کارت', 'افزایش موجودی', number_format(intval($Payment_report['price'])), number_format(intval($Payment_report['price'])), $bal_after, $Payment_report['id_order']);
+    }
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_cart_auto', $auto_txt);
     } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
