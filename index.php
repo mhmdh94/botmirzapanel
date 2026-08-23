@@ -71,6 +71,9 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
     foreach ($admin_ids as $admin) {
         sendmessage($admin, $newuser, $Response, 'html');
     }
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_new_user', $newuser);
+    }
 }
 if (intval($from_id) != 0) {
     if (intval($setting['status_verify']) == 1) {
@@ -1075,7 +1078,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         smartCronDebugLog($emg_log);
     } else {
         $setting_emg = select("setting", "*", null, null, "select");
-        if ($setting_emg && !empty($setting_emg['Channel_Report'])) {
+        if (function_exists('sendChannelReport')) {
+            sendChannelReport('rpt_emergency', $emg_log);
+        } elseif ($setting_emg && !empty($setting_emg['Channel_Report'])) {
             sendmessage($setting_emg['Channel_Report'], $emg_log, null, 'HTML');
         }
     }
@@ -1319,7 +1324,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 
     $tg_name = $user['username'] ?? ($username ?? '');
     $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $nameloc['username'], $product['name_product'], $priceproductformat, $nameloc['Service_location'], $balanceformatsell);
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+    if (function_exists('sendChannelReport')) { sendChannelReport('rpt_extend', $text_report); }
+    elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
 } elseif (preg_match('/changelink_(\w+)/', $datain, $dataget)) {
@@ -1584,7 +1590,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $tg_user,
         number_format(intval($bal_after))
     );
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_extra_volume', $text_report);
+    } elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
 } elseif (preg_match('/removeserviceuserco-(\w+)/', $datain, $dataget)) {
@@ -1621,7 +1629,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $nameloc['id_user'],
         $nameloc['Service_location']
     );
-    if (strlen($setting['Channel_Report']) > 0) {
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_remove_user', $tetremove);
+    } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
         telegram('sendmessage', [
             'chat_id' => $setting['Channel_Report'],
             'text' => $tetremove,
@@ -1841,7 +1851,8 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     update("user", "limit_usertest", $limit_usertest, "id", $from_id);
     step('home', $from_id);
     $text_report = sprintf($textbotlang['Admin']['Report']['ReportTestCreate'], $from_id, $username, $username_ac, $first_name, $marzban_list_get['name_panel'], $user['number']);
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+    if (function_exists('sendChannelReport')) { sendChannelReport('rpt_test', $text_report); }
+    elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
 }
@@ -2193,7 +2204,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $value = intval($SellDiscountlimit['usedDiscount']) + 1;
         update("DiscountSell", "usedDiscount", $value, "codeDiscount", $partsdic[0]);
         $text_report = sprintf($textbotlang['users']['Report']['discountused'], $username, $from_id, $partsdic[0]);
-        if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+        if (function_exists('sendChannelReport')) { sendChannelReport('rpt_discount', $text_report); }
+        elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
             sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
         }
     }
@@ -2306,7 +2318,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     update("user", "Balance", $Balance_prim, "id", $from_id);
     $user['Balance'] = number_format($user['Balance'], 0);
     $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $info_product['price_product'], $info_product['Volume_constraint'], $from_id, $username, $user['number'], $user['Processing_value'], number_format(intval($user['Balance'])));
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+    if (function_exists('sendChannelReport')) { sendChannelReport('rpt_buy', $text_report); }
+    elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
     step('home', $from_id);
@@ -2639,7 +2652,8 @@ if ($datain == "Discount") {
     $stmt->bindParam(2, $text, PDO::PARAM_STR);
     $stmt->execute();
     $text_report = sprintf($textbotlang['users']['Report']['discountuser'], $text, $from_id, $username, $get_codesql['price']);
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+    if (function_exists('sendChannelReport')) { sendChannelReport('rpt_gift', $text_report); }
+    elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
 }

@@ -716,13 +716,73 @@ elseif (preg_match('/confirmnumber_(\w+)/', $datain, $dataget)) {
     sendmessage($from_id, $textbotlang['Admin']['phone']['active'], $User_Services, 'HTML');
 }
 if ($text == $textbotlang['Admin']['channel']['channelreport']) {
-    sendmessage($from_id, $textbotlang['Admin']['Channel']['ReportChannel'] . $setting['Channel_Report'], $backadmin, 'HTML');
+    $ch_id = $setting['Channel_Report'] ?? '-';
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
+        [['text' => '⚙️ فعالیت‌های گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
+        [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test']],
+    ]]);
+    sendmessage($from_id, "📣 <b>تنظیمات کانال گزارش</b>
+
+کانال فعلی: <code>{$ch_id}</code>
+
+از دکمه‌های زیر می‌توانید آیدی کانال را تنظیم کنید و مشخص کنید برای کدام فعالیت‌ها پیام ارسال شود.", $kb, 'HTML');
+} elseif ($datain == "rpch_setid") {
+    sendmessage($from_id, $textbotlang['Admin']['Channel']['ReportChannel'] . ($setting['Channel_Report'] ?? ''), $backadmin, 'HTML');
     step('addchannelid', $from_id);
 } elseif ($user['step'] == "addchannelid") {
     sendmessage($from_id, $textbotlang['Admin']['Channel']['SetChannelReport'], $keyboardadmin, 'HTML');
     update("setting", "Channel_Report", $text);
     step('home', $from_id);
-    sendmessage($setting['Channel_Report'], $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
+    if (function_exists('sendChannelReport')) {
+        // force test regardless of toggles
+        $st = select("setting", "*", null, null, "select");
+        if ($st && !empty($st['Channel_Report'])) {
+            sendmessage($st['Channel_Report'], $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
+        }
+    } else {
+        sendmessage($text, $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
+    }
+} elseif ($datain == "rpch_toggles") {
+    if (function_exists('ensureReportChannelSettings')) ensureReportChannelSettings();
+    Editmessagetext($from_id, $message_id, "⚙️ <b>فعال/غیرفعال کردن گزارش‌ها</b>
+
+روی هر مورد بزنید تا وضعیتش عوض شود:
+✅ = ارسال می‌شود
+❌ = ارسال نمی‌شود", function_exists('buildReportChannelKeyboard') ? buildReportChannelKeyboard() : null);
+} elseif ($datain == "rpch_test") {
+    $st = select("setting", "*", null, null, "select");
+    if ($st && !empty($st['Channel_Report'])) {
+        sendmessage($st['Channel_Report'], $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
+        telegram('answerCallbackQuery', ['callback_query_id' => ($update['callback_query']['id'] ?? ''), 'text' => 'پیام تست ارسال شد', 'show_alert' => false]);
+    } else {
+        telegram('answerCallbackQuery', ['callback_query_id' => ($update['callback_query']['id'] ?? ''), 'text' => 'ابتدا آیدی کانال را تنظیم کنید', 'show_alert' => true]);
+    }
+} elseif ($datain == "rpch_menu") {
+    $ch_id = select("setting", "*", null, null, "select")['Channel_Report'] ?? '-';
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
+        [['text' => '⚙️ فعالیت‌های گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
+        [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test']],
+    ]]);
+    Editmessagetext($from_id, $message_id, "📣 <b>تنظیمات کانال گزارش</b>
+
+کانال فعلی: <code>{$ch_id}</code>", $kb);
+} elseif (preg_match('/^rptoggle_(rpt_[a-z_]+)$/', strval($datain), $m_rt)) {
+    $key = $m_rt[1];
+    if (function_exists('ensureReportChannelSettings')) ensureReportChannelSettings();
+    $cur = function_exists('getPaySettingValue') ? getPaySettingValue($key, '1') : '1';
+    $newv = ($cur === '1') ? '0' : '1';
+    update("PaySetting", "ValuePay", $newv, "NamePay", $key);
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => ($update['callback_query']['id'] ?? ''),
+        'text' => ($newv === '1' ? 'فعال شد' : 'غیرفعال شد'),
+        'show_alert' => false
+    ]);
+    Editmessagetext($from_id, $message_id, "⚙️ <b>فعال/غیرفعال کردن گزارش‌ها</b>
+
+✅ = ارسال می‌شود
+❌ = ارسال نمی‌شود", function_exists('buildReportChannelKeyboard') ? buildReportChannelKeyboard() : null);
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['shop_section']) {
@@ -810,8 +870,16 @@ if ($text == $textbotlang['Admin']['Usertest']['reset_all_limits']) {
 if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     $order_id = $dataget[1];
     $Payment_report = select("Payment_report", "*", "id_order", $order_id, "select");
-    $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
-    if ($Payment_report['payment_Status'] == "paid" || $Payment_report['payment_Status'] == "reject") {
+    if (!$Payment_report || !is_array($Payment_report)) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'سفارش یافت نشد',
+            'show_alert' => true,
+            'cache_time' => 5,
+        ]);
+        return;
+    }
+    if (($Payment_report['payment_Status'] ?? '') == "paid" || ($Payment_report['payment_Status'] ?? '') == "reject") {
         telegram(
             'answerCallbackQuery',
             array(
@@ -823,6 +891,32 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         );
         return;
     }
+    // قفل اتمیک: فقط اگر هنوز waiting باشد paid می‌شود — جلوگیری از تأیید دوبار
+    global $pdo;
+    try {
+        $stmt_lock = $pdo->prepare("UPDATE Payment_report SET payment_Status = 'paid' WHERE id_order = ? AND payment_Status = 'waiting'");
+        $stmt_lock->execute([$order_id]);
+        if ($stmt_lock->rowCount() < 1) {
+            telegram(
+                'answerCallbackQuery',
+                array(
+                    'callback_query_id' => $callback_query_id,
+                    'text' => $textbotlang['Admin']['Payment']['reviewedpayment'],
+                    'show_alert' => true,
+                    'cache_time' => 5,
+                )
+            );
+            return;
+        }
+    } catch (Exception $e) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'خطا در قفل سفارش',
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
     DirectPayment($order_id);
     $id_user_pay = $Payment_report['id_user'];
     $keyboard_accept = json_encode([
@@ -841,15 +935,16 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         'caption' => $caption,
         'reply_markup' => $keyboard_accept
     ]);
-    update("user", "Processing_value", "0", "id", $Balance_id['id']);
-    update("user", "Processing_value_one", "0", "id", $Balance_id['id']);
-    update("user", "Processing_value_tow", "0", "id", $Balance_id['id']);
-    update("Payment_report", "payment_Status", "paid", "id_order", $order_id);
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
+    if (is_array($Balance_id)) {
+        update("user", "Processing_value", "0", "id", $Balance_id['id']);
+        update("user", "Processing_value_one", "0", "id", $Balance_id['id']);
+        update("user", "Processing_value_tow", "0", "id", $Balance_id['id']);
+    }
+    if (function_exists('sendChannelReport')) {
         $u_pay = select("user", "*", "id", $Payment_report['id_user'], "select");
         $bal_after = number_format(intval($u_pay['Balance'] ?? 0));
         $uname_tg = $u_pay['username'] ?? '-';
-        sendmessage($setting['Channel_Report'], sprintf(
+        sendChannelReport('rpt_cart_accept', sprintf(
             $textbotlang['Admin']['Report']['acceptcartresid'],
             $from_id,
             $Payment_report['id_user'],
@@ -857,7 +952,7 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
             number_format(intval($Payment_report['price'])),
             $bal_after,
             $Payment_report['id_order']
-        ), null, 'HTML');
+        ));
     }
 }
 #-------------------------#
@@ -866,7 +961,7 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     $Payment_report = select("Payment_report", "*", "id_order", $id_order, "select");
     update("user", "Processing_value", $Payment_report['id_user'], "id", $from_id);
     update("user", "Processing_value_one", $id_order, "id", $from_id);
-    if ($Payment_report['payment_Status'] == "reject" || $Payment_report['payment_Status'] == "paid") {
+    if (($Payment_report['payment_Status'] ?? '') == "reject" || ($Payment_report['payment_Status'] ?? '') == "paid") {
         telegram(
             'answerCallbackQuery',
             array(
@@ -878,7 +973,25 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
         );
         return;
     }
-    update("Payment_report", "payment_Status", "reject", "id_order", $id_order);
+    global $pdo;
+    try {
+        $stmt_rj = $pdo->prepare("UPDATE Payment_report SET payment_Status = 'reject' WHERE id_order = ? AND payment_Status = 'waiting'");
+        $stmt_rj->execute([$id_order]);
+        if ($stmt_rj->rowCount() < 1) {
+            telegram(
+                'answerCallbackQuery',
+                array(
+                    'callback_query_id' => $callback_query_id,
+                    'text' => $textbotlang['Admin']['Payment']['reviewedpayment'],
+                    'show_alert' => true,
+                    'cache_time' => 5,
+                )
+            );
+            return;
+        }
+    } catch (Exception $e) {
+        return;
+    }
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Reasonrejecting'], $backadmin, 'HTML');
     step('reject-dec', $from_id);
     Editmessagetext($from_id, $message_id, $text_callback, null);
@@ -886,6 +999,14 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     update("Payment_report", "dec_not_confirmed", $text, "id_order", $user['Processing_value_one']);
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Rejected'], $keyboardadmin, 'HTML');
     sendmessage($user['Processing_value'], sprintf($textbotlang['users']['moeny']['rejectresid'], $text, $user['Processing_value_one']), null, 'HTML');
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_reject', "❌ <b>رد رسید پرداخت</b>
+
+👨‍💼 ادمین: <code>{$from_id}</code>
+🆔 کاربر: <code>{$user['Processing_value']}</code>
+🧾 سفارش: <code>{$user['Processing_value_one']}</code>
+📝 دلیل: {$text}");
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -1056,8 +1177,16 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_add_user = $Balance_user['Balance'] + $text;
     update("user", "Balance", $Balance_add_user, "id", $user['Processing_value']);
-    $text = number_format($text);
-    sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $text), null, 'HTML');
+    $amt_fmt = number_format($text);
+    sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt), null, 'HTML');
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_admin_balance', "💰 <b>افزایش موجودی توسط ادمین</b>
+
+👨‍💼 ادمین: <code>{$from_id}</code>
+🆔 کاربر: <code>{$user['Processing_value']}</code>
+➕ مبلغ: {$amt_fmt} تومان
+💳 موجودی جدید: " . number_format($Balance_add_user) . " تومان");
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -1079,8 +1208,16 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_Low_user = $Balance_user['Balance'] - $text;
     update("user", "Balance", $Balance_Low_user, "id", $user['Processing_value']);
-    $text = number_format($text);
-    sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $text), null, 'HTML');
+    $amt_fmt = number_format($text);
+    sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt), null, 'HTML');
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_admin_balance', "💰 <b>کاهش موجودی توسط ادمین</b>
+
+👨‍💼 ادمین: <code>{$from_id}</code>
+🆔 کاربر: <code>{$user['Processing_value']}</code>
+➖ مبلغ: {$amt_fmt} تومان
+💳 موجودی جدید: " . number_format($Balance_Low_user) . " تومان");
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -1789,8 +1926,8 @@ if ($text == $textbotlang['Admin']['affiliate']['giftstart']) {
         update("user", "Balance", $Balance_id_cancel_fee, "id", $nameloc['id_user']);
         sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel), null, 'HTML');
     }
-    if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
-        sendmessage($setting['Channel_Report'], sprintf($textbotlang['Admin']['Report']['reportremove'], $from_id, $pricecancel, $username, $nameloc['id_user']), null, 'HTML');
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_remove', sprintf($textbotlang['Admin']['Report']['reportremove'], $from_id, $pricecancel, $username, $nameloc['id_user']));
     }
 }
 if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['on_hold_status']) {

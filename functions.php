@@ -866,7 +866,9 @@ function DirectPayment($order_id)
             $result = ($SellDiscountlimit['price'] / 100) * $get_invoice['price_product'];
             $pricediscount = $get_invoice['price_product'] - $result;
             $text_report = sprintf($textbotlang['users']['Report']['discountused'], $Balance_id['username'], $Balance_id['id'], $partsdic[1]);
-            if (strlen($setting['Channel_Report']) > 0) {
+            if (function_exists('sendChannelReport')) {
+                sendChannelReport('rpt_discount', $text_report);
+            } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
                 telegram('sendmessage', [
                     'chat_id' => $setting['Channel_Report'],
                     'text' => $text_report,
@@ -904,7 +906,9 @@ function DirectPayment($order_id)
             recordSale($get_invoice['id_user'], $get_invoice['price_product'], 'buy', $get_invoice['username'], $get_invoice['id_invoice'] ?? null);
         }
         $text_report = sprintf($textbotlang['users']['Report']['reportbuyafterpay'], $get_invoice['username'], $get_invoice['price_product'], $get_invoice['Volume'], $get_invoice['id_user'], $Balance_id['username'] ?? '-', $Balance_id['number'] ?? '-', $get_invoice['Service_location'], $balanceformatsell);
-        if (strlen($setting['Channel_Report']) > 0) {
+        if (function_exists('sendChannelReport')) {
+            sendChannelReport('rpt_buy_after_pay', $text_report);
+        } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
             telegram('sendmessage', [
                 'chat_id' => $setting['Channel_Report'],
                 'text' => $text_report,
@@ -1359,12 +1363,8 @@ function smartCronDebugLog($message)
     if (!smartCronFlag('smart_debug', '0')) {
         return;
     }
-    $setting = select("setting", "*", null, null, "select");
-    if (!$setting || empty($setting['Channel_Report'])) {
-        return;
-    }
-    $text = "🛠 <b>دیباگ کرون هوشمند</b>\n" . $message;
-    sendmessage($setting['Channel_Report'], $text, null, 'HTML');
+    sendChannelReport('rpt_smart_debug', "🛠 <b>دیباگ کرون هوشمند</b>
+" . $message);
 }
 
 
@@ -1378,13 +1378,85 @@ function resetSmartCronWarnings($username, $location)
     updateSmartCronState($username, $location, 'expired_notified', 0);
 }
 
-function logChannelReport($message)
+
+function reportChannelTypes()
 {
+    return [
+        'rpt_buy' => '🛍 خرید سرویس',
+        'rpt_buy_after_pay' => '🛍 خرید پس از پرداخت',
+        'rpt_extend' => '🔄 تمدید سرویس',
+        'rpt_extra_volume' => '➕ حجم اضافه',
+        'rpt_test' => '🧪 اکانت تست',
+        'rpt_discount' => '🏷 کد تخفیف',
+        'rpt_gift' => '🎁 کد هدیه',
+        'rpt_cart_accept' => '✅ تأیید رسید (ادمین)',
+        'rpt_cart_auto' => '🤖 تأیید خودکار رسید',
+        'rpt_reject' => '❌ رد رسید',
+        'rpt_remove' => '🗑 حذف سرویس + بازگشت وجه',
+        'rpt_remove_user' => '🗑 حذف سرویس توسط کاربر',
+        'rpt_remove_cron' => '⏰ حذف سرویس (کرون)',
+        'rpt_emergency' => '🚨 تمدید اضطراری',
+        'rpt_admin_balance' => '💰 تغییر موجودی توسط ادمین',
+        'rpt_new_user' => '👤 کاربر جدید / استارت',
+        'rpt_smart_debug' => '🛠 دیباگ کرون هوشمند',
+    ];
+}
+
+function ensureReportChannelSettings()
+{
+    foreach (array_keys(reportChannelTypes()) as $k) {
+        if (function_exists('ensurePaySetting')) {
+            ensurePaySetting($k, '1');
+        }
+    }
+}
+
+function isReportChannelEnabled($key)
+{
+    if (!function_exists('getPaySettingValue')) {
+        return true;
+    }
+    ensureReportChannelSettings();
+    return strval(getPaySettingValue($key, '1')) === '1';
+}
+
+function sendChannelReport($key, $text)
+{
+    if ($text === null || $text === '') {
+        return;
+    }
+    if (!isReportChannelEnabled($key)) {
+        return;
+    }
     $setting = select("setting", "*", null, null, "select");
     if (!$setting || empty($setting['Channel_Report'])) {
         return;
     }
-    sendmessage($setting['Channel_Report'], $message, null, 'HTML');
+    sendmessage($setting['Channel_Report'], $text, null, 'HTML');
+}
+
+function buildReportChannelKeyboard()
+{
+    global $textbotlang;
+    ensureReportChannelSettings();
+    $types = reportChannelTypes();
+    $rows = [];
+    foreach ($types as $key => $label) {
+        $on = isReportChannelEnabled($key);
+        $mark = $on ? '✅' : '❌';
+        $rows[] = [[
+            'text' => "{$mark} {$label}",
+            'callback_data' => "rptoggle_{$key}"
+        ]];
+    }
+    $rows[] = [['text' => '🔙 بازگشت', 'callback_data' => 'rpch_menu']];
+    return json_encode(['inline_keyboard' => $rows]);
+}
+
+
+function logChannelReport($message)
+{
+    sendChannelReport('rpt_smart_debug', $message);
 }
 
 function isPanelUserMissing($dataUser)
