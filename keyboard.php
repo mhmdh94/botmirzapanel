@@ -47,8 +47,7 @@ $keyboard = [
         [['text' => $datatextbot['text_sell']], ['text' => $datatextbot['text_usertest']]],
         [['text' => $datatextbot['text_Purchased_services']], ['text' => $datatextbot['text_Tariff_list']]],
         [['text' => $datatextbot['text_account']], ['text' => $datatextbot['text_Add_Balance']]],
-        [['text' => $datatextbot['text_support']], ['text' => $datatextbot['text_help']]],
-        [['text' => $textbotlang['users']['affiliates']['btn']]],
+        [['text' => $datatextbot['text_support']], ['text' => $textbotlang['users']['affiliates']['btn']]],
     ],
     'resize_keyboard' => true
 ];
@@ -72,7 +71,7 @@ $keyboardadmin = json_encode([
         [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['tutorial_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['settings']]],
+        [['text' => $textbotlang['Admin']['keyboardadmin']['settings']]],
         [['text' => $textbotlang['users']['backhome']]]
     ],
     'resize_keyboard' => true
@@ -179,8 +178,8 @@ $shopkeyboard = json_encode([
         [['text' => $textbotlang['Admin']['category']['add']], ['text' => $textbotlang['Admin']['category']['remove']]],
         [['text' => $textbotlang['Admin']['Product']['titlebtnedit']]],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']]],
-        [['text' => $textbotlang['Admin']['Discount']['titlebtn']], ['text' => $textbotlang['Admin']['Discount']['titlebtnremove']]],
-        [['text' => $textbotlang['Admin']['Discountsell']['create']], ['text' => $textbotlang['Admin']['Discountsell']['remove']]],
+        [['text' => $textbotlang['Admin']['keyboardadmin']['codes_section']]],
+
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true
@@ -201,7 +200,6 @@ $request_contact = json_encode([
 $sendmessageuser = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['systemsms']['sendbulkbtn']], ['text' => $textbotlang['Admin']['systemsms']['forwardbulkbtn']]],
-        [['text' => $textbotlang['Admin']['systemsms']['sendmessageauser']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true
@@ -465,7 +463,7 @@ $MethodUsername = json_encode([
 $optionMarzban = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['managepanel']['btnshowconnect']], ['text' => $textbotlang['Admin']['managepanel']['showpanelbtn']]],
-        [['text' => $textbotlang['Admin']['managepanel']['showpaneltestbtn']], ['text' => $textbotlang['Admin']['managepanel']['setinbound']]],
+        [['text' => $textbotlang['Admin']['managepanel']['showpaneltestbtn']]],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['namepanel']], ['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel']]],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editurl']], ['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editusername']]],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editpassword']]],

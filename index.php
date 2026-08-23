@@ -1313,8 +1313,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
     }
     sendmessage($from_id, $textbotlang['users']['extend']['thanks'], $keyboardextendfnished, 'HTML');
+    if (function_exists('recordSale')) {
+        recordSale($from_id, $product['price_product'], 'extend', $nameloc['username'] ?? null, $nameloc['id_invoice'] ?? null);
+    }
+
     $tg_name = $user['username'] ?? ($username ?? '');
-    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $product['name_product'], $priceproductformat, $nameloc['username'], $balanceformatsell, $nameloc['Service_location']);
+    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $nameloc['username'], $product['name_product'], $priceproductformat, $nameloc['Service_location'], $balanceformatsell);
     if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }
@@ -1569,6 +1573,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $bal_after = select("user", "Balance", "id", $from_id, "select");
     $bal_after = is_array($bal_after) ? ($bal_after['Balance'] ?? $bal_after) : $bal_after;
     $tg_user = $username ?? ($user['username'] ?? '');
+    if (function_exists('recordSale')) { recordSale($from_id, intval(str_replace(',','',$price_extra_fmt ?? $price_extra)), 'extra', $nameloc['username'] ?? null, null); }
     $text_report = sprintf(
         $textbotlang['Admin']['Report']['Extra_volume'],
         $from_id,
@@ -1867,6 +1872,15 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
     step('gettextpm', $from_id);
 } elseif ($user['step'] == 'gettextpm') {
     sendmessage($from_id, $textbotlang['users']['support']['sendmessageadmin'], $keyboard, 'HTML');
+    if (function_exists('ensureSupportPendingTable')) {
+        ensureSupportPendingTable();
+        global $pdo;
+        try {
+            $st = $pdo->prepare("INSERT INTO support_pending (id_user, username, message_text, created_at, status) VALUES (?,?,?,?, 'waiting')");
+            $st->execute([$from_id, $username ?? '', isset($text) ? $text : ($caption ?? ''), time()]);
+        } catch (Exception $e) {}
+    }
+
     $Response = json_encode([
         'inline_keyboard' => [
             [
@@ -1901,11 +1915,13 @@ if ($datain == "fqQuestions") {
 }
 if ($text == $datatextbot['text_account']) {
     $dateacc = jdate('Y/m/d');
-    $timeacc = jdate('H:i:s', time());
-    $first_name = htmlspecialchars($first_name);
+    $timeacc = jdate('H:i:s');
+    $countorder = select("invoice", "*", "id_user", $from_id, "count");
+    if (function_exists('ensureAffiliatesBalanceColumn')) ensureAffiliatesBalanceColumn();
+    $u_full = select("user", "*", "id", $from_id, "select");
+    $aff_earn = number_format(intval($u_full['affiliates_balance'] ?? 0));
     $Balanceuser = number_format($user['Balance'], 0);
-    $countorder = select("invoice", "id_user", 'id_user', $from_id, "count");
-    $text_account = sprintf($textbotlang['users']['account'], $first_name, $from_id, $Balanceuser, $countorder, $user['affiliatescount'], $dateacc, $timeacc);
+    $text_account = sprintf($textbotlang['users']['account'], $first_name, $from_id, $Balanceuser, $countorder, $user['affiliatescount'], $aff_earn, $dateacc, $timeacc);
     sendmessage($from_id, $text_account, $keyboardPanel, 'HTML');
 }
 if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
@@ -2289,7 +2305,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $Balance_prim = $user['Balance'] - $priceproduct;
     update("user", "Balance", $Balance_prim, "id", $from_id);
     $user['Balance'] = number_format($user['Balance'], 0);
-    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $info_product['price_product'], $info_product['Volume_constraint'], $from_id, $user['number'], $user['Processing_value'], $user['Balance'], $username);
+    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $info_product['price_product'], $info_product['Volume_constraint'], $from_id, $username, $user['number'], $user['Processing_value'], number_format(intval($user['Balance'])));
     if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
     }

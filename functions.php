@@ -886,8 +886,11 @@ function DirectPayment($order_id)
             if (isset($user_Balance)) {
                 $Balance_prim = $user_Balance['Balance'] + $result;
                 update("user", "Balance", $Balance_prim, "id", $Balance_id['affiliates']);
-                $result = number_format($result);
-                $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'], $result);
+                if (function_exists("addAffiliatesBalance")) {
+                    addAffiliatesBalance($Balance_id['affiliates'], $result);
+                }
+                $result_fmt = number_format($result);
+                $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'], $result_fmt);
                 sendmessage($Balance_id['affiliates'], $textadd, null, 'HTML');
             }
         }
@@ -897,7 +900,10 @@ function DirectPayment($order_id)
         update("user", "Balance", $Balance_prims, "id", $Balance_id['id']);
         $Balance_id['Balance'] = select("user", "Balance", "id", $get_invoice['id_user'], "select")['Balance'];
         $balanceformatsell = number_format($Balance_id['Balance'], 0);
-        $text_report = sprintf($textbotlang['users']['Report']['reportbuyafterpay'], $get_invoice['username'], $get_invoice['price_product'], $get_invoice['Volume'], $get_invoice['id_user'], $Balance_id['number'], $get_invoice['Service_location'], $balanceformatsell, $Balance_id['username']);
+        if (function_exists('recordSale')) {
+            recordSale($get_invoice['id_user'], $get_invoice['price_product'], 'buy', $get_invoice['username'], $get_invoice['id_invoice'] ?? null);
+        }
+        $text_report = sprintf($textbotlang['users']['Report']['reportbuyafterpay'], $get_invoice['username'], $get_invoice['price_product'], $get_invoice['Volume'], $get_invoice['id_user'], $Balance_id['username'] ?? '-', $Balance_id['number'] ?? '-', $get_invoice['Service_location'], $balanceformatsell);
         if (strlen($setting['Channel_Report']) > 0) {
             telegram('sendmessage', [
                 'chat_id' => $setting['Channel_Report'],
@@ -1116,6 +1122,129 @@ function buildBalancePackageAdminKeyboard()
 
 
 /** تنظیمات کرون هوشمند */
+
+function ensureSalesLedger()
+{
+    global $pdo;
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS sales_ledger (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            id_user BIGINT NOT NULL,
+            username VARCHAR(191) DEFAULT NULL,
+            price INT NOT NULL DEFAULT 0,
+            sale_type VARCHAR(32) NOT NULL DEFAULT 'buy',
+            id_invoice VARCHAR(64) DEFAULT NULL,
+            created_at INT NOT NULL,
+            INDEX (created_at),
+            INDEX (id_user),
+            INDEX (sale_type)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {
+        error_log('ensureSalesLedger: ' . $e->getMessage());
+    }
+}
+
+function recordSale($id_user, $price, $sale_type = 'buy', $username = null, $id_invoice = null)
+{
+    global $pdo;
+    ensureSalesLedger();
+    $price = intval($price);
+    if ($price <= 0) {
+        return;
+    }
+    try {
+        $st = $pdo->prepare("INSERT INTO sales_ledger (id_user, username, price, sale_type, id_invoice, created_at) VALUES (?,?,?,?,?,?)");
+        $st->execute([intval($id_user), $username, $price, $sale_type, $id_invoice, time()]);
+    } catch (Exception $e) {
+        error_log('recordSale: ' . $e->getMessage());
+    }
+}
+
+function salesLedgerSum($since_ts = 0, $until_ts = null)
+{
+    global $pdo;
+    ensureSalesLedger();
+    if ($until_ts === null) {
+        $until_ts = time() + 10;
+    }
+    $st = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price),0) AS sm FROM sales_ledger WHERE created_at > ? AND created_at <= ?");
+    $st->execute([intval($since_ts), intval($until_ts)]);
+    $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+    return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
+}
+
+function ensureAffiliatesBalanceColumn()
+{
+    global $pdo;
+    try {
+        $chk = $pdo->query("SHOW COLUMNS FROM user LIKE 'affiliates_balance'");
+        if ($chk && $chk->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE user ADD COLUMN affiliates_balance INT NOT NULL DEFAULT 0");
+        }
+    } catch (Exception $e) {}
+}
+
+function addAffiliatesBalance($user_id, $amount)
+{
+    global $pdo;
+    ensureAffiliatesBalanceColumn();
+    $amount = intval($amount);
+    if ($amount <= 0) return;
+    try {
+        $pdo->prepare("UPDATE user SET affiliates_balance = affiliates_balance + ? WHERE id = ?")->execute([$amount, $user_id]);
+    } catch (Exception $e) {}
+}
+
+function isAutomaticCartConfirmEnabled()
+{
+    global $domainhosts;
+    // تأیید خودکار بدون بررسی = وجود کرون croncard
+    if (function_exists('shell_exec') && is_callable('shell_exec')) {
+        $existing = @shell_exec('crontab -l 2>/dev/null');
+        if (is_string($existing) && strpos($existing, 'croncard.php') !== false) {
+            return true;
+        }
+        return false;
+    }
+    // بدون shell: از PaySetting اختیاری
+    if (function_exists('getPaySettingValue')) {
+        return getPaySettingValue('auto_cart_confirm', '0') === '1';
+    }
+    return false;
+}
+
+function ensureUserCartAutoColumn()
+{
+    global $pdo;
+    try {
+        $chk = $pdo->query("SHOW COLUMNS FROM user LIKE 'cart_auto_off'");
+        if ($chk && $chk->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE user ADD COLUMN cart_auto_off TINYINT NOT NULL DEFAULT 0");
+        }
+    } catch (Exception $e) {
+        error_log('ensureUserCartAutoColumn: ' . $e->getMessage());
+    }
+}
+
+function ensureSupportPendingTable()
+{
+    global $pdo;
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS support_pending (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            id_user BIGINT NOT NULL,
+            username VARCHAR(191) DEFAULT NULL,
+            message_text TEXT,
+            created_at INT NOT NULL,
+            status VARCHAR(16) NOT NULL DEFAULT 'waiting',
+            INDEX (status),
+            INDEX (id_user)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {
+        error_log('ensureSupportPendingTable: ' . $e->getMessage());
+    }
+}
+
 function ensureSmartCronSettings()
 {
     // پیش‌فرض همه قابلیت‌ها خاموش — ادمین از ربات روشن می‌کند
@@ -1475,4 +1604,21 @@ function isBase64($string)
         return true;
     }
     return false;
+}
+
+function buildAdminKeyboard()
+{
+    global $textbotlang;
+    return json_encode([
+        'keyboard' => [
+            [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
+            [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']], ['text' => $textbotlang['Admin']['keyboardadmin']['add_panel']]],
+            [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
+            [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]],
+            [['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]],
+            [['text' => $textbotlang['Admin']['keyboardadmin']['settings']]],
+            [['text' => $textbotlang['users']['backhome']]]
+        ],
+        'resize_keyboard' => true
+    ]);
 }

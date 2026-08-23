@@ -10,12 +10,12 @@ if (in_array($text, $textadmin) || $datain == "PANEL") {
         sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_sendmessage'], $cronCommandsendmessage), null, 'HTML');
     }
     $text_admin = sprintf($textbotlang['Admin']['login-admin'], $version);
-    sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
+    sendmessage($from_id, $text_admin, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['Admin']['Back-Adminment'] || $datain == "back_admin") {
     if ($datain == "back_admin")
         deletemessage($from_id, $message_id);
-    sendmessage($from_id, $textbotlang['Admin']['Back-Admin'], $keyboardadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Back-Admin'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     step('home', $from_id);
     return;
 } elseif ($text == $textbotlang['Admin']['channel']['changechannelbtn']) {
@@ -90,16 +90,18 @@ if ($text == $textbotlang['Admin']['channel']['setting']) {
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
+    if (function_exists('ensureSalesLedger')) ensureSalesLedger();
+    if (function_exists('ensureSupportPendingTable')) ensureSupportPendingTable();
     $time_now = time();
     $day_ago = $time_now - 86400;
     $week_ago = $time_now - 604800;
+    $month_ago = $time_now - 2592000;
     $status_ok = "(Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn' OR status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')";
     $not_test = "(name_product IS NULL OR name_product <> 'usertest')";
 
     $statistics = intval(select("user", "*", null, null, "count"));
     $sumpanel = intval(select("marzban_panel", "*", null, null, "count"));
     $count_usertest = intval(select("invoice", "*", "name_product", "usertest", "count"));
-
     $Balanceall = select("user", "SUM(Balance)", null, null, "select");
     $balance_sum = intval($Balanceall['SUM(Balance)'] ?? 0);
 
@@ -108,40 +110,46 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $invoice_cnt = intval($row_all['cnt'] ?? 0);
     $invoice_sum = intval($row_all['sm'] ?? 0);
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice
-        WHERE CAST(time_sell AS UNSIGNED) > :t0 AND CAST(time_sell AS UNSIGNED) <= :t1
-        AND {$status_ok} AND {$not_test}");
-    $stmt->execute([':t0' => $day_ago, ':t1' => $time_now]);
-    $row_day = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-    $day_cnt = intval($row_day['cnt'] ?? 0);
-    $day_sum = intval($row_day['sm'] ?? 0);
+    $all_led = function_exists('salesLedgerSum') ? salesLedgerSum(0, $time_now) : ['cnt'=>0,'sum'=>0];
+    $day_led = function_exists('salesLedgerSum') ? salesLedgerSum($day_ago, $time_now) : ['cnt'=>0,'sum'=>0];
+    $week_led = function_exists('salesLedgerSum') ? salesLedgerSum($week_ago, $time_now) : ['cnt'=>0,'sum'=>0];
+    $month_led = function_exists('salesLedgerSum') ? salesLedgerSum($month_ago, $time_now) : ['cnt'=>0,'sum'=>0];
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice
-        WHERE CAST(time_sell AS UNSIGNED) > :t0 AND CAST(time_sell AS UNSIGNED) <= :t1
-        AND {$status_ok} AND {$not_test}");
-    $stmt->execute([':t0' => $week_ago, ':t1' => $time_now]);
-    $row_week = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-    $week_cnt = intval($row_week['cnt'] ?? 0);
-    $week_sum = intval($row_week['sm'] ?? 0);
+    // اگر دفتر خالی است، از فاکتور فعلی به‌عنوان تقریبی استفاده کن (یک‌بار)
+    if ($all_led['cnt'] == 0 && $invoice_cnt > 0) {
+        $all_led = ['cnt' => $invoice_cnt, 'sum' => $invoice_sum];
+    }
+
+    $pending_pay = 0;
+    try {
+        $pending_pay = intval($pdo->query("SELECT COUNT(*) FROM Payment_report WHERE payment_Status = 'waiting'")->fetchColumn());
+    } catch (Exception $e) {}
+    $pending_sup = 0;
+    try {
+        $pending_sup = intval($pdo->query("SELECT COUNT(*) FROM support_pending WHERE status = 'waiting'")->fetchColumn());
+    } catch (Exception $e) {}
 
     $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
     $load0 = number_format(floatval($load[0] ?? 0), 2);
-    $now_label = function_exists('jdate') ? (jdate('Y/m/d H:i:s') . ' (شمسی)') : date('Y-m-d H:i:s');
+    $now_label = function_exists('jdate') ? jdate('Y/m/d H:i:s') : date('Y-m-d H:i:s');
 
     $statisticsall = sprintf(
         $textbotlang['Admin']['Statistics']['info'],
         $now_label,
         number_format($statistics),
         number_format($balance_sum),
+        number_format($all_led['cnt']),
+        number_format($all_led['sum']),
+        number_format($day_led['cnt']),
+        number_format($day_led['sum']),
+        number_format($week_led['cnt']),
+        number_format($week_led['sum']),
+        number_format($month_led['cnt']),
+        number_format($month_led['sum']),
         number_format($invoice_cnt),
         number_format($invoice_sum),
-        number_format($day_cnt),
-        number_format($day_sum),
-        number_format($week_cnt),
-        number_format($week_sum),
         number_format($count_usertest),
-        number_format($sumpanel),
-        $load0
+        number_format($sumpanel)
     );
     sendmessage($from_id, $statisticsall, null, 'HTML');
 }
@@ -838,7 +846,18 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     update("user", "Processing_value_tow", "0", "id", $Balance_id['id']);
     update("Payment_report", "payment_Status", "paid", "id_order", $order_id);
     if (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
-        sendmessage($setting['Channel_Report'], sprintf($textbotlang['Admin']['Report']['acceptcartresid'], $from_id, $Payment_report['id_user'], $Payment_report['price']), null, 'HTML');
+        $u_pay = select("user", "*", "id", $Payment_report['id_user'], "select");
+        $bal_after = number_format(intval($u_pay['Balance'] ?? 0));
+        $uname_tg = $u_pay['username'] ?? '-';
+        sendmessage($setting['Channel_Report'], sprintf(
+            $textbotlang['Admin']['Report']['acceptcartresid'],
+            $from_id,
+            $Payment_report['id_user'],
+            $uname_tg,
+            number_format(intval($Payment_report['price'])),
+            $bal_after,
+            $Payment_report['id_order']
+        ), null, 'HTML');
     }
 }
 #-------------------------#
@@ -1930,12 +1949,35 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
             [['text' => $textbotlang['Admin']['getlimitusertest']['setlimitbtn'], 'callback_data' => "limitusertest_" . $text]],
             [['text' => $textbotlang['Admin']['ManageUser']['verify'], 'callback_data' => "verify_" . $text], ['text' => $textbotlang['Admin']['ManageUser']['removeverify'], 'callback_data' => "verifyun_" . $text]],
             [['text' => $textbotlang['Admin']['ManageUser']['vieworderuser'], 'callback_data' => "vieworderall_" . $text], ['text' => $textbotlang['Admin']['ManageUser']['addorder'], 'callback_data' => "addordermanualـ" . $text]],
+            [['text' => '✉️ ارسال پیام به کاربر', 'callback_data' => "Response_" . $text]],
         ]
     ];
     $keyboardmanage = json_encode($keyboardmanage);
     $user['Balance'] = number_format($user['Balance']);
     $lastmessage = jdate('Y/m/d H:i:s', $user['last_message_time']);
-    sendmessage($from_id, sprintf($textbotlang['Admin']['ManageUser']['infouser'], $user['User_Status'], $user['username'], $text, $text, $lastmessage, $user['limit_usertest'], $roll_Status, $user['number'], $user['Balance'], $dayListSell, $balanceall, $subbuyuser, $user['affiliatescount'], $user['affiliates'], $user['verify']), $keyboardmanage, 'HTML');
+    if (function_exists('ensureUserCartAutoColumn')) ensureUserCartAutoColumn();
+    if (function_exists('ensureAffiliatesBalanceColumn')) ensureAffiliatesBalanceColumn();
+    $aff_earn = intval($user['affiliates_balance'] ?? 0);
+    $cart_auto_off = intval($user['cart_auto_off'] ?? 0);
+    $global_auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
+    $cart_label = !$global_auto
+        ? '—'
+        : ($cart_auto_off
+            ? ($textbotlang['Admin']['ManageUser']['cart_auto_status_off'] ?? '❌ غیرفعال')
+            : ($textbotlang['Admin']['ManageUser']['cart_auto_status_on'] ?? '✅ فعال'));
+    $keyboardmanage_arr = json_decode($keyboardmanage, true);
+    if (!is_array($keyboardmanage_arr)) $keyboardmanage_arr = ['inline_keyboard' => []];
+    // دکمه فقط وقتی تأیید خودکار بدون بررسی سراسری روشن است
+    if ($global_auto) {
+        $keyboardmanage_arr['inline_keyboard'][] = [[
+            'text' => $cart_auto_off
+                ? ($textbotlang['Admin']['ManageUser']['cart_auto_off'] ?? '❌ تأیید خودکار رسید کاربر: غیرفعال')
+                : ($textbotlang['Admin']['ManageUser']['cart_auto_on'] ?? '✅ تأیید خودکار رسید کاربر: فعال'),
+            'callback_data' => 'toggle_cart_auto_' . $text
+        ]];
+    }
+    $keyboardmanage = json_encode($keyboardmanage_arr);
+    sendmessage($from_id, sprintf($textbotlang['Admin']['ManageUser']['infouser'], $user['User_Status'], $user['username'], $text, $text, $lastmessage, $user['limit_usertest'], $roll_Status, $user['number'], $user['Balance'], $dayListSell, $balanceall, $subbuyuser, $user['affiliatescount'], $user['affiliates'], $user['verify'], number_format($aff_earn), $cart_label), $keyboardmanage, 'HTML');
     sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardadmin, 'HTML');
     step('home', $from_id);
 }
@@ -2006,7 +2048,12 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['setinbound']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['setinbounddec'], $backadmin, 'HTML');
-    step("setinboundandprotocol", $from_id);
+    if (($panel['type'] ?? '') == 'marzban') {
+        sendmessage($from_id, "✅ برای پاسارگارد/مرزبان گروهی، اینباند از گروه پنل خوانده می‌شود و نیاز به تنظیم پروتکل نیست.", $keyboardadmin, 'HTML');
+        step('home', $from_id);
+    } else {
+        step("setinboundandprotocol", $from_id);
+    }
 } elseif ($user['step'] == "setinboundandprotocol") {
     $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if ($panel['type'] == "marzban") {
@@ -2721,4 +2768,69 @@ if ($datain == "smartcron_set_limit") {
     update("PaySetting", "ValuePay", strval($n), "NamePay", "smart_batch_limit");
     sendmessage($from_id, "✅ تعداد هر اجرا: <code>{$n}</code>", buildSmartCronAdminKeyboard(), 'HTML');
     step('home', $from_id);
+}
+
+
+if ($text == ($textbotlang['Admin']['keyboardadmin']['codes_section'] ?? '🎟 کد تخفیف و هدیه')) {
+    $kb = json_encode(['keyboard' => [
+        [['text' => $textbotlang['Admin']['Discountsell']['create']], ['text' => $textbotlang['Admin']['Discountsell']['remove']]],
+        [['text' => $textbotlang['Admin']['Discount']['titlebtn']], ['text' => $textbotlang['Admin']['Discount']['titlebtnremove']]],
+        [['text' => $textbotlang['Admin']['Back-Adminment']]]
+    ], 'resize_keyboard' => true]);
+    sendmessage($from_id, "🎟 مدیریت کد تخفیف و کد هدیه را انتخاب کنید:", $kb, 'HTML');
+}
+
+
+
+
+if (preg_match('/^toggle_cart_auto_(\d+)$/', strval($datain), $m_ca)) {
+    $cb_id = $update['callback_query']['id'] ?? '';
+    if (function_exists('isAutomaticCartConfirmEnabled') && !isAutomaticCartConfirmEnabled()) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $cb_id,
+            'text' => 'تأیید خودکار بدون بررسی سراسری خاموش است',
+            'show_alert' => true
+        ]);
+        return;
+    }
+    if (function_exists('ensureUserCartAutoColumn')) ensureUserCartAutoColumn();
+    $uid = $m_ca[1];
+    $u = select("user", "*", "id", $uid, "select");
+    if (!$u) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $cb_id,
+            'text' => 'کاربر یافت نشد',
+            'show_alert' => true
+        ]);
+        return;
+    }
+    $newv = intval($u['cart_auto_off'] ?? 0) ? 0 : 1;
+    update("user", "cart_auto_off", strval($newv), "id", $uid);
+    $btn_txt = $newv
+        ? ($textbotlang['Admin']['ManageUser']['cart_auto_off'] ?? '❌ تأیید خودکار رسید کاربر: غیرفعال')
+        : ($textbotlang['Admin']['ManageUser']['cart_auto_on'] ?? '✅ تأیید خودکار رسید کاربر: فعال');
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => $cb_id,
+        'text' => $newv ? 'غیرفعال شد' : 'فعال شد',
+        'show_alert' => false
+    ]);
+    // فقط دکمه را عوض کن — متن پیام دست نخورد
+    $old_kb = $update['callback_query']['message']['reply_markup']['inline_keyboard'] ?? [];
+    if (is_array($old_kb) && count($old_kb) > 0) {
+        foreach ($old_kb as &$row) {
+            if (!is_array($row)) continue;
+            foreach ($row as &$btn) {
+                if (isset($btn['callback_data']) && strpos($btn['callback_data'], 'toggle_cart_auto_') === 0) {
+                    $btn['text'] = $btn_txt;
+                }
+            }
+            unset($btn);
+        }
+        unset($row);
+        telegram('editMessageReplyMarkup', [
+            'chat_id' => $from_id,
+            'message_id' => $message_id,
+            'reply_markup' => json_encode(['inline_keyboard' => $old_kb])
+        ]);
+    }
 }

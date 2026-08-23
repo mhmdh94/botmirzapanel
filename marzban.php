@@ -117,35 +117,31 @@ function adduser($username,$expire,$data_limit,$location,$is_test = false)
     $url = $marzban_list_get['url_panel']."/api/user";
     $header_value = 'Bearer ';
     
-    // Ensure default groups exist for newer Marzban versions (>0.8.4)
-    ensure_default_groups($location);
-
+    // گروه را از خود پنل می‌خوانیم (بدون ساخت mirza_paid / mirza_test)
     $data = array(
-        "proxies" => json_decode($marzban_list_get['proxies']),
         "data_limit" => $data_limit,
         "username" => $username
     );
-
-    // Add group assignment for Marzban >0.8.4 using group_ids
-    if (is_marzban_version_above_084($location)) {
-        $group_name = $is_test ? "mirza_test" : "mirza_paid";
-        $groups = get_groups($location);
-        $group_id = null;
-        if (is_array($groups) && isset($groups['groups'])) {
-            foreach ($groups['groups'] as $group) {
-                if (isset($group['name']) && $group['name'] === $group_name && isset($group['id'])) {
-                    $group_id = $group['id'];
-                    break;
-                }
-            }
-        }
-        if ($group_id !== null) {
-            $data['group_ids'] = array($group_id);
+    // proxies فقط اگر در پنل تنظیم شده باشد (حالت قدیمی)
+    if (!empty($marzban_list_get['proxies']) && $marzban_list_get['proxies'] != "null") {
+        $decoded_proxies = json_decode($marzban_list_get['proxies'], true);
+        if (is_array($decoded_proxies) && count($decoded_proxies) > 0) {
+            $data["proxies"] = $decoded_proxies;
         }
     }
-    
-    if($marzban_list_get['inbounds'] != null and $marzban_list_get['inbounds'] != "null"){
-        $data['inbounds'] = json_decode($marzban_list_get['inbounds'],true);
+
+    if (is_marzban_version_above_084($location)) {
+        $group_ids = resolve_panel_group_ids($location, $is_test, $marzban_list_get);
+        if (is_array($group_ids) && count($group_ids) > 0) {
+            $data['group_ids'] = $group_ids;
+        }
+    }
+
+    if ($marzban_list_get['inbounds'] != null && $marzban_list_get['inbounds'] != "null") {
+        $decoded_inbounds = json_decode($marzban_list_get['inbounds'], true);
+        if (is_array($decoded_inbounds) && count($decoded_inbounds) > 0) {
+            $data['inbounds'] = $decoded_inbounds;
+        }
     }
     if($expire == "0"){
         $data['expire'] = 0;
@@ -470,6 +466,54 @@ function get_groups($location) {
 
 //----------------------------------
 // Ensure default groups exist for Marzban >0.8.4 (now passes inbound_tags) (updated to avoid duplicates)
+
+/**
+ * انتخاب group_ids از گروه‌های موجود در پنل (پاسارگارد/مرزبان)
+ * اولویت: نام ذخیره‌شده در inboundid پنل (اگر متنی باشد) → گروه test برای تست → اولین گروه موجود
+ */
+function resolve_panel_group_ids($location, $is_test = false, $panel_row = null)
+{
+    if ($panel_row === null) {
+        $panel_row = select("marzban_panel", "*", "name_panel", $location, "select");
+    }
+    $resp = get_groups($location);
+    $list = _extract_groups_array($resp);
+    if (!is_array($list) || count($list) === 0) {
+        return null;
+    }
+    $by_name = array();
+    foreach ($list as $g) {
+        if (!isset($g['id'])) continue;
+        $n = isset($g['name']) ? strtolower(trim($g['name'])) : '';
+        if ($n !== '') {
+            $by_name[$n] = intval($g['id']);
+        }
+    }
+    // اگر ادمین نام گروه را در inboundid گذاشته باشد
+    if ($panel_row && isset($panel_row['inboundid'])) {
+        $pref = trim(strval($panel_row['inboundid']));
+        if ($pref !== '' && $pref !== '0' && !ctype_digit($pref)) {
+            $key = strtolower($pref);
+            if (isset($by_name[$key])) {
+                return array($by_name[$key]);
+            }
+        }
+    }
+    if ($is_test) {
+        foreach ($by_name as $n => $id) {
+            if (strpos($n, 'test') !== false || strpos($n, 'تست') !== false) {
+                return array($id);
+            }
+        }
+    }
+    // اولین گروه
+    $first = reset($list);
+    if (isset($first['id'])) {
+        return array(intval($first['id']));
+    }
+    return null;
+}
+
 function ensure_default_groups($location) {
     static $already_ran = array();
     if (isset($already_ran[$location])) { return array(); }
@@ -488,28 +532,9 @@ function ensure_default_groups($location) {
             }
         }
 
-        $required_groups = array('mirza_paid', 'mirza_test');
-        $created_groups = array();
-
-        // Fetch inbound tags once (reuse)
-        $inbound_tags = get_inbound_tags_from_cores($location);
-        if (count($inbound_tags) === 0) {
-            $inbound_tags = get_all_inbounds($location);
-        }
-
-        foreach ($required_groups as $group_name) {
-            if (!in_array(strtolower($group_name), $group_names, true)) {
-                $result = create_group($location, $group_name, $inbound_tags);
-                if (isset($result['name'])) {
-                    $created_groups[] = $result['name'];
-                    $group_names[] = strtolower($result['name']); // update local cache
-                } else {
-                    error_log('Failed creating group ' . $group_name . ' response: ' . json_encode($result));
-                }
-            }
-        }
-
-        return $created_groups;
+        // دیگر گروه‌های mirza_paid / mirza_test ساخته نمی‌شوند.
+        // گروه از پنل (گروه‌های موجود ادمین) خوانده می‌شود.
+        return array();
     } catch (Exception $e) {
         error_log("Error ensuring default groups: " . $e->getMessage());
         return false;

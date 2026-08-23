@@ -609,6 +609,7 @@ $textbotlang['users']['account']  = "
 💰 موجودی: %s تومان
 🛍 تعداد سرویس های خریداری شده : %s
 🤝 تعداد زیر مجموعه های شما : %s نفر
+💸 پورسانت دریافتی از زیرمجموعه: <code>%s</code> تومان
     
 📆 %s → ⏰ %s";
 $textbotlang['users']['accountbtn'] = "👨🏻‍💻 مشخصات کاربری";
@@ -697,25 +698,21 @@ $textbotlang['Admin']['channel']['changechannelbtn'] = "📣 تنظیم کانا
 $textbotlang['Admin']['channel']['channelreport'] = "📣 تنظیم کانال گزارش";
 
 
-$textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار کلی ربات</b>
+$textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 🕐 %s
 
-👥 <b>کاربران</b>
-• تعداد کاربران: <code>%s</code> نفر
-• موجودی کل کیف‌پول‌ها: <code>%s</code> تومان
+👥 کاربران: <code>%s</code>
+💰 موجودی کل: <code>%s</code> تومان
 
 🛒 <b>فروش</b>
-• سرویس‌های فعال (غیرتست): <code>%s</code> عدد
-• جمع مبلغ سرویس‌های فعال: <code>%s</code> تومان
-• فروش ۲۴ ساعت اخیر: <code>%s</code> عدد | <code>%s</code> تومان
-• فروش ۷ روز اخیر: <code>%s</code> عدد | <code>%s</code> تومان
+• کل: <code>%s</code> عدد | <code>%s</code> تومان
+• ۲۴ ساعت: <code>%s</code> عدد | <code>%s</code> تومان
+• ۷ روز: <code>%s</code> عدد | <code>%s</code> تومان
+• ۳۰ روز: <code>%s</code> عدد | <code>%s</code> تومان
 
-🧪 <b>تست</b>
-• اکانت تست ساخته‌شده: <code>%s</code> عدد
-
-🖥 <b>سیستم</b>
-• تعداد پنل‌ها: <code>%s</code>
-• بار سرور (load): <code>%s</code>";
+📦 سرویس فعال: <code>%s</code> | مبلغ: <code>%s</code> تومان
+🧪 اکانت تست: <code>%s</code>
+🖥 پنل‌ها: <code>%s</code>";
 
 
 
@@ -795,16 +792,14 @@ $textbotlang['Admin']['managepanel']['ChangedusernamePanel'] = "✅ نام کا�
 $textbotlang['Admin']['managepanel']['getpasswordnew'] = "رمز عبور جدید پنل را ارسال کنید";
 $textbotlang['Admin']['managepanel']['ChangedpasswordPanel'] = "✅ رمز عبور پنل با موفقیت تغییر کرد.";
 $textbotlang['Admin']['managepanel']['btnshowconnect'] = "🔌 وضعیت اتصال پنل";
-$textbotlang['Admin']['managepanel']['infomarzban'] = "
-    آمار پنل شما👇:
-                                 
-🖥 وضعیت اتصال پنل مرزبان: ✅ پنل متصل است
-👥  تعداد کل کاربران: %s
-👤 تعداد کاربران فعال: %s
-📡 نسخه پنل مرزبان :  %s
- 💻 رم  کل سرور  : %s
-💻 مصرف رم پنل مرزبان  : %s
-🌐 ترافیک کل مصرف شده  ( آپلود / دانلود) : %s";
+$textbotlang['Admin']['managepanel']['infomarzban'] = "🖥 <b>آمار پنل پاسارگارد</b>
+
+👥 کل کاربران پنل: <code>%s</code>
+✅ کاربران فعال: <code>%s</code>
+📦 نسخه پنل: <code>%s</code>
+💾 رم کل: %s
+📊 رم مصرفی: %s
+🌐 پهنای باند (ورود+خروج): %s";
 $textbotlang['Admin']['managepanel']['infomarzneshin'] = "
     آمار پنل شما👇:
 🖥 وضعیت اتصال پنل مرزبان: ✅ پنل متصل است
@@ -864,7 +859,7 @@ $textbotlang['Admin']['managepanel']['setedinbound'] = "✅ اینباند و پ
 $textbotlang['Admin']['managepanel']['notoffsublink'] = "ابتدا لینک اشتراک را خاموش کنید";
 $textbotlang['Admin']['managepanel']['subinvalidDomain'] = "لینک ساب فعال نمی باشد";
 $textbotlang['Admin']['managepanel']['subinvalid'] = "لینک ساب معتبر نمی باشد";
-$textbotlang['Admin']['managepanel']['type']['marzban'] = "مرزبان";
+$textbotlang['Admin']['managepanel']['type']['marzban'] = "پاسارگارد";
 $textbotlang['Admin']['managepanel']['type']['marzneshin'] = "مرزنشین";
 $textbotlang['Admin']['managepanel']['type']['s-ui'] = "s-ui";
 $textbotlang['Admin']['managepanel']['type']['wgdashboard'] = "wgdashboard";
@@ -966,7 +961,9 @@ $textbotlang['Admin']['ManageUser']['infouser'] = "👀 اطلاعات کارب�
 ⭕️ جمع کل خرید : %s
 ⭕️ تعداد زیرمجموعه کاربر : %s
 ⭕  معرف کاربر : %s
-⭕  وضعیت احراز کاربرر : %s";
+⭕  وضعیت احراز کاربر : %s
+💰 درآمد زیرمجموعه‌گیری (پورسانت): <code>%s</code> تومان
+⚙️ تأیید خودکار رسید کاربر: %s";
 $textbotlang['Admin']['ManageUser']['addorder'] = "🛒 افزودن دستی سفارش";
 
 $textbotlang['Admin']['systemsms']['sendbulkbtn'] = "✉️ ارسال همگانی";
@@ -1209,7 +1206,7 @@ $textbotlang['Admin']['keyboardadmin']['admin_section'] = "👨‍🔧 بخش ا
 $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] = "📝 تنظیم متن ربات";
 $textbotlang['Admin']['keyboardadmin']['user_services'] = "👤 خدمات کاربر";
 $textbotlang['Admin']['keyboardadmin']['user_search'] = "👁‍🗨 جستجو کاربر";
-$textbotlang['Admin']['keyboardadmin']['send_message'] = "📨 ارسال پیام";
+$textbotlang['Admin']['keyboardadmin']['send_message'] = "📨 ارسال پیام همگانی";
 $textbotlang['Admin']['keyboardadmin']['affiliate_settings'] = "👥 تنظیمات زیر مجموعه گیری";
 $textbotlang['Admin']['keyboardadmin']['tutorial_section'] = "📚 بخش آموزش";
 $textbotlang['Admin']['keyboardadmin']['settings'] = "⚙️ تنظیمات";
@@ -1291,15 +1288,15 @@ $textbotlang['Admin']['category']['added'] = "📌 دسته بندی خود را
 
 
 
-$textbotlang['Admin']['Report']['extend'] = "⭕️ تمدید سرویس
+$textbotlang['Admin']['Report']['extend'] = "🔄 تمدید سرویس
 
-🆔 آیدی عددی کاربر: <code>%s</code>
-👤 یوزرنیم تلگرام: @%s
+🆔 کاربر: <code>%s</code>
+👤 یوزرنیم: @%s
+🔑 کانفیگ: <code>%s</code>
 🛍 محصول: %s
-💰 مبلغ تمدید: %s تومان
-🔑 نام کاربری سرویس (پنل): <code>%s</code>
-💳 موجودی کاربر: %s تومان
-📍 پنل / لوکیشن: %s";
+💰 مبلغ: %s تومان
+📍 پنل: %s
+💳 موجودی بعد: %s تومان";
 $textbotlang['Admin']['Report']['Extra_volume'] = "⭕️ خرید حجم اضافه
 
 🆔 آیدی عددی کاربر: <code>%s</code>
@@ -1322,11 +1319,14 @@ $textbotlang['Admin']['Report']['ReportTestCreate'] = "📣 ساخت اکانت 
 📝 نام کاربر: %s
 📍 پنل / لوکیشن: %s
 📱 شماره تلفن: %s";
-$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 تأیید رسید کارت‌به‌کارت توسط ادمین
+$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 تأیید رسید کارت‌به‌کارت
 
-👨‍💼 آیدی ادمین تأییدکننده: <code>%s</code>
-🆔 آیدی عددی مشتری: <code>%s</code>
-💰 مبلغ تأییدشده: %s تومان";
+👨‍💼 ادمین: <code>%s</code>
+🆔 مشتری: <code>%s</code>
+👤 یوزرنیم: @%s
+💰 مبلغ: %s تومان
+💳 موجودی بعد از تأیید: %s تومان
+🧾 شماره سفارش: <code>%s</code>";
 $textbotlang['Admin']['Report']['reportremove'] = "⭕️ تأیید حذف سرویس + بازگشت وجه
 
 👨‍💼 آیدی ادمین تأییدکننده: <code>%s</code>
@@ -1347,37 +1347,41 @@ $textbotlang['Admin']['Report']['nowpayment'] = "💵 پرداخت جدید
 🆔 آیدی عددی کاربر: <code>%s</code>
 💰 مبلغ تراکنش: %s تومان
 💳 روش پرداخت: NowPayments";
-$textbotlang['Admin']['Report']['autocart'] = "💵 پرداخت جدید
+$textbotlang['Admin']['Report']['autocart'] = "💵 پرداخت جدید (تأیید خودکار بدون بررسی)
 
-🆔 آیدی عددی کاربر: <code>%s</code>
-💰 مبلغ تراکنش: %s تومان
-💳 روش پرداخت: تأیید خودکار بدون بررسی";
+🆔 کاربر: <code>%s</code>
+👤 یوزرنیم: @%s
+💰 مبلغ: %s تومان
+💳 موجودی بعد از واریز: %s تومان
+🧾 سفارش: <code>%s</code>";
 $textbotlang['users']['Report']['discountused'] = "⭕️ یک کاربر با نام کاربری @%s  و آیدی عددی %s از کد تخفیف %s استفاده کرد.";
 $textbotlang['users']['Report']['reportbuy'] = "🛍 خرید جدید
 
-🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
-💰 قیمت محصول: %s تومان
-📦 حجم محصول: %s
-🆔 آیدی عددی کاربر: <code>%s</code>
-📱 شماره تلفن: %s
-📍 پنل / لوکیشن: %s
-💳 موجودی کاربر: %s تومان
-👤 یوزرنیم تلگرام: @%s";
-$textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 خرید جدید پس از پرداخت موفق
+🔑 کانفیگ: <code>%s</code>
+💰 قیمت: %s تومان
+📦 حجم: %s
+🆔 کاربر: <code>%s</code>
+👤 یوزرنیم: @%s
+📱 موبایل: %s
+📍 پنل: %s
+💳 موجودی: %s تومان";
+$textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 خرید پس از پرداخت
 
-🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
-💰 قیمت محصول: %s تومان
-📦 حجم محصول: %s
-🆔 آیدی عددی کاربر: <code>%s</code>
-📱 شماره تلفن: %s
-📍 پنل / لوکیشن: %s
-💳 موجودی کاربر: %s تومان
-👤 یوزرنیم تلگرام: @%s";
-$textbotlang['users']['Report']['reportpayiranpay'] = "💵 پرداخت جدید
+🔑 کانفیگ: <code>%s</code>
+💰 قیمت: %s تومان
+📦 حجم: %s
+🆔 کاربر: <code>%s</code>
+👤 یوزرنیم: @%s
+📱 موبایل: %s
+📍 پنل: %s
+💳 موجودی: %s تومان";
+$textbotlang['users']['Report']['reportpayiranpay'] = "💵 پرداخت کریپتو
 
-🆔 آیدی عددی کاربر: <code>%s</code>
-💰 مبلغ تراکنش: %s تومان
-💳 روش پرداخت: کریپتو / ارزی-ریالی";
+🆔 کاربر: <code>%s</code>
+👤 یوزرنیم: @%s
+💰 مبلغ: %s تومان
+💳 موجودی بعد: %s تومان
+🧾 سفارش: <code>%s</code>";
 $textbotlang['users']['Report']['discountuser'] = "🎁 استفاده از کد هدیه
 
 🏷 کد: <code>%s</code>
@@ -1513,3 +1517,11 @@ $textbotlang['users']['cron']['emergency_ok'] = "✅ تمدید اضطراری �
 $textbotlang['users']['cron']['emergency_used'] = "❌ تمدید اضطراری این سرویس قبلاً استفاده شده است.";
 $textbotlang['users']['cron']['emergency_off'] = "❌ تمدید اضطراری توسط مدیر غیرفعال است.";
 $textbotlang['users']['cron']['emergency_fail'] = "❌ انجام تمدید اضطراری ممکن نشد. با پشتیبانی در ارتباط باشید.";
+
+$textbotlang['Admin']['keyboardadmin']['codes_section'] = "🎟 کد تخفیف و هدیه";
+$textbotlang['Admin']['keyboardadmin']['resend_pending'] = "📨 رسیدهای تأییدنشده";
+$textbotlang['Admin']['keyboardadmin']['resend_support'] = "💬 پشتیبانی بدون پاسخ";
+$textbotlang['Admin']['ManageUser']['cart_auto_on'] = "✅ تأیید خودکار رسید کاربر: فعال";
+$textbotlang['Admin']['ManageUser']['cart_auto_off'] = "❌ تأیید خودکار رسید کاربر: غیرفعال";
+$textbotlang['Admin']['ManageUser']['cart_auto_status_on'] = "✅ فعال";
+$textbotlang['Admin']['ManageUser']['cart_auto_status_off'] = "❌ غیرفعال";
