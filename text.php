@@ -1319,12 +1319,15 @@ $textbotlang['Admin']['Report']['ReportTestCreate'] = "📣 ساخت اکانت 
 📝 نام کاربر: %s
 📍 پنل / لوکیشن: %s
 📱 شماره تلفن: %s";
-$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 تأیید رسید کارت‌به‌کارت
+$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 تأیید رسید پرداخت
 
 👨‍💼 ادمین: <code>%s</code>
 🆔 مشتری: <code>%s</code>
 👤 یوزرنیم: @%s
-💰 مبلغ: %s تومان
+💳 روش پرداخت: %s
+🏷 نوع واریز: %s
+💰 مبلغ پرداختی: %s تومان
+💎 اعتبار واریزی به کیف پول: %s تومان
 💳 موجودی بعد از تأیید: %s تومان
 🧾 شماره سفارش: <code>%s</code>";
 $textbotlang['Admin']['Report']['reportremove'] = "⭕️ تأیید حذف سرویس + بازگشت وجه
@@ -1351,7 +1354,10 @@ $textbotlang['Admin']['Report']['autocart'] = "💵 پرداخت جدید (تأ�
 
 🆔 کاربر: <code>%s</code>
 👤 یوزرنیم: @%s
-💰 مبلغ: %s تومان
+💳 روش پرداخت: %s
+🏷 نوع واریز: %s
+💰 مبلغ پرداختی: %s تومان
+💎 اعتبار واریزی: %s تومان
 💳 موجودی بعد از واریز: %s تومان
 🧾 سفارش: <code>%s</code>";
 $textbotlang['users']['Report']['discountused'] = "⭕️ یک کاربر با نام کاربری @%s  و آیدی عددی %s از کد تخفیف %s استفاده کرد.";

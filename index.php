@@ -2493,10 +2493,10 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         }
         deletemessage($from_id, $message_id);
         sendmessage($from_id, $built['text'], $backuser, 'HTML');
-        step('cart_to_cart_user', $from_id);
+        step('crypto_receipt_user', $from_id);
     }
 
-} elseif ($user['step'] == "cart_to_cart_user") {
+} elseif ($user['step'] == "cart_to_cart_user" || $user['step'] == "crypto_receipt_user") {
     if (!$photo) {
         sendmessage($from_id, $textbotlang['users']['Balance']['Invalid-receipt'], null, 'HTML');
         return;
@@ -2504,7 +2504,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
     $payment_Status = "waiting";
-    $Payment_Method = "cart to cart";
+    $Payment_Method = ($user['step'] == "crypto_receipt_user") ? "crypto" : "cart to cart";
     if ($user['Processing_value_tow'] == "getconfigafterpay") {
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
     } elseif ($user['Processing_value_tow'] == "balpkg" && intval($user['Processing_value_one']) > 0) {

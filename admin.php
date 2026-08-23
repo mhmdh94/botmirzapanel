@@ -944,12 +944,21 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         $u_pay = select("user", "*", "id", $Payment_report['id_user'], "select");
         $bal_after = number_format(intval(str_replace(',', '', strval($u_pay['Balance'] ?? 0))));
         $uname_tg = $u_pay['username'] ?? '-';
+        $pd = function_exists('describePaymentReport') ? describePaymentReport($Payment_report) : [
+            'method_label' => '💳 کارت‌به‌کارت',
+            'type_label' => 'افزایش موجودی',
+            'pay_fmt' => number_format(intval($Payment_report['price'])),
+            'credit_fmt' => number_format(intval($Payment_report['price'])),
+        ];
         sendChannelReport('rpt_cart_accept', sprintf(
             $textbotlang['Admin']['Report']['acceptcartresid'],
             $from_id,
             $Payment_report['id_user'],
             $uname_tg,
-            number_format(intval($Payment_report['price'])),
+            $pd['method_label'],
+            $pd['type_label'],
+            $pd['pay_fmt'],
+            $pd['credit_fmt'],
             $bal_after,
             $Payment_report['id_order']
         ));
