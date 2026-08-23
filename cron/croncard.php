@@ -39,13 +39,18 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     if ($Payment_report['payment_Status'] == "paid") {
         continue;
     }
+    // کاربر ریسکی: تأیید خودکار برای او غیرفعال است
+    if (function_exists('ensureUserCartAutoColumn')) { ensureUserCartAutoColumn(); }
+    if (is_array($Balance_id) && intval($Balance_id['cart_auto_off'] ?? 0) === 1) {
+        continue;
+    }
     update("Payment_report","payment_Status","paid","id_order",$Payment_report['id_order']);
     update("Payment_report","dec_not_confirmed","Confirmed by robot","id_order",$Payment_report['id_order']);
     DirectPayment($Payment_report['id_order'],"../images.jpg");
     if (strlen($setting['Channel_Report']) > 0) {
         telegram('sendmessage',[
             'chat_id' => $setting['Channel_Report'],
-            'text' => sprintf($textbotlang['Admin']['Report']['autocart'],$Balance_id['id'],$Payment_report['price']),
+            'text' => sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', number_format(intval($Payment_report['price'])), number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0)), $Payment_report['id_order']),
             'parse_mode' => "HTML"
         ]);
     }
