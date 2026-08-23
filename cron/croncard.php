@@ -36,7 +36,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     if ($since_start >=3600)continue;
     $Payment_report = select("Payment_report","*","id_order",$row['id_order'],"select");
     $Balance_id = select("user","*","id",$Payment_report['id_user'],"select");
-    if ($Payment_report['payment_Status'] == "paid") {
+    if (($Payment_report['payment_Status'] ?? '') == "paid" || ($Payment_report['payment_Status'] ?? '') == "reject") {
         continue;
     }
     // کاربر ریسکی: تأیید خودکار برای او غیرفعال است
@@ -44,13 +44,25 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     if (is_array($Balance_id) && intval($Balance_id['cart_auto_off'] ?? 0) === 1) {
         continue;
     }
-    update("Payment_report","payment_Status","paid","id_order",$Payment_report['id_order']);
-    update("Payment_report","dec_not_confirmed","Confirmed by robot","id_order",$Payment_report['id_order']);
+    // قفل اتمیک تا با تأیید دستی ادمین دوبار شارژ نشود
+    global $pdo;
+    try {
+        $stmt_lock = $pdo->prepare("UPDATE Payment_report SET payment_Status = 'paid', dec_not_confirmed = 'Confirmed by robot' WHERE id_order = ? AND payment_Status = 'waiting'");
+        $stmt_lock->execute([$Payment_report['id_order']]);
+        if ($stmt_lock->rowCount() < 1) {
+            continue;
+        }
+    } catch (Exception $e) {
+        continue;
+    }
     DirectPayment($Payment_report['id_order'],"../images.jpg");
-    if (strlen($setting['Channel_Report']) > 0) {
+    $auto_txt = sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', number_format(intval($Payment_report['price'])), number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0)), $Payment_report['id_order']);
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_cart_auto', $auto_txt);
+    } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
         telegram('sendmessage',[
             'chat_id' => $setting['Channel_Report'],
-            'text' => sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', number_format(intval($Payment_report['price'])), number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0)), $Payment_report['id_order']),
+            'text' => $auto_txt,
             'parse_mode' => "HTML"
         ]);
     }
