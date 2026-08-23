@@ -90,62 +90,87 @@ if ($text == $textbotlang['Admin']['channel']['setting']) {
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
-    if (function_exists('ensureSalesLedger')) ensureSalesLedger();
-    if (function_exists('ensureSupportPendingTable')) ensureSupportPendingTable();
-    $time_now = time();
-    $day_ago = $time_now - 86400;
-    $week_ago = $time_now - 604800;
-    $month_ago = $time_now - 2592000;
+    global $pdo;
+    $now = time();
+    $day_ago = $now - 86400;
+    $week_ago = $now - 604800;
+    $month_ago = $now - 2592000;
     $status_ok = "(Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn' OR status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')";
-    $not_test = "(name_product IS NULL OR name_product <> 'usertest')";
+    $not_test = "name_product != 'usertest'";
 
     $statistics = intval(select("user", "*", null, null, "count"));
     $sumpanel = intval(select("marzban_panel", "*", null, null, "count"));
     $count_usertest = intval(select("invoice", "*", "name_product", "usertest", "count"));
     $Balanceall = select("user", "SUM(Balance)", null, null, "select");
-    $balance_sum = intval($Balanceall['SUM(Balance)'] ?? 0);
+    $bal = is_array($Balanceall) ? intval($Balanceall['SUM(Balance)'] ?? 0) : 0;
 
-    $stmt = $pdo->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice WHERE {$status_ok} AND {$not_test}");
-    $row_all = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-    $invoice_cnt = intval($row_all['cnt'] ?? 0);
-    $invoice_sum = intval($row_all['sm'] ?? 0);
+    // کل فروش از فاکتورهای موجود (مثل نسخه اصلی)
+    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice WHERE {$status_ok} AND {$not_test}");
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $invoice_cnt = intval($row['cnt'] ?? 0);
+    $invoice_sum = intval($row['sm'] ?? 0);
 
-    $all_led = function_exists('salesLedgerSum') ? salesLedgerSum(0, $time_now) : ['cnt'=>0,'sum'=>0];
-    $day_led = function_exists('salesLedgerSum') ? salesLedgerSum($day_ago, $time_now) : ['cnt'=>0,'sum'=>0];
-    $week_led = function_exists('salesLedgerSum') ? salesLedgerSum($week_ago, $time_now) : ['cnt'=>0,'sum'=>0];
-    $month_led = function_exists('salesLedgerSum') ? salesLedgerSum($month_ago, $time_now) : ['cnt'=>0,'sum'=>0];
+    // بازه‌های زمانی — مقایسه time_sell با unix (مثل ربات اصلی برای یک روز)
+    // اگر time_sell رشته تاریخ باشد، چند فرمت پوشش داده می‌شود
+    $periodStats = function ($from_ts) use ($pdo, $status_ok, $not_test) {
+        try {
+            $from_a = date('Y/m/d H:i:s', $from_ts);
+            $from_b = date('Y-m-d H:i:s', $from_ts);
+            $sql = "SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice
+                WHERE {$status_ok} AND {$not_test}
+                AND (
+                    time_sell > :ts
+                    OR time_sell > :ta
+                    OR time_sell > :tb
+                    OR (UNIX_TIMESTAMP(STR_TO_DATE(time_sell, '%Y/%m/%d %H:%i:%s')) > :u1)
+                    OR (UNIX_TIMESTAMP(STR_TO_DATE(time_sell, '%Y-%m-%d %H:%i:%s')) > :u2)
+                )";
+            $st = $pdo->prepare($sql);
+            $st->execute([
+                ':ts' => $from_ts,
+                ':ta' => $from_a,
+                ':tb' => $from_b,
+                ':u1' => $from_ts,
+                ':u2' => $from_ts,
+            ]);
+            $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+            return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
+        } catch (Exception $e) {
+            // fallback ساده مثل ربات اصلی
+            try {
+                $st = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice WHERE time_sell > :ts AND {$status_ok} AND {$not_test}");
+                $st->execute([':ts' => $from_ts]);
+                $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+                return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
+            } catch (Exception $e2) {
+                return ['cnt' => 0, 'sum' => 0];
+            }
+        }
+    };
 
-    // اگر دفتر خالی است، از فاکتور فعلی به‌عنوان تقریبی استفاده کن (یک‌بار)
-    if ($all_led['cnt'] == 0 && $invoice_cnt > 0) {
-        $all_led = ['cnt' => $invoice_cnt, 'sum' => $invoice_sum];
-    }
+    $day = $periodStats($day_ago);
+    $week = $periodStats($week_ago);
+    $month = $periodStats($month_ago);
 
-    $pending_pay = 0;
-    try {
-        $pending_pay = intval($pdo->query("SELECT COUNT(*) FROM Payment_report WHERE payment_Status = 'waiting'")->fetchColumn());
-    } catch (Exception $e) {}
-    $pending_sup = 0;
-    try {
-        $pending_sup = intval($pdo->query("SELECT COUNT(*) FROM support_pending WHERE status = 'waiting'")->fetchColumn());
-    } catch (Exception $e) {}
-
-    $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
-    $load0 = number_format(floatval($load[0] ?? 0), 2);
+    $ping = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
+    $ping = number_format(floatval($ping[0] ?? 0), 2);
     $now_label = function_exists('jdate') ? jdate('Y/m/d H:i:s') : date('Y-m-d H:i:s');
 
     $statisticsall = sprintf(
         $textbotlang['Admin']['Statistics']['info'],
         $now_label,
         number_format($statistics),
-        number_format($balance_sum),
-        number_format($all_led['cnt']),
-        number_format($all_led['sum']),
-        number_format($day_led['cnt']),
-        number_format($day_led['sum']),
-        number_format($week_led['cnt']),
-        number_format($week_led['sum']),
-        number_format($month_led['cnt']),
-        number_format($month_led['sum']),
+        number_format($bal),
+        $ping,
+        number_format($invoice_cnt),
+        number_format($invoice_sum),
+        number_format($day['cnt']),
+        number_format($day['sum']),
+        number_format($week['cnt']),
+        number_format($week['sum']),
+        number_format($month['cnt']),
+        number_format($month['sum']),
         number_format($invoice_cnt),
         number_format($invoice_sum),
         number_format($count_usertest),
