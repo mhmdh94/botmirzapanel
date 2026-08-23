@@ -130,14 +130,17 @@ function adduser($username,$expire,$data_limit,$location,$is_test = false)
         }
     }
 
-    // همیشه سعی کن group_ids را از پنل بگیری (پاسارگارد/مرزبان جدید)
-    // اگر API گروه جواب ندهد، بدون گروه نمی‌سازیم مگر نسخه قدیمی بدون گروه‌بندی
+    // group_ids الزامی در پاسارگارد — همه گروه‌های ادمین پنل
     $group_ids = resolve_panel_group_ids($location, $is_test, $marzban_list_get);
+    if (!is_array($group_ids) || count($group_ids) === 0) {
+        // تلاش مجدد با رفرش توکن
+        update("marzban_panel", "datelogin", null, "name_panel", $location);
+        $group_ids = resolve_panel_group_ids($location, $is_test, $marzban_list_get);
+    }
     if (is_array($group_ids) && count($group_ids) > 0) {
-        $data['group_ids'] = $group_ids;
+        $data['group_ids'] = array_map('intval', array_values($group_ids));
     } else {
-        // اگر پنل از گروه‌ها استفاده می‌کند ولی لیست خالی بود، لاگ بگذار
-        error_log("marzban adduser: no group_ids resolved for panel={$location}");
+        error_log("marzban adduser: no group_ids for panel={$location} — user may be created without group");
     }
 
     if ($marzban_list_get['inbounds'] != null && $marzban_list_get['inbounds'] != "null") {
@@ -367,28 +370,26 @@ function _extract_groups_array($existing_groups) {
     if (!is_array($existing_groups)) {
         return array();
     }
-    if (isset($existing_groups['groups']) && is_array($existing_groups['groups'])) {
-        return $existing_groups['groups'];
+    // شکل استاندارد پاسارگارد/مرزبان: { "groups": [ {...}, ... ], "total": N }
+    foreach (array('groups', 'data', 'items', 'result') as $key) {
+        if (isset($existing_groups[$key]) && is_array($existing_groups[$key])) {
+            return array_values($existing_groups[$key]);
+        }
     }
-    if (isset($existing_groups['data']) && is_array($existing_groups['data'])) {
-        return $existing_groups['data'];
-    }
-    if (isset($existing_groups['items']) && is_array($existing_groups['items'])) {
-        return $existing_groups['items'];
-    }
-    // لیست با کلیدهای عددی
-    $is_numeric_indexed = true;
-    foreach (array_keys($existing_groups) as $k) {
+    // خود پاسخ یک لیست است
+    $keys = array_keys($existing_groups);
+    $numeric = true;
+    foreach ($keys as $k) {
         if (!is_int($k) && !(is_string($k) && ctype_digit(strval($k)))) {
-            $is_numeric_indexed = false;
+            $numeric = false;
             break;
         }
     }
-    if ($is_numeric_indexed) {
+    if ($numeric && count($existing_groups) > 0) {
         return array_values($existing_groups);
     }
-    // تک‌گروه با فیلد id
-    if (isset($existing_groups['id'])) {
+    // تک‌گروه
+    if (isset($existing_groups['id']) && (isset($existing_groups['name']) || isset($existing_groups['inbound_tags']))) {
         return array($existing_groups);
     }
     return array();
@@ -469,16 +470,18 @@ function get_groups($location) {
     }
     $Check_token = token_panel($marzban_list_get['id']);
     if (!is_array($Check_token) || empty($Check_token['access_token'])) {
-        error_log("get_groups: token failed for {$location}");
+        error_log("get_groups: token failed for {$location}: " . json_encode($Check_token));
         return null;
     }
     $base = rtrim(strval($marzban_list_get['url_panel']), '/');
-    $header_value = 'Bearer ';
-    // چند endpoint رایج پاسارگارد/مرزبان
+    $token = $Check_token['access_token'];
+    // endpoints پاسارگارد: GET /api/groups  و  GET /api/groups/simple?all=true
     $urls = array(
+        $base . '/api/groups?offset=0&limit=200',
         $base . '/api/groups',
+        $base . '/api/groups/simple?all=true',
+        $base . '/api/groups/simple?offset=0&limit=200',
         $base . '/api/group',
-        $base . '/api/groups?limit=100',
     );
     foreach ($urls as $url) {
         $ch = marzban_curl_init();
@@ -487,25 +490,48 @@ function get_groups($location) {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Accept: application/json',
-            'Authorization: ' . $header_value . $Check_token['access_token']
+            'Authorization: Bearer ' . $token
         ));
         $output = curl_exec($ch);
         $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
         curl_close($ch);
-        if ($output === false || $code >= 400) {
+        if ($output === false || $code === 0) {
+            continue;
+        }
+        // اگر 401 بود توکن را تازه کن و یک‌بار دیگر همین URL
+        if ($code === 401) {
+            update("marzban_panel", "datelogin", null, "name_panel", $location);
+            $Check_token = token_panel($marzban_list_get['id']);
+            if (!is_array($Check_token) || empty($Check_token['access_token'])) {
+                continue;
+            }
+            $token = $Check_token['access_token'];
+            $ch = marzban_curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Accept: application/json',
+                'Authorization: Bearer ' . $token
+            ));
+            $output = curl_exec($ch);
+            $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+            curl_close($ch);
+        }
+        if ($code >= 400 || $output === false) {
+            error_log("get_groups HTTP {$code} url={$url} body=" . substr(strval($output), 0, 200));
             continue;
         }
         $decoded = json_decode($output, true);
-        $list = _extract_groups_array($decoded);
-        if (is_array($list) && count($list) > 0) {
-            return $decoded;
+        if (!is_array($decoded)) {
+            continue;
         }
-        // بعضی پنل‌ها خود آرایه را برمی‌گردانند
-        if (is_array($decoded) && count($decoded) > 0) {
-            return $decoded;
+        $list = _extract_groups_array($decoded);
+        if (count($list) > 0) {
+            return array('groups' => $list, 'total' => count($list));
         }
     }
-    error_log("get_groups: no groups from any endpoint for {$location}");
+    error_log("get_groups: no groups for panel={$location}");
     return null;
 }
 
@@ -528,25 +554,27 @@ function resolve_panel_group_ids($location, $is_test = false, $panel_row = null)
     $resp = get_groups($location);
     $list = _extract_groups_array($resp);
     if (!is_array($list) || count($list) === 0) {
-        error_log("resolve_panel_group_ids: empty groups for {$location} resp=" . substr(json_encode($resp), 0, 300));
+        error_log("resolve_panel_group_ids: empty for {$location}");
         return null;
     }
 
     $ids_all = array();
     $by_name = array();
     foreach ($list as $g) {
-        if (!is_array($g) || !isset($g['id'])) {
+        if (!is_array($g)) {
             continue;
         }
-        // رد کردن گروه غیرفعال اگر فیلد داشت
-        if (isset($g['is_disabled']) && $g['is_disabled']) {
+        // پشتیبانی از id به صورت عدد یا رشته
+        $id = null;
+        if (isset($g['id'])) {
+            $id = intval($g['id']);
+        } elseif (isset($g['group_id'])) {
+            $id = intval($g['group_id']);
+        }
+        if ($id === null || $id <= 0) {
             continue;
         }
-        if (isset($g['disabled']) && $g['disabled']) {
-            continue;
-        }
-        $id = intval($g['id']);
-        if ($id <= 0) {
+        if (!empty($g['is_disabled']) || !empty($g['disabled'])) {
             continue;
         }
         $ids_all[] = $id;
@@ -560,19 +588,13 @@ function resolve_panel_group_ids($location, $is_test = false, $panel_row = null)
         return null;
     }
 
-    // ۱) inboundid عددی
+    // اگر ادمین در inboundid یک id یا نام مشخص کرده فقط همان
     if ($panel_row && isset($panel_row['inboundid'])) {
         $pref = trim(strval($panel_row['inboundid']));
-        if ($pref !== '' && $pref !== '0' && ctype_digit($pref)) {
-            $gid = intval($pref);
-            if (in_array($gid, $ids_all, true)) {
-                return array($gid);
+        if ($pref !== '' && $pref !== '0' && $pref !== 'null') {
+            if (ctype_digit($pref)) {
+                return array(intval($pref));
             }
-            // حتی اگر در لیست نبود، همان id را بفرست (ممکن است API فیلتر کرده باشد)
-            return array($gid);
-        }
-        // ۲) inboundid نام گروه
-        if ($pref !== '' && $pref !== '0' && !ctype_digit($pref)) {
             $key = strtolower($pref);
             if (isset($by_name[$key])) {
                 return array($by_name[$key]);
@@ -580,7 +602,7 @@ function resolve_panel_group_ids($location, $is_test = false, $panel_row = null)
         }
     }
 
-    // ۳) تست
+    // اکانت تست: گروه تست اگر باشد
     if ($is_test) {
         foreach ($by_name as $n => $id) {
             if (strpos($n, 'test') !== false || strpos($n, 'تست') !== false) {
@@ -589,7 +611,7 @@ function resolve_panel_group_ids($location, $is_test = false, $panel_row = null)
         }
     }
 
-    // ۴) همه گروه‌های موجود پنل (تعریف‌شده توسط ادمین)
+    // پیش‌فرض: همه گروه‌های موجود برای ادمین پنل
     return $ids_all;
 }
 
