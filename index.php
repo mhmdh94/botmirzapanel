@@ -2068,9 +2068,9 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     update("user", "Processing_value_tow", $username_ac, "id", $from_id);
     if ($info_product['Volume_constraint'] == 0)
         $info_product['Volume_constraint'] = $textbotlang['users']['status']['Unlimited'];
-    $info_product['price_product'] = number_format($info_product['price_product'], 0);
-    $user['Balance'] = number_format($user['Balance']);
-    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $info_product['price_product'], $info_product['Volume_constraint'], $user['Balance']);
+    $price_disp = number_format(intval($info_product['price_product']), 0);
+    $bal_disp = number_format(intval($user['Balance']), 0);
+    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $price_disp, $info_product['Volume_constraint'], $bal_disp);
     // اول کیبورد پایین حذف شود، بعد فاکتور مثل قبل با دکمه‌های پرداخت زیر خودش
     sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
     sendmessage($from_id, $textin, $payment, 'HTML');
@@ -2314,10 +2314,15 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
         }
     }
-    $Balance_prim = $user['Balance'] - $priceproduct;
+    $Balance_prim = intval($user['Balance']) - intval($priceproduct);
+    if ($Balance_prim < 0) {
+        $Balance_prim = 0;
+    }
     update("user", "Balance", $Balance_prim, "id", $from_id);
-    $user['Balance'] = number_format($user['Balance'], 0);
-    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $info_product['price_product'], $info_product['Volume_constraint'], $from_id, $username, $user['number'], $user['Processing_value'], number_format(intval($user['Balance'])));
+    // موجودی بعد از کسر — از مقدار محاسبه‌شده (نه number_format+intval که برای اعداد بالای 999 می‌شود 1)
+    $bal_after_fmt = number_format($Balance_prim);
+    $price_fmt = number_format(intval(str_replace(',', '', strval($info_product['price_product']))));
+    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $price_fmt, $info_product['Volume_constraint'], $from_id, $username, $user['number'], $user['Processing_value'], $bal_after_fmt);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_buy', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');

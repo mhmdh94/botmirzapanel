@@ -896,12 +896,11 @@ function DirectPayment($order_id)
                 sendmessage($Balance_id['affiliates'], $textadd, null, 'HTML');
             }
         }
-        $Balance_prims = $Balance_id['Balance'] - $get_invoice['price_product'];
+        $Balance_prims = intval($Balance_id['Balance']) - intval($get_invoice['price_product']);
         if ($Balance_prims <= 0)
             $Balance_prims = 0;
         update("user", "Balance", $Balance_prims, "id", $Balance_id['id']);
-        $Balance_id['Balance'] = select("user", "Balance", "id", $get_invoice['id_user'], "select")['Balance'];
-        $balanceformatsell = number_format($Balance_id['Balance'], 0);
+        $balanceformatsell = number_format($Balance_prims, 0);
         if (function_exists('recordSale')) {
             recordSale($get_invoice['id_user'], $get_invoice['price_product'], 'buy', $get_invoice['username'], $get_invoice['id_invoice'] ?? null);
         }

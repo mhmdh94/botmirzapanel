@@ -942,7 +942,7 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     }
     if (function_exists('sendChannelReport')) {
         $u_pay = select("user", "*", "id", $Payment_report['id_user'], "select");
-        $bal_after = number_format(intval($u_pay['Balance'] ?? 0));
+        $bal_after = number_format(intval(str_replace(',', '', strval($u_pay['Balance'] ?? 0))));
         $uname_tg = $u_pay['username'] ?? '-';
         sendChannelReport('rpt_cart_accept', sprintf(
             $textbotlang['Admin']['Report']['acceptcartresid'],
