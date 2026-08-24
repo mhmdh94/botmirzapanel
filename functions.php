@@ -1249,10 +1249,55 @@ function addAffiliatesBalance($user_id, $amount)
     global $pdo;
     ensureAffiliatesBalanceColumn();
     $amount = intval($amount);
-    if ($amount <= 0) return;
+    $user_id = intval($user_id);
+    if ($amount <= 0 || $user_id <= 0) return;
     try {
         $pdo->prepare("UPDATE user SET affiliates_balance = affiliates_balance + ? WHERE id = ?")->execute([$amount, $user_id]);
     } catch (Exception $e) {}
+}
+
+/**
+ * مجموع پورسانت دریافتی از زیرمجموعه‌گیری
+ * affiliates_balance ثبت‌شده را با تخمین از خرید زیرمجموعه‌ها مقایسه می‌کند
+ */
+function getAffiliatesEarned($user_id)
+{
+    global $pdo;
+    $user_id = intval($user_id);
+    if ($user_id <= 0) {
+        return 0;
+    }
+    ensureAffiliatesBalanceColumn();
+    $tracked = 0;
+    try {
+        $st = $pdo->prepare("SELECT affiliates_balance FROM user WHERE id = ? LIMIT 1");
+        $st->execute([$user_id]);
+        $tracked = intval($st->fetchColumn());
+    } catch (Exception $e) {
+        $tracked = 0;
+    }
+    $estimated = 0;
+    try {
+        $aff = select("affiliates", "*", null, null, "select");
+        $pct = floatval(is_array($aff) ? ($aff['affiliatespercentage'] ?? 0) : 0);
+        if ($pct > 0) {
+            $sql = "SELECT COALESCE(SUM(CAST(i.price_product AS DECIMAL(18,0))),0) FROM invoice i
+                INNER JOIN user u ON u.id = i.id_user
+                WHERE CAST(u.affiliates AS CHAR) = ?
+                AND (
+                    i.status = 'active' OR i.status = 'end_of_time' OR i.status = 'end_of_volume' OR i.status = 'sendedwarn'
+                    OR i.Status = 'active' OR i.Status = 'end_of_time' OR i.Status = 'end_of_volume' OR i.Status = 'sendedwarn'
+                )
+                AND (i.name_product IS NULL OR i.name_product != 'usertest')";
+            $st = $pdo->prepare($sql);
+            $st->execute([strval($user_id)]);
+            $sum = floatval($st->fetchColumn());
+            $estimated = intval(($sum * $pct) / 100);
+        }
+    } catch (Exception $e) {
+        $estimated = 0;
+    }
+    return max($tracked, $estimated);
 }
 
 function isAutomaticCartConfirmEnabled()

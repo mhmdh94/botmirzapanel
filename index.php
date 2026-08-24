@@ -1928,9 +1928,7 @@ if ($text == $datatextbot['text_account']) {
     $dateacc = jdate('Y/m/d');
     $timeacc = jdate('H:i:s');
     $countorder = select("invoice", "*", "id_user", $from_id, "count");
-    if (function_exists('ensureAffiliatesBalanceColumn')) ensureAffiliatesBalanceColumn();
-    $u_full = select("user", "*", "id", $from_id, "select");
-    $aff_earn = number_format(intval($u_full['affiliates_balance'] ?? 0));
+    $aff_earn = number_format(function_exists('getAffiliatesEarned') ? getAffiliatesEarned($from_id) : 0);
     $Balanceuser = number_format($user['Balance'], 0);
     $text_account = sprintf($textbotlang['users']['account'], $first_name, $from_id, $Balanceuser, $countorder, $user['affiliatescount'], $aff_earn, $dateacc, $timeacc);
     sendmessage($from_id, $text_account, $keyboardPanel, 'HTML');
@@ -2217,6 +2215,9 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         if ($user_Balance) {
             $Balance_prim = $user_Balance['Balance'] + $result;
             update("user", "Balance", $Balance_prim, "id", $user['affiliates']);
+            if (function_exists('addAffiliatesBalance')) {
+                addAffiliatesBalance($user['affiliates'], $result);
+            }
             $result = number_format($result);
             $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'], $result);
             sendmessage($user['affiliates'], $textadd, null, 'HTML');

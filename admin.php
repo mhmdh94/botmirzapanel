@@ -2127,8 +2127,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
     $user['Balance'] = number_format($user['Balance']);
     $lastmessage = jdate('Y/m/d H:i:s', $user['last_message_time']);
     if (function_exists('ensureUserCartAutoColumn')) ensureUserCartAutoColumn();
-    if (function_exists('ensureAffiliatesBalanceColumn')) ensureAffiliatesBalanceColumn();
-    $aff_earn = intval($user['affiliates_balance'] ?? 0);
+    $aff_earn = function_exists('getAffiliatesEarned') ? getAffiliatesEarned($text) : intval($user['affiliates_balance'] ?? 0);
     $cart_auto_off = intval($user['cart_auto_off'] ?? 0);
     $global_auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
     $cart_label = !$global_auto
