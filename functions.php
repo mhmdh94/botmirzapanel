@@ -620,10 +620,20 @@ function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test =
         $msg = (string) $msg;
         $msg_l = mb_strtolower($msg, 'UTF-8');
 
-        // فقط Panel Not Found
-        $is_panel_not_found = (
+        // خطاهای موقتی پنل/اتصال → تا ۳ بار تلاش
+        $is_panel_retryable = (
             stripos($msg, 'Panel Not Found') !== false
             || stripos($msg_l, 'panel not found') !== false
+            || stripos($msg_l, 'پاسخ خالی') !== false
+            || stripos($msg_l, 'پاسخ نامعتبر') !== false
+            || stripos($msg_l, 'timeout') !== false
+            || stripos($msg_l, 'timed out') !== false
+            || stripos($msg_l, 'could not resolve') !== false
+            || stripos($msg_l, 'connection') !== false
+            || stripos($msg_l, 'curl') !== false
+            || stripos($msg_l, 'failed to connect') !== false
+            || stripos($msg_l, 'empty reply') !== false
+            || stripos($msg, 'خطا در ارتباط') !== false
         );
 
         // فقط تکراری بودن یوزرنیم
@@ -638,12 +648,16 @@ function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test =
             || strpos($msg, 'قبلا') !== false
         );
 
-        if ($is_panel_not_found) {
+        if ($is_panel_retryable) {
             $panel_try++;
             if ($panel_try >= $max_panel_tries) {
                 break;
             }
-            usleep(400000);
+            // رفرش توکن پنل و کمی صبر
+            try {
+                update("marzban_panel", "datelogin", null, "name_panel", $panel_name);
+            } catch (Exception $e) {}
+            usleep(600000 * $panel_try); // 0.6s, 1.2s, ...
             continue;
         }
 

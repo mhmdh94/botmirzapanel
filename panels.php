@@ -25,7 +25,15 @@ class ManagePanel
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");
         $expire = $Data_Config['expire'];
         $data_limit = $Data_Config['data_limit'];
-        if ($Get_Data_Panel['type'] == "marzban") {
+        if ($Get_Data_Panel == false || !is_array($Get_Data_Panel)) {
+            $Output['status'] = 'Unsuccessful';
+            $Output['msg'] = 'Panel Not Found';
+            $Output['username'] = null;
+            return $Output;
+        }
+        $panel_type = strtolower(trim(strval($Get_Data_Panel['type'] ?? '')));
+        // پاسارگارد همان API مرزبان
+        if (in_array($panel_type, ['marzban', 'pasarguard', 'pasar_guard', 'pasarguard_panel'], true)) {
             //create user
             $ConnectToPanel = adduser($usernameC, $expire, $data_limit, $Get_Data_Panel['name_panel'], $is_test);
             $data_Output = json_decode($ConnectToPanel, true);
