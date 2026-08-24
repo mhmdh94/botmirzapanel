@@ -1326,106 +1326,276 @@ EOF
     ensure_mirza_cli
 }
 
-# Update Function
+# Update Function — main bot only OR all bots (with per-bot backup of sensitive files)
 function update_bot() {
-    echo "Updating Mirza Bot..."
+    echo -e "\e[36m========================================\033[0m"
+    echo -e "\e[36m       Update Mirza Bot (Fork)\033[0m"
+    echo -e "\e[36m========================================\033[0m"
+    echo ""
+    echo -e "\033[1;36m1)\033[0m Update ONLY main bot  (/var/www/html/mirzabotconfig)"
+    echo -e "\033[1;36m2)\033[0m Update ALL bots      (main + additional bots)"
+    echo -e "\033[1;36m3)\033[0m Back to main menu"
+    echo ""
+    read -p "Select [1-3]: " upd_choice
 
-    # Update server packages
-    if ! sudo apt update && sudo apt upgrade -y; then
-        echo -e "\e[91mError updating the server. Exiting...\033[0m"
-        exit 1
+    case "$upd_choice" in
+        1)
+            update_bot_targets "main"
+            ;;
+        2)
+            update_bot_targets "all"
+            ;;
+        3)
+            show_menu
+            return 0
+            ;;
+        *)
+            echo -e "\e[91mInvalid option.\033[0m"
+            sleep 1
+            update_bot
+            return 0
+            ;;
+    esac
+}
+
+# List bot directories under /var/www/html that look like Mirza installs
+function list_mirza_bot_dirs() {
+    local mode="$1"  # main | all
+    local dirs=()
+    local main="/var/www/html/mirzabotconfig"
+
+    if [ "$mode" = "main" ]; then
+        if [ -d "$main" ] && [ -f "$main/config.php" ]; then
+            echo "$main"
+        fi
+        return 0
     fi
-    echo -e "\e[92mServer packages updated successfully...\033[0m\n"
 
-    # Check if bot is already installed
-    BOT_DIR="/var/www/html/mirzabotconfig"
-    if [ ! -d "$BOT_DIR" ]; then
-        echo -e "\e[91mError: Mirza Bot is not installed. Please install it first.\033[0m"
-        exit 1
+    # all: main first, then any other folder with config.php + index.php
+    if [ -d "$main" ] && [ -f "$main/config.php" ]; then
+        dirs+=("$main")
+    fi
+    if [ -d "/var/www/html" ]; then
+        for d in /var/www/html/*; do
+            [ -d "$d" ] || continue
+            [ "$d" = "$main" ] && continue
+            # skip non-bot folders
+            case "$(basename "$d")" in
+                phpmyadmin|html|cgi-bin|.*) continue ;;
+            esac
+            if [ -f "$d/config.php" ] && [ -f "$d/index.php" ]; then
+                dirs+=("$d")
+            fi
+        done
+    fi
+    printf '%s\n' "${dirs[@]}"
+}
+
+# Protected filenames that must never be overwritten from GitHub
+function is_protected_bot_file() {
+    local base="$1"
+    case "$base" in
+        config.php|config.php.bak*|error_log|.env|config.local.php)
+            return 0
+            ;;
+        config.php.*)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+# Backup sensitive files of one bot dir into a backup folder
+function backup_bot_sensitive() {
+    local bot_dir="$1"
+    local bak_dir="$2"
+    mkdir -p "$bak_dir"
+    local f
+    for f in config.php error_log .env config.local.php; do
+        if [ -f "$bot_dir/$f" ]; then
+            cp -a "$bot_dir/$f" "$bak_dir/$f" 2>/dev/null || true
+        fi
+    done
+    # any config.php.* backups already on disk
+    shopt -s nullglob
+    for f in "$bot_dir"/config.php.*; do
+        [ -f "$f" ] || continue
+        cp -a "$f" "$bak_dir/$(basename "$f")" 2>/dev/null || true
+    done
+    shopt -u nullglob
+}
+
+# Restore sensitive files after update
+function restore_bot_sensitive() {
+    local bot_dir="$1"
+    local bak_dir="$2"
+    [ -d "$bak_dir" ] || return 0
+    local f
+    for f in "$bak_dir"/*; do
+        [ -f "$f" ] || continue
+        cp -a "$f" "$bot_dir/$(basename "$f")" 2>/dev/null || {
+            echo -e "\e[91m  Warning: failed to restore $(basename "$f")\033[0m"
+        }
+    done
+}
+
+# Copy new code into bot_dir without touching protected files
+function sync_bot_files_from_source() {
+    local src="$1"
+    local dest="$2"
+    local rel item base
+
+    # copy files recursively
+    while IFS= read -r -d '' item; do
+        rel="${item#$src/}"
+        base="$(basename "$rel")"
+        if is_protected_bot_file "$base"; then
+            continue
+        fi
+        # also skip if path is exactly config.php at root of bot
+        if [ "$rel" = "config.php" ]; then
+            continue
+        fi
+        if [ -d "$item" ]; then
+            mkdir -p "$dest/$rel"
+        elif [ -f "$item" ]; then
+            mkdir -p "$(dirname "$dest/$rel")"
+            cp -a "$item" "$dest/$rel" || return 1
+        fi
+    done < <(find "$src" -print0)
+    return 0
+}
+
+# Core: update one or all bots
+function update_bot_targets() {
+    local mode="$1"  # main | all
+
+    mapfile -t BOT_LIST < <(list_mirza_bot_dirs "$mode")
+    if [ ${#BOT_LIST[@]} -eq 0 ]; then
+        echo -e "\e[91mNo bot installation found to update.\033[0m"
+        echo -e "\e[33mMain path expected: /var/www/html/mirzabotconfig\033[0m"
+        sleep 2
+        return 1
     fi
 
-    # Fetch latest release from GitHub
-    # Check for version flag
-    if [[ "$1" == "-beta" ]] || [[ "$1" == "-v" && "$2" == "beta" ]]; then
-        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
-    else
-        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    echo ""
+    echo -e "\e[33mBots that will be updated:\033[0m"
+    local b
+    for b in "${BOT_LIST[@]}"; do
+        echo -e "  • $b"
+    done
+    echo ""
+    read -p "Continue? (y/n): " conf
+    if [[ "$conf" != "y" && "$conf" != "Y" ]]; then
+        echo "Aborted."
+        return 0
     fi
 
-    # Create temporary directory
-    TEMP_DIR="/tmp/mirzabot_update"
-    mkdir -p "$TEMP_DIR"
-
-    # Download and extract
-    if [ -z "$ZIP_URL" ]; then
-        ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    # Optional: skip heavy apt upgrade unless user wants
+    echo ""
+    read -p "Also run apt update/upgrade? (y/N): " do_apt
+    if [[ "$do_apt" == "y" || "$do_apt" == "Y" ]]; then
+        if ! sudo apt update && sudo apt upgrade -y; then
+            echo -e "\e[93mWarning: apt update/upgrade had issues — continuing bot file update anyway.\033[0m"
+        fi
     fi
+
+    ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
+    TEMP_DIR="/tmp/mirzabot_update_$$"
+    BACKUP_ROOT="/root/mirza_update_backups/$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$TEMP_DIR" "$BACKUP_ROOT"
+
     echo -e "\e[36mDownloading: $ZIP_URL\033[0m"
-    wget -O "$TEMP_DIR/bot.zip" "$ZIP_URL" || {
+    if ! wget -q -O "$TEMP_DIR/bot.zip" "$ZIP_URL"; then
         echo -e "\e[91mError: Failed to download update package.\033[0m"
-        exit 1
-    }
-    unzip "$TEMP_DIR/bot.zip" -d "$TEMP_DIR"
-
-    # Find extracted directory
-    EXTRACTED_DIR=$(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -type d)
-
-    # Backup config file
-    CONFIG_PATH="/var/www/html/mirzabotconfig/config.php"
-    TEMP_CONFIG="/root/mirza_config_backup.php"
-    if [ -f "$CONFIG_PATH" ]; then
-        cp "$CONFIG_PATH" "$TEMP_CONFIG" || {
-            echo -e "\e[91mConfig file backup failed!\033[0m"
-            exit 1
-        }
+        rm -rf "$TEMP_DIR"
+        return 1
+    fi
+    if ! unzip -q "$TEMP_DIR/bot.zip" -d "$TEMP_DIR"; then
+        echo -e "\e[91mError: Failed to unzip package.\033[0m"
+        rm -rf "$TEMP_DIR"
+        return 1
     fi
 
-    # Remove old version
-    sudo rm -rf /var/www/html/mirzabotconfig || {
-        echo -e "\e[91mFailed to remove old bot files!\033[0m"
-        exit 1
-    }
-
-    # Move new files
-    sudo mkdir -p /var/www/html/mirzabotconfig
-    sudo mv "$EXTRACTED_DIR"/* /var/www/html/mirzabotconfig/ || {
-        echo -e "\e[91mFile transfer failed!\033[0m"
-        exit 1
-    }
-
-    # Restore config file
-    if [ -f "$TEMP_CONFIG" ]; then
-        sudo mv "$TEMP_CONFIG" "$CONFIG_PATH" || {
-            echo -e "\e[91mConfig file restore failed!\033[0m"
-            exit 1
-        }
+    EXTRACTED_DIR=$(find "$TEMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n1)
+    if [ -z "$EXTRACTED_DIR" ] || [ ! -d "$EXTRACTED_DIR" ]; then
+        echo -e "\e[91mError: Could not find extracted source folder.\033[0m"
+        rm -rf "$TEMP_DIR"
+        return 1
+    fi
+    if [ ! -f "$EXTRACTED_DIR/index.php" ] && [ ! -f "$EXTRACTED_DIR/functions.php" ]; then
+        echo -e "\e[91mError: Extracted package does not look like Mirza bot.\033[0m"
+        rm -rf "$TEMP_DIR"
+        return 1
     fi
 
-    # Copy the new install.sh to /root/
+    local ok_count=0
+    local fail_count=0
+    for b in "${BOT_LIST[@]}"; do
+        echo ""
+        echo -e "\e[36m>>> Updating: $b\033[0m"
+        local bak="$BACKUP_ROOT/$(basename "$b")"
+        mkdir -p "$bak"
+
+        echo -e "  📦 Backing up sensitive files..."
+        backup_bot_sensitive "$b" "$bak"
+        if [ -f "$b/config.php" ] && [ ! -f "$bak/config.php" ]; then
+            echo -e "\e[91m  ERROR: config.php backup failed for $b — SKIPPING this bot.\033[0m"
+            fail_count=$((fail_count + 1))
+            continue
+        fi
+        echo -e "  ✅ Backup saved: $bak"
+
+        echo -e "  🔄 Syncing new files (protected files skipped)..."
+        if sync_bot_files_from_source "$EXTRACTED_DIR" "$b"; then
+            echo -e "  🔒 Restoring sensitive files..."
+            restore_bot_sensitive "$b" "$bak"
+            if [ ! -f "$b/config.php" ]; then
+                echo -e "\e[91m  CRITICAL: config.php missing after restore! Trying emergency restore...\033[0m"
+                [ -f "$bak/config.php" ] && cp -a "$bak/config.php" "$b/config.php"
+            fi
+            sudo chown -R www-data:www-data "$b" 2>/dev/null || chown -R www-data:www-data "$b" 2>/dev/null || true
+            sudo chmod -R 755 "$b" 2>/dev/null || chmod -R 755 "$b" 2>/dev/null || true
+            # ensure config stays readable by web server
+            [ -f "$b/config.php" ] && chmod 644 "$b/config.php" 2>/dev/null || true
+
+            # Run table.php if domainhosts available (schema migrate)
+            if [ -f "$b/config.php" ]; then
+                local URL
+                URL=$(grep '\$domainhosts' "$b/config.php" | head -n1 | cut -d"'" -f2)
+                if [ -n "$URL" ]; then
+                    echo -e "  🌐 Running table.php for $URL ..."
+                    curl -fsS --max-time 30 "https://$URL/table.php" >/dev/null 2>&1 \
+                        || curl -fsS --max-time 30 "http://$URL/table.php" >/dev/null 2>&1 \
+                        || echo -e "\e[93m  (table.php request skipped/failed — usually OK)\033[0m"
+                fi
+            fi
+            echo -e "\e[92m  ✅ Done: $b\033[0m"
+            ok_count=$((ok_count + 1))
+        else
+            echo -e "\e[91m  Sync failed — restoring sensitive files anyway.\033[0m"
+            restore_bot_sensitive "$b" "$bak"
+            fail_count=$((fail_count + 1))
+        fi
+    done
+
+    # Refresh /root/install.sh + mirza link from main bot if present
     if [ -f "/var/www/html/mirzabotconfig/install.sh" ]; then
-        sudo cp /var/www/html/mirzabotconfig/install.sh /root/install.sh
-        echo -e "\n\e[92mCopied latest install.sh to /root/install.sh.\033[0m"
-    else
-        echo -e "\n\e[91mWarning: install.sh not found in /var/www/html/mirzabotconfig/ after update. Cannot update /root/install.sh.\033[0m"
+        sudo cp -f /var/www/html/mirzabotconfig/install.sh /root/install.sh 2>/dev/null || cp -f /var/www/html/mirzabotconfig/install.sh /root/install.sh
+        ensure_mirza_cli 2>/dev/null || true
     fi
 
-    # Set permissions
-    sudo chown -R www-data:www-data /var/www/html/mirzabotconfig/
-    sudo chmod -R 755 /var/www/html/mirzabotconfig/
-
-    # Run setup script
-    URL=$(grep '\$domainhosts' "$CONFIG_PATH" | cut -d"'" -f2)
-    curl -s "https://$URL/table.php" || {
-        echo -e "\e[91mSetup script execution failed!\033[0m"
-    }
-
-    # Cleanup
     rm -rf "$TEMP_DIR"
 
-    echo -e "\n\e[92mMirza Bot updated to latest version successfully!\033[0m"
-
-    # Ensure /root/install.sh is executable and linked
-    ensure_mirza_cli
+    echo ""
+    echo -e "\e[36m========================================\033[0m"
+    echo -e "\e[92mUpdated successfully: $ok_count\033[0m"
+    if [ "$fail_count" -gt 0 ]; then
+        echo -e "\e[91mFailed: $fail_count\033[0m"
+    fi
+    echo -e "\e[33mBackups kept at: $BACKUP_ROOT\033[0m"
+    echo -e "\e[33m(config.php / error_log / .env were preserved per bot)\033[0m"
+    echo -e "\e[36m========================================\033[0m"
 }
 
 # Delete Function
