@@ -73,11 +73,20 @@ $textbotlang['users']['start'] = "سلام خوش آمدید🌹";
 $textbotlang['users']['sendmessagesupport'] = "🎟 ارسال پیام به پشتیبانی";
 
 
-$textbotlang['users']['number']['false'] = "❌ شماره تلفن صحبح نیست شماره تلفن صحبح را ارسال نمایید.";
-$textbotlang['users']['number']['Warning'] = "⚠️ خطا در ذخیره سازی شماره تلفن، شماره باید حتما برای همین اکانت باشد";
+$textbotlang['users']['number']['false'] = "❌ شماره دریافت نشد.
+
+👇 لطفاً فقط از دکمه <b>☎️ ارسال شماره تلفن</b> در پایین صفحه استفاده کنید و آن را دستی ننویسید.";
+$textbotlang['users']['number']['Warning'] = "⚠️ شماره باید متعلق به همین حساب تلگرام باشد.
+
+👇 دوباره از دکمه <b>☎️ ارسال شماره تلفن</b> در پایین صفحه ارسال کنید.";
 $textbotlang['users']['number']['erroriran'] = "⭕️ شماره موبایل نامعتبر است. فقط شماره های ایرانی مورد قبول می باشد";
 $textbotlang['users']['number']['active'] = "✅ شماره موبایل شما با موفقیت تایید شد";
-$textbotlang['users']['number']['Confirming'] = "📞 لطفا شماره موبایل خود را  برای احراز هویت ارسال نمایید";
+$textbotlang['users']['number']['Confirming'] = "📞 برای احراز هویت باید شماره موبایل خود را ارسال کنید.
+
+👇 روی دکمه <b>☎️ ارسال شماره تلفن</b> در پایین صفحه بزنید
+و در پنجره‌ای که باز می‌شود گزینه <b>Share</b> / <b>اشتراک‌گذاری</b> را تأیید کنید.
+
+⚠️ شماره را دستی تایپ نکنید؛ فقط از همان دکمه ارسال کنید.";
 
 
 $textbotlang['users']['sell']['service_not_available'] = "⛔️ شما هیچ سرویس فعالی ندارید";
@@ -1211,6 +1220,22 @@ $textbotlang['Admin']['keyboardadmin']['send_message'] = "📨 ارسال پیا
 $textbotlang['Admin']['keyboardadmin']['affiliate_settings'] = "👥 تنظیمات زیر مجموعه گیری";
 $textbotlang['Admin']['keyboardadmin']['tutorial_section'] = "📚 بخش آموزش";
 $textbotlang['Admin']['keyboardadmin']['settings'] = "⚙️ تنظیمات";
+
+$textbotlang['Admin']['keyboardadmin']['bot_update'] = "🔄 آپدیت ربات";
+$textbotlang['Admin']['bot_update']['confirm'] = "⚠️ آپدیت ربات از گیتهاب فورک
+
+با تأیید، آخرین فایل‌های کد از گیتهاب دانلود و جایگزین می‌شوند.
+
+🔒 فایل‌های زیر حفظ می‌شوند و عوض نمی‌شوند:
+• config.php (توکن، دیتابیس، دامنه)
+• error_log و فایل‌های محلی حساس
+
+ادامه می‌دهید؟";
+$textbotlang['Admin']['bot_update']['yes'] = "✅ بله، آپدیت کن";
+$textbotlang['Admin']['bot_update']['no'] = "❌ انصراف";
+$textbotlang['Admin']['bot_update']['start'] = "⏳ در حال دانلود و آپدیت... لطفاً صبر کنید.";
+$textbotlang['Admin']['bot_update']['only_admin'] = "❌ فقط ادمین اصلی می‌تواند آپدیت کند.";
+
 $textbotlang['Admin']['keyboardadmin']['settingscron'] = "🕚 تنظیمات کرون جاب";
 $textbotlang['Admin']['keyboardadmin']['seetingstatus'] = "⚙️ وضعیت قابلیت ها";
 
