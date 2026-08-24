@@ -1363,39 +1363,51 @@ function list_mirza_bot_dirs() {
     local mode="$1"  # main | all
     local dirs=()
     local main="/var/www/html/mirzabotconfig"
+    local d
+
+    is_mirza_dir() {
+        local p="$1"
+        [ -d "$p" ] || return 1
+        [ -f "$p/config.php" ] || return 1
+        [ -f "$p/index.php" ] || return 1
+        # حداقل یکی از فایل‌های هسته ربات
+        [ -f "$p/functions.php" ] || [ -f "$p/botapi.php" ] || [ -f "$p/table.php" ] || return 1
+        return 0
+    }
 
     if [ "$mode" = "main" ]; then
-        if [ -d "$main" ] && [ -f "$main/config.php" ]; then
+        if is_mirza_dir "$main"; then
             echo "$main"
         fi
         return 0
     fi
 
-    # all: main first, then any other folder with config.php + index.php
-    if [ -d "$main" ] && [ -f "$main/config.php" ]; then
+    # all: main first, then other mirza-like folders
+    if is_mirza_dir "$main"; then
         dirs+=("$main")
     fi
     if [ -d "/var/www/html" ]; then
         for d in /var/www/html/*; do
             [ -d "$d" ] || continue
             [ "$d" = "$main" ] && continue
-            # skip non-bot folders
             case "$(basename "$d")" in
                 phpmyadmin|html|cgi-bin|.*) continue ;;
             esac
-            if [ -f "$d/config.php" ] && [ -f "$d/index.php" ]; then
+            if is_mirza_dir "$d"; then
                 dirs+=("$d")
             fi
         done
     fi
-    printf '%s\n' "${dirs[@]}"
+    if [ ${#dirs[@]} -gt 0 ]; then
+        printf '%s\n' "${dirs[@]}"
+    fi
 }
 
 # Protected filenames that must never be overwritten from GitHub
 function is_protected_bot_file() {
     local base="$1"
     case "$base" in
-        config.php|config.php.bak*|error_log|.env|config.local.php)
+        config.php|error_log|.env|config.local.php)
             return 0
             ;;
         config.php.*)
@@ -1445,32 +1457,61 @@ function sync_bot_files_from_source() {
     local dest="$2"
     local rel item base
 
-    # copy files recursively
-    while IFS= read -r -d '' item; do
+    src="${src%/}"
+    dest="${dest%/}"
+    if [ ! -d "$src" ] || [ ! -d "$dest" ]; then
+        echo -e "\e[91m  sync: invalid src/dest\033[0m"
+        return 1
+    fi
+
+    # استفاده از find بدون process-substitution برای سازگاری بیشتر
+    local list_file
+    list_file=$(mktemp)
+    find "$src" -mindepth 1 \( -type f -o -type d \) > "$list_file" || {
+        rm -f "$list_file"
+        return 1
+    }
+
+    while IFS= read -r item; do
+        [ -n "$item" ] || continue
+        [ -e "$item" ] || continue
         rel="${item#$src/}"
+        [ -n "$rel" ] || continue
+        # اگر strip نشد، رد کن
+        case "$rel" in
+            /*) continue ;;
+        esac
         base="$(basename "$rel")"
         if is_protected_bot_file "$base"; then
             continue
         fi
-        # also skip if path is exactly config.php at root of bot
         if [ "$rel" = "config.php" ]; then
             continue
         fi
         if [ -d "$item" ]; then
-            mkdir -p "$dest/$rel"
+            mkdir -p "$dest/$rel" || { rm -f "$list_file"; return 1; }
         elif [ -f "$item" ]; then
-            mkdir -p "$(dirname "$dest/$rel")"
-            cp -a "$item" "$dest/$rel" || return 1
+            mkdir -p "$(dirname "$dest/$rel")" || { rm -f "$list_file"; return 1; }
+            cp -f "$item" "$dest/$rel" || { rm -f "$list_file"; return 1; }
         fi
-    done < <(find "$src" -print0)
+    done < "$list_file"
+    rm -f "$list_file"
     return 0
 }
+
 
 # Core: update one or all bots
 function update_bot_targets() {
     local mode="$1"  # main | all
 
     mapfile -t BOT_LIST < <(list_mirza_bot_dirs "$mode")
+    # حذف خطوط خالی
+    local _tmp=()
+    local _b
+    for _b in "${BOT_LIST[@]}"; do
+        [ -n "$_b" ] && [ -d "$_b" ] && _tmp+=("$_b")
+    done
+    BOT_LIST=("${_tmp[@]}")
     if [ ${#BOT_LIST[@]} -eq 0 ]; then
         echo -e "\e[91mNo bot installation found to update.\033[0m"
         echo -e "\e[33mMain path expected: /var/www/html/mirzabotconfig\033[0m"
