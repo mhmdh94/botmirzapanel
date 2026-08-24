@@ -2138,6 +2138,179 @@ function renew_ssl() {
         echo -e "\033[31m[WARNING]\033[0m Failed to restart Apache. Please check manually."
     }
 }
+
+# --- Helper: list & select additional bot by number OR name ---
+# Sets: SELECTED_BOT, BOT_PATH  | returns 1 on cancel/error
+function select_additional_bot() {
+    local prompt_msg="${1:-Select a bot (number or name)}"
+    SELECTED_BOT=""
+    BOT_PATH=""
+
+    local -a bot_arr=()
+    local d name
+    for d in /var/www/html/*/; do
+        [ -d "$d" ] || continue
+        name="$(basename "$d")"
+        [ "$name" = "mirzabotconfig" ] && continue
+        case "$name" in
+            phpmyadmin|html|cgi-bin) continue ;;
+        esac
+        # prefer real mirza installs
+        if [ -f "$d/config.php" ] && [ -f "$d/index.php" ]; then
+            bot_arr+=("$name")
+        fi
+    done
+
+    if [ ${#bot_arr[@]} -eq 0 ]; then
+        echo -e "\033[31mNo additional bots found in /var/www/html.\033[0m"
+        return 1
+    fi
+
+    echo -e "\033[36mAvailable Additional Bots:\033[0m"
+    local i
+    for i in "${!bot_arr[@]}"; do
+        printf "\033[1;36m%2d)\033[0m %s\n" "$((i + 1))" "${bot_arr[$i]}"
+    done
+    echo -e "\033[1;36m 0)\033[0m Cancel"
+    echo ""
+    echo -ne "\033[36m${prompt_msg}: \033[0m"
+    local choice
+    read choice
+    choice="$(echo "$choice" | xargs)"  # trim
+
+    if [ -z "$choice" ] || [ "$choice" = "0" ]; then
+        echo -e "\033[33mCancelled.\033[0m"
+        return 1
+    fi
+
+    # numeric selection
+    if [[ "$choice" =~ ^[0-9]+$ ]]; then
+        local idx=$((choice - 1))
+        if [ "$idx" -lt 0 ] || [ "$idx" -ge ${#bot_arr[@]} ]; then
+            echo -e "\033[31mInvalid number.\033[0m"
+            return 1
+        fi
+        SELECTED_BOT="${bot_arr[$idx]}"
+    else
+        # name selection
+        local found=0
+        for name in "${bot_arr[@]}"; do
+            if [ "$name" = "$choice" ]; then
+                SELECTED_BOT="$name"
+                found=1
+                break
+            fi
+        done
+        if [ "$found" -eq 0 ]; then
+            echo -e "\033[31mInvalid bot name.\033[0m"
+            return 1
+        fi
+    fi
+
+    BOT_PATH="/var/www/html/$SELECTED_BOT"
+    if [ ! -d "$BOT_PATH" ]; then
+        echo -e "\033[31mBot path not found: $BOT_PATH\033[0m"
+        return 1
+    fi
+    echo -e "\033[32mSelected: $SELECTED_BOT\033[0m"
+    return 0
+}
+
+# Change domain for an additional bot
+function change_domain_additional_bot() {
+    clear
+    echo -e "\033[36mChange Domain — Additional Bot\033[0m"
+    if ! select_additional_bot "Select bot to change domain"; then
+        return 1
+    fi
+
+    local CONFIG_FILE="$BOT_PATH/config.php"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo -e "\033[31mconfig.php not found for $SELECTED_BOT\033[0m"
+        return 1
+    fi
+
+    local old_domain
+    old_domain=$(grep '^\$domainhosts' "$CONFIG_FILE" | head -n1 | cut -d"'" -f2 | cut -d'/' -f1)
+    echo -e "\033[33mCurrent domain: ${old_domain:-unknown}\033[0m"
+    echo -e "\033[33mBot folder: $SELECTED_BOT\033[0m"
+
+    local new_domain=""
+    while [[ ! "$new_domain" =~ ^[a-zA-Z0-9.-]+$ ]]; do
+        read -p "Enter new domain: " new_domain
+        [[ ! "$new_domain" =~ ^[a-zA-Z0-9.-]+$ ]] && echo -e "\033[31mInvalid domain format\033[0m"
+    done
+
+    echo -e "\033[33mStopping Apache to configure SSL...\033[0m"
+    if ! sudo systemctl stop apache2; then
+        echo -e "\033[31m[ERROR] Failed to stop Apache!\033[0m"
+        return 1
+    fi
+
+    echo -e "\033[33mConfiguring SSL for $new_domain...\033[0m"
+    if ! sudo certbot --apache --redirect --agree-tos --preferred-challenges http -d "$new_domain"; then
+        # try standalone if apache plugin fails
+        if ! sudo certbot certonly --standalone --agree-tos --preferred-challenges http -d "$new_domain"; then
+            echo -e "\033[31m[ERROR] SSL configuration failed!\033[0m"
+            sudo systemctl start apache2 || true
+            return 1
+        fi
+    fi
+
+    echo -e "\033[33mRestarting Apache...\033[0m"
+    if ! sudo systemctl start apache2; then
+        echo -e "\033[31m[ERROR] Failed to restart Apache!\033[0m"
+        return 1
+    fi
+
+    # backup config
+    sudo cp "$CONFIG_FILE" "$CONFIG_FILE.$(date +%s).bak"
+
+    # domainhosts is usually domain/foldername
+    sudo sed -i "s|\$domainhosts = '.*';|\$domainhosts = '${new_domain}/${SELECTED_BOT}';|" "$CONFIG_FILE"
+
+    local NEW_SECRET
+    NEW_SECRET=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 16)
+    sudo sed -i "s|\$secrettoken = '.*';|\$secrettoken = '${NEW_SECRET}';|" "$CONFIG_FILE"
+
+    local BOT_TOKEN
+    BOT_TOKEN=$(awk -F"'" '/\$APIKEY/{print $2; exit}' "$CONFIG_FILE")
+    if [ -n "$BOT_TOKEN" ]; then
+        curl -s -o /dev/null -F "url=https://${new_domain}/${SELECTED_BOT}/index.php" \
+             -F "secret_token=${NEW_SECRET}" \
+             "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" || {
+            echo -e "\033[33m[WARNING] Webhook update failed — set it manually if needed\033[0m"
+        }
+    fi
+
+    # Optional: ensure apache vhost for new domain points to bot folder
+    local APACHE_CONFIG="/etc/apache2/sites-available/${new_domain}.conf"
+    if [ ! -f "$APACHE_CONFIG" ]; then
+        echo -e "\033[33mCreating Apache vhost for $new_domain...\033[0m"
+        sudo bash -c "cat > '$APACHE_CONFIG' <<EOF
+<VirtualHost *:80>
+    ServerName $new_domain
+    Redirect permanent / https://$new_domain/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName $new_domain
+    DocumentRoot /var/www/html
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/$new_domain/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/$new_domain/privkey.pem
+</VirtualHost>
+EOF"
+        sudo a2ensite "${new_domain}.conf" 2>/dev/null || true
+        sudo systemctl reload apache2 2>/dev/null || true
+    fi
+
+    echo -e "\033[32mDomain for bot '$SELECTED_BOT' changed to: $new_domain\033[0m"
+    echo -e "\033[33mWebhook: https://${new_domain}/${SELECTED_BOT}/index.php\033[0m"
+    echo -e "\033[33mconfig.php backed up next to original.\033[0m"
+}
+
 # Function to Manage Additional Bots
 function manage_additional_bots() {
     # Check if Mirza main bot is installed
@@ -2163,9 +2336,10 @@ function manage_additional_bots() {
     echo -e "\033[36m4) Export Additional Bot Database\033[0m"
     echo -e "\033[36m5) Import Additional Bot Database\033[0m"
     echo -e "\033[36m6) Configure Automated Backup for Additional Bot\033[0m"
-    echo -e "\033[36m7) Back to Main Menu\033[0m"
+    echo -e "\033[36m7) Change Domain for Additional Bot\033[0m"
+    echo -e "\033[36m8) Back to Main Menu\033[0m"
     echo ""
-    read -p "Select an option [1-7]: " sub_option
+    read -p "Select an option [1-8]: " sub_option
     case $sub_option in
         1) install_additional_bot ;;
         2) update_additional_bot ;;
@@ -2173,7 +2347,8 @@ function manage_additional_bots() {
         4) export_additional_bot_database ;;
         5) import_additional_bot_database ;;
         6) configure_backup_additional_bot ;;
-        7) show_menu ;;
+        7) change_domain_additional_bot ;;
+        8) show_menu ;;
         *)
             echo -e "\033[31mInvalid option. Please try again.\033[0m"
             manage_additional_bots
@@ -2454,27 +2629,9 @@ function update_additional_bot() {
     clear
     echo -e "\033[36mAvailable Bots:\033[0m"
 
-    # List directories in /var/www/html excluding mirzabotconfig
-    BOT_DIRS=$(ls -d /var/www/html/*/ 2>/dev/null | grep -v "/var/www/html/mirzabotconfig" | xargs -n 1 basename)
-
-    if [ -z "$BOT_DIRS" ]; then
-        echo -e "\033[31mNo additional bots found in /var/www/html.\033[0m"
+    if ! select_additional_bot "Select a bot (number or name)"; then
         return 1
     fi
-
-    # Display list of bots
-    echo "$BOT_DIRS" | nl -w 2 -s ") "
-
-    # Prompt user to select a bot
-    echo -ne "\033[36mSelect a bot by name: \033[0m"
-    read SELECTED_BOT
-
-    if [[ ! "$BOT_DIRS" =~ (^|[[:space:]])$SELECTED_BOT($|[[:space:]]) ]]; then
-        echo -e "\033[31mInvalid bot name.\033[0m"
-        return 1
-    fi
-
-    BOT_PATH="/var/www/html/$SELECTED_BOT"
     CONFIG_PATH="$BOT_PATH/config.php"
     TEMP_CONFIG_PATH="/root/${SELECTED_BOT}_config.php"
 
@@ -2533,27 +2690,9 @@ function remove_additional_bot() {
     clear
     echo -e "\033[36mAvailable Bots:\033[0m"
 
-    # List directories in /var/www/html excluding mirzabotconfig
-    BOT_DIRS=$(ls -d /var/www/html/*/ 2>/dev/null | grep -v "/var/www/html/mirzabotconfig" | xargs -n 1 basename)
-
-    if [ -z "$BOT_DIRS" ]; then
-        echo -e "\033[31mNo additional bots found in /var/www/html.\033[0m"
+    if ! select_additional_bot "Select a bot (number or name)"; then
         return 1
     fi
-
-    # Display list of bots
-    echo "$BOT_DIRS" | nl -w 2 -s ") "
-
-    # Prompt user to select a bot
-    echo -ne "\033[36mSelect a bot by name: \033[0m"
-    read SELECTED_BOT
-
-    if [[ ! "$BOT_DIRS" =~ (^|[[:space:]])$SELECTED_BOT($|[[:space:]]) ]]; then
-        echo -e "\033[31mInvalid bot name.\033[0m"
-        return 1
-    fi
-
-    BOT_PATH="/var/www/html/$SELECTED_BOT"
     CONFIG_PATH="$BOT_PATH/config.php"
 
     # Confirm removal
@@ -2639,31 +2778,10 @@ function remove_additional_bot() {
     #Function to export additional bot database
 function export_additional_bot_database() {
     clear
-    echo -e "\033[36mAvailable Bots:\033[0m"
-
-    # List all directories in /var/www/html excluding mirzabotconfig
-    BOT_DIRS=$(ls -d /var/www/html/*/ 2>/dev/null | grep -v "/var/www/html/mirzabotconfig" | xargs -n 1 basename)
-
-    # Check if there are no additional bots available
-    if [ -z "$BOT_DIRS" ]; then
-        echo -e "\033[31mNo additional bots found in /var/www/html.\033[0m"
+    if ! select_additional_bot "Select a bot (number or name)"; then
         return 1
     fi
-
-    # Display the list of bot directories with numbering
-    echo "$BOT_DIRS" | nl -w 2 -s ") "
-
-    # Prompt the user to select a bot by entering its name
-    echo -ne "\033[36mEnter the bot name: \033[0m"
-    read SELECTED_BOT
-
-    # Verify the selected bot exists in the list
-    if [[ ! "$BOT_DIRS" =~ (^|[[:space:]])$SELECTED_BOT($|[[:space:]]) ]]; then
-        echo -e "\033[31mInvalid bot name.\033[0m"
-        return 1
-    fi
-
-    BOT_PATH="/var/www/html/$SELECTED_BOT"  # Define the bot's directory path
+    CONFIG_PATH="$BOT_PATH/config.php"      # Define the config.php file path
     CONFIG_PATH="$BOT_PATH/config.php"      # Define the config.php file path
 
     # Check if the config.php file exists for the selected bot
@@ -2785,26 +2903,9 @@ function import_additional_bot_database() {
     fi
 
     # List all available bots
-    echo -e "\033[36mAvailable Bots:\033[0m"
-    BOT_DIRS=$(ls -d /var/www/html/*/ 2>/dev/null | grep -v "/var/www/html/mirzabotconfig" | xargs -n 1 basename)
-
-    if [ -z "$BOT_DIRS" ]; then
-        echo -e "\033[31mNo additional bots found in /var/www/html.\033[0m"
+    if ! select_additional_bot "Select a bot (number or name)"; then
         return 1
     fi
-
-    echo "$BOT_DIRS" | nl -w 2 -s ") "
-
-    # Prompt the user to select a bot
-    echo -ne "\033[36mSelect a bot by name: \033[0m"
-    read SELECTED_BOT
-
-    if [[ ! "$BOT_DIRS" =~ (^|[[:space:]])$SELECTED_BOT($|[[:space:]]) ]]; then
-        echo -e "\033[31mInvalid bot name.\033[0m"
-        return 1
-    fi
-
-    BOT_PATH="/var/www/html/$SELECTED_BOT"  # Define the bot's directory path
     CONFIG_PATH="$BOT_PATH/config.php"      # Define the config.php file path
 
     # Check if the config.php file exists for the selected bot
@@ -2847,25 +2948,9 @@ function configure_backup_additional_bot() {
 
     # List all available bots in /var/www/html excluding the main configuration directory
     echo -e "\033[36mAvailable Bots:\033[0m"
-    BOT_DIRS=$(ls -d /var/www/html/*/ 2>/dev/null | grep -v "/var/www/html/mirzabotconfig" | xargs -n 1 basename)
-
-    if [ -z "$BOT_DIRS" ]; then
-        echo -e "\033[31mNo additional bots found in /var/www/html.\033[0m"
+    if ! select_additional_bot "Select a bot (number or name)"; then
         return 1
     fi
-
-    echo "$BOT_DIRS" | nl -w 2 -s ") "
-
-    # Prompt user to select a bot
-    echo -ne "\033[36mSelect a bot by name: \033[0m"
-    read SELECTED_BOT
-
-    if [[ ! "$BOT_DIRS" =~ (^|[[:space:]])$SELECTED_BOT($|[[:space:]]) ]]; then
-        echo -e "\033[31mInvalid bot name.\033[0m"
-        return 1
-    fi
-
-    BOT_PATH="/var/www/html/$SELECTED_BOT"
     CONFIG_PATH="$BOT_PATH/config.php"
 
     # Check if the config.php file exists
