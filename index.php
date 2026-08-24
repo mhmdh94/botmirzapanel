@@ -2558,63 +2558,12 @@ if (preg_match('/userinfo_pay_(\d+)/', $datain, $dataget)) {
     if (!in_array($from_id, $admin_ids)) {
         return;
     }
-    $id_user_info = $dataget[1];
-    $userinfo = select("user", "*", "id", $id_user_info, "select");
-    if ($userinfo == false) {
-        sendmessage($from_id, "❌ کاربر یافت نشد.", null, 'HTML');
-        return;
+    $id_user_info = intval($dataget[1]);
+    if (function_exists('sendAdminUserInfo')) {
+        sendAdminUserInfo($from_id, $id_user_info);
+    } else {
+        sendmessage($from_id, "❌ نمایش اطلاعات کاربر در دسترس نیست.", null, 'HTML');
     }
-    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM invoice WHERE (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') AND id_user = :id_user");
-    $stmt->bindParam(':id_user', $id_user_info);
-    $stmt->execute();
-    $dayListSell = $stmt->fetch(PDO::FETCH_ASSOC)['cnt'];
-    $stmt = $pdo->prepare("SELECT SUM(price) as total FROM Payment_report WHERE payment_Status = 'paid' AND id_user = :id_user");
-    $stmt->bindParam(':id_user', $id_user_info);
-    $stmt->execute();
-    $balanceall = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $balanceall = $balanceall ? number_format($balanceall) : "0";
-    $stmt = $pdo->prepare("SELECT SUM(price_product) as total FROM invoice WHERE (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') AND id_user = :id_user");
-    $stmt->bindParam(':id_user', $id_user_info);
-    $stmt->execute();
-    $subbuyuser = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $subbuyuser = $subbuyuser ? number_format($subbuyuser) : "0";
-    $Balance_fmt = number_format($userinfo['Balance']);
-    $lastmessage = !empty($userinfo['last_message_time']) ? jdate('Y/m/d H:i:s', $userinfo['last_message_time']) : "-";
-    $roll_Status = (isset($userinfo['roll_Status']) && $userinfo['roll_Status']) ? "✅" : "❌";
-    $verify_status = (isset($userinfo['verify']) && intval($userinfo['verify']) == 1) ? "✅" : "❌";
-    $uname = !empty($userinfo['username']) && $userinfo['username'] != "none" ? "@" . $userinfo['username'] : "ندارد";
-    $number = !empty($userinfo['number']) && $userinfo['number'] != "none" ? $userinfo['number'] : "ندارد";
-    $textinfo = "👤 <b>اطلاعات کاربر</b>
-
-🆔 آیدی: <code>{$id_user_info}</code>
-👤 یوزرنیم: {$uname}
-📊 وضعیت: {$userinfo['User_Status']}
-💰 موجودی کیف پول: {$Balance_fmt} تومان
-🛒 تعداد سرویس فعال: {$dayListSell}
-💳 مجموع پرداخت‌ها: {$balanceall} تومان
-📦 مجموع خرید سرویس: {$subbuyuser} تومان
-📱 شماره: {$number}
-📜 قوانین: {$roll_Status}
-✅ احراز: {$verify_status}
-🕐 آخرین پیام: {$lastmessage}
-👥 تعداد زیرمجموعه: {$userinfo['affiliatescount']}
-🔗 معرف: {$userinfo['affiliates']}";
-    $keyboardmanage = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => '✉️ ارسال پیام', 'callback_data' => "Response_" . $id_user_info],
-            ],
-            [
-                ['text' => '⬆️ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $id_user_info],
-                ['text' => '⬇️ کم کردن موجودی', 'callback_data' => "lowbalanceuser_" . $id_user_info],
-            ],
-            [
-                ['text' => '🔒 مسدود کردن', 'callback_data' => "banuserlist_" . $id_user_info],
-                ['text' => '🔓 رفع مسدودی', 'callback_data' => "unbanuserr_" . $id_user_info],
-            ],
-        ]
-    ]);
-    sendmessage($from_id, $textinfo, $keyboardmanage, 'HTML');
 }
 
 #----------------Discount------------------#

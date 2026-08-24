@@ -1300,6 +1300,142 @@ function getAffiliatesEarned($user_id)
     return max($tracked, $estimated);
 }
 
+
+/**
+ * نمایش کامل اطلاعات کاربر برای ادمین (متن + دکمه‌های مدیریت)
+ * همان صفحه‌ای که از «جستجوی کاربر» می‌آید
+ */
+function sendAdminUserInfo($admin_id, $target_user_id)
+{
+    global $pdo, $textbotlang, $keyboardadmin;
+    $target_user_id = intval($target_user_id);
+    $admin_id = intval($admin_id);
+    if ($target_user_id <= 0 || $admin_id <= 0) {
+        return false;
+    }
+    $u = select("user", "*", "id", $target_user_id, "select");
+    if (!$u || !is_array($u)) {
+        sendmessage($admin_id, $textbotlang['Admin']['not-user'] ?? '❌ کاربر یافت نشد.', null, 'HTML');
+        return false;
+    }
+
+    $status_ok = "(status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn')";
+    $dayListSell = 0;
+    $balanceall = 0;
+    $subbuyuser = 0;
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE {$status_ok} AND id_user = :id");
+        $st->execute([':id' => $target_user_id]);
+        $dayListSell = intval($st->fetchColumn());
+    } catch (Exception $e) {}
+    try {
+        $st = $pdo->prepare("SELECT COALESCE(SUM(price),0) FROM Payment_report WHERE payment_Status = 'paid' AND id_user = :id");
+        $st->execute([':id' => $target_user_id]);
+        $balanceall = $st->fetchColumn();
+    } catch (Exception $e) {}
+    try {
+        $st = $pdo->prepare("SELECT COALESCE(SUM(price_product),0) FROM invoice WHERE {$status_ok} AND id_user = :id");
+        $st->execute([':id' => $target_user_id]);
+        $subbuyuser = $st->fetchColumn();
+    } catch (Exception $e) {}
+    if ($subbuyuser === null || $subbuyuser === false) {
+        $subbuyuser = 0;
+    }
+    if ($balanceall === null || $balanceall === false) {
+        $balanceall = 0;
+    }
+
+    $roll_Status = [
+        '1' => $textbotlang['Admin']['ManageUser']['Acceptedphone'] ?? 'تایید شده',
+        '0' => $textbotlang['Admin']['ManageUser']['Failedphone'] ?? 'تایید نشده',
+    ][strval($u['roll_Status'] ?? '0')] ?? ($textbotlang['Admin']['ManageUser']['Failedphone'] ?? 'تایید نشده');
+
+    $uid = strval($target_user_id);
+    $keyboardmanage = [
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['addbalanceuser'] ?? '⬆️ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $uid],
+                ['text' => $textbotlang['Admin']['ManageUser']['lowbalanceuser'] ?? '⬇️ کم کردن موجودی', 'callback_data' => "lowbalanceuser_" . $uid],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['banuserlist'] ?? '🔒 مسدود کردن کاربر', 'callback_data' => "banuserlist_" . $uid],
+                ['text' => $textbotlang['Admin']['ManageUser']['unbanuserlist'] ?? '🔓 رفع مسدودی کاربر', 'callback_data' => "unbanuserr_" . $uid],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['confirmnumber'] ?? 'تایید دستی شماره تلفن', 'callback_data' => "confirmnumber_" . $uid],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['getlimitusertest']['setlimitbtn'] ?? '➕ محدودیت ساخت اکانت تست', 'callback_data' => "limitusertest_" . $uid],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['verify'] ?? 'احراز هویت', 'callback_data' => "verify_" . $uid],
+                ['text' => $textbotlang['Admin']['ManageUser']['removeverify'] ?? 'حذف احراز هویت', 'callback_data' => "verifyun_" . $uid],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['vieworderuser'] ?? '🛍 مشاهده سفارشات کاربر', 'callback_data' => "vieworderall_" . $uid],
+                ['text' => $textbotlang['Admin']['ManageUser']['addorder'] ?? '🛒 افزودن دستی سفارش', 'callback_data' => "addordermanualـ" . $uid],
+            ],
+            [
+                ['text' => '✉️ ارسال پیام به کاربر', 'callback_data' => "Response_" . $uid],
+            ],
+        ]
+    ];
+
+    if (function_exists('ensureUserCartAutoColumn')) {
+        ensureUserCartAutoColumn();
+    }
+    $aff_earn = function_exists('getAffiliatesEarned') ? getAffiliatesEarned($target_user_id) : intval($u['affiliates_balance'] ?? 0);
+    $cart_auto_off = intval($u['cart_auto_off'] ?? 0);
+    $global_auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
+    $cart_label = !$global_auto
+        ? '—'
+        : ($cart_auto_off
+            ? ($textbotlang['Admin']['ManageUser']['cart_auto_status_off'] ?? '❌ غیرفعال')
+            : ($textbotlang['Admin']['ManageUser']['cart_auto_status_on'] ?? '✅ فعال'));
+    if ($global_auto) {
+        $keyboardmanage['inline_keyboard'][] = [[
+            'text' => $cart_auto_off
+                ? ($textbotlang['Admin']['ManageUser']['cart_auto_off'] ?? '❌ تأیید خودکار رسید کاربر: غیرفعال')
+                : ($textbotlang['Admin']['ManageUser']['cart_auto_on'] ?? '✅ تأیید خودکار رسید کاربر: فعال'),
+            'callback_data' => 'toggle_cart_auto_' . $uid
+        ]];
+    }
+
+    $Balance_fmt = number_format(intval($u['Balance'] ?? 0));
+    $lmt = intval($u['last_message_time'] ?? 0);
+    $lastmessage = $lmt > 0
+        ? (function_exists('jdate') ? jdate('Y/m/d H:i:s', $lmt) : date('Y-m-d H:i:s', $lmt))
+        : '-';
+    $username_disp = $u['username'] ?? '';
+    if ($username_disp === 'none' || $username_disp === null) {
+        $username_disp = '';
+    }
+    $number_disp = $u['number'] ?? 'none';
+    $text_msg = sprintf(
+        $textbotlang['Admin']['ManageUser']['infouser'],
+        $u['User_Status'] ?? '-',
+        $username_disp,
+        $uid,
+        $uid,
+        $lastmessage,
+        $u['limit_usertest'] ?? '0',
+        $roll_Status,
+        $number_disp,
+        $Balance_fmt,
+        $dayListSell,
+        number_format(intval($balanceall)),
+        number_format(intval($subbuyuser)),
+        $u['affiliatescount'] ?? '0',
+        $u['affiliates'] ?? '0',
+        $u['verify'] ?? '0',
+        number_format(intval($aff_earn)),
+        $cart_label
+    );
+    sendmessage($admin_id, $text_msg, json_encode($keyboardmanage), 'HTML');
+    return true;
+}
+
+
 function isAutomaticCartConfirmEnabled()
 {
     global $domainhosts;

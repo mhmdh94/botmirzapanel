@@ -2092,62 +2092,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
         sendmessage($from_id, $textbotlang['Admin']['not-user'], $backadmin, 'HTML');
         return;
     }
-    $date = date("Y-m-d");
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') AND id_user = :id_user");
-    $stmt->bindParam(':id_user', $text);
-    $stmt->execute();
-    $dayListSell = $stmt->rowCount();
-    $stmt = $pdo->prepare("SELECT SUM(price) FROM Payment_report WHERE payment_Status = 'paid' AND id_user = :id_user");
-    $stmt->bindParam(':id_user', $text);
-    $stmt->execute();
-    $balanceall = $stmt->fetch(PDO::FETCH_ASSOC)['SUM(price)'];
-    $stmt = $pdo->prepare("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') AND id_user = :id_user");
-    $stmt->bindParam(':id_user', $text);
-    $stmt->execute();
-    $subbuyuser = $stmt->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'];
-    $user = select("user", "*", "id", $text, "select");
-    $roll_Status = [
-        '1' => $textbotlang['Admin']['ManageUser']['Acceptedphone'],
-        '0' => $textbotlang['Admin']['ManageUser']['Failedphone'],
-    ][$user['roll_Status']];
-    if ($subbuyuser == null)
-        $subbuyuser = 0;
-    $keyboardmanage = [
-        'inline_keyboard' => [
-            [['text' => $textbotlang['Admin']['ManageUser']['addbalanceuser'], 'callback_data' => "addbalanceuser_" . $text], ['text' => $textbotlang['Admin']['ManageUser']['lowbalanceuser'], 'callback_data' => "lowbalanceuser_" . $text],],
-            [['text' => $textbotlang['Admin']['ManageUser']['banuserlist'], 'callback_data' => "banuserlist_" . $text], ['text' => $textbotlang['Admin']['ManageUser']['unbanuserlist'], 'callback_data' => "unbanuserr_" . $text]],
-            [['text' => $textbotlang['Admin']['ManageUser']['confirmnumber'], 'callback_data' => "confirmnumber_" . $text]],
-            [['text' => $textbotlang['Admin']['getlimitusertest']['setlimitbtn'], 'callback_data' => "limitusertest_" . $text]],
-            [['text' => $textbotlang['Admin']['ManageUser']['verify'], 'callback_data' => "verify_" . $text], ['text' => $textbotlang['Admin']['ManageUser']['removeverify'], 'callback_data' => "verifyun_" . $text]],
-            [['text' => $textbotlang['Admin']['ManageUser']['vieworderuser'], 'callback_data' => "vieworderall_" . $text], ['text' => $textbotlang['Admin']['ManageUser']['addorder'], 'callback_data' => "addordermanualـ" . $text]],
-            [['text' => '✉️ ارسال پیام به کاربر', 'callback_data' => "Response_" . $text]],
-        ]
-    ];
-    $keyboardmanage = json_encode($keyboardmanage);
-    $user['Balance'] = number_format($user['Balance']);
-    $lastmessage = jdate('Y/m/d H:i:s', $user['last_message_time']);
-    if (function_exists('ensureUserCartAutoColumn')) ensureUserCartAutoColumn();
-    $aff_earn = function_exists('getAffiliatesEarned') ? getAffiliatesEarned($text) : intval($user['affiliates_balance'] ?? 0);
-    $cart_auto_off = intval($user['cart_auto_off'] ?? 0);
-    $global_auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
-    $cart_label = !$global_auto
-        ? '—'
-        : ($cart_auto_off
-            ? ($textbotlang['Admin']['ManageUser']['cart_auto_status_off'] ?? '❌ غیرفعال')
-            : ($textbotlang['Admin']['ManageUser']['cart_auto_status_on'] ?? '✅ فعال'));
-    $keyboardmanage_arr = json_decode($keyboardmanage, true);
-    if (!is_array($keyboardmanage_arr)) $keyboardmanage_arr = ['inline_keyboard' => []];
-    // دکمه فقط وقتی تأیید خودکار بدون بررسی سراسری روشن است
-    if ($global_auto) {
-        $keyboardmanage_arr['inline_keyboard'][] = [[
-            'text' => $cart_auto_off
-                ? ($textbotlang['Admin']['ManageUser']['cart_auto_off'] ?? '❌ تأیید خودکار رسید کاربر: غیرفعال')
-                : ($textbotlang['Admin']['ManageUser']['cart_auto_on'] ?? '✅ تأیید خودکار رسید کاربر: فعال'),
-            'callback_data' => 'toggle_cart_auto_' . $text
-        ]];
+    if (function_exists('sendAdminUserInfo')) {
+        sendAdminUserInfo($from_id, $text);
     }
-    $keyboardmanage = json_encode($keyboardmanage_arr);
-    sendmessage($from_id, sprintf($textbotlang['Admin']['ManageUser']['infouser'], $user['User_Status'], $user['username'], $text, $text, $lastmessage, $user['limit_usertest'], $roll_Status, $user['number'], $user['Balance'], $dayListSell, $balanceall, $subbuyuser, $user['affiliatescount'], $user['affiliates'], $user['verify'], number_format($aff_earn), $cart_label), $keyboardmanage, 'HTML');
     sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardadmin, 'HTML');
     step('home', $from_id);
 }
