@@ -87,7 +87,14 @@ if (!isset($setting['status_tariff_list']) || $setting['status_tariff_list'] == 
 }
 $keyboard_rows[] = $row_account;
 
-$row_sup = [['text' => $datatextbot['text_support']]];
+$row_sup = [];
+$__sup_on = true;
+if (isset($setting['status_support']) && ($setting['status_support'] == '0' || $setting['status_support'] === 0)) {
+    $__sup_on = false;
+}
+if ($__sup_on) {
+    $row_sup[] = ['text' => $datatextbot['text_support']];
+}
 $aff_on = true;
 if (isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0)) {
     $aff_on = false;
@@ -102,7 +109,9 @@ try {
 if ($aff_on) {
     $row_sup[] = ['text' => $textbotlang['users']['affiliates']['btn']];
 }
-$keyboard_rows[] = $row_sup;
+if (!empty($row_sup)) {
+    $keyboard_rows[] = $row_sup;
+}
 
 $keyboard = [
     'keyboard' => $keyboard_rows,

@@ -2245,6 +2245,17 @@ function buildAdminKeyboard()
  */
 
 /** آیا افزایش موجودی / واریز فعال است؟ */
+
+/** آیا دکمه/بخش پشتیبانی فعال است؟ */
+function isSupportEnabled()
+{
+    $st = select("setting", "*", null, null, "select");
+    if (is_array($st) && array_key_exists('status_support', $st) && $st['status_support'] !== null && $st['status_support'] !== '') {
+        return strval($st['status_support']) !== '0';
+    }
+    return true;
+}
+
 function isDepositEnabled()
 {
     $st = select("setting", "*", null, null, "select");
@@ -2279,6 +2290,7 @@ function ensureFeatureSettingsColumns() {
         'status_tariff_list' => '1',
         'status_extra_volume' => '1',
         'status_deposit' => '1',
+        'status_support' => '1',
     ];
     foreach ($fields as $name => $default) {
         if (function_exists('addFieldToTable')) {

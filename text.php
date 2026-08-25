@@ -1571,6 +1571,8 @@ $textbotlang['Admin']['Status']['status_search_service'] = "جستجوی سرو�
 $textbotlang['Admin']['Status']['status_affiliates_btn'] = "دکمه مشارکت در فروش";
 
 $textbotlang['Admin']['Status']['status_extra_volume'] = "خرید حجم اضافه";
+$textbotlang['Admin']['Status']['status_support'] = "دکمه پشتیبانی";
+$textbotlang['users']['support']['disabled'] = "⛔️ پشتیبانی فعلاً در دسترس نیست.\nلطفاً بعداً تلاش کنید.";
 $textbotlang['Admin']['Status']['status_deposit'] = "افزایش موجودی / واریز";
 $textbotlang['users']['Balance']['deposit_closed'] = "⛔️ واریز به حساب بسته است.
 لطفاً بعداً تلاش کنید.";

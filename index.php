@@ -1921,6 +1921,10 @@ if ($text == $datatextbot['text_help'] || $datain == "helpbtn" || $text == "/hel
 
 #-----------support------------#
 if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "support") {
+    if (function_exists('isSupportEnabled') && !isSupportEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['support']['disabled'], $keyboard, 'HTML');
+        return;
+    }
     // مستقیم درخواست پیام پشتیبانی — بدون منوی وسط سوالات متداول
     sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
     step('gettextpm', $from_id);
