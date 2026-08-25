@@ -2243,6 +2243,28 @@ function buildAdminKeyboard()
 /**
  * اطمینان از وجود ستون‌های قابلیت‌های فورک در جدول setting
  */
+
+/** آیا افزایش موجودی / واریز فعال است؟ */
+function isDepositEnabled()
+{
+    $st = select("setting", "*", null, null, "select");
+    if (is_array($st) && array_key_exists('status_deposit', $st) && $st['status_deposit'] !== null && $st['status_deposit'] !== '') {
+        return strval($st['status_deposit']) !== '0';
+    }
+    return true;
+}
+
+/** آیا خرید حجم اضافه فعال است؟ */
+function isExtraVolumeEnabled()
+{
+    $st = select("setting", "*", null, null, "select");
+    if (is_array($st) && array_key_exists('status_extra_volume', $st) && $st['status_extra_volume'] !== null && $st['status_extra_volume'] !== '') {
+        return strval($st['status_extra_volume']) !== '0';
+    }
+    return true;
+}
+
+
 function ensureFeatureSettingsColumns() {
     static $done = false;
     if ($done) return;
@@ -2255,6 +2277,8 @@ function ensureFeatureSettingsColumns() {
         'status_search_service' => '1',
         'status_affiliates_btn' => '1',
         'status_tariff_list' => '1',
+        'status_extra_volume' => '1',
+        'status_deposit' => '1',
     ];
     foreach ($fields as $name => $default) {
         if (function_exists('addFieldToTable')) {

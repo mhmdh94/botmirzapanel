@@ -58,11 +58,16 @@ $keyboard_rows = [];
 if (!empty($row1)) {
     $keyboard_rows[] = $row1;
 }
-// ردیف: سرویس‌های من + افزایش موجودی
-$keyboard_rows[] = [
-    ['text' => $datatextbot['text_Purchased_services']],
-    ['text' => $datatextbot['text_Add_Balance']],
-];
+// ردیف: سرویس‌های من (+ افزایش موجودی در صورت فعال بودن واریز)
+$row_svc = [['text' => $datatextbot['text_Purchased_services']]];
+$__dep_on = true;
+if (isset($setting['status_deposit']) && ($setting['status_deposit'] == '0' || $setting['status_deposit'] === 0)) {
+    $__dep_on = false;
+}
+if ($__dep_on) {
+    $row_svc[] = ['text' => $datatextbot['text_Add_Balance']];
+}
+$keyboard_rows[] = $row_svc;
 
 // ردیف: حساب کاربری (+موجودی) + تعرفه اشتراک (در صورت فعال بودن)
 $account_btn = $datatextbot['text_account'];

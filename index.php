@@ -868,10 +868,12 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
                 [
                     ['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username],
                 ],
-                [
+                array_values(array_filter([
                     ['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username],
-                    ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username],
-                ],
+                    ((!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1)
+                        ? ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username]
+                        : null),
+                ])),
                 [
                     ['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder'],
                 ]
@@ -924,6 +926,9 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
             unset($keyboarddate['extend']);
             unset($keyboarddate['changelink']);
             unset($keyboarddate['togglestatus']);
+            unset($keyboarddate['Extra_volume']);
+        }
+        if (isset($setting['status_extra_volume']) && ($setting['status_extra_volume'] == '0' || $setting['status_extra_volume'] === 0)) {
             unset($keyboarddate['Extra_volume']);
         }
         if ($nameloc['name_product'] == "usertest") {
@@ -1172,6 +1177,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         return;
     }
     if ($user['Balance'] < $product['price_product']) {
+        if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+            sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
         $Balance_prim = $product['price_product'] - $user['Balance'];
         if ($Balance_prim < getDepositLimits()['min']) {
             sendmessage($from_id, msgShortfallBelowMin('extend'), $keyboard, 'HTML');
@@ -1447,6 +1457,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     ]);
     Editmessagetext($from_id, $message_id, $msg, $keyboardchange);
 } elseif (preg_match('/Extra_volume_(\w+)/', $datain, $dataget)) {
+    if (function_exists('isExtraVolumeEnabled') && !isExtraVolumeEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['Extra_volume']['disabled'], $keyboard, 'HTML');
+        return;
+    }
+
     $username = $dataget[1];
     update("user", "Processing_value", $username, "id", $from_id);
     $textextra = " .";
@@ -1489,6 +1504,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         return;
     }
     if ($user['Balance'] < $price_extra && intval($setting['Extra_volume']) != 0) {
+        if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+            sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
         $Balance_prim = $price_extra - $user['Balance'];
         if ($Balance_prim < getDepositLimits()['min']) {
             sendmessage($from_id, msgShortfallBelowMin('extra'), $keyboard, 'HTML');
@@ -2310,6 +2330,12 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $priceproduct = $info_product['price_product'];
     }
     if ($priceproduct > $user['Balance']) {
+        // واریز خاموش باشد → فقط پیام بسته بودن، بدون ساخت فاکتور unpaid
+        if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+            sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
         $Balance_prim = $priceproduct - $user['Balance'];
         if ($Balance_prim < getDepositLimits()['min']) {
             sendmessage($from_id, msgShortfallBelowMin('buy'), $keyboard, 'HTML');
@@ -2599,6 +2625,11 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
 
 #-------------------[ text_Add_Balance ]---------------------#
 if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        return;
+    }
+
     update("user", "Processing_value", "0", "id", $from_id);
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
@@ -2667,6 +2698,11 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "get_step_payment") {
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
     if (isset($user['Processing_value']) && is_numeric($user['Processing_value']) && intval($user['Processing_value']) > 0 && intval($user['Processing_value']) < getDepositLimits()['min']) {
         sendmessage($from_id, msgShortfallBelowMin('pay'), $keyboard, 'HTML');
         step('home', $from_id);

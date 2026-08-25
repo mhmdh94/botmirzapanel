@@ -1569,6 +1569,13 @@ $textbotlang['Admin']['Status']['status_usertest'] = "دکمه اکانت تست
 $textbotlang['Admin']['Status']['status_buy'] = "امکان خرید سرویس جدید";
 $textbotlang['Admin']['Status']['status_search_service'] = "جستجوی سرویس";
 $textbotlang['Admin']['Status']['status_affiliates_btn'] = "دکمه مشارکت در فروش";
+
+$textbotlang['Admin']['Status']['status_extra_volume'] = "خرید حجم اضافه";
+$textbotlang['Admin']['Status']['status_deposit'] = "افزایش موجودی / واریز";
+$textbotlang['users']['Balance']['deposit_closed'] = "⛔️ واریز به حساب بسته است.
+لطفاً بعداً تلاش کنید.";
+$textbotlang['users']['Extra_volume']['disabled'] = "⛔️ خرید حجم اضافه فعلاً غیرفعال است.";
+
 $textbotlang['Admin']['Status']['status_tariff_list'] = "دکمه لیست تعرفه";
 $textbotlang['users']['sell']['tariff_disabled'] = "⛔️ نمایش لیست تعرفه فعلا غیرفعال است.";
 $textbotlang['users']['sell']['buy_disabled'] = "⛔️ فعلا امکان خرید سرویس جدید وجود ندارد.
