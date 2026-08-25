@@ -721,6 +721,8 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 • ۷ روز: <code>%s</code> عدد | <code>%s</code> تومان
 • ۳۰ روز: <code>%s</code> عدد | <code>%s</code> تومان
 
+🎁 پورسانت پرداخت‌شده: <code>%s</code> تومان
+
 📦 سرویس فعال: <code>%s</code> | مبلغ: <code>%s</code> تومان
 🧪 اکانت تست: <code>%s</code>
 🖥 پنل‌ها: <code>%s</code>";

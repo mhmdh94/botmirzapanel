@@ -153,6 +153,20 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $week = $periodStats($week_ago);
     $month = $periodStats($month_ago);
 
+    // مجموع پورسانت‌های پرداخت‌شده (ستون affiliates_balance)
+    $aff_paid = 0;
+    try {
+        if (function_exists('ensureAffiliatesBalanceColumn')) {
+            ensureAffiliatesBalanceColumn();
+        }
+        $st_aff = $pdo->query("SELECT COALESCE(SUM(affiliates_balance),0) AS sm FROM user");
+        if ($st_aff) {
+            $aff_paid = intval($st_aff->fetchColumn());
+        }
+    } catch (Exception $e) {
+        $aff_paid = 0;
+    }
+
     $ping = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
     $ping = number_format(floatval($ping[0] ?? 0), 2);
     $now_label = function_exists('jdate') ? jdate('Y/m/d H:i:s') : date('Y-m-d H:i:s');
@@ -171,6 +185,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($week['sum']),
         number_format($month['cnt']),
         number_format($month['sum']),
+        number_format($aff_paid),
         number_format($invoice_cnt),
         number_format($invoice_sum),
         number_format($count_usertest),
