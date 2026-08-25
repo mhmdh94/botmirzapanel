@@ -601,7 +601,7 @@ $supportoption = json_encode([
         ],
     ]
 ]);
-// منوی زیرمجموعه ساده‌شده — تنظیمات اصلی داخل پنل اینلاین است
+// منوی مشارکت در فروش — تنظیمات اصلی داخل پنل اینلاین است
 $affiliates = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['Back-Adminment']]]

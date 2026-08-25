@@ -47,7 +47,7 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
         ]
     ]);
     $newuser = sprintf($textbotlang['Admin']['ManageUser']['NewUserMessage'], $first_name, $username, $from_id, $from_id);
-    // اگر با لینک زیرمجموعه‌گیری آمده، فقط در این حالت معرف را بنویس
+    // اگر با لینک مشارکت در فروش آمده، فقط در این حالت معرف را بنویس
     if (isset($text) && is_string($text) && strpos($text, "/start ") === 0) {
         $token = trim(str_replace("/start ", "", $text));
         $affiliatesid = 0;
@@ -62,7 +62,7 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
         if ($affiliatesid > 0 && $affiliatesid != intval($from_id) && in_array($affiliatesid, $users_ids)) {
             $inv = select("user", "*", "id", $affiliatesid, "select");
             $inv_user = is_array($inv) && !empty($inv['username']) ? '@' . $inv['username'] : '';
-            $newuser .= "\n👥 زیرمجموعهٔ: <a href=\"tg://user?id={$affiliatesid}\">{$affiliatesid}</a>";
+            $newuser .= "\n👥 معرف: <a href=\"tg://user?id={$affiliatesid}\">{$affiliatesid}</a>";
             if ($inv_user !== '') {
                 $newuser .= " ({$inv_user})";
             }
@@ -2001,7 +2001,7 @@ if ($datain == "user_tx_history") {
                 'renew' => ['🔴', 'تمدید سرویس', '-'],
                 'extra_volume' => ['🔴', 'خرید حجم اضافه', '-'],
                 'refund' => ['🟢', 'بازگشت وجه', '+'],
-                'affiliate' => ['🟢', 'پورسانت زیرمجموعه', '+'],
+                'affiliate' => ['🟢', 'پورسانت مشارکت در فروش', '+'],
             ];
             $icon = $map[$type][0] ?? '⚪';
             $title = $map[$type][1] ?? $type;

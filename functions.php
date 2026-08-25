@@ -1195,7 +1195,7 @@ function buildBalancePackageAdminKeyboard()
  */
 
 /**
- * پنل یکپارچه تنظیمات زیرمجموعه‌گیری (ادمین)
+ * پنل یکپارچه تنظیمات مشارکت در فروش (ادمین)
  */
 function buildAffiliatesAdminPanel()
 {
@@ -1213,10 +1213,10 @@ function buildAffiliatesAdminPanel()
     $gift_price = number_format(intval($aff['price_Discount'] ?? 0));
     $has_banner = !empty($aff['id_media']) && $aff['id_media'] !== 'none';
 
-    $text = "👥 <b>تنظیمات زیرمجموعه‌گیری</b>\n\n"
+    $text = "👥 <b>تنظیمات مشارکت در فروش</b>\n\n"
         . "از این صفحه همه گزینه‌ها را یکجا مدیریت کنید.\n\n"
         . "📊 <b>وضعیت فعلی</b>\n"
-        . "• سیستم زیرمجموعه: " . ($sys_on ? $on_lbl : $off_lbl) . "\n"
+        . "• سیستم مشارکت در فروش: " . ($sys_on ? $on_lbl : $off_lbl) . "\n"
         . "• پورسانت بعد از خرید: " . ($com_on ? $on_lbl : $off_lbl) . "\n"
         . "• هدیه استارت برای معرف: " . ($gift_on ? $on_lbl : $off_lbl) . "\n"
         . "• درصد پورسانت: <b>{$pct}٪</b>\n"
@@ -1227,7 +1227,7 @@ function buildAffiliatesAdminPanel()
         'inline_keyboard' => [
             [
                 ['text' => $sys_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_system'],
-                ['text' => 'سیستم زیرمجموعه', 'callback_data' => 'affpanel_noop'],
+                ['text' => 'سیستم مشارکت در فروش', 'callback_data' => 'affpanel_noop'],
             ],
             [
                 ['text' => $com_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_commission'],
@@ -1244,7 +1244,7 @@ function buildAffiliatesAdminPanel()
                 ['text' => "🌟 مبلغ هدیه استارت ({$gift_price})", 'callback_data' => 'affpanel_set_giftprice'],
             ],
             [
-                ['text' => $has_banner ? '🏞 تغییر بنر زیرمجموعه' : '🏞 تنظیم بنر زیرمجموعه', 'callback_data' => 'affpanel_set_banner'],
+                ['text' => $has_banner ? '🏞 تغییر بنر مشارکت در فروش' : '🏞 تنظیم بنر مشارکت در فروش', 'callback_data' => 'affpanel_set_banner'],
             ],
             [
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'affpanel_refresh'],
@@ -1386,8 +1386,8 @@ function addAffiliatesBalance($user_id, $amount)
 }
 
 /**
- * مجموع پورسانت دریافتی از زیرمجموعه‌گیری
- * affiliates_balance ثبت‌شده را با تخمین از خرید زیرمجموعه‌ها مقایسه می‌کند
+ * مجموع پورسانت دریافتی از مشارکت در فروش
+ * affiliates_balance ثبت‌شده را با تخمین از خرید مشارکت‌کنندگان مقایسه می‌کند
  */
 function getAffiliatesEarned($user_id)
 {

@@ -8,7 +8,7 @@ $textbotlang['users']['channel']['confirmed'] = "عضویت شما با موفق
 $textbotlang['users']['channel']['notconfirmed'] = "❌ هنوز عضو کانال نشده اید.️";
 
 $textbotlang['users']['affiliates']['invalidMutual'] =
-    "❌ متأسفم؛ شما نمی‌توانید با کاربری که زیرمجموعه شماست لینک شوید.";
+    "❌ متأسفم؛ شما نمی‌توانید با کاربری که از دعوت‌شدگان شماست لینک شوید.";
 
 $textbotlang['users']['Rules'] = "✅ قوانین تایید شد از الان می توانید از خدمات ربات استفاده نمایید.";
 $textbotlang['users']['Rulesbtn'] = "♨️ بخش قوانین";
@@ -619,8 +619,8 @@ $textbotlang['users']['account']  = "
 🕴🏻 شناسه کاربری: <code>%s</code>
 💰 موجودی: %s تومان
 🛍 تعداد سرویس های خریداری شده : %s
-🤝 تعداد زیر مجموعه های شما : %s نفر
-💸 پورسانت دریافتی از زیرمجموعه: <code>%s</code> تومان
+🤝 تعداد افراد دعوت‌شده شما : %s نفر
+💸 پورسانت دریافتی از مشارکت در فروش: <code>%s</code> تومان
     
 📆 %s → ⏰ %s";
 $textbotlang['users']['accountbtn'] = "👨🏻‍💻 مشخصات کاربری";
@@ -635,31 +635,31 @@ $textbotlang['users']['pricelist'] = "💰 تعرفه اشتراک ها";
 
 $textbotlang['users']['affiliates']['setpercentage'] = "📌 درصدی که می‌خواهید بعد خرید  به کاربر واریز شود  را ارسال کنید";
 $textbotlang['users']['affiliates']['changedpercentage'] = "✅ درصد واریز به کاربر با موفقیت تنظیم شد";
-$textbotlang['users']['affiliates']['banner'] = "⭕️ بنر زیرمجموعه گیری خود را ارسال کنید 
+$textbotlang['users']['affiliates']['banner'] = "⭕️ بنر مشارکت در فروش خود را ارسال کنید 
 ❌ بنر باید حتما همراه با عکس باشد";
-$textbotlang['users']['affiliates']['affiliatesyou'] = "❌امکان زیرمجموعه شدن با این شناسه کاربری وجود ندارد";
+$textbotlang['users']['affiliates']['affiliatesyou'] = "❌امکان ثبت با این شناسه کاربری وجود ندارد";
 $textbotlang['users']['affiliates']['invalidbanner'] = "❌ بنر ارسال شده نامعتبر است ( بنر حتما باید با عکس ارسال شود)";
 $textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر شما با موفقیت ثبت گردید.";
-$textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ شما نمی توانید زیر مجموعه خودتان باشید";
-$textbotlang['users']['affiliates']['priceDiscount'] = "📌 مبلغی که می‌خواهید که کاربر با هر زیرمجموعه جدید دریافت کند را وارد کنید";
-$textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ زیرمجموعه گیری با موفقیت ثبت شد";
-$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش زیرمجموعه گیری خاموش می باشد";
-$textbotlang['users']['affiliates']['affiliateseduser'] = "❌ شما هم اکنون زیرمجموعه یک کاربر هستید و نمی توانید زیر مجموعه کاربر دیگری شوید";
-$textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ %s به موجودی شما از طرف زیر مجموعه با شناسه کاربری %s اضافه گردید.";
+$textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ نمی‌توانید با لینک مشارکت خودتان ثبت شوید";
+$textbotlang['users']['affiliates']['priceDiscount'] = "📌 مبلغی که می‌خواهید که کاربر با هر دعوت جدید دریافت کند را وارد کنید";
+$textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ مشارکت در فروش با موفقیت ثبت شد";
+$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش می باشد";
+$textbotlang['users']['affiliates']['affiliateseduser'] = "❌ شما هم اکنون از طریق لینک مشارکت یک کاربر ثبت شده‌اید و نمی‌توانید لینک فرد دیگری را استفاده کنید";
+$textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ %s به موجودی شما از طرف مشارکت‌کننده با شناسه کاربری %s اضافه گردید.";
 $textbotlang['users']['affiliates']['porsantuser'] = "🎁  پرداخت پورسانت 
     
-مبلغ %s تومان به حساب شما از طرف  زیر مجموعه تان به کیف پول شما واریز گردید";
-$textbotlang['users']['affiliates']['btn'] = "👥 زیر مجموعه گیری";
-$textbotlang['users']['affiliates']['infotext'] = "🤔 زیرمجموعه گیری به چه صورت است ؟
+مبلغ %s تومان به حساب شما از طرف مشارکت‌کننده شما به کیف پول شما واریز گردید";
+$textbotlang['users']['affiliates']['btn'] = "🤝 مشارکت در فروش";
+$textbotlang['users']['affiliates']['infotext'] = "🤔 مشارکت در فروش به چه صورت است ؟
     
 👨🏻‍💻 ما برای شما محیطی فراهم کرده ایم  تا بتوانید بدون پرداخت حتی 1 ریال به ما، بتوانید موجودی کیف پول خودتان را در ربات افزایش دهید و از خدمات ربات استفاده نمایید.
     
-👥 شما میتوانید با دعوت دوستان و آشنایان خود به ربات ما از طریق لینک اختصاصی شما! کسب درآمد کنید و حتی با هر خرید زیرمجموعه ها به شما پورسانت داده خواهد شد.
+👥 شما میتوانید با دعوت دوستان و آشنایان خود به ربات ما از طریق لینک اختصاصی شما! کسب درآمد کنید و حتی با هر خرید افراد دعوت‌شده به شما پورسانت داده خواهد شد.
 
-👤 شما می توانید با استفاده از بنر بالا برای خود زیرمجموعه جمع کنید
+👤 شما می توانید با استفاده از بنر بالا برای خود مشارکت‌کننده جذب کنید
     
 💵 مبلغ هدیه به ازای هر عضویت :  %s
-💴 میزان پورسانت از خرید زیرمجموعه :  %s";
+💴 میزان پورسانت از خرید مشارکت‌کنندگان :  %s";
 $textbotlang["users"]["affiliates"]["share"] = "🔗 اشتراک گذاری لینک";
 $textbotlang['users']['closelist'] = "❌ بستن لیست";
 
@@ -972,10 +972,10 @@ $textbotlang['Admin']['ManageUser']['infouser'] = "👀 اطلاعات کارب�
 ⭕️ تعداد خرید کل کاربر : %s
 ⭕️ مبلغ کل پرداختی  :  %s
 ⭕️ جمع کل خرید : %s
-⭕️ تعداد زیرمجموعه کاربر : %s
+⭕️ تعداد افراد دعوت‌شده کاربر : %s
 ⭕  معرف کاربر : %s
 ⭕  وضعیت احراز کاربر : %s
-💰 درآمد زیرمجموعه‌گیری (پورسانت): <code>%s</code> تومان
+💰 درآمد مشارکت در فروش (پورسانت): <code>%s</code> تومان
 ⚙️ تأیید خودکار رسید کاربر: %s";
 $textbotlang['Admin']['ManageUser']['addorder'] = "🛒 افزودن دستی سفارش";
 
@@ -1057,9 +1057,9 @@ $textbotlang['Admin']['Status']['subStatuson'] = "لینک سابسکرایب ف
 $textbotlang['Admin']['Status']['configTitle'] = "در این قسمت می توانید تعیین کنید که بعد از خرید کاربر کانفیگ های دستی دریافت کند یا خیر";
 $textbotlang['Admin']['Status']['configStatusOff'] = "⭕️ ارسال کانفیگ دستی غیرفعال گردید. از این پس کاربر پس از خرید  کانفیگ دستی دریافت نخواهد کرد.";
 $textbotlang['Admin']['Status']['configStatuson'] = "ارسال کانفیگ بعد خرید فعال شد از این پس کاربران کانفیگ دستی هم دریافت خواهند کرد";
-$textbotlang['Admin']['Status']['affiliates'] = "📌 در این بخش می توانید قابلیت زیر مجموعه گیری در ربات را خاموش یا روشن کنید";
-$textbotlang['Admin']['Status']['affiliatesStatusOff'] = "قابلیت زیرمجموعه گیری غیرفعال شد";
-$textbotlang['Admin']['Status']['affiliatesStatuson'] = "قابلیت زیر مجموعه روشن شد";
+$textbotlang['Admin']['Status']['affiliates'] = "📌 در این بخش می توانید قابلیت مشارکت در فروش در ربات را خاموش یا روشن کنید";
+$textbotlang['Admin']['Status']['affiliatesStatusOff'] = "قابلیت مشارکت در فروش غیرفعال شد";
+$textbotlang['Admin']['Status']['affiliatesStatuson'] = "قابلیت مشارکت در فروش روشن شد";
 $textbotlang['Admin']['Status']['commission'] = "وضعیت فعال بودن قابلیت هدیه بعد از استارت ربات";
 $textbotlang['Admin']['Status']['commissionStatusOff'] = "قابلیت پورسانت غیرفعال شد";
 $textbotlang['Admin']['Status']['commissionStatuson'] = "قابلیت پورسانت فعال شد";
@@ -1220,7 +1220,7 @@ $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] = "📝 تنظیم �
 $textbotlang['Admin']['keyboardadmin']['user_services'] = "👤 خدمات کاربر";
 $textbotlang['Admin']['keyboardadmin']['user_search'] = "👁‍🗨 جستجو کاربر";
 $textbotlang['Admin']['keyboardadmin']['send_message'] = "📨 ارسال پیام همگانی";
-$textbotlang['Admin']['keyboardadmin']['affiliate_settings'] = "👥 تنظیمات زیر مجموعه گیری";
+$textbotlang['Admin']['keyboardadmin']['affiliate_settings'] = "👥 تنظیمات مشارکت در فروش";
 $textbotlang['Admin']['keyboardadmin']['tutorial_section'] = "📚 بخش آموزش";
 $textbotlang['Admin']['keyboardadmin']['settings'] = "⚙️ تنظیمات";
 
@@ -1243,9 +1243,9 @@ $textbotlang['Admin']['keyboardadmin']['settingscron'] = "🕚 تنظیمات ک
 $textbotlang['Admin']['keyboardadmin']['seetingstatus'] = "⚙️ وضعیت قابلیت ها";
 
 
-$textbotlang['Admin']['affiliate']['status'] = "🎁 وضعیت زیرمجموعه گیری";
-$textbotlang['Admin']['affiliate']['Percentageset'] = "🧮 تنظیم درصد زیرمجموعه";
-$textbotlang['Admin']['affiliate']['setbaner'] = "🏞 تنظیم بنر زیرمجموعه گیری";
+$textbotlang['Admin']['affiliate']['status'] = "🎁 وضعیت مشارکت در فروش";
+$textbotlang['Admin']['affiliate']['Percentageset'] = "🧮 تنظیم درصد مشارکت در فروش";
+$textbotlang['Admin']['affiliate']['setbaner'] = "🏞 تنظیم بنر مشارکت در فروش";
 $textbotlang['Admin']['affiliate']['porsantafterbuy'] = "🎁 پورسانت بعد از خرید";
 $textbotlang['Admin']['affiliate']['gift'] = "🎁 دریافت هدیه";
 $textbotlang['Admin']['affiliate']['giftstart'] = "🌟 مبلغ هدیه استارت";
@@ -1568,7 +1568,7 @@ $textbotlang['Admin']['Status']['show_balance'] = "نمایش موجودی در 
 $textbotlang['Admin']['Status']['status_usertest'] = "دکمه اکانت تست";
 $textbotlang['Admin']['Status']['status_buy'] = "امکان خرید سرویس جدید";
 $textbotlang['Admin']['Status']['status_search_service'] = "جستجوی سرویس";
-$textbotlang['Admin']['Status']['status_affiliates_btn'] = "دکمه زیرمجموعه‌گیری";
+$textbotlang['Admin']['Status']['status_affiliates_btn'] = "دکمه مشارکت در فروش";
 $textbotlang['Admin']['Status']['status_tariff_list'] = "دکمه لیست تعرفه";
 $textbotlang['users']['sell']['tariff_disabled'] = "⛔️ نمایش لیست تعرفه فعلا غیرفعال است.";
 $textbotlang['users']['sell']['buy_disabled'] = "⛔️ فعلا امکان خرید سرویس جدید وجود ندارد.
