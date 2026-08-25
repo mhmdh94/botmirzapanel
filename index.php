@@ -71,9 +71,7 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
     foreach ($admin_ids as $admin) {
         sendmessage($admin, $newuser, $Response, 'html');
     }
-    if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_new_user', $newuser);
-    }
+    // گزارش استارت کاربر جدید در کانال گزارش ارسال نمی‌شود (فقط به ادمین)
 }
 if (intval($from_id) != 0) {
     if (intval($setting['status_verify']) == 1) {
