@@ -138,6 +138,13 @@ $connect->query("INSERT INTO setting (Bot_Status,roll_Status,get_number,limit_us
         addFieldToTable($tableName, 'copy_cart', '0',"VARCHAR(20)");
         addFieldToTable($tableName, 'status_verify', '0',"VARCHAR(50)");
         addFieldToTable($tableName, 'statuscategory', '1',"VARCHAR(50)");
+        addFieldToTable($tableName, 'force_channel', '1',"VARCHAR(20)");
+        addFieldToTable($tableName, 'show_balance', '0',"VARCHAR(20)");
+        addFieldToTable($tableName, 'status_usertest', '1',"VARCHAR(20)");
+        addFieldToTable($tableName, 'status_buy', '1',"VARCHAR(20)");
+        addFieldToTable($tableName, 'status_search_service', '1',"VARCHAR(20)");
+        addFieldToTable($tableName, 'status_affiliates_btn', '1',"VARCHAR(20)");
+        addFieldToTable($tableName, 'status_tariff_list', '1',"VARCHAR(20)");
         addFieldToTable($tableName, 'namecustome', '0',"VARCHAR(200)");
         addFieldToTable($tableName, 'removedayc', '1',"VARCHAR(100)");
         addFieldToTable($tableName, 'Extra_volume', '0',"VARCHAR(200)");

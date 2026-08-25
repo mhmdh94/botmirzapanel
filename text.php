@@ -93,7 +93,7 @@ $textbotlang['users']['sell']['service_not_available'] = "⛔️ شما هیچ �
 $textbotlang['users']['sell']['service_sell'] = "🛍 اشتراک های خریداری شده توسط شما
 ⚜️ برای مشاهده اطلاعات روی نام کاربری کلیک کنید
 
-⚠️ توجه: در صورت عدم تمدید، اشتراک پس از ۱ هفته از سرور و از لیست سرویس‌های من حذف می‌شود.";
+⚠️ توجه: در صورت عدم تمدید، سرویس پس از ۱ هفته از سرور و از لیست سرویس‌های من حذف می‌شود.";
 $textbotlang['users']['sell']['Service-select'] = "🛒 لوکیشن دریافت شد سرویسی که میخواهید خریداری کنید را انتخاب نمایید.";
 $textbotlang['users']['sell']['Service-Location'] = "❌ خطا 
         📝 موقعیت سرویس نامعتبر است";
@@ -1559,3 +1559,19 @@ $textbotlang['Admin']['ManageUser']['cart_auto_on'] = "✅ تأیید خودکا
 $textbotlang['Admin']['ManageUser']['cart_auto_off'] = "❌ تأیید خودکار رسید کاربر: غیرفعال";
 $textbotlang['Admin']['ManageUser']['cart_auto_status_on'] = "✅ فعال";
 $textbotlang['Admin']['ManageUser']['cart_auto_status_off'] = "❌ غیرفعال";
+
+
+// ---- Feature toggles (fork) ----
+$textbotlang['Admin']['Status']['force_channel'] = "عضویت اجباری کانال";
+$textbotlang['Admin']['Status']['show_balance'] = "نمایش موجودی در منو";
+$textbotlang['Admin']['Status']['status_usertest'] = "دکمه اکانت تست";
+$textbotlang['Admin']['Status']['status_buy'] = "امکان خرید سرویس جدید";
+$textbotlang['Admin']['Status']['status_search_service'] = "جستجوی سرویس";
+$textbotlang['Admin']['Status']['status_affiliates_btn'] = "دکمه زیرمجموعه‌گیری";
+$textbotlang['Admin']['Status']['status_tariff_list'] = "دکمه لیست تعرفه";
+$textbotlang['users']['sell']['tariff_disabled'] = "⛔️ نمایش لیست تعرفه فعلا غیرفعال است.";
+$textbotlang['users']['sell']['buy_disabled'] = "⛔️ فعلا امکان خرید سرویس جدید وجود ندارد.
+لطفا بعداً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['usertest']['disabled'] = "⛔️ ساخت اکانت تست فعلا غیرفعال است.";
+$textbotlang['users']['balance_menu'] = "💰 موجودی کیف پول شما: %s تومان";
+

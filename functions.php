@@ -1915,6 +1915,185 @@ function isBase64($string)
     return false;
 }
 
+
+/**
+ * آپدیت فایل‌های ربات از گیتهاب فورک (بدون دست زدن به config و فایل‌های حساس)
+ * @return array{ok:bool,msg:string,updated:int,skipped:int,errors:array}
+ */
+function updateBotFromGithub()
+{
+    $result = ['ok' => false, 'msg' => '', 'updated' => 0, 'skipped' => 0, 'errors' => []];
+    $root = realpath(__DIR__);
+    if ($root === false || !is_dir($root)) {
+        $result['msg'] = 'مسیر ربات پیدا نشد.';
+        return $result;
+    }
+    if (!class_exists('ZipArchive')) {
+        $result['msg'] = 'افزونه ZipArchive روی سرور فعال نیست.';
+        return $result;
+    }
+
+    // فایل‌هایی که هرگز نباید جایگزین شوند
+    $protected_names = [
+        'config.php',
+        'config.php.bak',
+        'error_log',
+        '.env',
+        'config.local.php',
+    ];
+    // پسوند / پوشه‌هایی که از آپدیت خارج می‌شوند
+    $skip_dirs = ['.git', 'vendor']; // vendor اختیاری — اگر در ریپو نیست مشکلی نیست
+
+    $zip_url = 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
+    $tmp_base = rtrim(sys_get_temp_dir(), '/') . '/mirza_bot_upd_' . getmypid() . '_' . time();
+    if (!@mkdir($tmp_base, 0755, true)) {
+        $result['msg'] = 'ساخت پوشه موقت ناموفق بود.';
+        return $result;
+    }
+    $zip_path = $tmp_base . '/bot.zip';
+
+    // دانلود
+    $fp = @fopen($zip_path, 'wb');
+    if (!$fp) {
+        $result['msg'] = 'نمی‌توان فایل zip را ذخیره کرد.';
+        return $result;
+    }
+    $ch = curl_init($zip_url);
+    curl_setopt_array($ch, [
+        CURLOPT_FILE => $fp,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CONNECTTIMEOUT => 20,
+        CURLOPT_TIMEOUT => 120,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
+        CURLOPT_USERAGENT => 'MirzaBot-Updater/1.0',
+    ]);
+    $ok = curl_exec($ch);
+    $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+    $cerr = curl_error($ch);
+    curl_close($ch);
+    fclose($fp);
+    if (!$ok || $code >= 400 || !is_file($zip_path) || filesize($zip_path) < 1000) {
+        $result['msg'] = 'دانلود از گیتهاب ناموفق بود' . ($cerr ? ": $cerr" : " (HTTP $code)");
+        @unlink($zip_path);
+        @rmdir($tmp_base);
+        return $result;
+    }
+
+    $zip = new ZipArchive();
+    if ($zip->open($zip_path) !== true) {
+        $result['msg'] = 'باز کردن فایل zip ناموفق بود.';
+        @unlink($zip_path);
+        return $result;
+    }
+    if (!$zip->extractTo($tmp_base)) {
+        $zip->close();
+        $result['msg'] = 'استخراج zip ناموفق بود.';
+        return $result;
+    }
+    $zip->close();
+    @unlink($zip_path);
+
+    // پیدا کردن پوشه استخراج‌شده
+    $src = null;
+    foreach (scandir($tmp_base) as $d) {
+        if ($d === '.' || $d === '..') continue;
+        $p = $tmp_base . '/' . $d;
+        if (is_dir($p) && (is_file($p . '/index.php') || is_file($p . '/functions.php'))) {
+            $src = $p;
+            break;
+        }
+    }
+    if ($src === null) {
+        $result['msg'] = 'محتوای معتبر در آرشیو پیدا نشد.';
+        return $result;
+    }
+
+    // بک‌آپ config.php
+    $cfg = $root . '/config.php';
+    if (is_file($cfg)) {
+        @copy($cfg, $root . '/config.php.bak.' . date('Ymd_His'));
+    }
+
+    $updated = 0;
+    $skipped = 0;
+    $errors = [];
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($src, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+    foreach ($iterator as $item) {
+        $rel = substr($item->getPathname(), strlen($src) + 1);
+        $rel = str_replace('\\', '/', $rel);
+        if ($rel === '' || $rel === false) continue;
+
+        // رد کردن vendor و .git
+        $parts = explode('/', $rel);
+        if (isset($parts[0]) && in_array($parts[0], $skip_dirs, true)) {
+            $skipped++;
+            continue;
+        }
+        $base = basename($rel);
+        if (in_array($base, $protected_names, true)) {
+            $skipped++;
+            continue;
+        }
+        // هر فایلی که با config.php شروع شود محافظت شود
+        if (strpos($base, 'config.php') === 0) {
+            $skipped++;
+            continue;
+        }
+
+        $dest = $root . '/' . $rel;
+        if ($item->isDir()) {
+            if (!is_dir($dest)) {
+                if (!@mkdir($dest, 0755, true)) {
+                    $errors[] = "mkdir: $rel";
+                }
+            }
+            continue;
+        }
+        $dir = dirname($dest);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        if (!@copy($item->getPathname(), $dest)) {
+            $errors[] = "copy: $rel";
+        } else {
+            $updated++;
+        }
+    }
+
+    // پاکسازی موقت
+    try {
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($tmp_base, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($it as $fdel) {
+            if ($fdel->isDir()) @rmdir($fdel->getPathname());
+            else @unlink($fdel->getPathname());
+        }
+        @rmdir($tmp_base);
+    } catch (Exception $e) {}
+
+    $result['ok'] = count($errors) === 0 || $updated > 0;
+    $result['updated'] = $updated;
+    $result['skipped'] = $skipped;
+    $result['errors'] = array_slice($errors, 0, 10);
+    if ($result['ok']) {
+        $result['msg'] = "✅ آپدیت انجام شد.\n📁 فایل به‌روز: {$updated}\n⏭ رد شده (محافظت‌شده/غیرضروری): {$skipped}";
+        if (count($errors)) {
+            $result['msg'] .= "\n⚠️ خطا در " . count($errors) . " مورد";
+        }
+        $result['msg'] .= "\n\n🔒 config.php حفظ شد.";
+    } else {
+        $result['msg'] = 'آپدیت ناموفق بود.' . (count($errors) ? "\n" . implode("\n", $errors) : '');
+    }
+    return $result;
+}
+
 function buildAdminKeyboard()
 {
     global $textbotlang;
@@ -1931,3 +2110,28 @@ function buildAdminKeyboard()
         'resize_keyboard' => true
     ]);
 }
+
+/**
+ * اطمینان از وجود ستون‌های قابلیت‌های فورک در جدول setting
+ */
+function ensureFeatureSettingsColumns() {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    $fields = [
+        'force_channel' => '1',
+        'show_balance' => '0',
+        'status_usertest' => '1',
+        'status_buy' => '1',
+        'status_search_service' => '1',
+        'status_affiliates_btn' => '1',
+        'status_tariff_list' => '1',
+    ];
+    foreach ($fields as $name => $default) {
+        if (function_exists('addFieldToTable')) {
+            addFieldToTable('setting', $name, $default, 'VARCHAR(20)');
+        }
+    }
+}
+
+

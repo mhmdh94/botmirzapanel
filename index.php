@@ -267,7 +267,8 @@ if (floor($TimeLastMessage / 60) >= 1) {
         return;
     }
 } #-----------Channel------------#
-$chanelcheck = channel($channels['link']);
+$force_channel_on = !isset($setting['force_channel']) || $setting['force_channel'] == '1' || $setting['force_channel'] === 1;
+$chanelcheck = ($force_channel_on && !empty($channels['link'])) ? channel($channels['link']) : [];
 if ($datain == "confirmchannel") {
     if (count($chanelcheck) != 0 && !in_array($from_id, $admin_ids)) {
         telegram(
@@ -530,8 +531,8 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     ];
     $search_button = [
         [
-            'text' => '🔎  جستجوی سرویس  🔎',
-            'callback_data' => 'search_myservice'
+            'text' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? '🔎  جستجوی سرویس  🔎' : ' '),
+            'callback_data' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? 'search_myservice' : 'noop_search')
         ]
     ];
     $pagination_buttons = [
@@ -593,8 +594,8 @@ if ($datain == 'next_page') {
     ];
     $search_button = [
         [
-            'text' => '🔎  جستجوی سرویس  🔎',
-            'callback_data' => 'search_myservice'
+            'text' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? '🔎  جستجوی سرویس  🔎' : ' '),
+            'callback_data' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? 'search_myservice' : 'noop_search')
         ]
     ];
     $usernotlist = [
@@ -646,8 +647,8 @@ if ($datain == 'next_page') {
     ];
     $search_button = [
         [
-            'text' => '🔎  جستجوی سرویس  🔎',
-            'callback_data' => 'search_myservice'
+            'text' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? '🔎  جستجوی سرویس  🔎' : ' '),
+            'callback_data' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? 'search_myservice' : 'noop_search')
         ]
     ];
     $usernotlist = [
@@ -671,6 +672,11 @@ if ($datain == "usernotlist") {
 }
 #----------- Search My Service ------------#
 if ($datain == "search_myservice") {
+    if (isset($setting['status_search_service']) && ($setting['status_search_service'] == '0' || $setting['status_search_service'] === 0)) {
+        sendmessage($from_id, "⛔️ جستجوی سرویس فعلا غیرفعال است.", $keyboard, 'HTML');
+        return;
+    }
+
     sendmessage($from_id, "🔍 نام کاربری سرویسی که می‌خواهید پیدا کنید را ارسال نمایید:\n\nمثال: <code>user123_1</code>", $backuser, 'HTML');
     step('search_myservice', $from_id);
 }
@@ -1696,6 +1702,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 }
 #-----------usertest------------#
 if ($text == $datatextbot['text_usertest']) {
+    if (isset($setting['status_usertest']) && ($setting['status_usertest'] == '0' || $setting['status_usertest'] === 0) && !in_array($from_id, $admin_ids)) {
+        sendmessage($from_id, $textbotlang['users']['usertest']['disabled'], $keyboard, 'HTML');
+        return;
+    }
+
     $locationproduct = select("marzban_panel", "*", null, null, "count");
     if ($locationproduct == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], null, 'HTML');
@@ -1924,7 +1935,7 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
 if ($datain == "fqQuestions") {
     sendmessage($from_id, $datatextbot['text_dec_fq'], null, 'HTML');
 }
-if ($text == $datatextbot['text_account']) {
+if ($text == $datatextbot['text_account'] || (isset($setting['show_balance']) && ($setting['show_balance']=='1'||$setting['show_balance']===1) && strpos(strval($text), strval($datatextbot['text_account'])) === 0)) {
     $dateacc = jdate('Y/m/d');
     $timeacc = jdate('H:i:s');
     $countorder = select("invoice", "*", "id_user", $from_id, "count");
@@ -1934,6 +1945,11 @@ if ($text == $datatextbot['text_account']) {
     sendmessage($from_id, $text_account, $keyboardPanel, 'HTML');
 }
 if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
+    if (isset($setting['status_buy']) && ($setting['status_buy'] == '0' || $setting['status_buy'] === 0) && !in_array($from_id, $admin_ids)) {
+        sendmessage($from_id, $textbotlang['users']['sell']['buy_disabled'], $keyboard, 'HTML');
+        return;
+    }
+
     $locationproduct = select("marzban_panel", "*", "status", "activepanel", "count");
     if ($locationproduct == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], null, 'HTML');
@@ -2614,6 +2630,10 @@ if ($datain == "Discount") {
 }
 #----------------[  text_Tariff_list  ]------------------#
 if ($text == $datatextbot['text_Tariff_list']) {
+    if (isset($setting['status_tariff_list']) && ($setting['status_tariff_list'] == '0' || $setting['status_tariff_list'] === 0) && !in_array($from_id, $admin_ids)) {
+        sendmessage($from_id, $textbotlang['users']['sell']['tariff_disabled'], $keyboard, 'HTML');
+        return;
+    }
     sendmessage($from_id, $datatextbot['text_dec_Tariff_list'], null, 'HTML');
 }
 if ($datain == "closelist") {
@@ -2621,6 +2641,10 @@ if ($datain == "closelist") {
     sendmessage($from_id, $textbotlang['users']['back'], $keyboard, 'HTML');
 }
 if ($text == $textbotlang['users']['affiliates']['btn']) {
+    if (isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0)) {
+        sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');
+        return;
+    }
     $affiliatesvalue = select("affiliates", "*", null, null, "select")['affiliatesstatus'];
     if ($affiliatesvalue == "offaffiliates") {
         sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');

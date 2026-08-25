@@ -2296,7 +2296,41 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     $status_copy_cart = [
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['copy_cart']];
+    ][($setting['copy_cart'] ?? '0')];
+    // Feature flags (fork) — default ON for channel force & buy/test/search/aff if missing
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1'] as $_fk => $_fd) {
+        if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
+            $setting[$_fk] = $_fd;
+        }
+    }
+    $st_force_channel = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['force_channel'])];
+    $st_show_balance = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['show_balance'])];
+    $st_usertest = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_usertest'])];
+    $st_buy = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_buy'])];
+    $st_search = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_search_service'])];
+    $st_aff_btn = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_affiliates_btn'])];
+    $st_tariff = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_tariff_list'])];
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
@@ -2342,7 +2376,35 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $status_copy_cart, 'callback_data' => "editstsuts-copycart-{$setting['copy_cart']}"],
                 ['text' => $textbotlang['users']['moeny']['copy_cart_status'], 'callback_data' => "copycart"],
-            ]
+            ],
+            [
+                ['text' => $st_force_channel, 'callback_data' => "editstsuts-force_channel-{$setting['force_channel']}"],
+                ['text' => $textbotlang['Admin']['Status']['force_channel'], 'callback_data' => "force_channel"],
+            ],
+            [
+                ['text' => $st_show_balance, 'callback_data' => "editstsuts-show_balance-{$setting['show_balance']}"],
+                ['text' => $textbotlang['Admin']['Status']['show_balance'], 'callback_data' => "show_balance"],
+            ],
+            [
+                ['text' => $st_usertest, 'callback_data' => "editstsuts-status_usertest-{$setting['status_usertest']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_usertest'], 'callback_data' => "status_usertest"],
+            ],
+            [
+                ['text' => $st_buy, 'callback_data' => "editstsuts-status_buy-{$setting['status_buy']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_buy'], 'callback_data' => "status_buy"],
+            ],
+            [
+                ['text' => $st_search, 'callback_data' => "editstsuts-status_search_service-{$setting['status_search_service']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_search_service'], 'callback_data' => "status_search_service"],
+            ],
+            [
+                ['text' => $st_aff_btn, 'callback_data' => "editstsuts-status_affiliates_btn-{$setting['status_affiliates_btn']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_affiliates_btn'], 'callback_data' => "status_affiliates_btn"],
+            ],
+            [
+                ['text' => $st_tariff, 'callback_data' => "editstsuts-status_tariff_list-{$setting['status_tariff_list']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_tariff_list'], 'callback_data' => "status_tariff_list"],
+            ],
         ]
     ]);
     sendmessage($from_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status, 'HTML');
@@ -2412,6 +2474,29 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             $valuenew = "1";
         }
         update("setting", "copy_cart", $valuenew);
+    
+    } elseif ($type == "force_channel") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "force_channel", $valuenew);
+    } elseif ($type == "show_balance") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "show_balance", $valuenew);
+    } elseif ($type == "status_usertest") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_usertest", $valuenew);
+    } elseif ($type == "status_buy") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_buy", $valuenew);
+    } elseif ($type == "status_search_service") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_search_service", $valuenew);
+    } elseif ($type == "status_affiliates_btn") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_affiliates_btn", $valuenew);
+    } elseif ($type == "status_tariff_list") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_tariff_list", $valuenew);
+
     } elseif ($type == "Automatic_confirmation") {
         if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
             $cronstatus = 1;
@@ -2488,7 +2573,40 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     $status_copy_cart = [
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['copy_cart']];
+    ][($setting['copy_cart'] ?? '0')];
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1'] as $_fk => $_fd) {
+        if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
+            $setting[$_fk] = $_fd;
+        }
+    }
+    $st_force_channel = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['force_channel'])];
+    $st_show_balance = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['show_balance'])];
+    $st_usertest = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_usertest'])];
+    $st_buy = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_buy'])];
+    $st_search = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_search_service'])];
+    $st_aff_btn = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_affiliates_btn'])];
+    $st_tariff = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_tariff_list'])];
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
@@ -2534,7 +2652,35 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $status_copy_cart, 'callback_data' => "editstsuts-copycart-{$setting['copy_cart']}"],
                 ['text' => $textbotlang['users']['moeny']['copy_cart_status'], 'callback_data' => "copycart"],
-            ]
+            ],
+            [
+                ['text' => $st_force_channel, 'callback_data' => "editstsuts-force_channel-{$setting['force_channel']}"],
+                ['text' => $textbotlang['Admin']['Status']['force_channel'], 'callback_data' => "force_channel"],
+            ],
+            [
+                ['text' => $st_show_balance, 'callback_data' => "editstsuts-show_balance-{$setting['show_balance']}"],
+                ['text' => $textbotlang['Admin']['Status']['show_balance'], 'callback_data' => "show_balance"],
+            ],
+            [
+                ['text' => $st_usertest, 'callback_data' => "editstsuts-status_usertest-{$setting['status_usertest']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_usertest'], 'callback_data' => "status_usertest"],
+            ],
+            [
+                ['text' => $st_buy, 'callback_data' => "editstsuts-status_buy-{$setting['status_buy']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_buy'], 'callback_data' => "status_buy"],
+            ],
+            [
+                ['text' => $st_search, 'callback_data' => "editstsuts-status_search_service-{$setting['status_search_service']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_search_service'], 'callback_data' => "status_search_service"],
+            ],
+            [
+                ['text' => $st_aff_btn, 'callback_data' => "editstsuts-status_affiliates_btn-{$setting['status_affiliates_btn']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_affiliates_btn'], 'callback_data' => "status_affiliates_btn"],
+            ],
+            [
+                ['text' => $st_tariff, 'callback_data' => "editstsuts-status_tariff_list-{$setting['status_tariff_list']}"],
+                ['text' => $textbotlang['Admin']['Status']['status_tariff_list'], 'callback_data' => "status_tariff_list"],
+            ],
         ]
     ]);
     Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status);

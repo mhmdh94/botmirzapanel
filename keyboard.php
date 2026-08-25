@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'functions.php';
 require_once 'text.php';
+if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColumns(); }
 $setting = select("setting", "*");
 $admin_ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
 //-----------------------------[  text panel  ]-------------------------------
@@ -42,16 +43,67 @@ if ($table_exists) {
         }
     }
 }
+// ---- Main keyboard (dynamic by feature flags) ----
+$row1 = [];
+if (!isset($setting['status_buy']) || $setting['status_buy'] == '1' || $setting['status_buy'] === 1 || $setting['status_buy'] === true) {
+    // دکمه خرید همیشه نمایش داده می‌شود؛ اگر خرید غیرفعال باشد در index پیام می‌دهد
+    $row1[] = ['text' => $datatextbot['text_sell']];
+} else {
+    $row1[] = ['text' => $datatextbot['text_sell']];
+}
+if (!isset($setting['status_usertest']) || $setting['status_usertest'] == '1' || $setting['status_usertest'] === 1) {
+    $row1[] = ['text' => $datatextbot['text_usertest']];
+}
+$keyboard_rows = [];
+if (!empty($row1)) {
+    $keyboard_rows[] = $row1;
+}
+// ردیف: سرویس‌های من + افزایش موجودی
+$keyboard_rows[] = [
+    ['text' => $datatextbot['text_Purchased_services']],
+    ['text' => $datatextbot['text_Add_Balance']],
+];
+
+// ردیف: حساب کاربری (+موجودی) + تعرفه اشتراک (در صورت فعال بودن)
+$account_btn = $datatextbot['text_account'];
+if (isset($setting['show_balance']) && ($setting['show_balance'] == '1' || $setting['show_balance'] === 1)) {
+    $bal_user = 0;
+    if (isset($from_id) && $from_id) {
+        $u_bal = select("user", "Balance", "id", $from_id, "select");
+        if ($u_bal && isset($u_bal['Balance'])) {
+            $bal_user = intval($u_bal['Balance']);
+        }
+    }
+    $account_btn = $datatextbot['text_account'] . " | " . number_format($bal_user) . " ت";
+}
+$row_account = [['text' => $account_btn]];
+if (!isset($setting['status_tariff_list']) || $setting['status_tariff_list'] == '1' || $setting['status_tariff_list'] === 1) {
+    $row_account[] = ['text' => $datatextbot['text_Tariff_list']];
+}
+$keyboard_rows[] = $row_account;
+
+$row_sup = [['text' => $datatextbot['text_support']]];
+$aff_on = true;
+if (isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0)) {
+    $aff_on = false;
+}
+// اگر در جدول affiliates هم خاموش باشد دکمه را نشان نده
+try {
+    $aff_row = select("affiliates", "*", null, null, "select");
+    if ($aff_row && isset($aff_row['affiliatesstatus']) && $aff_row['affiliatesstatus'] == 'offaffiliates') {
+        $aff_on = false;
+    }
+} catch (Throwable $e) {}
+if ($aff_on) {
+    $row_sup[] = ['text' => $textbotlang['users']['affiliates']['btn']];
+}
+$keyboard_rows[] = $row_sup;
+
 $keyboard = [
-    'keyboard' => [
-        [['text' => $datatextbot['text_sell']], ['text' => $datatextbot['text_usertest']]],
-        [['text' => $datatextbot['text_Purchased_services']], ['text' => $datatextbot['text_Tariff_list']]],
-        [['text' => $datatextbot['text_account']], ['text' => $datatextbot['text_Add_Balance']]],
-        [['text' => $datatextbot['text_support']], ['text' => $textbotlang['users']['affiliates']['btn']]],
-    ],
+    'keyboard' => $keyboard_rows,
     'resize_keyboard' => true
 ];
-if (in_array($from_id, $admin_ids)) {
+if (isset($from_id) && is_array($admin_ids) && in_array($from_id, $admin_ids)) {
     $keyboard['keyboard'][] = [
         ['text' => $textbotlang['Admin']['commendadmin']],
     ];
