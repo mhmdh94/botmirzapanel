@@ -1193,6 +1193,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $usernamepanel = $nameloc['username'];
     $Balance_Low_user = $user['Balance'] - $product['price_product'];
     update("user", "Balance", $Balance_Low_user, "id", $from_id);
+    if (function_exists('logWalletTx')) {
+        logWalletTx($from_id, 'renew', intval($product['price_product']), $Balance_Low_user, 'تمدید سرویس: ' . ($user['Processing_value'] ?? ''));
+    }
+    if (function_exists('recordSale')) {
+        recordSale($from_id, $product['price_product'], 'renew', $user['Processing_value'] ?? null, null);
+    }
     $ManagePanel->ResetUserDataUsage($nameloc['Service_location'], $user['Processing_value']);
     if ($marzban_list_get['type'] == "marzban") {
         if (intval($product['Service_time']) == 0) {
@@ -1506,6 +1512,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (intval($setting['Extra_volume']) != 0) {
         $Balance_Low_user = $user['Balance'] - $price_extra;
         update("user", "Balance", $Balance_Low_user, "id", $from_id);
+        if (function_exists('logWalletTx')) {
+            logWalletTx($from_id, 'extra_volume', intval($price_extra), $Balance_Low_user, 'خرید حجم اضافه');
+        }
+        if (function_exists('recordSale')) {
+            recordSale($from_id, $price_extra, 'extra_volume', $user['Processing_value'] ?? null, null);
+        }
     }
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $user['Processing_value']);
     $data_limit = $DataUserOut['data_limit'] + ($volume * pow(1024, 3));
@@ -1944,8 +1956,177 @@ if ($text == $datatextbot['text_account'] || (isset($setting['show_balance']) &&
     $text_account = sprintf($textbotlang['users']['account'], $first_name, $from_id, $Balanceuser, $countorder, $user['affiliatescount'], $aff_earn, $dateacc, $timeacc);
     sendmessage($from_id, $text_account, $keyboardPanel, 'HTML');
 }
+
+#----------------[ user transaction history ]------------------#
+if ($datain == "user_tx_history") {
+    global $pdo;
+    if (function_exists('ensureWalletLog')) {
+        ensureWalletLog();
+    }
+    if (function_exists('ensureSalesLedger')) {
+        ensureSalesLedger();
+    }
+    $uid = strval($from_id);
+    $uid_i = intval($from_id);
+    $items = [];
+    $fps = []; // fingerprint برای جلوگیری از تکرار
+
+    $addItem = function ($ts, $text, $fp) use (&$items, &$fps) {
+        $fp = mb_strtolower(trim(strval($fp)));
+        if ($fp !== '' && isset($fps[$fp])) {
+            return;
+        }
+        if ($fp !== '') {
+            $fps[$fp] = true;
+        }
+        $items[] = ['ts' => intval($ts), 'text' => $text];
+    };
+
+    // 1) لاگ کیف پول — منبع اصلی
+    try {
+        $st = $pdo->prepare("SELECT * FROM wallet_log WHERE id_user = :u ORDER BY created_at DESC, id DESC LIMIT 30");
+        $st->execute([':u' => $uid_i]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $type = strval($row['type'] ?? '');
+            $amount = intval($row['amount'] ?? 0);
+            $amt = number_format($amount);
+            $bal = isset($row['balance_after']) && $row['balance_after'] !== null ? number_format(intval($row['balance_after'])) : '-';
+            $tm = !empty($row['created_at']) ? date('Y/m/d H:i', intval($row['created_at'])) : '-';
+            $detail = htmlspecialchars(strval($row['detail'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $map = [
+                'deposit' => ['🟢', 'شارژ کیف پول', '+'],
+                'admin_add' => ['🟢', 'افزایش موجودی توسط ادمین', '+'],
+                'admin_low' => ['🔴', 'کاهش موجودی توسط ادمین', '-'],
+                'buy' => ['🔴', 'خرید سرویس', '-'],
+                'renew' => ['🔴', 'تمدید سرویس', '-'],
+                'extra_volume' => ['🔴', 'خرید حجم اضافه', '-'],
+                'refund' => ['🟢', 'بازگشت وجه', '+'],
+                'affiliate' => ['🟢', 'پورسانت زیرمجموعه', '+'],
+            ];
+            $icon = $map[$type][0] ?? '⚪';
+            $title = $map[$type][1] ?? $type;
+            $sign = $map[$type][2] ?? '';
+            $text = "{$icon} <b>{$title}</b>\n💰 مبلغ: {$sign}{$amt} تومان\n💳 موجودی بعد: {$bal} تومان";
+            if ($detail !== '') {
+                $text .= "\n📝 {$detail}";
+            }
+            $text .= "\n🕐 {$tm}";
+            // fingerprint: type + amount + username از detail
+            $uname = '';
+            if (preg_match('/user[a-z0-9_\-]+/i', strval($row['detail'] ?? ''), $m)) {
+                $uname = $m[0];
+            }
+            $fp = $type . '|' . $amount . '|' . mb_strtolower($uname);
+            $addItem(intval($row['created_at'] ?? 0), $text, $fp);
+        }
+    } catch (Throwable $e) {}
+
+    // 2) واریزهای تاییدشده — فقط اگر در wallet_log نبود
+    try {
+        $st = $pdo->prepare("SELECT * FROM Payment_report WHERE id_user = :u AND payment_Status = 'paid' ORDER BY id DESC LIMIT 30");
+        $st->execute([':u' => $uid]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $p) {
+            $credit = intval($p['price'] ?? 0);
+            if (function_exists('getPaymentCreditAmount')) {
+                $credit = intval(getPaymentCreditAmount($p));
+            }
+            $fp = 'deposit|' . $credit . '|';
+            $method = $p['Payment_Method'] ?? '';
+            $ml = (stripos(strval($method), 'crypto') !== false) ? 'کریپتو' : 'کارت‌به‌کارت';
+            $tm_raw = strval($p['time'] ?? '');
+            $text = "🟢 <b>شارژ کیف پول</b>\n💳 روش: {$ml}\n➕ اعتبار: " . number_format($credit) . " تومان\n💵 پرداختی: " . number_format(intval($p['price'] ?? 0)) . " تومان\n🕐 " . ($tm_raw !== '' ? $tm_raw : '-');
+            $addItem(intval($p['id'] ?? 0), $text, $fp);
+        }
+    } catch (Throwable $e) {}
+
+    // 3) sales_ledger — فقط اگر همان خرید در wallet_log نبود
+    try {
+        $st = $pdo->prepare("SELECT * FROM sales_ledger WHERE id_user = :u ORDER BY created_at DESC LIMIT 30");
+        $st->execute([':u' => $uid_i]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $s) {
+            $stype = strval($s['sale_type'] ?? 'buy');
+            if (!in_array($stype, ['buy', 'renew', 'extra_volume'], true)) {
+                $stype = 'buy';
+            }
+            $amount = intval($s['price'] ?? 0);
+            $un = strval($s['username'] ?? '');
+            $fp = $stype . '|' . $amount . '|' . mb_strtolower($un);
+            $titles = ['buy' => 'خرید سرویس', 'renew' => 'تمدید سرویس', 'extra_volume' => 'حجم اضافه'];
+            $title = $titles[$stype] ?? 'خرید';
+            $un_h = htmlspecialchars($un !== '' ? $un : '-', ENT_QUOTES, 'UTF-8');
+            $tm = !empty($s['created_at']) ? date('Y/m/d H:i', intval($s['created_at'])) : '-';
+            $text = "🔴 <b>{$title}</b>\n👤 سرویس: <code>{$un_h}</code>\n➖ مبلغ: " . number_format($amount) . " تومان\n🕐 {$tm}";
+            $addItem(intval($s['created_at'] ?? 0), $text, $fp);
+        }
+    } catch (Throwable $e) {}
+
+    // 4) فاکتور — فقط اگر خرید معادل در منابع بالا نبود
+    try {
+        $st = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :u AND (Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn') AND CAST(price_product AS UNSIGNED) > 0 ORDER BY time_sell DESC LIMIT 30");
+        $st->execute([':u' => $uid]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $inv) {
+            $amount = intval($inv['price_product'] ?? 0);
+            $un = strval($inv['username'] ?? '');
+            $fp = 'buy|' . $amount . '|' . mb_strtolower($un);
+            // اگر تمدید در نام محصول باشد
+            $np = strval($inv['name_product'] ?? '');
+            if (mb_stripos($np, 'تمدید') !== false || mb_stripos($np, 'renew') !== false) {
+                $fp = 'renew|' . $amount . '|' . mb_strtolower($un);
+            }
+            $un_h = htmlspecialchars($un !== '' ? $un : '-', ENT_QUOTES, 'UTF-8');
+            $np_h = htmlspecialchars($np !== '' ? $np : '-', ENT_QUOTES, 'UTF-8');
+            $tm = $inv['time_sell'] ?? '-';
+            $text = "🔴 <b>خرید / تمدید</b>\n👤 <code>{$un_h}</code>\n📦 {$np_h}\n➖ مبلغ: " . number_format($amount) . " تومان\n🕐 {$tm}";
+            $addItem(0, $text, $fp);
+        }
+    } catch (Throwable $e) {}
+
+    usort($items, function ($a, $b) {
+        if ($a['ts'] == $b['ts']) {
+            return 0;
+        }
+        return ($a['ts'] > $b['ts']) ? -1 : 1;
+    });
+    $final = array_slice($items, 0, 10);
+
+    if (empty($final)) {
+        $msg = "📜 <b>تاریخچه تراکنش‌ها</b>\n\nهنوز تراکنشی ثبت نشده است.";
+    } else {
+        $bal = number_format(intval($user['Balance'] ?? 0));
+        $body = [];
+        $i = 1;
+        foreach ($final as $L) {
+            $body[] = "<b>#{$i}</b>\n" . $L['text'];
+            $i++;
+        }
+        $msg = "📜 <b>۱۰ تراکنش اخیر شما</b>\n💰 موجودی فعلی: <b>{$bal}</b> تومان\n\n" . implode("\n\n────────────\n\n", $body);
+    }
+    $kb_back = json_encode(['inline_keyboard' => [[['text' => '🔙 بازگشت', 'callback_data' => 'user_tx_back']]]]);
+    Editmessagetext($from_id, $message_id, $msg, $kb_back);
+    return;
+}
+if ($datain == "user_tx_back") {
+    $dateacc = jdate('Y/m/d');
+    $timeacc = jdate('H:i:s');
+    $countorder = select("invoice", "*", "id_user", $from_id, "count");
+    $aff_earn = number_format(function_exists('getAffiliatesEarned') ? getAffiliatesEarned($from_id) : 0);
+    $Balanceuser = number_format(intval($user['Balance'] ?? 0), 0);
+    $text_account = sprintf($textbotlang['users']['account'], $first_name, $from_id, $Balanceuser, $countorder, $user['affiliatescount'] ?? 0, $aff_earn, $dateacc, $timeacc);
+    Editmessagetext($from_id, $message_id, $text_account, $keyboardPanel);
+    return;
+}
+
+
 if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
-    if (isset($setting['status_buy']) && ($setting['status_buy'] == '0' || $setting['status_buy'] === 0) && !in_array($from_id, $admin_ids)) {
+    // وضعیت خرید را زنده از دیتابیس بخوان (برای همه، حتی ادمین)
+    $__st_buy = select("setting", "*", null, null, "select");
+    $__buy_flag = '1';
+    if (is_array($__st_buy) && array_key_exists('status_buy', $__st_buy) && $__st_buy['status_buy'] !== null && $__st_buy['status_buy'] !== '') {
+        $__buy_flag = strval($__st_buy['status_buy']);
+    } elseif (isset($setting['status_buy']) && $setting['status_buy'] !== null && $setting['status_buy'] !== '') {
+        $__buy_flag = strval($setting['status_buy']);
+    }
+    if ($__buy_flag === '0') {
         sendmessage($from_id, $textbotlang['users']['sell']['buy_disabled'], $keyboard, 'HTML');
         return;
     }
@@ -2336,6 +2517,12 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $Balance_prim = 0;
     }
     update("user", "Balance", $Balance_prim, "id", $from_id);
+    if (function_exists('logWalletTx')) {
+        logWalletTx($from_id, 'buy', intval($priceproduct), $Balance_prim, 'خرید سرویس: ' . ($username_ac ?? ''));
+    }
+    if (function_exists('recordSale')) {
+        recordSale($from_id, intval($priceproduct), 'buy', $username_ac ?? null, null);
+    }
     // موجودی بعد از کسر — از مقدار محاسبه‌شده (نه number_format+intval که برای اعداد بالای 999 می‌شود 1)
     $bal_after_fmt = number_format($Balance_prim);
     $price_fmt = number_format(intval(str_replace(',', '', strval($info_product['price_product']))));
@@ -2610,6 +2797,9 @@ if ($datain == "Discount") {
     $get_codesql = $stmt->fetch(PDO::FETCH_ASSOC);
     $balance_user = $user['Balance'] + $get_codesql['price'];
     update("user", "Balance", $balance_user, "id", $from_id);
+    if (function_exists('logWalletTx')) {
+        logWalletTx($from_id, 'deposit', intval($get_codesql['price']), $balance_user, 'کد هدیه / اعتبار');
+    }
     $stmt = $pdo->prepare("SELECT * FROM Discount WHERE code = :code");
     $stmt->bindParam(':code', $text, PDO::PARAM_STR);
     $stmt->execute();

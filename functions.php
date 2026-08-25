@@ -915,6 +915,9 @@ function DirectPayment($order_id)
             $Balance_prims = 0;
         update("user", "Balance", $Balance_prims, "id", $Balance_id['id']);
         $balanceformatsell = number_format($Balance_prims, 0);
+        if (function_exists('logWalletTx')) {
+            logWalletTx($Balance_id['id'], 'buy', intval($get_invoice['price_product']), $Balance_prims, 'خرید سرویس: ' . ($get_invoice['username'] ?? ''));
+        }
         if (function_exists('recordSale')) {
             recordSale($get_invoice['id_user'], $get_invoice['price_product'], 'buy', $get_invoice['username'], $get_invoice['id_invoice'] ?? null);
         }
@@ -936,6 +939,9 @@ function DirectPayment($order_id)
         $credit_amount = getPaymentCreditAmount($Payment_report);
         $Balance_confrim = intval($Balance_id['Balance']) + intval($credit_amount);
         update("user", "Balance", $Balance_confrim, "id", $Payment_report['id_user']);
+        if (function_exists('logWalletTx')) {
+            logWalletTx($Payment_report['id_user'], 'deposit', intval($credit_amount), $Balance_confrim, 'شارژ کیف پول');
+        }
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
         $credit_fmt = number_format($credit_amount, 0);
         $pay_fmt = number_format(intval($Payment_report['price']), 0);
@@ -1182,6 +1188,122 @@ function buildBalancePackageAdminKeyboard()
 
 
 /** تنظیمات کرون هوشمند */
+
+
+/**
+ * جدول لاگ تغییرات کیف پول
+ */
+
+/**
+ * پنل یکپارچه تنظیمات زیرمجموعه‌گیری (ادمین)
+ */
+function buildAffiliatesAdminPanel()
+{
+    global $textbotlang;
+    $aff = select("affiliates", "*", null, null, "select");
+    if (!is_array($aff)) {
+        $aff = [];
+    }
+    $on_lbl = '✅ روشن';
+    $off_lbl = '❌ خاموش';
+    $sys_on = (($aff['affiliatesstatus'] ?? '') === 'onaffiliates');
+    $com_on = (($aff['status_commission'] ?? '') === 'oncommission');
+    $gift_on = (($aff['Discount'] ?? '') === 'onDiscountaffiliates');
+    $pct = intval($aff['affiliatespercentage'] ?? 0);
+    $gift_price = number_format(intval($aff['price_Discount'] ?? 0));
+    $has_banner = !empty($aff['id_media']) && $aff['id_media'] !== 'none';
+
+    $text = "👥 <b>تنظیمات زیرمجموعه‌گیری</b>\n\n"
+        . "از این صفحه همه گزینه‌ها را یکجا مدیریت کنید.\n\n"
+        . "📊 <b>وضعیت فعلی</b>\n"
+        . "• سیستم زیرمجموعه: " . ($sys_on ? $on_lbl : $off_lbl) . "\n"
+        . "• پورسانت بعد از خرید: " . ($com_on ? $on_lbl : $off_lbl) . "\n"
+        . "• هدیه استارت برای معرف: " . ($gift_on ? $on_lbl : $off_lbl) . "\n"
+        . "• درصد پورسانت: <b>{$pct}٪</b>\n"
+        . "• مبلغ هدیه استارت: <b>{$gift_price}</b> تومان\n"
+        . "• بنر: " . ($has_banner ? '✅ تنظیم شده' : '❌ تنظیم نشده');
+
+    $kb = [
+        'inline_keyboard' => [
+            [
+                ['text' => $sys_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_system'],
+                ['text' => 'سیستم زیرمجموعه', 'callback_data' => 'affpanel_noop'],
+            ],
+            [
+                ['text' => $com_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_commission'],
+                ['text' => 'پورسانت بعد خرید', 'callback_data' => 'affpanel_noop'],
+            ],
+            [
+                ['text' => $gift_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_gift'],
+                ['text' => 'هدیه استارت معرف', 'callback_data' => 'affpanel_noop'],
+            ],
+            [
+                ['text' => "🧮 درصد پورسانت ({$pct}٪)", 'callback_data' => 'affpanel_set_pct'],
+            ],
+            [
+                ['text' => "🌟 مبلغ هدیه استارت ({$gift_price})", 'callback_data' => 'affpanel_set_giftprice'],
+            ],
+            [
+                ['text' => $has_banner ? '🏞 تغییر بنر زیرمجموعه' : '🏞 تنظیم بنر زیرمجموعه', 'callback_data' => 'affpanel_set_banner'],
+            ],
+            [
+                ['text' => '🔄 بروزرسانی', 'callback_data' => 'affpanel_refresh'],
+            ],
+        ]
+    ];
+    return [$text, json_encode($kb)];
+}
+
+
+function ensureWalletLog()
+{
+    global $pdo;
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS wallet_log (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            id_user BIGINT NOT NULL,
+            type VARCHAR(32) NOT NULL,
+            amount INT NOT NULL DEFAULT 0,
+            balance_after INT DEFAULT NULL,
+            detail VARCHAR(500) DEFAULT NULL,
+            created_at INT NOT NULL,
+            INDEX (id_user),
+            INDEX (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {
+        error_log('ensureWalletLog: ' . $e->getMessage());
+    }
+}
+
+/**
+ * ثبت تراکنش کیف پول
+ * type: deposit | admin_add | admin_low | buy | renew | extra_volume | refund | affiliate
+ * amount: همیشه مثبت؛ جهت از روی type مشخص می‌شود
+ */
+function logWalletTx($id_user, $type, $amount, $balance_after = null, $detail = '')
+{
+    global $pdo;
+    ensureWalletLog();
+    $id_user = intval($id_user);
+    $amount = abs(intval($amount));
+    if ($id_user <= 0 || $amount <= 0) {
+        return;
+    }
+    try {
+        $st = $pdo->prepare("INSERT INTO wallet_log (id_user, type, amount, balance_after, detail, created_at) VALUES (?,?,?,?,?,?)");
+        $st->execute([
+            $id_user,
+            strval($type),
+            $amount,
+            $balance_after !== null ? intval($balance_after) : null,
+            mb_substr(strval($detail), 0, 500),
+            time()
+        ]);
+    } catch (Exception $e) {
+        error_log('logWalletTx: ' . $e->getMessage());
+    }
+}
+
 
 function ensureSalesLedger()
 {

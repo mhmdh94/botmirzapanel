@@ -113,6 +113,9 @@ $keyboard = json_encode($keyboard);
 
 $keyboardPanel = json_encode([
     'inline_keyboard' => [
+        [
+            ['text' => '📜 تاریخچه تراکنش‌ها', 'callback_data' => 'user_tx_history'],
+        ],
     ],
     'resize_keyboard' => true
 ]);
@@ -598,13 +601,9 @@ $supportoption = json_encode([
         ],
     ]
 ]);
+// منوی زیرمجموعه ساده‌شده — تنظیمات اصلی داخل پنل اینلاین است
 $affiliates = json_encode([
     'keyboard' => [
-        [['text' => $textbotlang['Admin']['affiliate']['status']]],
-        [['text' => $textbotlang['Admin']['affiliate']['Percentageset']]],
-        [['text' => $textbotlang['Admin']['affiliate']['setbaner']]],
-        [['text' => $textbotlang['Admin']['affiliate']['porsantafterbuy']], ['text' => $textbotlang['Admin']['affiliate']['gift']]],
-        [['text' => $textbotlang['Admin']['affiliate']['giftstart']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

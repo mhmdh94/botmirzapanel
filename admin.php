@@ -1211,6 +1211,9 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_add_user = $Balance_user['Balance'] + $text;
     update("user", "Balance", $Balance_add_user, "id", $user['Processing_value']);
+    if (function_exists('logWalletTx')) {
+        logWalletTx($user['Processing_value'], 'admin_add', intval($text), $Balance_add_user, 'افزایش موجودی توسط ادمین');
+    }
     $amt_fmt = number_format($text);
     sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
@@ -1242,6 +1245,9 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_Low_user = $Balance_user['Balance'] - $text;
     update("user", "Balance", $Balance_Low_user, "id", $user['Processing_value']);
+    if (function_exists('logWalletTx')) {
+        logWalletTx($user['Processing_value'], 'admin_low', intval($text), $Balance_Low_user, 'کاهش موجودی توسط ادمین');
+    }
     $amt_fmt = number_format($text);
     sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
@@ -1755,40 +1761,54 @@ if ($text == $textbotlang['Admin']['Discountsell']['remove']) {
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $affiliates, 'HTML');
-} elseif ($text == $textbotlang['Admin']['affiliate']['status']) {
-    $affiliatesvalue = select("affiliates", "*", null, null, "select")['affiliatesstatus'];
-    $keyboardaffiliates = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $affiliatesvalue, 'callback_data' => $affiliatesvalue],
-            ],
-        ]
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
+    }
+} elseif ($datain == "affpanel_noop") {
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => $callback_query_id,
+        'text' => 'برای تغییر، روی وضعیت (روشن/خاموش) بزنید',
+        'show_alert' => false,
     ]);
-    sendmessage($from_id, $textbotlang['Admin']['Status']['affiliates'], $keyboardaffiliates, 'HTML');
-} elseif ($datain == "onaffiliates") {
-    update("affiliates", "affiliatesstatus", "offaffiliates");
-    $affiliatesvalue = select("affiliates", "*", null, null, "select")['affiliatesstatus'];
-    $keyboardaffiliates = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $affiliatesvalue, 'callback_data' => $affiliatesvalue],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['affiliatesStatusOff'], $keyboardaffiliates);
-} elseif ($datain == "offaffiliates") {
-    update("affiliates", "affiliatesstatus", "onaffiliates");
-    $affiliatesvalue = select("affiliates", "*", null, null, "select")['affiliatesstatus'];
-    $keyboardaffiliates = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $affiliatesvalue, 'callback_data' => $affiliatesvalue],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['affiliatesStatuson'], $keyboardaffiliates);
-}
-if ($text == $textbotlang['Admin']['affiliate']['Percentageset']) {
+} elseif ($datain == "affpanel_refresh") {
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
+} elseif ($datain == "affpanel_toggle_system") {
+    $aff = select("affiliates", "*", null, null, "select");
+    $cur = $aff['affiliatesstatus'] ?? 'offaffiliates';
+    $new = ($cur === 'onaffiliates') ? 'offaffiliates' : 'onaffiliates';
+    update("affiliates", "affiliatesstatus", $new);
+    // همگام‌سازی دکمه منوی کاربر
+    if (function_exists('ensureFeatureSettingsColumns')) {
+        ensureFeatureSettingsColumns();
+    }
+    update("setting", "status_affiliates_btn", ($new === 'onaffiliates') ? '1' : '0');
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
+} elseif ($datain == "affpanel_toggle_commission") {
+    $aff = select("affiliates", "*", null, null, "select");
+    $cur = $aff['status_commission'] ?? 'offcommission';
+    $new = ($cur === 'oncommission') ? 'offcommission' : 'oncommission';
+    update("affiliates", "status_commission", $new);
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
+} elseif ($datain == "affpanel_toggle_gift") {
+    $aff = select("affiliates", "*", null, null, "select");
+    $cur = $aff['Discount'] ?? 'offDiscountaffiliates';
+    $new = ($cur === 'onDiscountaffiliates') ? 'offDiscountaffiliates' : 'onDiscountaffiliates';
+    update("affiliates", "Discount", $new);
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
+} elseif ($datain == "affpanel_set_pct") {
     sendmessage($from_id, $textbotlang['users']['affiliates']['setpercentage'], $backadmin, 'HTML');
     step('setpercentage', $from_id);
 } elseif ($user['step'] == "setpercentage") {
@@ -1796,10 +1816,29 @@ if ($text == $textbotlang['Admin']['affiliate']['Percentageset']) {
         sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], $affiliates, 'HTML');
     update("affiliates", "affiliatespercentage", $text);
+    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], $affiliates, 'HTML');
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
+    }
     step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['affiliate']['setbaner']) {
+} elseif ($datain == "affpanel_set_giftprice") {
+    sendmessage($from_id, $textbotlang['users']['affiliates']['priceDiscount'], $backadmin, 'HTML');
+    step('getdiscont', $from_id);
+} elseif ($user['step'] == "getdiscont") {
+    if (!ctype_digit($text)) {
+        sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
+        return;
+    }
+    update("affiliates", "price_Discount", $text);
+    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], $affiliates, 'HTML');
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
+    }
+    step('home', $from_id);
+} elseif ($datain == "affpanel_set_banner") {
     sendmessage($from_id, $textbotlang['users']['affiliates']['banner'], $backadmin, 'HTML');
     step('setbanner', $from_id);
 } elseif ($user['step'] == "setbanner") {
@@ -1810,84 +1849,55 @@ if ($text == $textbotlang['Admin']['affiliate']['Percentageset']) {
     update("affiliates", "description", $caption);
     update("affiliates", "id_media", $photoid);
     sendmessage($from_id, $textbotlang['users']['affiliates']['insertbanner'], $affiliates, 'HTML');
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
+    }
     step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['affiliate']['porsantafterbuy']) {
-    $marzbancommission = select("affiliates", "*", null, null, "select");
-    $keyboardcommission = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $marzbancommission['status_commission'], 'callback_data' => $marzbancommission['status_commission']],
-            ],
-        ]
-    ]);
-    sendmessage($from_id, $textbotlang['Admin']['Status']['commission'], $keyboardcommission, 'HTML');
-} elseif ($datain == "oncommission") {
-    update("affiliates", "status_commission", "offcommission");
-    $marzbancommission = select("affiliates", "*", null, null, "select");
-    $keyboardcommission = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $marzbancommission['status_commission'], 'callback_data' => $marzbancommission['status_commission']],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['commissionStatusOff'], $keyboardcommission);
-} elseif ($datain == "offcommission") {
-    update("affiliates", "status_commission", "oncommission");
-    $marzbancommission = select("affiliates", "*", null, null, "select");
-    $keyboardcommission = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $marzbancommission['status_commission'], 'callback_data' => $marzbancommission['status_commission']],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['commissionStatuson'], $keyboardcommission);
-} elseif ($text == $textbotlang['Admin']['affiliate']['gift']) {
-    $marzbanDiscountaffiliates = select("affiliates", "*", null, null, "select");
-    $keyboardDiscountaffiliates = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $marzbanDiscountaffiliates['Discount'], 'callback_data' => $marzbanDiscountaffiliates['Discount']],
-            ],
-        ]
-    ]);
-    sendmessage($from_id, $textbotlang['Admin']['Status']['Discountaffiliates'], $keyboardDiscountaffiliates, 'HTML');
-} elseif ($datain == "onDiscountaffiliates") {
-    update("affiliates", "Discount", "offDiscountaffiliates");
-    $marzbanDiscountaffiliates = select("affiliates", "*", null, null, "select");
-    $keyboardDiscountaffiliates = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $marzbanDiscountaffiliates['Discount'], 'callback_data' => $marzbanDiscountaffiliates['Discount']],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['DiscountaffiliatesStatusOff'], $keyboardDiscountaffiliates);
-} elseif ($datain == "offDiscountaffiliates") {
-    update("affiliates", "Discount", "onDiscountaffiliates");
-    $marzbanDiscountaffiliates = select("affiliates", "*", null, null, "select");
-    $keyboardDiscountaffiliates = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $marzbanDiscountaffiliates['Discount'], 'callback_data' => $marzbanDiscountaffiliates['Discount']],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['DiscountaffiliatesStatuson'], $keyboardDiscountaffiliates);
 }
-if ($text == $textbotlang['Admin']['affiliate']['giftstart']) {
+
+
+if ($text == $textbotlang['Admin']['affiliate']['status']
+    || $text == $textbotlang['Admin']['affiliate']['porsantafterbuy']
+    || $text == $textbotlang['Admin']['affiliate']['gift']) {
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
+    }
+} elseif ($text == $textbotlang['Admin']['affiliate']['Percentageset']) {
+    sendmessage($from_id, $textbotlang['users']['affiliates']['setpercentage'], $backadmin, 'HTML');
+    step('setpercentage', $from_id);
+} elseif ($text == $textbotlang['Admin']['affiliate']['giftstart']) {
     sendmessage($from_id, $textbotlang['users']['affiliates']['priceDiscount'], $backadmin, 'HTML');
     step('getdiscont', $from_id);
-} elseif ($user['step'] == "getdiscont") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
-        return;
+} elseif ($text == $textbotlang['Admin']['affiliate']['setbaner']) {
+    sendmessage($from_id, $textbotlang['users']['affiliates']['banner'], $backadmin, 'HTML');
+    step('setbanner', $from_id);
+} elseif ($datain == "onaffiliates" || $datain == "offaffiliates") {
+    $new = ($datain == "onaffiliates") ? "offaffiliates" : "onaffiliates";
+    update("affiliates", "affiliatesstatus", $new);
+    update("setting", "status_affiliates_btn", ($new === 'onaffiliates') ? '1' : '0');
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
     }
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], $affiliates, 'HTML');
-    update("affiliates", "price_Discount", $text);
-    step('home', $from_id);
-} elseif (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
+} elseif ($datain == "oncommission" || $datain == "offcommission") {
+    $new = ($datain == "oncommission") ? "offcommission" : "oncommission";
+    update("affiliates", "status_commission", $new);
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
+} elseif ($datain == "onDiscountaffiliates" || $datain == "offDiscountaffiliates") {
+    $new = ($datain == "onDiscountaffiliates") ? "offDiscountaffiliates" : "onDiscountaffiliates";
+    update("affiliates", "Discount", $new);
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
+}
+
+if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     $usernamepanel = $dataget[1];
     $requestcheck = select("cancel_service", "*", "username", $usernamepanel, "select");
     if ($requestcheck['status'] == "accept" || $requestcheck['status'] == "reject") {
