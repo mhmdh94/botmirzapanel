@@ -529,12 +529,6 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             'callback_data' => 'usernotlist'
         ]
     ];
-    $search_button = [
-        [
-            'text' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? '🔎  جستجوی سرویس  🔎' : ' '),
-            'callback_data' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? 'search_myservice' : 'noop_search')
-        ]
-    ];
     $pagination_buttons = [
         [
             'text' => $textbotlang['users']['page']['next'],
@@ -545,7 +539,11 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             'callback_data' => 'previous_page'
         ]
     ];
-    $keyboardlists['inline_keyboard'][] = $search_button;
+    if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
+        ];
+    }
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -592,19 +590,17 @@ if ($datain == 'next_page') {
             'callback_data' => 'previous_page'
         ]
     ];
-    $search_button = [
-        [
-            'text' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? '🔎  جستجوی سرویس  🔎' : ' '),
-            'callback_data' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? 'search_myservice' : 'noop_search')
-        ]
-    ];
     $usernotlist = [
         [
             'text' => $textbotlang['Admin']['Status']['notusenameinbot'],
             'callback_data' => 'usernotlist'
         ]
     ];
-    $keyboardlists['inline_keyboard'][] = $search_button;
+    if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
+        ];
+    }
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -645,19 +641,17 @@ if ($datain == 'next_page') {
             'callback_data' => 'previous_page'
         ]
     ];
-    $search_button = [
-        [
-            'text' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? '🔎  جستجوی سرویس  🔎' : ' '),
-            'callback_data' => ((!isset($setting['status_search_service']) || $setting['status_search_service'] == '1') ? 'search_myservice' : 'noop_search')
-        ]
-    ];
     $usernotlist = [
         [
             'text' => $textbotlang['Admin']['Status']['notusenameinbot'],
             'callback_data' => 'usernotlist'
         ]
     ];
-    $keyboardlists['inline_keyboard'][] = $search_button;
+    if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
+        ];
+    }
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -1194,10 +1188,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $Balance_Low_user = $user['Balance'] - $product['price_product'];
     update("user", "Balance", $Balance_Low_user, "id", $from_id);
     if (function_exists('logWalletTx')) {
-        logWalletTx($from_id, 'renew', intval($product['price_product']), $Balance_Low_user, 'تمدید سرویس: ' . ($user['Processing_value'] ?? ''));
+        logWalletTx($from_id, 'renew', intval($product['price_product']), $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')));
     }
     if (function_exists('recordSale')) {
-        recordSale($from_id, $product['price_product'], 'renew', $user['Processing_value'] ?? null, null);
+        recordSale($from_id, $product['price_product'], 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
     }
     $ManagePanel->ResetUserDataUsage($nameloc['Service_location'], $user['Processing_value']);
     if ($marzban_list_get['type'] == "marzban") {
@@ -1330,9 +1324,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
     }
     sendmessage($from_id, $textbotlang['users']['extend']['thanks'], $keyboardextendfnished, 'HTML');
-    if (function_exists('recordSale')) {
-        recordSale($from_id, $product['price_product'], 'extend', $nameloc['username'] ?? null, $nameloc['id_invoice'] ?? null);
-    }
+    // recordSale تمدید قبلاً در ابتدای مسیر ثبت شده — از ثبت تکراری جلوگیری می‌شود
 
     $tg_name = $user['username'] ?? ($username ?? '');
     $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $nameloc['username'], $product['name_product'], $priceproductformat, $nameloc['Service_location'], $balanceformatsell);
@@ -1513,10 +1505,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $Balance_Low_user = $user['Balance'] - $price_extra;
         update("user", "Balance", $Balance_Low_user, "id", $from_id);
         if (function_exists('logWalletTx')) {
-            logWalletTx($from_id, 'extra_volume', intval($price_extra), $Balance_Low_user, 'خرید حجم اضافه');
+            logWalletTx($from_id, 'extra_volume', intval($price_extra), $Balance_Low_user, 'خرید حجم اضافه: ' . ($nameloc['username'] ?? ''));
         }
         if (function_exists('recordSale')) {
-            recordSale($from_id, $price_extra, 'extra_volume', $user['Processing_value'] ?? null, null);
+            recordSale($from_id, $price_extra, 'extra_volume', $nameloc['username'] ?? ($user['Processing_value'] ?? null), $nameloc['id_invoice'] ?? null);
         }
     }
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $user['Processing_value']);
@@ -1597,7 +1589,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $bal_after = select("user", "Balance", "id", $from_id, "select");
     $bal_after = is_array($bal_after) ? ($bal_after['Balance'] ?? $bal_after) : $bal_after;
     $tg_user = $username ?? ($user['username'] ?? '');
-    if (function_exists('recordSale')) { recordSale($from_id, intval(str_replace(',','',$price_extra_fmt ?? $price_extra)), 'extra', $nameloc['username'] ?? null, null); }
+    // recordSale حجم اضافه قبلاً ثبت شده — جلوگیری از ردیف تکراری در sales_ledger
     $text_report = sprintf(
         $textbotlang['Admin']['Report']['Extra_volume'],
         $from_id,
@@ -1714,7 +1706,15 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 }
 #-----------usertest------------#
 if ($text == $datatextbot['text_usertest']) {
-    if (isset($setting['status_usertest']) && ($setting['status_usertest'] == '0' || $setting['status_usertest'] === 0) && !in_array($from_id, $admin_ids)) {
+    // وضعیت تست را زنده از دیتابیس بخوان (برای همه، حتی ادمین — هم‌راستا با خرید)
+    $__st_test = select("setting", "*", null, null, "select");
+    $__test_flag = '1';
+    if (is_array($__st_test) && array_key_exists('status_usertest', $__st_test) && $__st_test['status_usertest'] !== null && $__st_test['status_usertest'] !== '') {
+        $__test_flag = strval($__st_test['status_usertest']);
+    } elseif (isset($setting['status_usertest']) && $setting['status_usertest'] !== null && $setting['status_usertest'] !== '') {
+        $__test_flag = strval($setting['status_usertest']);
+    }
+    if ($__test_flag === '0') {
         sendmessage($from_id, $textbotlang['users']['usertest']['disabled'], $keyboard, 'HTML');
         return;
     }
@@ -2045,6 +2045,11 @@ if ($datain == "user_tx_history") {
         $st->execute([':u' => $uid_i]);
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $s) {
             $stype = strval($s['sale_type'] ?? 'buy');
+            if ($stype === 'extend') {
+                $stype = 'renew';
+            } elseif ($stype === 'extra') {
+                $stype = 'extra_volume';
+            }
             if (!in_array($stype, ['buy', 'renew', 'extra_volume'], true)) {
                 $stype = 'buy';
             }

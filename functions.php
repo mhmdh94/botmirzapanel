@@ -1334,6 +1334,13 @@ function recordSale($id_user, $price, $sale_type = 'buy', $username = null, $id_
     if ($price <= 0) {
         return;
     }
+    // یکسان‌سازی نوع فروش برای جلوگیری از ردیف‌های هم‌معنی با نام متفاوت
+    $sale_type = strval($sale_type);
+    if ($sale_type === 'extend') {
+        $sale_type = 'renew';
+    } elseif ($sale_type === 'extra') {
+        $sale_type = 'extra_volume';
+    }
     try {
         $st = $pdo->prepare("INSERT INTO sales_ledger (id_user, username, price, sale_type, id_invoice, created_at) VALUES (?,?,?,?,?,?)");
         $st->execute([intval($id_user), $username, $price, $sale_type, $id_invoice, time()]);

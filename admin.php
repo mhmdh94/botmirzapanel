@@ -1469,7 +1469,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
             ],
         ]
     ]);
-    sendmessage($from_id, $textbotlang['users']['moeny']['settingpay'], $keyboardmoeny, 'HTML');
+    $fin_summary = "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز و پکیج‌های شارژ را مدیریت کنید.";
+    sendmessage($from_id, $fin_summary, $keyboardmoeny, 'HTML');
 } elseif (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     $methodpay = $dataget[1];
     $status = $dataget[2];
