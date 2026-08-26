@@ -77,8 +77,30 @@ check_ssl_status() {
 
 # Check bot installation status
 check_bot_status() {
-    if [ -f "/var/www/html/mirzabotconfig/config.php" ]; then
-        echo -e "\033[32m✅ Bot is installed\033[0m"
+    local cfg="/var/www/html/mirzabotconfig/config.php"
+    if [ -f "$cfg" ]; then
+        echo -e "\033[32m✅ Bot is installed\033[0m  (/var/www/html/mirzabotconfig)"
+        local domain botname
+        domain=$(grep -E '^\$domainhosts' "$cfg" 2>/dev/null | head -1 | cut -d"'" -f2 | cut -d'/' -f1)
+        botname=$(grep -E '^\$usernamebot' "$cfg" 2>/dev/null | head -1 | cut -d"'" -f2)
+        [ -n "$domain" ] && echo -e "   🌐 Domain: \033[36m$domain\033[0m"
+        [ -n "$botname" ] && echo -e "   🤖 Bot: \033[36m@$botname\033[0m"
+        # Count additional bots
+        local extra=0
+        if [ -d "/var/www/html" ]; then
+            local d
+            for d in /var/www/html/*; do
+                [ -d "$d" ] || continue
+                [ "$d" = "/var/www/html/mirzabotconfig" ] && continue
+                case "$(basename "$d")" in phpmyadmin|html|cgi-bin|.*) continue ;; esac
+                if [ -f "$d/config.php" ] && [ -f "$d/index.php" ]; then
+                    extra=$((extra + 1))
+                fi
+            done
+        fi
+        if [ "$extra" -gt 0 ]; then
+            echo -e "   📦 Additional bots: \033[36m$extra\033[0m"
+        fi
         check_ssl_status
     else
         echo -e "\033[31m❌ Bot is not installed\033[0m"
@@ -88,21 +110,10 @@ check_bot_status() {
 # Display Logo
 function show_logo() {
     clear
-    echo -e "\033[1;34m"
-    echo "================================================================================="
-    echo "  __  __ _____ _____   ______           _____        _   _ ______ _       "
-    echo " |  \/  |_   _|  __ \ |___  /   /\     |  __ \ /\   | \ | |  ____| |      "
-    echo " | \  / | | | | |__) |   / /   /  \    | |__) /  \  |  \| | |__  | |      "
-    echo " | |\/| | | | |  _  /   / /   / /\ \   |  ___/ /\ \ | . \ |  __| | |      "
-    echo " | |  | |_| |_| | \ \  / /__ / ____ \  | |  / ____ \| |\  | |____| |____  "
-    echo " | |_|  |_|_____|_|  \_\/_____/_/    \_\ |_| /_/    \_\_| \_|______|______| "
-    echo "================================================================================="
-    echo -e "\033[0m"
-    echo ""
-    echo -e "\033[1;36mVersion:\033[0m \033[33mForked\033[0m"
-    echo -e "\033[1;36mTelegram Channel:\033[0m \033[34mhttps://t.me/\033[0m"
-    echo -e "\033[1;36mTelegram Group:  \033[0m \033[34mhttps://t.me/\033[0m"
-    echo -e "\033[1;36m⭐️Buy Pro Version⭐️: \033[0m \033[34mhttps://t.me/\033[0m"
+    echo -e "\033[1;34m╔════════════════════════════════════════════╗\033[0m"
+    echo -e "\033[1;34m║\033[0m  \033[1;36mMirza Bot Panel\033[0m  —  \033[33mFork mhmdh94\033[0m       \033[1;34m║\033[0m"
+    echo -e "\033[1;34m║\033[0m  GitHub: github.com/mhmdh94/botmirzapanel \033[1;34m║\033[0m"
+    echo -e "\033[1;34m╚════════════════════════════════════════════╝\033[0m"
     echo ""
     echo -e "\033[1;36mInstallation Status:\033[0m"
     check_bot_status
@@ -110,40 +121,48 @@ function show_logo() {
 }
 
 
-# Display Menu
+# Display Menu (loop — avoids deep recursion)
 function show_menu() {
-    show_logo
-    echo -e "\033[1;36m1)\033[0m Install Mirza Bot"
-    echo -e "\033[1;36m2)\033[0m Update Mirza Bot"
-    echo -e "\033[1;36m3)\033[0m Remove Mirza Bot"
-    echo -e "\033[1;36m4)\033[0m Export Database"
-    echo -e "\033[1;36m5)\033[0m Import Database"
-    echo -e "\033[1;36m6)\033[0m Configure Automated Backup"
-    echo -e "\033[1;36m7)\033[0m Renew SSL Certificates"
-    echo -e "\033[1;36m8)\033[0m Change Domain"
-    echo -e "\033[1;36m9)\033[0m Additional Bot Management"
-    echo -e "\033[1;36m10)\033[0m Exit"
+    while true; do
+        show_logo
+        echo -e "\033[1;36m 1)\033[0m Install Mirza Bot"
+        echo -e "\033[1;36m 2)\033[0m Update Mirza Bot"
+        echo -e "\033[1;36m 3)\033[0m Remove Mirza Bot"
+        echo -e "\033[1;36m 4)\033[0m Export Database"
+        echo -e "\033[1;36m 5)\033[0m Import Database"
+        echo -e "\033[1;36m 6)\033[0m Configure Automated Backup"
+        echo -e "\033[1;36m 7)\033[0m Renew SSL Certificates"
+        echo -e "\033[1;36m 8)\033[0m Change Domain"
+        echo -e "\033[1;36m 9)\033[0m Additional Bot Management"
+        echo -e "\033[1;36m10)\033[0m Exit"
+        echo ""
+        read -p "Select an option [1-10]: " option
+        case $option in
+            1) install_bot; pause_and_menu_return ;;
+            2) update_bot; pause_and_menu_return ;;
+            3) remove_bot; pause_and_menu_return ;;
+            4) export_database; pause_and_menu_return ;;
+            5) import_database; pause_and_menu_return ;;
+            6) auto_backup; pause_and_menu_return ;;
+            7) renew_ssl; pause_and_menu_return ;;
+            8) change_domain; pause_and_menu_return ;;
+            9) manage_additional_bots; pause_and_menu_return ;;
+            10)
+                echo -e "\033[32mExiting...\033[0m"
+                exit 0
+                ;;
+            *)
+                echo -e "\033[31mInvalid option. Please try again.\033[0m"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+# Pause before redrawing the main menu loop
+pause_and_menu_return() {
     echo ""
-    read -p "Select an option [1-10]: " option
-    case $option in
-        1) install_bot ;;
-        2) update_bot ;;
-        3) remove_bot ;;
-        4) export_database ;;
-        5) import_database ;;
-        6) auto_backup ;;
-        7) renew_ssl ;;
-        8) change_domain ;;
-        9) manage_additional_bots ;;
-        10)
-            echo -e "\033[32mExiting...\033[0m"
-            exit 0
-            ;;
-        *)
-            echo -e "\033[31mInvalid option. Please try again.\033[0m"
-            show_menu
-            ;;
-    esac
+    read -p "Press Enter to continue... " _
 }
 
 # Check if Marzban is installed
@@ -1346,7 +1365,6 @@ function update_bot() {
             update_bot_targets "all"
             ;;
         3)
-            show_menu
             return 0
             ;;
         *)
@@ -1526,7 +1544,7 @@ function update_bot_targets() {
         echo -e "  • $b"
     done
     echo ""
-    echo -e "\e[36mStarting bot file update (no apt upgrade)...\033[0m"
+    echo -e "\e[36mStarting bot file update (skipping apt upgrade)...\033[0m"
 
     ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
     TEMP_DIR="/tmp/mirzabot_update_$$"
