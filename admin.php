@@ -2324,7 +2324,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][($setting['copy_cart'] ?? '0')];
     // Feature flags (fork) — default ON for channel force & buy/test/search/aff if missing
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1'] as $_fk => $_fd) {
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1'] as $_fk => $_fd) {
         if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
             $setting[$_fk] = $_fd;
         }
@@ -2345,6 +2345,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][strval($setting['status_buy'])];
+    $st_extend = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_extend'] ?? '1')];
     $st_search = [
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
@@ -2430,6 +2434,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_buy, 'callback_data' => "editstsuts-status_buy-{$setting['status_buy']}"],
                 ['text' => $textbotlang['Admin']['Status']['status_buy'], 'callback_data' => "status_buy"],
+            ],
+            [
+                ['text' => $st_extend, 'callback_data' => 'editstsuts-status_extend-' . strval($setting['status_extend'] ?? '1')],
+                ['text' => $textbotlang['Admin']['Status']['status_extend'], 'callback_data' => "status_extend"],
             ],
             [
                 ['text' => $st_search, 'callback_data' => "editstsuts-status_search_service-{$setting['status_search_service']}"],
@@ -2537,6 +2545,9 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     } elseif ($type == "status_buy") {
         $valuenew = ($value == "1") ? "0" : "1";
         update("setting", "status_buy", $valuenew);
+    } elseif ($type == "status_extend") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_extend", $valuenew);
     } elseif ($type == "status_search_service") {
         $valuenew = ($value == "1") ? "0" : "1";
         update("setting", "status_search_service", $valuenew);
@@ -2633,7 +2644,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][($setting['copy_cart'] ?? '0')];
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1'] as $_fk => $_fd) {
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1'] as $_fk => $_fd) {
         if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
             $setting[$_fk] = $_fd;
         }
@@ -2654,6 +2665,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][strval($setting['status_buy'])];
+    $st_extend = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_extend'] ?? '1')];
     $st_search = [
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
@@ -2739,6 +2754,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_buy, 'callback_data' => "editstsuts-status_buy-{$setting['status_buy']}"],
                 ['text' => $textbotlang['Admin']['Status']['status_buy'], 'callback_data' => "status_buy"],
+            ],
+            [
+                ['text' => $st_extend, 'callback_data' => 'editstsuts-status_extend-' . strval($setting['status_extend'] ?? '1')],
+                ['text' => $textbotlang['Admin']['Status']['status_extend'], 'callback_data' => "status_extend"],
             ],
             [
                 ['text' => $st_search, 'callback_data' => "editstsuts-status_search_service-{$setting['status_search_service']}"],

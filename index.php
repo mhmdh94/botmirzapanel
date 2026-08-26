@@ -314,23 +314,9 @@ if ($setting['Bot_Status'] == "0" && !in_array($from_id, $admin_ids)) {
     sendmessage($from_id, $datatextbot['text_bot_off'], null, 'html');
     return;
 }
-#-----------clear_data------------#
-$stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND status = 'unpaid'");
-$stmt->bindParam(':id_user', $from_id);
-$stmt->execute();
-if ($stmt->rowCount() != 0) {
-    $list_invoice = $stmt->fetchAll();
-    foreach ($list_invoice as $invoice) {
-        $timecurrent = time();
-        if (ctype_digit($invoice['time_sell'])) {
-            $timelast = $timecurrent - $invoice['time_sell'];
-            if ($timelast > 86400) {
-                $stmt = $pdo->prepare("DELETE FROM invoice WHERE id_invoice = :id_invoice ");
-                $stmt->bindParam(':id_invoice', $invoice['id_invoice']);
-                $stmt->execute();
-            }
-        }
-    }
+#-----------clear_data (unpaid TTL)------------#
+if (function_exists('cleanupExpiredUnpaidInvoices') && intval($from_id) != 0) {
+    cleanupExpiredUnpaidInvoices($from_id);
 }
 #-----------/start------------#
 if ($text == "/start") {
@@ -438,6 +424,10 @@ if ($text == "/status") {
 }
 #-----------/renew (renew service)------------#
 if ($text == "/renew") {
+    if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        return;
+    }
     $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn')");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
@@ -858,25 +848,18 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
     if (!in_array($status, ['active', "on_hold"])) {
-        $keyboardsetting = json_encode([
-            'inline_keyboard' => [
-                [
-                    ['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username],
-                ],
-                [
-                    ['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username],
-                ],
-                array_values(array_filter([
-                    ['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username],
-                    ((!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1)
-                        ? ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username]
-                        : null),
-                ])),
-                [
-                    ['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder'],
-                ]
-            ]
-        ]);
+        $__kb_dis = [];
+        if (!isset($setting['status_extend']) || $setting['status_extend'] == '1' || $setting['status_extend'] === 1) {
+            $__kb_dis[] = [['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username]];
+        }
+        $__kb_dis[] = [['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username]];
+        $__row_rm = [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]];
+        if (!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1) {
+            $__row_rm[] = ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username];
+        }
+        $__kb_dis[] = $__row_rm;
+        $__kb_dis[] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
+        $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
         $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
     } else {
         $keyboarddate = array(
@@ -928,6 +911,9 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         }
         if (isset($setting['status_extra_volume']) && ($setting['status_extra_volume'] == '0' || $setting['status_extra_volume'] === 0)) {
             unset($keyboarddate['Extra_volume']);
+        }
+        if (isset($setting['status_extend']) && ($setting['status_extend'] == '0' || $setting['status_extend'] === 0)) {
+            unset($keyboarddate['extend']);
         }
         if ($nameloc['name_product'] == "usertest") {
             unset($keyboarddate['removeservice']);
@@ -1089,7 +1075,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     step('home', $from_id);
 } elseif (preg_match('/extend_(\w+)/', $datain, $dataget)) {
-
+    if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        return;
+    }
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
@@ -1119,6 +1108,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $json_list_product_lists = json_encode($productextend);
     Editmessagetext($from_id, $message_id, $textbotlang['users']['extend']['selectservice'], $json_list_product_lists);
 } elseif (preg_match('/serviceextendselect_(\w+)/', $datain, $dataget)) {
+    if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        return;
+    }
+
     $codeproduct = $dataget[1];
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
@@ -1153,6 +1147,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], $product['price_product'], $product['Service_time'], $product['Service_time'], $product['Volume_constraint']);
     Editmessagetext($from_id, $message_id, $textextend, $keyboardextend);
 } elseif (preg_match('/confirmserivce-(.*)/', $datain, $dataget)) {
+    if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        return;
+    }
+
     $codeproduct = $dataget[1];
     deletemessage($from_id, $message_id);
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
