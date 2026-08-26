@@ -167,6 +167,24 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         $aff_paid = 0;
     }
 
+    // تعداد کاربرانی که از طریق لینک مشارکت در فروش آمده‌اند
+    $aff_joined = 0;
+    try {
+        $st_aj = $pdo->query("SELECT COUNT(*) FROM user WHERE affiliates IS NOT NULL AND affiliates != '' AND affiliates != '0' AND CAST(affiliates AS UNSIGNED) > 0");
+        if ($st_aj) {
+            $aff_joined = intval($st_aj->fetchColumn());
+        }
+    } catch (Exception $e) {
+        try {
+            $st_aj = $pdo->query("SELECT COUNT(*) FROM user WHERE affiliates IS NOT NULL AND affiliates != 0 AND affiliates != '0'");
+            if ($st_aj) {
+                $aff_joined = intval($st_aj->fetchColumn());
+            }
+        } catch (Exception $e2) {
+            $aff_joined = 0;
+        }
+    }
+
     $ping = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
     $ping = number_format(floatval($ping[0] ?? 0), 2);
     $now_label = function_exists('jdate') ? jdate('Y/m/d H:i:s') : date('Y-m-d H:i:s');
@@ -186,6 +204,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($month['cnt']),
         number_format($month['sum']),
         number_format($aff_paid),
+        number_format($aff_joined),
         number_format($invoice_cnt),
         number_format($invoice_sum),
         number_format($count_usertest),
