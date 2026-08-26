@@ -111,8 +111,8 @@ check_bot_status() {
 function show_logo() {
     clear
     echo -e "\033[1;34m╔════════════════════════════════════════════╗\033[0m"
-    echo -e "\033[1;34m║\033[0m  \033[1;36mMirza Bot Panel\033[0m  —  \033[33mFork mhmd\033[0m       \033[1;34m║\033[0m"
-    echo -e "\033[1;34m║\033[0m  GitHub: - \033[1;34m║\033[0m"
+    echo -e "\033[1;34m║\033[0m  \033[1;36mMirza Bot Panel\033[0m  —  \033[33mFork mhmdh94\033[0m       \033[1;34m║\033[0m"
+    echo -e "\033[1;34m║\033[0m  GitHub: github.com/mhmdh94/botmirzapanel \033[1;34m║\033[0m"
     echo -e "\033[1;34m╚════════════════════════════════════════════╝\033[0m"
     echo ""
     echo -e "\033[1;36mInstallation Status:\033[0m"
@@ -2946,30 +2946,31 @@ function import_additional_bot_database() {
 
     echo -e "\033[32mDatabase successfully imported from $SELECTED_FILE into $DB_NAME.\033[0m"
 }
-#function to configure backup additional bot
+# Configure automated backup for an additional bot
 function configure_backup_additional_bot() {
     clear
     echo -e "\033[36mConfiguring Automated Backup for Additional Bot...\033[0m"
 
-    # List all available bots in /var/www/html excluding the main configuration directory
     echo -e "\033[36mAvailable Bots:\033[0m"
     if ! select_additional_bot "Select a bot (number or name)"; then
         return 1
     fi
+    if [ -z "${SELECTED_BOT:-}" ] || [ -z "${BOT_PATH:-}" ]; then
+        echo -e "\033[31m[ERROR]\033[0m No bot selected."
+        return 1
+    fi
     CONFIG_PATH="$BOT_PATH/config.php"
 
-    # Check if the config.php file exists
     if [ ! -f "$CONFIG_PATH" ]; then
         echo -e "\033[31mconfig.php not found for $SELECTED_BOT.\033[0m"
         return 1
     fi
 
-    # Extract database and Telegram credentials from config.php
-    DB_NAME=$(grep '^\$dbname' "$CONFIG_PATH" | awk -F"'" '{print $2}')
-    DB_USER=$(grep '^\$usernamedb' "$CONFIG_PATH" | awk -F"'" '{print $2}')
-    DB_PASS=$(grep '^\$passworddb' "$CONFIG_PATH" | awk -F"'" '{print $2}')
-    TELEGRAM_TOKEN=$(grep '^\$APIKEY' "$CONFIG_PATH" | awk -F"'" '{print $2}')
-    TELEGRAM_CHAT_ID=$(grep '^\$adminnumber' "$CONFIG_PATH" | awk -F"'" '{print $2}')
+    DB_NAME=$(grep '^\$dbname' "$CONFIG_PATH" | head -1 | cut -d"'" -f2)
+    DB_USER=$(grep '^\$usernamedb' "$CONFIG_PATH" | head -1 | cut -d"'" -f2)
+    DB_PASS=$(grep '^\$passworddb' "$CONFIG_PATH" | head -1 | cut -d"'" -f2)
+    TELEGRAM_TOKEN=$(grep '^\$APIKEY' "$CONFIG_PATH" | head -1 | cut -d"'" -f2)
+    TELEGRAM_CHAT_ID=$(grep '^\$adminnumber' "$CONFIG_PATH" | head -1 | cut -d"'" -f2)
 
     if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
         echo -e "\033[31m[ERROR]\033[0m Failed to extract database credentials from $CONFIG_PATH."
@@ -2981,7 +2982,7 @@ function configure_backup_additional_bot() {
         return 1
     fi
 
-    # Prompt user to select backup frequency
+    cron_time=""
     while true; do
         echo -e "\033[36mChoose backup frequency:\033[0m"
         echo -e "\033[36m1) Every minute\033[0m"
@@ -2999,33 +3000,56 @@ function configure_backup_additional_bot() {
         esac
     done
 
-    # Create a backup script specific to the selected bot
-    BACKUP_SCRIPT="/root/${SELECTED_BOT}_auto_backup.sh"
-    cat <<EOF > "$BACKUP_SCRIPT"
+    if [ -z "$cron_time" ]; then
+        echo -e "\033[31m[ERROR]\033[0m Invalid cron schedule."
+        return 1
+    fi
+
+    # Safe filename (no spaces/special chars)
+    SAFE_BOT=$(echo "$SELECTED_BOT" | tr -cd 'A-Za-z0-9._-')
+    if [ -z "$SAFE_BOT" ]; then
+        SAFE_BOT="bot"
+    fi
+    BACKUP_SCRIPT="/root/${SAFE_BOT}_auto_backup.sh"
+
+    # Quoted heredoc so nested quotes/date never break the parent script
+    cat <<'BKEOF' > "$BACKUP_SCRIPT"
 #!/bin/bash
-
-DB_NAME="$DB_NAME"
-DB_USER="$DB_USER"
-DB_PASS="$DB_PASS"
-TELEGRAM_TOKEN="$TELEGRAM_TOKEN"
-TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID"
-
-BACKUP_FILE="/root/\${DB_NAME}_\$(date +"%Y%m%d_%H%M%S").sql"
-if mysqldump -u "\$DB_USER" -p"\$DB_PASS" "\$DB_NAME" > "\$BACKUP_FILE"; then
-    curl -F document=@"\$BACKUP_FILE" "https://api.telegram.org/bot\$TELEGRAM_TOKEN/sendDocument" -F chat_id="\$TELEGRAM_CHAT_ID"
-    rm "\$BACKUP_FILE"
+set -e
+DB_NAME="__DB_NAME__"
+DB_USER="__DB_USER__"
+DB_PASS="__DB_PASS__"
+TELEGRAM_TOKEN="__TELEGRAM_TOKEN__"
+TELEGRAM_CHAT_ID="__TELEGRAM_CHAT_ID__"
+BACKUP_FILE="/root/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql"
+if mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$BACKUP_FILE"; then
+    curl -fsS -F document=@"$BACKUP_FILE" "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" -F chat_id="$TELEGRAM_CHAT_ID" >/dev/null || true
+    rm -f "$BACKUP_FILE"
 else
-    echo -e "\033[31m[ERROR]\033[0m Failed to create database backup."
+    echo "[ERROR] Failed to create database backup for $DB_NAME" >&2
+    exit 1
 fi
-EOF
+BKEOF
 
-    # Grant execution permission to the backup script
+    # Inject credentials without breaking the script structure
+    sed -i "s|__DB_NAME__|${DB_NAME}|g" "$BACKUP_SCRIPT"
+    sed -i "s|__DB_USER__|${DB_USER}|g" "$BACKUP_SCRIPT"
+    sed -i "s|__DB_PASS__|${DB_PASS}|g" "$BACKUP_SCRIPT"
+    sed -i "s|__TELEGRAM_TOKEN__|${TELEGRAM_TOKEN}|g" "$BACKUP_SCRIPT"
+    sed -i "s|__TELEGRAM_CHAT_ID__|${TELEGRAM_CHAT_ID}|g" "$BACKUP_SCRIPT"
+
     chmod +x "$BACKUP_SCRIPT"
 
-    # Add a cron job to execute the backup script at the selected frequency
-    (crontab -l 2>/dev/null; echo "$cron_time bash $BACKUP_SCRIPT") | crontab -
-
-    echo -e "\033[32mAutomated backup configured successfully for $SELECTED_BOT.\033[0m"
+    # Remove previous schedule for this script, then add new one
+    crontab -l 2>/dev/null | grep -vF "$BACKUP_SCRIPT" | crontab - 2>/dev/null || true
+    if (crontab -l 2>/dev/null; echo "$cron_time bash $BACKUP_SCRIPT") | crontab -; then
+        echo -e "\033[32mAutomated backup configured successfully for $SELECTED_BOT.\033[0m"
+        echo -e "\033[36mScript: $BACKUP_SCRIPT\033[0m"
+        echo -e "\033[36mSchedule: $cron_time\033[0m"
+    else
+        echo -e "\033[31m[ERROR]\033[0m Failed to install crontab entry. Script was created at $BACKUP_SCRIPT"
+        return 1
+    fi
 }
 
 # Main Execution
