@@ -1526,20 +1526,7 @@ function update_bot_targets() {
         echo -e "  • $b"
     done
     echo ""
-    read -p "Continue? (y/n): " conf
-    if [[ "$conf" != "y" && "$conf" != "Y" ]]; then
-        echo "Aborted."
-        return 0
-    fi
-
-    # Optional: skip heavy apt upgrade unless user wants
-    echo ""
-    read -p "Also run apt update/upgrade? (y/N): " do_apt
-    if [[ "$do_apt" == "y" || "$do_apt" == "Y" ]]; then
-        if ! sudo apt update && sudo apt upgrade -y; then
-            echo -e "\e[93mWarning: apt update/upgrade had issues — continuing bot file update anyway.\033[0m"
-        fi
-    fi
+    echo -e "\e[36mStarting bot file update (no apt upgrade)...\033[0m"
 
     ZIP_URL="https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip"
     TEMP_DIR="/tmp/mirzabot_update_$$"
