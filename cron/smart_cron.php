@@ -19,6 +19,15 @@ $ManagePanel = new ManagePanel();
 ensureSmartCronSettings();
 ensureSmartCronStateTable();
 
+// حذف خودکار فاکتورهای unpaid منقضی (TTL قابل تنظیم، پیش‌فرض ۴۵ دقیقه)
+if (function_exists('cleanupExpiredUnpaidInvoices')) {
+    $n_unpaid = cleanupExpiredUnpaidInvoices(null);
+    if ($n_unpaid > 0 && function_exists('smartCronDebugLog')) {
+        smartCronDebugLog("🧹 حذف {$n_unpaid} فاکتور unpaid منقضی");
+    }
+}
+
+
 $limit = intval(getPaySettingValue('smart_batch_limit', '20'));
 if ($limit < 1) {
     $limit = 20;
