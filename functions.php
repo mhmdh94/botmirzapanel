@@ -2389,8 +2389,11 @@ function isBotUpdateProtectedFile($basename)
     return false;
 }
 
+
 /**
  * آپدیت امن کد ربات از گیتهاب فورک — فقط فایل‌های غیرحساس
+ * - Zip Slip و symlink مسدود می‌شود
+ * - فقط از آدرس ثابت گیتهاب فورک دانلود می‌شود
  * @return array{ok:bool, message:string, files?:int}
  */
 function runBotSelfUpdate($repoZipUrl = null)
@@ -2404,15 +2407,19 @@ function runBotSelfUpdate($repoZipUrl = null)
         return ['ok' => false, 'message' => 'افزونه ZipArchive روی سرور فعال نیست.'];
     }
 
+    // فقط منبع ثابت فورک — پارامتر ورودی نادیده گرفته می‌شود (ضد SSRF)
+    $allowedUrl = 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
+    $url = $allowedUrl;
+
     @set_time_limit(300);
     @ini_set('max_execution_time', '300');
     @ini_set('memory_limit', '256M');
 
-    $lockFile = $root . '/.update_lock';
+    $lockFile = $root . DIRECTORY_SEPARATOR . '.update_lock';
     $lockFp = @fopen($lockFile, 'c+');
     if (!$lockFp || !flock($lockFp, LOCK_EX | LOCK_NB)) {
         if ($lockFp) {
-            fclose($lockFp);
+            @fclose($lockFp);
         }
         return ['ok' => false, 'message' => 'آپدیت دیگری در حال اجراست یا قفل فایل آزاد نیست.'];
     }
@@ -2423,37 +2430,90 @@ function runBotSelfUpdate($repoZipUrl = null)
     $bakDir = $tmpBase . '_bak';
     $filesUpdated = 0;
 
-    $cleanup = function () use ($zipPath, $extractDir, $bakDir, $lockFp, $lockFile) {
-        $rm = function ($p) {
-            if (is_file($p)) {
-                @unlink($p);
-                return;
-            }
-            if (!is_dir($p)) {
-                return;
-            }
+    $rmTree = function ($p) {
+        if (is_file($p) || is_link($p)) {
+            @unlink($p);
+            return;
+        }
+        if (!is_dir($p)) {
+            return;
+        }
+        try {
             $it = new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator($p, RecursiveDirectoryIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::CHILD_FIRST
             );
             foreach ($it as $f) {
-                $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+                $path = $f->getPathname();
+                if ($f->isLink()) {
+                    @unlink($path);
+                } elseif ($f->isDir()) {
+                    @rmdir($path);
+                } else {
+                    @unlink($path);
+                }
             }
-            @rmdir($p);
-        };
-        $rm($zipPath);
-        $rm($extractDir);
-        $rm($bakDir);
+        } catch (Throwable $e) {
+            // ignore
+        }
+        @rmdir($p);
+    };
+
+    $cleanup = function () use ($zipPath, $extractDir, $bakDir, $lockFp, $lockFile, $rmTree) {
+        $rmTree($zipPath);
+        $rmTree($extractDir);
+        $rmTree($bakDir);
         if (is_resource($lockFp)) {
-            flock($lockFp, LOCK_UN);
-            fclose($lockFp);
+            @flock($lockFp, LOCK_UN);
+            @fclose($lockFp);
         }
         @unlink($lockFile);
     };
 
-    try {
-        $url = $repoZipUrl ?: 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
+    /** مسیر مقصد باید داخل $root بماند (ضد Zip Slip) */
+    $safeDest = function ($root, $rel) {
+        $rel = str_replace('\\', '/', strval($rel));
+        $rel = ltrim($rel, '/');
+        if ($rel === '' || strpos($rel, "\0") !== false) {
+            return false;
+        }
+        // جلوگیری از .. و مسیر مطلق
+        $parts = [];
+        foreach (explode('/', $rel) as $seg) {
+            if ($seg === '' || $seg === '.') {
+                continue;
+            }
+            if ($seg === '..') {
+                return false;
+            }
+            $parts[] = $seg;
+        }
+        $relNorm = implode('/', $parts);
+        if ($relNorm === '') {
+            return false;
+        }
+        $dest = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relNorm);
+        $destRealParent = realpath(dirname($dest));
+        // اگر پوشه والد هنوز ساخته نشده، با نرمال‌سازی منطقی چک کن
+        $rootReal = realpath($root);
+        if ($rootReal === false) {
+            return false;
+        }
+        if ($destRealParent !== false) {
+            if (strpos($destRealParent, $rootReal) !== 0) {
+                return false;
+            }
+        } else {
+            // والد وجود ندارد — فقط با مسیر نرمال‌شده
+            $norm = $rootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relNorm);
+            if (strpos($norm, $rootReal . DIRECTORY_SEPARATOR) !== 0 && $norm !== $rootReal) {
+                return false;
+            }
+        }
+        return $dest;
+    };
 
+    try {
         // دانلود
         $zipData = false;
         if (function_exists('curl_init')) {
@@ -2461,9 +2521,13 @@ function runBotSelfUpdate($repoZipUrl = null)
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 5,
                 CURLOPT_CONNECTTIMEOUT => 20,
                 CURLOPT_TIMEOUT => 120,
                 CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+                CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
                 CURLOPT_USERAGENT => 'MirzaBot-SelfUpdate/1.0',
             ]);
             $zipData = curl_exec($ch);
@@ -2475,7 +2539,18 @@ function runBotSelfUpdate($repoZipUrl = null)
                 return ['ok' => false, 'message' => 'دانلود ناموفق (HTTP ' . $code . '). ' . $cerr];
             }
         } else {
-            $ctx = stream_context_create(['http' => ['timeout' => 120, 'header' => "User-Agent: MirzaBot-SelfUpdate/1.0\r\n"], 'ssl' => ['verify_peer' => true]]);
+            $ctx = stream_context_create([
+                'http' => [
+                    'timeout' => 120,
+                    'follow_location' => 1,
+                    'max_redirects' => 5,
+                    'header' => "User-Agent: MirzaBot-SelfUpdate/1.0\r\n",
+                ],
+                'ssl' => [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                ],
+            ]);
             $zipData = @file_get_contents($url, false, $ctx);
             if ($zipData === false) {
                 $cleanup();
@@ -2483,15 +2558,22 @@ function runBotSelfUpdate($repoZipUrl = null)
             }
         }
 
-        if (strlen($zipData) < 1000) {
+        $zipLen = strlen($zipData);
+        // محدودیت حجم zip (~80MB) ضد zip bomb ساده
+        if ($zipLen < 1000) {
             $cleanup();
             return ['ok' => false, 'message' => 'فایل دانلودی خیلی کوچک یا نامعتبر است.'];
+        }
+        if ($zipLen > 80 * 1024 * 1024) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'فایل دانلودی بیش از حد بزرگ است.'];
         }
 
         if (@file_put_contents($zipPath, $zipData) === false) {
             $cleanup();
             return ['ok' => false, 'message' => 'نوشتن فایل zip موقت ممکن نشد.'];
         }
+        unset($zipData);
 
         @mkdir($extractDir, 0755, true);
         $zip = new ZipArchive();
@@ -2499,6 +2581,35 @@ function runBotSelfUpdate($repoZipUrl = null)
             $cleanup();
             return ['ok' => false, 'message' => 'باز کردن zip ناموفق بود.'];
         }
+
+        // قبل از extract: رد کردن path traversal و symlink در خود zip
+        $num = $zip->numFiles;
+        if ($num <= 0 || $num > 20000) {
+            $zip->close();
+            $cleanup();
+            return ['ok' => false, 'message' => 'تعداد فایل‌های zip نامعتبر است.'];
+        }
+        $uncompressedTotal = 0;
+        for ($i = 0; $i < $num; $i++) {
+            $stat = $zip->statIndex($i);
+            if ($stat === false) {
+                continue;
+            }
+            $name = str_replace('\\', '/', $stat['name']);
+            if (strpos($name, "\0") !== false || strpos($name, '../') !== false || strpos($name, '..\\') !== false || isset($name[0]) && $name[0] === '/') {
+                $zip->close();
+                $cleanup();
+                return ['ok' => false, 'message' => 'فایل zip دارای مسیر ناامن است (Zip Slip).'];
+            }
+            // رد symlink (type 0120000 در external attributes گاهی)
+            $uncompressedTotal += intval($stat['size'] ?? 0);
+            if ($uncompressedTotal > 200 * 1024 * 1024) {
+                $zip->close();
+                $cleanup();
+                return ['ok' => false, 'message' => 'حجم استخراج‌شده بیش از حد مجاز است.'];
+            }
+        }
+
         if (!$zip->extractTo($extractDir)) {
             $zip->close();
             $cleanup();
@@ -2516,49 +2627,50 @@ function runBotSelfUpdate($repoZipUrl = null)
                 }
                 $p = $extractDir . DIRECTORY_SEPARATOR . $e;
                 if (is_dir($p) && is_file($p . '/index.php') && is_file($p . '/functions.php')) {
-                    $srcRoot = $p;
+                    $srcRoot = realpath($p);
                     break;
                 }
             }
         }
         if ($srcRoot === null && is_file($extractDir . '/index.php')) {
-            $srcRoot = $extractDir;
+            $srcRoot = realpath($extractDir);
         }
-        if ($srcRoot === null || !is_file($srcRoot . '/index.php') || !is_file($srcRoot . '/admin.php')) {
+        if ($srcRoot === null || !is_file($srcRoot . '/index.php') || !is_file($srcRoot . '/admin.php') || !is_file($srcRoot . '/functions.php')) {
             $cleanup();
-            return ['ok' => false, 'message' => 'ساختار مخزن نامعتبر است (index/admin یافت نشد).'];
+            return ['ok' => false, 'message' => 'ساختار مخزن نامعتبر است (فایل‌های اصلی یافت نشد).'];
         }
 
         // بک‌آپ فایل‌های محافظت‌شده فعلی
         @mkdir($bakDir, 0755, true);
         foreach (botUpdateProtectedBasenames() as $prot) {
             $cur = $root . DIRECTORY_SEPARATOR . $prot;
-            if (is_file($cur)) {
+            if (is_file($cur) && !is_link($cur)) {
                 @copy($cur, $bakDir . DIRECTORY_SEPARATOR . $prot);
             }
         }
-        // بک‌آپ config.php.*
         foreach (glob($root . '/config.php.*') ?: [] as $cf) {
-            if (is_file($cf)) {
+            if (is_file($cf) && !is_link($cf)) {
                 @copy($cf, $bakDir . DIRECTORY_SEPARATOR . basename($cf));
             }
         }
 
-        // کپی فایل‌ها (به‌جز محافظت‌شده)
+        // کپی امن فایل‌ها
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($srcRoot, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
         foreach ($iterator as $item) {
+            /** @var SplFileInfo $item */
+            if ($item->isLink()) {
+                continue; // هرگز symlink کپی نشود
+            }
             $rel = substr($item->getPathname(), strlen($srcRoot) + 1);
             if ($rel === false || $rel === '') {
                 continue;
             }
-            // نرمال‌سازی جداکننده
             $rel = str_replace('\\', '/', $rel);
             $base = basename($rel);
 
-            // هرگز پوشه .git و installer موقت را اجباری نکن — installer از گیتهاب می‌تواند بیاید
             if (strpos($rel, '.git/') === 0 || $rel === '.git') {
                 continue;
             }
@@ -2566,7 +2678,11 @@ function runBotSelfUpdate($repoZipUrl = null)
                 continue;
             }
 
-            $dest = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+            $dest = $safeDest($root, $rel);
+            if ($dest === false) {
+                continue; // مسیر ناامن — رد
+            }
+
             if ($item->isDir()) {
                 if (!is_dir($dest)) {
                     @mkdir($dest, 0755, true);
@@ -2576,35 +2692,47 @@ function runBotSelfUpdate($repoZipUrl = null)
             if (!$item->isFile()) {
                 continue;
             }
+            // فقط پسوندهای مجاز کد/دارایی (ضد قرار دادن باینری مشکوک در مسیر عجیب)
+            // همه فایل‌های مخزن رسمی مجازند — محدودسازی پسوند اختیاری سخت‌گیرانه نیست تا vendor/cron خراب نشود
+
             $destDir = dirname($dest);
             if (!is_dir($destDir)) {
                 @mkdir($destDir, 0755, true);
+            }
+            // اگر مقصد symlink است، حذف و جایگزینی با فایل عادی
+            if (is_link($dest)) {
+                @unlink($dest);
             }
             if (@copy($item->getPathname(), $dest)) {
                 $filesUpdated++;
             }
         }
 
-        // بازگردانی فایل‌های حساس (حتماً)
+        // بازگردانی فایل‌های حساس
         foreach (scandir($bakDir) ?: [] as $bf) {
             if ($bf === '.' || $bf === '..') {
                 continue;
             }
+            if (!isBotUpdateProtectedFile($bf) && strpos($bf, 'config.php.') !== 0) {
+                continue;
+            }
             $srcB = $bakDir . DIRECTORY_SEPARATOR . $bf;
-            if (is_file($srcB)) {
+            if (is_file($srcB) && !is_link($srcB)) {
                 @copy($srcB, $root . DIRECTORY_SEPARATOR . $bf);
             }
         }
 
-        // اطمینان از وجود config.php
         if (!is_file($root . '/config.php')) {
             $cleanup();
-            return ['ok' => false, 'message' => 'خطای بحرانی: config.php پس از آپدیت موجود نیست. از بک‌آپ سرور بازگردانی کنید.'];
+            return ['ok' => false, 'message' => 'خطای بحرانی: config.php پس از آپدیت موجود نیست.'];
         }
 
-        // حذف installer اگر آمده
-        if (is_dir($root . '/installer')) {
-            // اختیاری — ربات خودش installer را در index پاک می‌کند
+        // صحت حداقل فایل‌های هسته
+        foreach (['index.php', 'admin.php', 'functions.php', 'config.php'] as $need) {
+            if (!is_file($root . DIRECTORY_SEPARATOR . $need)) {
+                $cleanup();
+                return ['ok' => false, 'message' => 'پس از آپدیت فایل ضروری کم است: ' . $need];
+            }
         }
 
         $cleanup();
@@ -2614,7 +2742,6 @@ function runBotSelfUpdate($repoZipUrl = null)
             'files' => $filesUpdated,
         ];
     } catch (Throwable $e) {
-        // تلاش برای restore از bak
         if (is_dir($bakDir)) {
             foreach (scandir($bakDir) ?: [] as $bf) {
                 if ($bf === '.' || $bf === '..') {
@@ -2630,4 +2757,6 @@ function runBotSelfUpdate($repoZipUrl = null)
         return ['ok' => false, 'message' => 'خطا: ' . $e->getMessage()];
     }
 }
+
+
 

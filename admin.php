@@ -894,11 +894,10 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {
 
 #----------------[ آپدیت ربات از گیتهاب ]------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_update']) {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
     if (!function_exists('isMainBotAdmin') || !isMainBotAdmin($from_id)) {
-        // ادمین‌های دیگر هم اگر در لیست باشند فقط ادمین اصلی
-        if (!in_array($from_id, $admin_ids)) {
-            return;
-        }
         sendmessage($from_id, $textbotlang['Admin']['bot_update']['only_admin'], $setting_panel, 'HTML');
         return;
     }
