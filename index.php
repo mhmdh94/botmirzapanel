@@ -1184,13 +1184,38 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
         return;
     }
-    if ($user['Balance'] < $product['price_product']) {
+
+    // ضد دابل‌کلیک: قفل کوتاه‌مدت روی کاربر (حداکثر ۶۰ ثانیه)
+    $__now_lock = time();
+    $__lock_ok = false;
+    try {
+        $__lk = $pdo->prepare("UPDATE user SET Processing_value_tow = :n WHERE id = :id AND (
+            Processing_value_tow IS NULL OR Processing_value_tow = '' OR Processing_value_tow = '0'
+            OR (Processing_value_tow REGEXP '^[0-9]+$' AND CAST(Processing_value_tow AS UNSIGNED) < :exp)
+        )");
+        $__lk->execute([':n' => strval($__now_lock), ':id' => $from_id, ':exp' => $__now_lock - 60]);
+        $__lock_ok = ($__lk->rowCount() > 0);
+    } catch (Throwable $e) {
+        $__lock_ok = true; // اگر ستون مشکل داشت، ادامه بده ولی کسر اتمیک حفظ می‌شود
+    }
+    if (!$__lock_ok) {
+        sendmessage($from_id, "⏳ درخواست تمدید قبلی هنوز در حال پردازش است. لطفاً چند لحظه صبر کنید.", $keyboard, 'HTML');
+        return;
+    }
+
+    $__price_ext = intval($product['price_product']);
+    // موجودی را زنده از دیتابیس بخوان (نه از کش ابتدای ریکوئست)
+    $__bal_row = select("user", "Balance", "id", $from_id, "select");
+    $__bal_now = is_array($__bal_row) ? intval($__bal_row['Balance'] ?? 0) : intval($__bal_row);
+
+    if ($__bal_now < $__price_ext) {
+        update("user", "Processing_value_tow", "0", "id", $from_id);
         if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
             sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
-        $Balance_prim = $product['price_product'] - $user['Balance'];
+        $Balance_prim = $__price_ext - $__bal_now;
         if ($Balance_prim < getDepositLimits()['min']) {
             sendmessage($from_id, msgShortfallBelowMin('extend'), $keyboard, 'HTML');
             step('home', $from_id);
@@ -1202,14 +1227,31 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         step('get_step_payment', $from_id);
         return;
     }
+
+    // کسر اتمیک موجودی — اگر همزمان دو درخواست بیاید فقط یکی موفق می‌شود
+    $Balance_Low_user = null;
+    try {
+        $__ded = $pdo->prepare("UPDATE user SET Balance = Balance - :p WHERE id = :id AND CAST(Balance AS SIGNED) >= :p2");
+        $__ded->execute([':p' => $__price_ext, ':id' => $from_id, ':p2' => $__price_ext]);
+        if ($__ded->rowCount() < 1) {
+            update("user", "Processing_value_tow", "0", "id", $from_id);
+            sendmessage($from_id, "⏳ این تمدید در حال پردازش است یا موجودی کافی نیست.", $keyboard, 'HTML');
+            return;
+        }
+        $__bal_after = select("user", "Balance", "id", $from_id, "select");
+        $Balance_Low_user = is_array($__bal_after) ? intval($__bal_after['Balance'] ?? 0) : intval($__bal_after);
+    } catch (Throwable $e) {
+        // fallback غیراتمیک (نباید در حالت عادی برسد)
+        $Balance_Low_user = $__bal_now - $__price_ext;
+        update("user", "Balance", $Balance_Low_user, "id", $from_id);
+    }
+
     $usernamepanel = $nameloc['username'];
-    $Balance_Low_user = $user['Balance'] - $product['price_product'];
-    update("user", "Balance", $Balance_Low_user, "id", $from_id);
     if (function_exists('logWalletTx')) {
-        logWalletTx($from_id, 'renew', intval($product['price_product']), $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')));
+        logWalletTx($from_id, 'renew', $__price_ext, $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')));
     }
     if (function_exists('recordSale')) {
-        recordSale($from_id, $product['price_product'], 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
+        recordSale($from_id, $__price_ext, 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
     }
     $ManagePanel->ResetUserDataUsage($nameloc['Service_location'], $user['Processing_value']);
     if ($marzban_list_get['type'] == "marzban") {
@@ -1341,6 +1383,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (function_exists('resetSmartCronWarnings')) {
         resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
     }
+    update("user", "Processing_value_tow", "0", "id", $from_id);
     sendmessage($from_id, $textbotlang['users']['extend']['thanks'], $keyboardextendfnished, 'HTML');
     // recordSale تمدید قبلاً در ابتدای مسیر ثبت شده — از ثبت تکراری جلوگیری می‌شود
 
