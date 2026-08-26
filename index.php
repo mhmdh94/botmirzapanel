@@ -1103,6 +1103,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         return;
     }
     update("user", "Processing_value", $username, "id", $from_id);
+    // آزاد کردن قفل تمدید گیرکرده از نسخه قبلی
+    if (isset($user['Processing_value_tow']) && preg_match('/^[0-9]{9,}$/', strval($user['Processing_value_tow']))) {
+        update("user", "Processing_value_tow", "0", "id", $from_id);
+    }
     $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all')");
     $stmt->bindValue(':Location', $nameloc['Service_location']);
     $stmt->execute();
@@ -1185,23 +1189,41 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         return;
     }
 
-    // ضد دابل‌کلیک: قفل کوتاه‌مدت روی کاربر (حداکثر ۶۰ ثانیه)
-    $__now_lock = time();
-    $__lock_ok = false;
-    try {
-        $__lk = $pdo->prepare("UPDATE user SET Processing_value_tow = :n WHERE id = :id AND (
-            Processing_value_tow IS NULL OR Processing_value_tow = '' OR Processing_value_tow = '0'
-            OR (Processing_value_tow REGEXP '^[0-9]+$' AND CAST(Processing_value_tow AS UNSIGNED) < :exp)
-        )");
-        $__lk->execute([':n' => strval($__now_lock), ':id' => $from_id, ':exp' => $__now_lock - 60]);
-        $__lock_ok = ($__lk->rowCount() > 0);
-    } catch (Throwable $e) {
-        $__lock_ok = true; // اگر ستون مشکل داشت، ادامه بده ولی کسر اتمیک حفظ می‌شود
+    // پاک‌سازی قفل قدیمی نسخه قبل (اگر روی Processing_value_tow مانده)
+    if (isset($user['Processing_value_tow']) && preg_match('/^[0-9]{9,}$/', strval($user['Processing_value_tow']))) {
+        update("user", "Processing_value_tow", "0", "id", $from_id);
+        $user['Processing_value_tow'] = '0';
     }
+
+    // ضد دابل‌کلیک با قفل فایل (بدون تداخل با فیلدهای دیتابیس خرید/شارژ)
+    $__lock_path = sys_get_temp_dir() . '/mirza_extend_' . intval($from_id) . '.lock';
+    $__lock_fp = @fopen($__lock_path, 'c+');
+    $__lock_ok = ($__lock_fp && @flock($__lock_fp, LOCK_EX | LOCK_NB));
     if (!$__lock_ok) {
-        sendmessage($from_id, "⏳ درخواست تمدید قبلی هنوز در حال پردازش است. لطفاً چند لحظه صبر کنید.", $keyboard, 'HTML');
-        return;
+        // اگر قفل گیر کرده و بیش از ۹۰ ثانیه مانده، احتمالاً پروسه قبلی کرش کرده
+        $__stale = false;
+        if (is_file($__lock_path) && (time() - intval(@filemtime($__lock_path))) > 90) {
+            @unlink($__lock_path);
+            $__stale = true;
+        }
+        if ($__lock_fp) {
+            @fclose($__lock_fp);
+        }
+        if ($__stale) {
+            $__lock_fp = @fopen($__lock_path, 'c+');
+            $__lock_ok = ($__lock_fp && @flock($__lock_fp, LOCK_EX | LOCK_NB));
+        }
+        if (!$__lock_ok) {
+            if ($__lock_fp) {
+                @fclose($__lock_fp);
+            }
+            sendmessage($from_id, "⏳ درخواست تمدید قبلی هنوز در حال پردازش است. لطفاً چند لحظه صبر کنید.", $keyboard, 'HTML');
+            return;
+        }
     }
+    @ftruncate($__lock_fp, 0);
+    @fwrite($__lock_fp, strval(time()));
+    @fflush($__lock_fp);
 
     $__price_ext = intval($product['price_product']);
     // موجودی را زنده از دیتابیس بخوان (نه از کش ابتدای ریکوئست)
@@ -1209,7 +1231,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $__bal_now = is_array($__bal_row) ? intval($__bal_row['Balance'] ?? 0) : intval($__bal_row);
 
     if ($__bal_now < $__price_ext) {
-        update("user", "Processing_value_tow", "0", "id", $from_id);
+        @flock($__lock_fp, LOCK_UN);
+        @fclose($__lock_fp);
+        @unlink($__lock_path);
         if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
             sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
             step('home', $from_id);
@@ -1234,7 +1258,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $__ded = $pdo->prepare("UPDATE user SET Balance = Balance - :p WHERE id = :id AND CAST(Balance AS SIGNED) >= :p2");
         $__ded->execute([':p' => $__price_ext, ':id' => $from_id, ':p2' => $__price_ext]);
         if ($__ded->rowCount() < 1) {
-            update("user", "Processing_value_tow", "0", "id", $from_id);
+            @flock($__lock_fp, LOCK_UN);
+            @fclose($__lock_fp);
+            @unlink($__lock_path);
             sendmessage($from_id, "⏳ این تمدید در حال پردازش است یا موجودی کافی نیست.", $keyboard, 'HTML');
             return;
         }
@@ -1383,7 +1409,13 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (function_exists('resetSmartCronWarnings')) {
         resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
     }
-    update("user", "Processing_value_tow", "0", "id", $from_id);
+    if (isset($__lock_fp) && is_resource($__lock_fp)) {
+        @flock($__lock_fp, LOCK_UN);
+        @fclose($__lock_fp);
+    }
+    if (!empty($__lock_path) && is_file($__lock_path)) {
+        @unlink($__lock_path);
+    }
     sendmessage($from_id, $textbotlang['users']['extend']['thanks'], $keyboardextendfnished, 'HTML');
     // recordSale تمدید قبلاً در ابتدای مسیر ثبت شده — از ثبت تکراری جلوگیری می‌شود
 
