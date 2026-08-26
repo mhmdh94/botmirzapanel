@@ -14,7 +14,7 @@ require_once '../text.php';
 $ManagePanel = new ManagePanel();
 
 // فقط فاکتورهای تست هنوز active (حداکثر ۱۰ تا در هر اجرا)
-$stmt = $pdo->prepare("SELECT * FROM invoice WHERE (status = 'active' OR Status = 'active') AND name_product = 'usertest' ORDER BY id_invoice ASC LIMIT 10");
+$stmt = $pdo->prepare("SELECT * FROM invoice WHERE (status = 'active' OR Status = 'active') AND name_product = 'usertest' ORDER BY time_sell ASC LIMIT 10");
 try {
     $stmt->execute();
 } catch (Throwable $e) {
