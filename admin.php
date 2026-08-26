@@ -891,6 +891,57 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['admin_section']) {
 if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $setting_panel, 'HTML');
 }
+
+#----------------[ آپدیت ربات از گیتهاب ]------------------#
+if ($text == $textbotlang['Admin']['keyboardadmin']['bot_update']) {
+    if (!function_exists('isMainBotAdmin') || !isMainBotAdmin($from_id)) {
+        // ادمین‌های دیگر هم اگر در لیست باشند فقط ادمین اصلی
+        if (!in_array($from_id, $admin_ids)) {
+            return;
+        }
+        sendmessage($from_id, $textbotlang['Admin']['bot_update']['only_admin'], $setting_panel, 'HTML');
+        return;
+    }
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang['Admin']['bot_update']['yes'], 'callback_data' => 'bot_update_yes'],
+                ['text' => $textbotlang['Admin']['bot_update']['no'], 'callback_data' => 'bot_update_no'],
+            ],
+        ],
+    ]);
+    sendmessage($from_id, $textbotlang['Admin']['bot_update']['confirm'], $kb, 'HTML');
+}
+if ($datain == "bot_update_no") {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['bot_update']['cancelled'], json_encode(['inline_keyboard' => []]));
+}
+if ($datain == "bot_update_yes") {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    if (!function_exists('isMainBotAdmin') || !isMainBotAdmin($from_id)) {
+        Editmessagetext($from_id, $message_id, $textbotlang['Admin']['bot_update']['only_admin'], json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['bot_update']['start'], json_encode(['inline_keyboard' => []]));
+    if (!function_exists('runBotSelfUpdate')) {
+        sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['fail'], 'تابع آپدیت موجود نیست.'), $setting_panel, 'HTML');
+        return;
+    }
+    $result = runBotSelfUpdate();
+    if (!empty($result['ok'])) {
+        $n = isset($result['files']) ? intval($result['files']) : 0;
+        sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['success'], $n), $setting_panel, 'HTML');
+    } else {
+        $err = isset($result['message']) ? $result['message'] : 'نامشخص';
+        sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['fail'], $err), $setting_panel, 'HTML');
+    }
+}
+
+
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['test_account_settings']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard_usertest, 'HTML');

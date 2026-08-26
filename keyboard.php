@@ -200,6 +200,7 @@ $setting_panel = json_encode([
         [['text' => $textbotlang['Admin']['keyboardadmin']['settingscron']], ['text' => $textbotlang['Admin']['keyboardadmin']['test_account_settings']]],
         [['text' => $textbotlang['Admin']['channel']['channelreport']], ['text' => $textbotlang['Admin']['channel']['setting']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['affiliate_settings']]],
+        [['text' => $textbotlang['Admin']['keyboardadmin']['bot_update']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

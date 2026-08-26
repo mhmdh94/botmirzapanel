@@ -1239,6 +1239,20 @@ $textbotlang['Admin']['bot_update']['no'] = "❌ انصراف";
 $textbotlang['Admin']['bot_update']['start'] = "⏳ در حال دانلود و آپدیت... لطفاً صبر کنید.";
 $textbotlang['Admin']['bot_update']['only_admin'] = "❌ فقط ادمین اصلی می‌تواند آپدیت کند.";
 
+$textbotlang['Admin']['bot_update']['success'] = "✅ آپدیت با موفقیت انجام شد.
+
+📁 تعداد فایل به‌روز شده: %s
+🔒 فایل‌های حساس (config و …) حفظ شدند.
+♻️ ربات آماده استفاده است.";
+$textbotlang['Admin']['bot_update']['fail'] = "❌ آپدیت ناموفق بود.
+%s
+
+هیچ فایل حیاتی نباید آسیب دیده باشد. در صورت مشکل از بک‌آپ سرور استفاده کنید.";
+$textbotlang['Admin']['bot_update']['busy'] = "⏳ یک آپدیت دیگر در حال اجراست. چند دقیقه دیگر تلاش کنید.";
+$textbotlang['Admin']['bot_update']['cancelled'] = "❌ آپدیت لغو شد.";
+$textbotlang['Admin']['bot_update']['no_zip'] = "❌ امکان ZipArchive یا دانلود در سرور فعال نیست.";
+
+
 $textbotlang['Admin']['keyboardadmin']['settingscron'] = "🕚 تنظیمات کرون جاب";
 $textbotlang['Admin']['keyboardadmin']['seetingstatus'] = "⚙️ وضعیت قابلیت ها";
 

@@ -2344,3 +2344,290 @@ function ensureFeatureSettingsColumns() {
 }
 
 
+
+
+
+/**
+ * آیا این کاربر ادمین اصلی ربات است؟
+ */
+function isMainBotAdmin($from_id)
+{
+    global $adminnumber, $admin_ids;
+    if (isset($adminnumber) && intval($adminnumber) > 0) {
+        return intval($from_id) === intval($adminnumber);
+    }
+    if (is_array($admin_ids) && count($admin_ids) > 0) {
+        return intval($from_id) === intval($admin_ids[0]);
+    }
+    return false;
+}
+
+/**
+ * فایل‌های محافظت‌شده که هنگام آپدیت هرگز از گیتهاب بازنویسی نمی‌شوند
+ */
+function botUpdateProtectedBasenames()
+{
+    return [
+        'config.php',
+        'config.local.php',
+        '.env',
+        'error_log',
+    ];
+}
+
+function isBotUpdateProtectedFile($basename)
+{
+    $basename = strval($basename);
+    $list = botUpdateProtectedBasenames();
+    if (in_array($basename, $list, true)) {
+        return true;
+    }
+    // config.php.* بک‌آپ‌های محلی
+    if (strpos($basename, 'config.php.') === 0) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * آپدیت امن کد ربات از گیتهاب فورک — فقط فایل‌های غیرحساس
+ * @return array{ok:bool, message:string, files?:int}
+ */
+function runBotSelfUpdate($repoZipUrl = null)
+{
+    $root = realpath(__DIR__);
+    if ($root === false || !is_dir($root)) {
+        return ['ok' => false, 'message' => 'مسیر ربات یافت نشد.'];
+    }
+
+    if (!class_exists('ZipArchive')) {
+        return ['ok' => false, 'message' => 'افزونه ZipArchive روی سرور فعال نیست.'];
+    }
+
+    @set_time_limit(300);
+    @ini_set('max_execution_time', '300');
+    @ini_set('memory_limit', '256M');
+
+    $lockFile = $root . '/.update_lock';
+    $lockFp = @fopen($lockFile, 'c+');
+    if (!$lockFp || !flock($lockFp, LOCK_EX | LOCK_NB)) {
+        if ($lockFp) {
+            fclose($lockFp);
+        }
+        return ['ok' => false, 'message' => 'آپدیت دیگری در حال اجراست یا قفل فایل آزاد نیست.'];
+    }
+
+    $tmpBase = sys_get_temp_dir() . '/mirza_upd_' . getmypid() . '_' . time();
+    $zipPath = $tmpBase . '.zip';
+    $extractDir = $tmpBase . '_ex';
+    $bakDir = $tmpBase . '_bak';
+    $filesUpdated = 0;
+
+    $cleanup = function () use ($zipPath, $extractDir, $bakDir, $lockFp, $lockFile) {
+        $rm = function ($p) {
+            if (is_file($p)) {
+                @unlink($p);
+                return;
+            }
+            if (!is_dir($p)) {
+                return;
+            }
+            $it = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($p, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($it as $f) {
+                $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+            }
+            @rmdir($p);
+        };
+        $rm($zipPath);
+        $rm($extractDir);
+        $rm($bakDir);
+        if (is_resource($lockFp)) {
+            flock($lockFp, LOCK_UN);
+            fclose($lockFp);
+        }
+        @unlink($lockFile);
+    };
+
+    try {
+        $url = $repoZipUrl ?: 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
+
+        // دانلود
+        $zipData = false;
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_CONNECTTIMEOUT => 20,
+                CURLOPT_TIMEOUT => 120,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_USERAGENT => 'MirzaBot-SelfUpdate/1.0',
+            ]);
+            $zipData = curl_exec($ch);
+            $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+            $cerr = curl_error($ch);
+            curl_close($ch);
+            if ($zipData === false || $code < 200 || $code >= 300) {
+                $cleanup();
+                return ['ok' => false, 'message' => 'دانلود ناموفق (HTTP ' . $code . '). ' . $cerr];
+            }
+        } else {
+            $ctx = stream_context_create(['http' => ['timeout' => 120, 'header' => "User-Agent: MirzaBot-SelfUpdate/1.0\r\n"], 'ssl' => ['verify_peer' => true]]);
+            $zipData = @file_get_contents($url, false, $ctx);
+            if ($zipData === false) {
+                $cleanup();
+                return ['ok' => false, 'message' => 'دانلود با file_get_contents ناموفق بود.'];
+            }
+        }
+
+        if (strlen($zipData) < 1000) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'فایل دانلودی خیلی کوچک یا نامعتبر است.'];
+        }
+
+        if (@file_put_contents($zipPath, $zipData) === false) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'نوشتن فایل zip موقت ممکن نشد.'];
+        }
+
+        @mkdir($extractDir, 0755, true);
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) !== true) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'باز کردن zip ناموفق بود.'];
+        }
+        if (!$zip->extractTo($extractDir)) {
+            $zip->close();
+            $cleanup();
+            return ['ok' => false, 'message' => 'استخراج zip ناموفق بود.'];
+        }
+        $zip->close();
+
+        // پیدا کردن ریشه استخراج‌شده
+        $srcRoot = null;
+        $entries = @scandir($extractDir);
+        if (is_array($entries)) {
+            foreach ($entries as $e) {
+                if ($e === '.' || $e === '..') {
+                    continue;
+                }
+                $p = $extractDir . DIRECTORY_SEPARATOR . $e;
+                if (is_dir($p) && is_file($p . '/index.php') && is_file($p . '/functions.php')) {
+                    $srcRoot = $p;
+                    break;
+                }
+            }
+        }
+        if ($srcRoot === null && is_file($extractDir . '/index.php')) {
+            $srcRoot = $extractDir;
+        }
+        if ($srcRoot === null || !is_file($srcRoot . '/index.php') || !is_file($srcRoot . '/admin.php')) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'ساختار مخزن نامعتبر است (index/admin یافت نشد).'];
+        }
+
+        // بک‌آپ فایل‌های محافظت‌شده فعلی
+        @mkdir($bakDir, 0755, true);
+        foreach (botUpdateProtectedBasenames() as $prot) {
+            $cur = $root . DIRECTORY_SEPARATOR . $prot;
+            if (is_file($cur)) {
+                @copy($cur, $bakDir . DIRECTORY_SEPARATOR . $prot);
+            }
+        }
+        // بک‌آپ config.php.*
+        foreach (glob($root . '/config.php.*') ?: [] as $cf) {
+            if (is_file($cf)) {
+                @copy($cf, $bakDir . DIRECTORY_SEPARATOR . basename($cf));
+            }
+        }
+
+        // کپی فایل‌ها (به‌جز محافظت‌شده)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($srcRoot, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($iterator as $item) {
+            $rel = substr($item->getPathname(), strlen($srcRoot) + 1);
+            if ($rel === false || $rel === '') {
+                continue;
+            }
+            // نرمال‌سازی جداکننده
+            $rel = str_replace('\\', '/', $rel);
+            $base = basename($rel);
+
+            // هرگز پوشه .git و installer موقت را اجباری نکن — installer از گیتهاب می‌تواند بیاید
+            if (strpos($rel, '.git/') === 0 || $rel === '.git') {
+                continue;
+            }
+            if (isBotUpdateProtectedFile($base)) {
+                continue;
+            }
+
+            $dest = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+            if ($item->isDir()) {
+                if (!is_dir($dest)) {
+                    @mkdir($dest, 0755, true);
+                }
+                continue;
+            }
+            if (!$item->isFile()) {
+                continue;
+            }
+            $destDir = dirname($dest);
+            if (!is_dir($destDir)) {
+                @mkdir($destDir, 0755, true);
+            }
+            if (@copy($item->getPathname(), $dest)) {
+                $filesUpdated++;
+            }
+        }
+
+        // بازگردانی فایل‌های حساس (حتماً)
+        foreach (scandir($bakDir) ?: [] as $bf) {
+            if ($bf === '.' || $bf === '..') {
+                continue;
+            }
+            $srcB = $bakDir . DIRECTORY_SEPARATOR . $bf;
+            if (is_file($srcB)) {
+                @copy($srcB, $root . DIRECTORY_SEPARATOR . $bf);
+            }
+        }
+
+        // اطمینان از وجود config.php
+        if (!is_file($root . '/config.php')) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'خطای بحرانی: config.php پس از آپدیت موجود نیست. از بک‌آپ سرور بازگردانی کنید.'];
+        }
+
+        // حذف installer اگر آمده
+        if (is_dir($root . '/installer')) {
+            // اختیاری — ربات خودش installer را در index پاک می‌کند
+        }
+
+        $cleanup();
+        return [
+            'ok' => true,
+            'message' => 'ok',
+            'files' => $filesUpdated,
+        ];
+    } catch (Throwable $e) {
+        // تلاش برای restore از bak
+        if (is_dir($bakDir)) {
+            foreach (scandir($bakDir) ?: [] as $bf) {
+                if ($bf === '.' || $bf === '..') {
+                    continue;
+                }
+                $srcB = $bakDir . DIRECTORY_SEPARATOR . $bf;
+                if (is_file($srcB)) {
+                    @copy($srcB, $root . DIRECTORY_SEPARATOR . $bf);
+                }
+            }
+        }
+        $cleanup();
+        return ['ok' => false, 'message' => 'خطا: ' . $e->getMessage()];
+    }
+}
+
