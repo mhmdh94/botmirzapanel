@@ -329,6 +329,17 @@ if ($text == "/start") {
 }
 #-----------/new (buy service)------------#
 if ($text == "/new") {
+    $__st_buy_new = select("setting", "*", null, null, "select");
+    $__buy_flag_new = '1';
+    if (is_array($__st_buy_new) && array_key_exists('status_buy', $__st_buy_new) && $__st_buy_new['status_buy'] !== null && $__st_buy_new['status_buy'] !== '') {
+        $__buy_flag_new = strval($__st_buy_new['status_buy']);
+    } elseif (isset($setting['status_buy']) && $setting['status_buy'] !== null && $setting['status_buy'] !== '') {
+        $__buy_flag_new = strval($setting['status_buy']);
+    }
+    if ($__buy_flag_new === '0') {
+        sendmessage($from_id, $textbotlang['users']['sell']['buy_disabled'], $keyboard, 'HTML');
+        return;
+    }
     $locationproduct = select("marzban_panel", "*", "status", "activepanel", "count");
     if ($locationproduct == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], null, 'HTML');
@@ -2650,6 +2661,10 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         step('getprice', $from_id);
     }
 } elseif ($datain == "balpkg_custom") {
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        return;
+    }
     $depLim = getDepositLimits();
     deletemessage($from_id, $message_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
@@ -2657,6 +2672,10 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
     step('getprice', $from_id);
 } elseif (preg_match('/^balpkg_(.+)$/', strval($datain), $m_bp) && $datain != "balpkg_custom") {
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        return;
+    }
     $pkg = getBalancePackageById($m_bp[1]);
     if (!$pkg) {
         sendmessage($from_id, "❌ پکیج یافت نشد.", $keyboard, 'HTML');
@@ -2687,6 +2706,11 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     sendmessage($from_id, $info, $step_payment, 'HTML');
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "getprice") {
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
     if (!is_numeric($text))
         return sendmessage($from_id, $textbotlang['users']['Balance']['errorprice'], null, 'HTML');
     $depLim = getDepositLimits();

@@ -2278,10 +2278,10 @@ function cleanupExpiredUnpaidInvoices($id_user = null)
         $ttl = getUnpaidInvoiceTtlMinutes() * 60;
         $cutoff = time() - $ttl;
         if ($id_user !== null) {
-            $st = $pdo->prepare("DELETE FROM invoice WHERE status = 'unpaid' AND id_user = :u AND time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) > 0 AND CAST(time_sell AS UNSIGNED) < :c");
+            $st = $pdo->prepare("DELETE FROM invoice WHERE (status = 'unpaid' OR Status = 'unpaid') AND id_user = :u AND time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) > 0 AND CAST(time_sell AS UNSIGNED) < :c");
             $st->execute([':u' => $id_user, ':c' => $cutoff]);
         } else {
-            $st = $pdo->prepare("DELETE FROM invoice WHERE status = 'unpaid' AND time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) > 0 AND CAST(time_sell AS UNSIGNED) < :c");
+            $st = $pdo->prepare("DELETE FROM invoice WHERE (status = 'unpaid' OR Status = 'unpaid') AND time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) > 0 AND CAST(time_sell AS UNSIGNED) < :c");
             $st->execute([':c' => $cutoff]);
         }
         return $st->rowCount();
