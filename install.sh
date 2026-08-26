@@ -111,8 +111,8 @@ check_bot_status() {
 function show_logo() {
     clear
     echo -e "\033[1;34m╔════════════════════════════════════════════╗\033[0m"
-    echo -e "\033[1;34m║\033[0m  \033[1;36mMirza Bot Panel\033[0m  —  \033[33mFork mhmdh94\033[0m       \033[1;34m║\033[0m"
-    echo -e "\033[1;34m║\033[0m  GitHub: github.com/mhmdh94/botmirzapanel \033[1;34m║\033[0m"
+    echo -e "\033[1;34m║\033[0m  \033[1;36mMirza Bot Panel\033[0m  —  \033[33mFork mhmd\033[0m       \033[1;34m║\033[0m"
+    echo -e "\033[1;34m║\033[0m  GitHub: - \033[1;34m║\033[0m"
     echo -e "\033[1;34m╚════════════════════════════════════════════╝\033[0m"
     echo ""
     echo -e "\033[1;36mInstallation Status:\033[0m"
