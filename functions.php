@@ -562,6 +562,161 @@ function formatPanelErrorMsg($msg)
  * (با مقایسه موجودی قبل/بعد یا مبلغ مشخص)
  * @return int مبلغ برگشتی (0 اگر برنگشت)
  */
+
+/**
+ * قفل فایل کوتاه‌مدت برای عملیات پولی (خرید/تمدید/حجم) — بدون تداخل با فیلدهای user
+ * @return array{0:resource,1:string}|null
+ */
+function paymentAcquireLock($user_id, $kind = 'pay')
+{
+    $kind = preg_replace('/[^a-z0-9_]/', '', strtolower(strval($kind)));
+    if ($kind === '') {
+        $kind = 'pay';
+    }
+    $path = sys_get_temp_dir() . '/mirza_' . $kind . '_' . intval($user_id) . '.lock';
+    $fp = @fopen($path, 'c+');
+    if (!$fp) {
+        return null;
+    }
+    if (!@flock($fp, LOCK_EX | LOCK_NB)) {
+        $stale = false;
+        if (is_file($path) && (time() - intval(@filemtime($path))) > 90) {
+            @flock($fp, LOCK_UN);
+            @fclose($fp);
+            @unlink($path);
+            $stale = true;
+            $fp = @fopen($path, 'c+');
+            if ($fp && @flock($fp, LOCK_EX | LOCK_NB)) {
+                // ok after stale reclaim
+            } else {
+                if ($fp) {
+                    @fclose($fp);
+                }
+                return null;
+            }
+        } else {
+            @fclose($fp);
+            return null;
+        }
+    }
+    @ftruncate($fp, 0);
+    @fwrite($fp, strval(time()));
+    @fflush($fp);
+    return [$fp, $path];
+}
+
+function paymentReleaseLock($lock)
+{
+    if (!is_array($lock) || count($lock) < 2) {
+        return;
+    }
+    $fp = $lock[0];
+    $path = $lock[1];
+    if (is_resource($fp)) {
+        @flock($fp, LOCK_UN);
+        @fclose($fp);
+    }
+    if (!empty($path) && is_file($path)) {
+        @unlink($path);
+    }
+}
+
+/**
+ * کسر اتمیک موجودی. در موفقیت موجودی جدید، در شکست false
+ */
+function atomicDeductBalance($user_id, $amount)
+{
+    global $pdo;
+    $amount = intval($amount);
+    if ($amount <= 0) {
+        $row = select("user", "Balance", "id", $user_id, "select");
+        return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
+    }
+    try {
+        $st = $pdo->prepare("UPDATE user SET Balance = Balance - :p WHERE id = :id AND CAST(Balance AS SIGNED) >= :p2");
+        $st->execute([':p' => $amount, ':id' => $user_id, ':p2' => $amount]);
+        if ($st->rowCount() < 1) {
+            return false;
+        }
+    } catch (Throwable $e) {
+        return false;
+    }
+    $row = select("user", "Balance", "id", $user_id, "select");
+    return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
+}
+
+/**
+ * افزایش اتمیک موجودی (برگشت وجه)
+ */
+function atomicAddBalance($user_id, $amount)
+{
+    global $pdo;
+    $amount = intval($amount);
+    if ($amount <= 0) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare("UPDATE user SET Balance = Balance + :p WHERE id = :id");
+        $st->execute([':p' => $amount, ':id' => $user_id]);
+    } catch (Throwable $e) {
+        $row = select("user", "Balance", "id", $user_id, "select");
+        $cur = is_array($row) ? intval($row['Balance'] ?? 0) : 0;
+        update("user", "Balance", $cur + $amount, "id", $user_id);
+    }
+    return $amount;
+}
+
+
+
+/**
+ * متن قابل ویرایش از جدول textbot با fallback
+ */
+function ensureEditableStatusTexts()
+{
+    global $pdo, $textbotlang;
+    $defaults = [
+        'msg_buy_disabled' => $textbotlang['users']['sell']['buy_disabled'] ?? "⛔️ فعلا امکان خرید سرویس جدید وجود ندارد.\nلطفا بعداً دوباره تلاش کنید.",
+        'msg_deposit_closed' => $textbotlang['users']['Balance']['deposit_closed'] ?? "⛔️ واریز به حساب بسته است.\nلطفاً بعداً تلاش کنید.",
+        'msg_extend_disabled' => $textbotlang['users']['extend']['disabled'] ?? "⛔️ تمدید سرویس فعلاً غیرفعال است.",
+        'msg_support_disabled' => $textbotlang['users']['support']['disabled'] ?? "⛔️ پشتیبانی فعلاً در دسترس نیست.\nلطفاً بعداً تلاش کنید.",
+    ];
+    foreach ($defaults as $id => $def) {
+        try {
+            $st = $pdo->prepare("SELECT id_text FROM textbot WHERE id_text = ? LIMIT 1");
+            $st->execute([$id]);
+            if (!$st->fetch()) {
+                $ins = $pdo->prepare("INSERT INTO textbot (id_text, text) VALUES (?, ?)");
+                $ins->execute([$id, $def]);
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+    }
+}
+
+function getEditableBotText($id_text, $fallback = '')
+{
+    global $pdo;
+    static $cache = [];
+    $id_text = strval($id_text);
+    if (array_key_exists($id_text, $cache)) {
+        return $cache[$id_text];
+    }
+    try {
+        $st = $pdo->prepare("SELECT text FROM textbot WHERE id_text = ? LIMIT 1");
+        $st->execute([$id_text]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row && isset($row['text']) && strval($row['text']) !== '') {
+            $cache[$id_text] = strval($row['text']);
+            return $cache[$id_text];
+        }
+    } catch (Throwable $e) {
+    }
+    $cache[$id_text] = strval($fallback);
+    return $cache[$id_text];
+}
+
+
 function refundBalanceIfDeducted($user_id, $amount, $balance_before = null)
 {
     $amount = intval($amount);

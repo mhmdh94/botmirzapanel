@@ -79,7 +79,7 @@ $textbotlang['users']['number']['false'] = "❌ شماره دریافت نشد.
 $textbotlang['users']['number']['Warning'] = "⚠️ شماره باید متعلق به همین حساب تلگرام باشد.
 
 👇 دوباره از دکمه <b>☎️ ارسال شماره تلفن</b> در پایین صفحه ارسال کنید.";
-$textbotlang['users']['number']['erroriran'] = "⭕️ شماره موبایل نامعتبر است. فقط شماره های ایرانی مورد قبول می باشد";
+$textbotlang['users']['number']['erroriran'] = "⭕️ شماره موبایل نامعتبر است. فقط شماره های ایرانی مورد قبول می‌باشد";
 $textbotlang['users']['number']['active'] = "✅ شماره موبایل شما با موفقیت تایید شد";
 $textbotlang['users']['number']['Confirming'] = "📞 برای احراز هویت باید شماره موبایل خود را ارسال کنید.
 
@@ -94,22 +94,23 @@ $textbotlang['users']['sell']['service_sell'] = "🛍 اشتراک های خری
 ⚜️ برای مشاهده اطلاعات روی نام کاربری کلیک کنید
 
 ⚠️ توجه: در صورت عدم تمدید، سرویس پس از ۱ هفته از سرور و از لیست سرویس‌های من حذف می‌شود.";
-$textbotlang['users']['sell']['Service-select'] = "🛒 لوکیشن دریافت شد سرویسی که میخواهید خریداری کنید را انتخاب نمایید.";
+$textbotlang['users']['sell']['Service-select'] = "🛒 لوکیشن انتخاب شد.
+سرویس مورد نظر را انتخاب کنید:";
 $textbotlang['users']['sell']['Service-Location'] = "❌ خطا 
         📝 موقعیت سرویس نامعتبر است";
-$textbotlang['users']['sell']['error-product'] = "❌ خطا 
-        📝 محصول انتخابی وجود ندارد";
-$textbotlang['users']['sell']['None-credit'] = "🚨 خطایی در هنگام پرداخت رخ داده است.
-📝 دلیل خطا: موجودی حساب کاربری شما کافی نمی باشد ابتدا باید حساب خود را شارژ کنید
+$textbotlang['users']['sell']['error-product'] = "⚠️ این محصول در دسترس نیست.";
+$textbotlang['users']['sell']['None-credit'] = "⚠️ <b>موجودی کافی نیست</b>
 
-❌ برای شارژ حساب کاربری خود یکی از روش های پرداخت زیر را انتخاب کنید";
-$textbotlang['users']['sell']['ErrorConfig'] = "❌ خطایی در ساخت اشتراک رخ داده است برای رفع مشکل با پشتیبانی در ارتباط باشد.";
-$textbotlang['users']['sell']['selectpayment'] = "📌 یک روش پرداخت از لیست بالا انتخاب نمایید";
+برای تکمیل این خرید ابتدا کیف پول را شارژ کنید.
+یکی از روش‌های پرداخت زیر را انتخاب کنید:";
+$textbotlang['users']['sell']['ErrorConfig'] = "⚠️ ساخت اشتراک انجام نشد.
+لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['sell']['selectpayment'] = "📌 یک روش پرداخت را انتخاب کنید:";
 
 
-$textbotlang['users']['status']['notUsername'] = "⭕️ کاربر عزیز در صورتی که نام کاربری  شما در لیست بالا وجود ندارد. دکمه زیر را کلیک کنید.";
-$textbotlang['users']['status']['notUsernameget'] = "نام کاربری وجود ندارد";
-$textbotlang['users']['status']['SendUsername'] = "نام کاربری خود را ارسال نمایید";
+$textbotlang['users']['status']['notUsername'] = "اگر سرویس‌تان در لیست نیست، از دکمه زیر برای جستجو استفاده کنید.";
+$textbotlang['users']['status']['notUsernameget'] = "نام کاربری پیدا نشد.";
+$textbotlang['users']['status']['SendUsername'] = "نام کاربری سرویس را بفرستید:";
 $textbotlang['users']['status']['active'] = "✅ فعال";
 $textbotlang['users']['status']['limited'] = "🚫 پایان حجم";
 $textbotlang['users']['status']['onhold'] = "⏳ متصل نشده";
@@ -126,10 +127,11 @@ $textbotlang['users']['status']['usedTrafficGb'] = "حجم مصرف شده سر�
 $textbotlang['users']['status']['LastTraffic'] = "حجم کل سرویس :";
 $textbotlang['users']['status']['RemainingVolume'] = "حجم باقی مانده سرویس :";
 $textbotlang['users']['status']['info'] = "📊 اطلاعات سرویس:";
-$textbotlang['users']['status']['error'] = "❌خطایی رخ داده است";
-$textbotlang['users']['status']['error_onhold'] = "❌ شما هنوز به سرویس متصل نشده ابتدا به سرویس خود متصل شدهسپس تمدید را انجام دهید";
-$textbotlang['users']['status']['error2'] = "❌خطایی رخ داده است مراحل را از اول انجام دهید.";
-$textbotlang['users']['status']['usernotfound'] = " ❌ کاربر در سرور وجود ندارد";
+$textbotlang['users']['status']['error'] = "⚠️ خطایی رخ داد. لطفاً دوباره تلاش کنید.";
+$textbotlang['users']['status']['error_onhold'] = "⚠️ هنوز به سرویس متصل نشده‌اید.
+ابتدا یک‌بار متصل شوید، سپس تمدید کنید.";
+$textbotlang['users']['status']['error2'] = "⚠️ خطایی رخ داد. لطفاً مراحل را از اول انجام دهید.";
+$textbotlang['users']['status']['usernotfound'] = "⚠️ این کاربر روی سرور نیست.";
 $textbotlang['users']['status']['getlinksub'] = "🔗  دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
 $textbotlang['users']['status']['backlist'] = "🏠 بازگشت به لیست سرویس ها";
@@ -137,7 +139,7 @@ $textbotlang['users']['status']['backservice'] = "🏠 بازگشت به مشخ�
 $textbotlang['users']['status']['Invalidusername'] = "❌ نام کاربری نامعتبر است.
 🔄 مجددا نام کاربری خود را ارسال کنید";
 $textbotlang['users']['status']['manageService'] = "⚙️ تنظیمات سرویس";
-$textbotlang['users']['status']['manageServicedec'] = "📌 برای تنظیم سرویس یک کانفیگ در پنل خود ساخته و  سرویس هایی که میخواهید فعال باشند. را داخل پنل فعال کرده و نام کاربری کانفیگ را ارسال نمایید";
+$textbotlang['users']['status']['manageServicedec'] = "📌 برای تنظیم سرویس یک کانفیگ در پنل خود ساخته و  سرویس هایی که می‌خواهید فعال باشند. را داخل پنل فعال کرده و نام کاربری کانفیگ را ارسال نمایید";
 $textbotlang['users']['status']['DecManageService '] = "⭕️ در این بخش می توانید سرویس خود را مدیریت کنید";
 $textbotlang['users']['status']['config'] ="🔰 کانفیگ دستی";
 $textbotlang['users']['status']['notconnected'] ="متصل نشده";
@@ -145,106 +147,99 @@ $textbotlang['users']['status']['notconnected'] ="متصل نشده";
 
 $textbotlang['users']['extend']['title'] ="💊 تمدید سرویس";
 $textbotlang['users']['extend']['confirm'] = "تایید تمدید";
-$textbotlang['users']['extend']['thanks'] = "با تشکر از تمدید سرویس خود🙏
+$textbotlang['users']['extend']['thanks'] = "✅ <b>تمدید با موفقیت انجام شد</b>
 
-⭕️تمدید شما با موفقیت انجام شد با تشکر از پرداخت شما
- 
-⬅️ برای بازگشت به لیست سرویس های خود یا مشاهده اطلاعات روی دکمه های زیر کلیک کنید";
-$textbotlang['users']['extend']['error'] = "❌ خطایی رخ داده است برای رفع مشکل با پشتیبانی در ارتباط باشید";
-$textbotlang['users']['extend']['error2'] = "❌ خطایی در تمدید سرویس رخ داده است. مراحل تمدید را از اول انجام دهید.";
+از پرداخت شما متشکریم.
+برای مشاهده سرویس یا بازگشت به لیست، از دکمه‌های زیر استفاده کنید.";
+$textbotlang['users']['extend']['error'] = "⚠️ خطایی رخ داد. لطفاً با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['extend']['error2'] = "⚠️ تمدید انجام نشد. لطفاً مراحل را از اول انجام دهید.";
 $textbotlang['users']['extend']['selectservice'] = " 🛍 محصول خود را برای تمدید انتخاب نمایید";
-$textbotlang['users']['extend']['invoicExtend'] = "🧾 فاکتور تمدید شما برای نام کاربری %s ایجاد شد.
-            
-🛍 نام محصول :  %s
-مبلغ تمدید :  %s
-مدت زمان تمدید : %s روز
-حجم تمدید : %s گیگ
-            
-✅ برای تایید و تمدید سرویس روی دکمه زیر کلیک کنید
-            
-❌ برای تمدید باید کیف پول خود را شارژ کنید.";
+$textbotlang['users']['extend']['invoicExtend'] = "🧾 <b>پیش‌فاکتور تمدید</b>
+
+👤 نام کاربری: <code>%s</code>
+📦 محصول: %s
+💰 مبلغ: <b>%s</b> تومان
+📆 مدت: %s روز
+📊 حجم: %s گیگ
+
+✅ برای تأیید و تمدید، دکمه زیر را بزنید.
+⚠️ در صورت کمبود موجودی، ابتدا کیف پول را شارژ کنید.";
 
 
 $textbotlang['users']['buy']['errorInCreate'] = "خطا در ساخت کانفیگ
 ✍️ دلیل خطا : 
 %s
-آیدی کابر : %s
+آیدی کاربر : %s
 نام کاربری کاربر : @%s";
-$textbotlang['users']['buy']['createservicetest'] = "✅ سرویس با موفقیت ایجاد شد
-    
-👤 نام کاربری سرویس : <code>%s</code>
-🌿 نام سرویس: تست
-‏🇺🇳 لوکیشن: %s
-⏳ مدت زمان: %s ساعت
-🗜 حجم سرویس:  %s مگابایت
-    
-لینک اتصال:
+$textbotlang['users']['buy']['createservicetest'] = "✅ <b>اکانت تست ساخته شد</b>
+
+👤 نام کاربری: <code>%s</code>
+📍 لوکیشن: %s
+⏳ مدت: %s ساعت
+📊 حجم: %s مگابایت
+
+🔗 لینک:
 <code>%s</code>
+<code>%s</code>";
+$textbotlang['users']['buy']['createservicewg'] = "✅ <b>اکانت تست ساخته شد</b>
+
+👤 نام کاربری: <code>%s</code>
+📍 لوکیشن: %s
+⏳ مدت: %s ساعت
+📊 حجم: %s مگابایت
+
+📚 راهنمای اتصال را از دکمه زیر ببینید.";
+$textbotlang['users']['buy']['createservice_mikrotik_test'] = "✅ <b>اکانت تست ساخته شد</b>
+
+👤 نام کاربری: <code>%s</code>
+🔑 رمز: <code>%s</code>
+📍 لوکیشن: %s
+⏳ مدت: %s ساعت
+📊 حجم: %s مگابایت
+
+📚 راهنمای اتصال را از دکمه زیر ببینید.";
+$textbotlang['users']['buy']['createservicewgbuy'] = "✅ <b>سرویس فعال شد</b>
+
+👤 نام کاربری: <code>%s</code>
+📦 محصول: %s
+📍 لوکیشن: %s
+📆 مدت: %s روز
+📊 حجم: %s گیگ
+
+📚 راهنمای اتصال را از دکمه زیر ببینید.";
+$textbotlang['users']['buy']['createservice_mikrotik_buy'] = "✅ <b>سرویس فعال شد</b>
+
+👤 نام کاربری: <code>%s</code>
+🔑 رمز: <code>%s</code>
+📦 محصول: %s
+📍 لوکیشن: %s
+📆 مدت: %s روز
+📊 حجم: %s گیگ
+
+📚 راهنمای اتصال را از دکمه زیر ببینید.";
+$textbotlang['users']['buy']['createservice'] = "✅ <b>سرویس فعال شد</b>
+
+👤 نام کاربری: <code>%s</code>
+📦 محصول: %s
+📍 لوکیشن: %s
+📆 مدت: %s روز
+📊 حجم: %s گیگ
+
+🔗 لینک:
 <code>%s</code>
-    
-📚 راهنمای اتصال به سرویس را از طریق کلیک کردن دکمه زیر مطالعه بفرمایید";
-$textbotlang['users']['buy']['createservicewg'] = "✅ سرویس با موفقیت ایجاد شد
-    
-👤 نام کاربری سرویس : <code>%s</code>
-🌿 نام سرویس: تست
-‏🇺🇳 لوکیشن: %s
-⏳ مدت زمان: %s ساعت
-🗜 حجم سرویس:  %s مگابایت
-    
-📚 راهنمای اتصال به سرویس را از طریق کلیک کردن دکمه زیر مطالعه بفرمایید";
-$textbotlang['users']['buy']['createservice_mikrotik_test'] = "✅ سرویس با موفقیت ایجاد شد
-    
-👤 نام کاربری سرویس : <code>%s</code>
-🔑 رمز عبور سرویس : <code>%s</code>
-🌿 نام سرویس: تست
-‏🇺🇳 لوکیشن: %s
-⏳ مدت زمان: %s ساعت
-🗜 حجم سرویس:  %s مگابایت
-    
-📚 راهنمای اتصال به سرویس را از طریق کلیک کردن دکمه زیر مطالعه بفرمایید";
-$textbotlang['users']['buy']['createservicewgbuy'] = "✅ سرویس با موفقیت ایجاد شد
-    
-👤 نام کاربری سرویس : <code>%s</code>
-🌿 نام سرویس: %s
-‏🇺🇳 لوکیشن: %s
-⏳ مدت زمان: %s روز
-🗜 حجم سرویس:  %s گیگابایت
-    
-📚 راهنمای اتصال به سرویس را از طریق کلیک کردن دکمه زیر مطالعه بفرمایید";
-$textbotlang['users']['buy']['createservice_mikrotik_buy'] = "✅ سرویس با موفقیت ایجاد شد
-    
-👤 نام کاربری سرویس : <code>%s</code>
-🔑 رمز عبور سرویس : <code>%s</code>
-🌿 نام سرویس: %s
-‏🇺🇳 لوکیشن: %s
-⏳ مدت زمان: %s روز
-🗜 حجم سرویس:  %s گیگابایت
-    
-📚 راهنمای اتصال به سرویس را از طریق کلیک کردن دکمه زیر مطالعه بفرمایید";
-$textbotlang['users']['buy']['createservice'] = "✅ سرویس با موفقیت ایجاد شد
-    
-👤 نام کاربری سرویس : <code>%s</code>
-🌿 نام سرویس: %s
-‏🇺🇳 لوکیشن: %s
-⏳ مدت زمان: %s روز
-🗜 حجم سرویس:  %s گیگابایت
-    
-لینک اتصال:
-<code>%s</code>
-<code>%s</code>
-    
-📚 راهنمای اتصال به سرویس را از طریق کلیک کردن دکمه زیر مطالعه بفرمایید";
+<code>%s</code>";
 $textbotlang['users']['buy']['selectService'] = "🛍 برای خرید اشتراک سرویس مدنظر خود را انتخاب کنید
 لوکیشن سرویس  : %s";
-$textbotlang['users']['buy']['invoicebuy'] = "📇 پیش فاکتور شما:
+$textbotlang['users']['buy']['invoicebuy'] = "📇 <b>پیش‌فاکتور خرید</b>
+
 👤 نام کاربری: <code>%s</code>
-🔐 نام سرویس: %s
-📆 مدت اعتبار: %s روز
-💶 قیمت: %s تومان
-👥 حجم اکانت: %s گیگ
-💵 موجودی کیف پول شما : %s
-    
-💰 سفارش شما آماده پرداخت است.  ";
+📦 محصول: %s
+📆 اعتبار: %s روز
+💰 مبلغ: <b>%s</b> تومان
+📊 حجم: %s گیگ
+💵 موجودی فعلی: %s تومان
+
+✅ برای پرداخت روی دکمه زیر بزنید.";
 $textbotlang['users']['buy']['payandGet'] = "💰 پرداخت و دریافت سرویس";
 $textbotlang['users']['buy']['discount'] = "🎁 ثبت کد تخفیف";
 $textbotlang['users']['buy']['configwg'] = "⚙️ کانفیگ شما";
@@ -252,9 +247,9 @@ $textbotlang['users']['buy']['configwg'] = "⚙️ کانفیگ شما";
 
 
 
-$textbotlang['users']['category']['NotFound'] = "❌ دسته بندی برای نمایش یافت نشد.";
-$textbotlang['users']['category']['selectCategory'] = "📌 دسته بندی مورد نظر خود را انتخاب نمایید.";
-$textbotlang['users']['category']['error'] = "❌ خطایی رخ داده است مراحل خرید را از اول انجام دهید.";
+$textbotlang['users']['category']['NotFound'] = "❌ دسته‌بندی‌ای برای نمایش نیست.";
+$textbotlang['users']['category']['selectCategory'] = "📌 دسته مورد نظر را انتخاب کنید:";
+$textbotlang['users']['category']['error'] = "⚠️ خطایی رخ داد. خرید را از اول انجام دهید.";
 
 
 $textbotlang['users']['changetext']['set_start_text'] = "تنظیم متن شروع";
@@ -278,25 +273,26 @@ $textbotlang['users']['Extra_volume']['SetPrice'] = "⭕️ قیمتی که می
 قیمت فعلی :";
 $textbotlang['users']['Extra_volume']['ChangedPrice'] = "✅ مبلغ با موفقیت ذخیره گردید.";
 $textbotlang['users']['Extra_volume']['sellextra'] = "➕ خرید حجم اضافه";
-$textbotlang['users']['Extra_volume']['extraadded'] = "✅ حجم با موفقیت به سرویس شما اضافه گردید.";
+$textbotlang['users']['Extra_volume']['extraadded'] = "✅ <b>حجم اضافه شد</b>\nحجم با موفقیت به سرویس شما اضافه شد.";
 $textbotlang['users']['Extra_volume']['extracheck'] = "تایید و دریافت حجم اضافه";
-$textbotlang['users']['Extra_volume']['invalidprice'] = "حداقل حجم 1 گیگابایت می باشد";
-$textbotlang['users']['Extra_volume']['VolumeValue'] = "⭕️ مقدار حجمی که میخواهید خریداری کنید را ارسال کنید.
-    
-⚠️ هر گیگ حجم اضافه  %s است";
-$textbotlang['users']['Extra_volume']['invoiceExtraVolume'] = "📇 فاکتور خرید حجم اضافه برای شما ایجاد شد.
-    
-💰 قیمت هر گیگابایت حجم اضافه :  %s تومان
-📝 مبلغ  فاکتور شما :  %s تومان
-📥 حجم اضافه درخواستی : %s  گیگابایت
+$textbotlang['users']['Extra_volume']['invalidprice'] = "⚠️ حداقل حجم ۱ گیگابایت است.";
+$textbotlang['users']['Extra_volume']['VolumeValue'] = "📊 حجم مورد نظر را به گیگابایت بفرستید (حداقل ۱).
 
-✅ جهت پرداخت و اضافه شدن حجم، روی دکمه زیر کلیک کنید.";
+قیمت هر گیگ: <b>%s</b> تومان";
+$textbotlang['users']['Extra_volume']['invoiceExtraVolume'] = "📇 <b>پیش‌فاکتور حجم اضافه</b>
+
+💰 قیمت هر گیگ: %s تومان
+💵 مبلغ کل: <b>%s</b> تومان
+📊 حجم درخواستی: <b>%s</b> گیگ
+
+✅ برای پرداخت و افزودن حجم، دکمه زیر را بزنید.";
 
 
 
 
 $textbotlang['users']['usertest']['limitwarning'] = "⚠️ محدودیت ساخت اشتراک تست شما به پایان رسید.";
-$textbotlang['users']['usertest']['errorcreat'] = "❌ خطایی در ساخت اشتراک رخ داده است برای رفع مشکل با پشتیبانی در ارتباط باشد.";
+$textbotlang['users']['usertest']['errorcreat'] = "⚠️ ساخت اکانت تست انجام نشد.
+لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['usertest']['iduser'] = "آیدی عددی کاربر";
 $textbotlang['users']['usertest']['phonenumber'] = "شماره تلفن کاربر";
 $textbotlang['users']['usertest']['namepanel'] = "نام پنل";
@@ -332,21 +328,21 @@ $textbotlang['users']['Balance']['errorpricelimit'] = "❌ خطا
 💬 مبلغ باید حداقل %s و حداکثر %s تومان باشد";
 $textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت خود را انتخاب نمایید";
 $textbotlang['users']['Balance']['zarinpal'] = "❌ خطا 
-    کمترین مبلغ برای  پرداخت در این درگاه 5000 تومان می باشد.";
+    کمترین مبلغ برای  پرداخت در این درگاه 5000 تومان می‌باشد.";
 $textbotlang['users']['Balance']['linkpayments'] = "درحال ساخت لینک پرداخت...";
 $textbotlang['users']['Balance']['payments'] = "پرداخت";
 $textbotlang['users']['Balance']['changeto'] = "❌ خطا 
-    کمترین مبلغ برای  پرداخت در این درگاه 2 ترون می باشد";
+    کمترین مبلغ برای  پرداخت در این درگاه 2 ترون می‌باشد";
 $textbotlang['users']['Balance']['errorLinkPayment'] = "❌ خطایی در ساخت لینک پرداخت رخ داده است برای رفع  با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['Balance']['reject_pay']  = "❌ رد پرداخت";
 $textbotlang['users']['Balance']['Confirmpayadmin']  = "⭕️  پرداخت از قبل تایید شده است";
 $textbotlang['users']['Balance']['finished'] = "پزداخت شما با موفقیت تایید شد";
-$textbotlang['users']['Balance']['sending'] = "پرداخت دریافت شده و درحال بررسی می باشد لطفا منتظر بمانید";
+$textbotlang['users']['Balance']['sending'] = "پرداخت دریافت شده و درحال بررسی می‌باشد لطفا منتظر بمانید";
 $textbotlang['users']['Balance']['expired'] = "زمان لینک پرداخت منقضی شده و قابل بررسی نیست";
 $textbotlang['users']['Balance']['refunded'] = "مبلغ به کیف پول شما بازگشته است";
 $textbotlang['users']['Balance']['waiting'] = "در انتظار تایید پرداخت";
 $textbotlang['users']['Balance']['Failed'] = "⭕️ پرداخت شما تایید نگردیده است";
-$textbotlang['users']['Balance']['Confirmpay']  = "✅ کاربر گرامی پرداخت شما با موفقیت انجام شد و مبلع پرداختی به موجودی شما اضافه گردید";
+$textbotlang['users']['Balance']['Confirmpay'] = "✅ <b>پرداخت تأیید شد</b>\nمبلغ به موجودی کیف پول شما اضافه شد.";
 $textbotlang['users']['Balance']['Invalid-receipt'] = "رسید نامعتبر است رسید باید فقط عکس باشد";
 $textbotlang['users']['Balance']['Confirmpaying']  = "✅ تایید پرداخت";
 $textbotlang['users']['Balance']['Send-receipt'] ="🚀 رسید پرداخت  شما ارسال شد پس از تایید توسط مدیریت مبلغ به کیف پول شما واریز خواهد شد لطفا صبور باشید";
@@ -374,73 +370,68 @@ $textbotlang['users']['removeconfig']['rejectremove'] = "❌عدم تایید ح
 $textbotlang['users']['removeconfig']['accepetrequest'] = "✅ درخواست شما ارسال گردید پس از بررسی مدیریت نتیجه به شما اطلاع رسانی خواهد شد";
 $textbotlang['users']['status']['notusername'] = "❌ امکان حذف سرویس وجود ندارد.";
 $textbotlang['users']['status']['errorexits'] = "❌ یک درخواست از قبل ثبت شده است لطفا منتظر بمانید تا درخواست قبلی بررسی سپس درخواست جدید ارسال کنید.";
-$textbotlang['users']['status']['descriptions_removeservice'] = " با کلیک بر روی دکمه \"✅ درخواست حذف سرویس را دارم\"، درخواست حذف سرویس شما به مدیریت ارسال خواهد شد و پس از بررسی، سرویس شما کنسل خواهد شد.\n\n❌ در صورت تأیید مدیریت، مبلغ مصرفی باقی‌مانده به کیف پول شما واریز خواهد شد.\n\nمتشکریم که از خدمات ما استفاده می‌کنید.";
-$textbotlang['users']['status']['exitsrequsts'] = "❌ شما یک درخواست ثبت شده دارید منتظر بررسی درخواست ثبت شده باشید بعد از بررسی می توانید درخواست حذف خود را ثبت کنید";
-$textbotlang['users']['status']['sendrequestsremove'] ="📌 با کلیک بر روی دکمه \"✅ درخواست حذف سرویس را دارم\"، درخواست حذف سرویس شما به مدیریت ارسال خواهد شد و پس از بررسی، سرویس شما کنسل خواهد شد.\n\n❌ در صورت تأیید مدیریت، مبلغ مصرفی باقی‌مانده به کیف پول شما واریز خواهد شد.\n\nمتشکریم که از خدمات ما استفاده می‌کنید.";
+$textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید درخواست، حذف سرویس برای بررسی به مدیریت ارسال می‌شود.
+
+در صورت موافقت، مبلغ باقی‌مانده (طبق نظر ادمین) به کیف پول برمی‌گردد.";
+$textbotlang['users']['status']['exitsrequsts'] = "⚠️ یک درخواست حذف باز دارید.
+بعد از بررسی می‌توانید درخواست جدید ثبت کنید.";
+$textbotlang['users']['status']['sendrequestsremove'] ="درخواست حذف ثبت شد و برای مدیریت ارسال گردید.
+تا بررسی نهایی صبر کنید.";
 $textbotlang['users']['status']['RemoveSerivecbtn'] = "🗑 حذف سرویس";
-$textbotlang['users']['status']['InfoSerivceDisable'] = "وضعیت سرویس : %s
-نام کاربری سرویس : <code>%s</code>
-لوکیشن :%s
-کد سرویس:%s
-    
-♾ حجم سرویس : %s
-📥 حجم مصرفی : %s
+$textbotlang['users']['status']['InfoSerivceDisable'] = "وضعیت: %s
+👤 نام کاربری: <code>%s</code>
+📍 لوکیشن: %s
+🆔 کد سرویس: <code>%s</code>
 
-📅 فعال تا تاریخ : %s (%s)";
-$textbotlang['users']['status']['InfoSerivceActive'] = "وضعیت سرویس : %s
-نام کاربری سرویس : <code>%s</code>
-لوکیشن :%s
-کد سرویس:%s
-    
-🟢 اخرین زمان اتصال شما : %s
-    
-♾ حجم سرویس : %s
-📥 حجم مصرفی : %s
+📊 حجم کل: %s
+📥 مصرف: %s
+📅 تا تاریخ: %s (%s)";
+$textbotlang['users']['status']['InfoSerivceActive'] = "وضعیت: %s
+👤 نام کاربری: <code>%s</code>
+📍 لوکیشن: %s
+🆔 کد سرویس: <code>%s</code>
 
-📅 فعال تا تاریخ : %s (%s)
-    
-🚫 برای تغییر لینک و قطع دسترسی دیگران کافیست روی گزینه ' تغییر لینک اتصال ' کلیک کنید.";
-$textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "وضعیت سرویس : %s
-نام کاربری سرویس : <code>%s</code>
-رمز عبور سرویس: %s
-لوکیشن :%s
-کد سرویس:%s
-    
-♾ حجم سرویس : %s
-📥 حجم مصرفی : %s
+🟢 آخرین اتصال: %s
+📊 حجم کل: %s
+📥 مصرف: %s
+📅 تا تاریخ: %s (%s)
 
-📅 فعال تا تاریخ : %s (%s)
-    
-🚫 برای تغییر لینک و قطع دسترسی دیگران کافیست روی گزینه ' تغییر لینک اتصال ' کلیک کنید.";
-$textbotlang['users']['status']['RequestRemove'] = "✅  درخواست حذف سرویس را دارم";
-$textbotlang['users']['status']['RemovedService'] = "📌 سرویس با موفقیت حذف شد";
-$textbotlang['users']['status']['RequestInfoRemove'] = "سلام ادمین 👋
-            
-📌 یک درخواست حذف سرویس  توسط کاربر برای شما ارسال شده است. لطفا بررسی کرده و در صورت درست بودن و موافقت تایید کنید. 
-⚠️ نکات تایید :
-1 -  مبلغ قابل بازگشت به کاربر توسط شما تعیین خواهد شد.
-            
-            
-📊 اطلاعات سرویس کاربر :
-آیدی عددی کاربر : %s
-نام کاربری کاربر : @%s
-نام کاربری کانفیگ : %s
-وضعیت سرویس : %s
-لوکیشن : %s
-کد سرویس:%s
-    
-📥 حجم مصرفی : %s
-♾ حجم سرویس : %s
-🪫 حجم باقی مانده : %s
-📅 فعال تا تاریخ : %s (%s)";
-$textbotlang['users']['status']['residaccepted'] = "این درخواست توسط ادمین دیگری بررسی شده است";
-$textbotlang['users']['status']['acceptrequest'] = "📌 درخواست رد کردن حذف با موفقیت ثبت شد دلیل عدم تایید را ارسال کنید";
-$textbotlang['users']['status']['acceptrequestnote'] = "✅ با موفقیت ثبت گردید";
-$textbotlang['users']['status']['rejectsendtouser'] = "❌ کاربری گرامی درخواست حذف شما با نام کاربری %s موافقت نگردید دلیل عدم تایید : %s";
-$textbotlang['users']['status']['getpriceforadd'] = "💰 مقدار مبلغی که میخواهید به موجودی کاربر اضافه شود را ارسال کنید.";
-$textbotlang['users']['status']['addedbalanceremove'] = "💰کاربر گرامی مبلغ %s تومان به موجودی شما اضافه گردید.";
-$textbotlang['users']['status']['acceptrequest'] = "✅ کاربری گرامی درخواست حذف شما با نام کاربری  %s موافقت گردید.";
-$textbotlang['users']['status']['rejectrequest'] = "❌ درخواست حذف تایید شد دلیل حذف را ارسال کنید.";
+💡 برای قطع دسترسی دیگران از «تغییر لینک اتصال» استفاده کنید.";
+$textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "وضعیت: %s
+👤 نام کاربری: <code>%s</code>
+🔑 رمز: <code>%s</code>
+📍 لوکیشن: %s
+🆔 کد سرویس: <code>%s</code>
+
+📊 حجم کل: %s
+📥 مصرف: %s
+📅 تا تاریخ: %s (%s)
+
+💡 برای قطع دسترسی دیگران از «تغییر لینک اتصال» استفاده کنید.";
+$textbotlang['users']['status']['RequestRemove'] = "✅ درخواست حذف سرویس";
+$textbotlang['users']['status']['RemovedService'] = "✅ سرویس با موفقیت حذف شد.";
+$textbotlang['users']['status']['RequestInfoRemove'] = "🗑 <b>درخواست حذف سرویس</b>
+
+🆔 کاربر: <code>%s</code>
+👤 یوزرنیم: @%s
+🔑 کانفیگ: <code>%s</code>
+📊 وضعیت: %s
+📍 لوکیشن: %s
+🆔 کد: <code>%s</code>
+
+📥 مصرف: %s | 📊 کل: %s | 🪫 باقی: %s
+📅 تا: %s (%s)
+
+⚠️ مبلغ بازگشت را شما تعیین می‌کنید.";
+$textbotlang['users']['status']['residaccepted'] = "این درخواست قبلاً بررسی شده است.";
+$textbotlang['users']['status']['acceptrequest'] = "دلیل رد درخواست حذف را بفرستید:";
+$textbotlang['users']['status']['acceptrequestnote'] = "✅ ثبت شد.";
+$textbotlang['users']['status']['rejectsendtouser'] = "❌ درخواست حذف سرویس <code>%s</code> پذیرفته نشد.
+✍️ دلیل: %s";
+$textbotlang['users']['status']['getpriceforadd'] = "💰 مبلغ بازگشت به کیف پول کاربر را به تومان بفرستید:";
+$textbotlang['users']['status']['addedbalanceremove'] = "💰 مبلغ <b>%s</b> تومان به موجودی شما اضافه شد.";
+$textbotlang['users']['status']['acceptrequest'] = "✅ درخواست حذف سرویس <code>%s</code> تأیید شد.";
+$textbotlang['users']['status']['rejectrequest'] = "دلیل رد را بفرستید:";
 
 $textbotlang['users']['Discount']['titlebtn'] = "🎁 کد هدیه";
 $textbotlang['users']['Discount']['getcode']  = "💝 برای دریافت موجودی کد هدیه خود را ارسال نمایید";
@@ -469,17 +460,16 @@ $textbotlang['users']['moeny']['nowpayment_gateway_status'] = "nowpayments 🔌"
 $textbotlang['users']['moeny']['nowpayments_create_link_error'] = "⭕️ خطا در ساخت لینک پرداخت nowpayment
 ✍️ دلیل خطا : %s
             
-آیدی کابر : %s
+آیدی کاربر : %s
 نام کاربری کاربر : @%s";
-$textbotlang['users']['moeny']['carttext'] =  "برای افزایش موجودی به صورت دستی، مبلغ %s  تومان  را به شماره‌ کارت زیر واریز کنید 👇🏻
-    
-    ==================== 
+$textbotlang['users']['moeny']['carttext'] = "💳 <b>واریز کارت‌به‌کارت</b>
 
-    %s
+💰 مبلغ: <b>%s</b> تومان
+🔢 شماره کارت:
+<code>%s</code>
 
-    ====================
-    
-🌅 عکس رسید خود را بعد از واریز همینجا ارسال کنید و صبر کنید تا توسط مدیریت تایید شود.";
+📸 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.
+⏳ تا تأیید مدیریت صبر کنید.";
 $textbotlang['users']['moeny']['aqayepardakht'] = "
 ✅ فاکتور پرداخت ایجاد شد.
         
@@ -501,55 +491,48 @@ $textbotlang['users']['moeny']['nowpayment']  = "
 🌟 امکان پرداخت با ارز های مختلف وجود دارد
         
 جهت پرداخت از دکمه زیر استفاده کنید👇🏻";
-$textbotlang['users']['moeny']['iranpay'] = "✅ تراکنش شما ایجاد شد
-    
-🛒 کد پیگیری:  <code>%s</code> 
+$textbotlang['users']['moeny']['iranpay'] = "💎 <b>پرداخت کریپتو</b>
+
+🧾 پیگیری: <code>%s</code>
 🌐 شبکه: TRX
-💳 آدرس ولت: <code>%s</code>
-💲 مبلغ تراکنش به ترون : <code>%s</code>
-💲 مبلغ تراکنش به تومان  : <code>%s</code>
-💲 نرخ ترون   : <code>%s</code>
-    
-    
-    
-📌 مبلغ %s  تومان بعد از تایید پرداخت توسط شبکه بلاکچین به کیف پول شما اضافه میشود
-    
-💢 لطفا به این نکات قبل از پرداخت توجه کنید 👇
-    
-🔸 در صورت اشتباه وارد کردن آدرس کیف پول، تراکنش تایید نمیشود و بازگشت وجه امکان پذیر نیست
-🔹 مبلغ ارسالی نباید کمتر و یا بیشتر از مبلغ اعلام شده باشد.
-🔸 کارمزد تراکنش باید از سمت کاربر پرداخت شود و باید دقیقا مبلغی که اعلام شده ارسال شود.
-🔹 در صورت واریز بیش از مقدار گفته شده، امکان اضافه کردن تفاوت وجه وجود ندارد.
-🔸 هر کیف پول فقط برای یک تراکنش قابل استفاده است و درصورت ارسال مجدد ارز امکان برگشت وجه نیست.
-🔹 هر تراکنش بین 10 دقیقه الی  15 دقیقه  معتبر است .
-    
-✅ در صورت مشکل میتوانید با پشتیبانی در ارتباط باشید";
+💳 آدرس:
+<code>%s</code>
+💲 مبلغ (TRX): <code>%s</code>
+💰 معادل: <code>%s</code> تومان
+📈 نرخ: <code>%s</code>
+
+پس از تأیید شبکه، حدود <b>%s</b> تومان به کیف پول اضافه می‌شود.
+
+⚠️ دقیقاً همین مبلغ را بفرستید. کارمزد با شماست. آدرس اشتباه قابل برگشت نیست.";
 $textbotlang['users']['moeny']['eror'] = "
 ⭕️ خطا در ساخت لینک پرداخت
 ✍️ دلیل خطا : %s
         
-آیدی کابر : %s
+آیدی کاربر : %s
 نام کاربری کاربر : @%s";
-$textbotlang['users']['moeny']['cartresid'] = "
-                ⭕️ یک پرداخت جدید انجام شده است .
-            
-👤 شناسه کاربر: %s
-🛒 کد پیگیری پرداخت: %s
-⚜️ نام کاربری: @%s
-💸 مبلغ پرداختی: %s تومان
+$textbotlang['users']['moeny']['cartresid'] = "🧾 <b>رسید پرداخت جدید</b>
 
+🆔 کاربر: <code>%s</code>
+🧾 سفارش: <code>%s</code>
+👤 یوزرنیم: @%s
+💰 مبلغ: <b>%s</b> تومان
+💵 موجودی قبل: %s تومان
+📝 توضیح: %s
 
-💰 موجودی قبلی کاربر: %s تومان          
-توضیحات: %s
-✍️ در صورت درست بودن رسید پرداخت را تایید نمایید";
-$textbotlang['users']['moeny']['Charged.'] = "💎 کاربر گرامی مبلغ %s تومان به کیف پول شما واریز گردید با تشکراز پرداخت شما.
-                
-🛒 کد پیگیری شما: %s";
-$textbotlang['users']['moeny']['acceptedcart'] = "سفارش تایید شد";
-$textbotlang['users']['moeny']['acceptedcart'] = "سفارش تایید شد";
-$textbotlang['users']['moeny']['rejectresid'] = "❌ کاربر گرامی پرداخت شما به دلیل زیر رد گردید.
-✍️ %s
-🛒 کد پیگیری پرداخت: %s";
+در صورت صحت رسید، تأیید کنید.";
+$textbotlang['users']['moeny']['Charged.'] = "✅ <b>شارژ انجام شد</b>
+
+💰 مبلغ: <b>%s</b> تومان به کیف پول اضافه شد.
+🧾 کد پیگیری: <code>%s</code>
+
+از پرداخت شما متشکریم.";
+$textbotlang['users']['moeny']['acceptedcart'] = "✅ پرداخت تأیید شد";
+$textbotlang['users']['moeny']['rejectresid'] = "❌ <b>پرداخت رد شد</b>
+
+✍️ دلیل: %s
+🧾 کد پیگیری: <code>%s</code>
+
+در صورت نیاز با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['moeny']['sendcart'] = "💳 شماره کارت خود را ارسال کنید
     
 ⭕️ همراه با شماره کارت می توانید نام صاحب کارت هم ارسال نمایید.
@@ -592,7 +575,7 @@ $textbotlang['users']['backhome'] = "🏠 بازگشت به منوی اصلی";
 $textbotlang['users']['backmenu'] = "🏠 بازگشت به منوی قبل";
 $textbotlang['users']['time-Service'] = "⏳ زمان اشتراک";
 $textbotlang['users']['Volume-Service'] = "🌐 حجم سرویس";
-$textbotlang['users']['selectoption'] = "یک گزینه را انتخاب کنید";
+$textbotlang['users']['selectoption'] = "یک گزینه را انتخاب کنید:";
 $textbotlang['users']['page']['next'] = "بعدی";
 $textbotlang['users']['page']['previous'] = "قبلی";
 $textbotlang['users']['Service']['Location'] = "🌏 موقعیت سرویس خود را انتخاب نمایید.";
@@ -643,7 +626,7 @@ $textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر شما با م
 $textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ نمی‌توانید با لینک مشارکت خودتان ثبت شوید";
 $textbotlang['users']['affiliates']['priceDiscount'] = "📌 مبلغی که می‌خواهید که کاربر با هر دعوت جدید دریافت کند را وارد کنید";
 $textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ مشارکت در فروش با موفقیت ثبت شد";
-$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش می باشد";
+$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش می‌باشد";
 $textbotlang['users']['affiliates']['affiliateseduser'] = "❌ شما هم اکنون از طریق لینک مشارکت یک کاربر ثبت شده‌اید و نمی‌توانید لینک فرد دیگری را استفاده کنید";
 $textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ %s به موجودی شما از طرف مشارکت‌کننده با شناسه کاربری %s اضافه گردید.";
 $textbotlang['users']['affiliates']['porsantuser'] = "🎁  پرداخت پورسانت 
@@ -654,7 +637,7 @@ $textbotlang['users']['affiliates']['infotext'] = "🤔 مشارکت در فرو
     
 👨🏻‍💻 ما برای شما محیطی فراهم کرده ایم  تا بتوانید بدون پرداخت حتی 1 ریال به ما، بتوانید موجودی کیف پول خودتان را در ربات افزایش دهید و از خدمات ربات استفاده نمایید.
     
-👥 شما میتوانید با دعوت دوستان و آشنایان خود به ربات ما از طریق لینک اختصاصی شما! کسب درآمد کنید و حتی با هر خرید افراد دعوت‌شده به شما پورسانت داده خواهد شد.
+👥 شما می‌توانید با دعوت دوستان و آشنایان خود به ربات ما از طریق لینک اختصاصی شما! کسب درآمد کنید و حتی با هر خرید افراد دعوت‌شده به شما پورسانت داده خواهد شد.
 
 👤 شما می توانید با استفاده از بنر بالا برای خود مشارکت‌کننده جذب کنید
     
@@ -744,7 +727,7 @@ $textbotlang['Admin']['manageadmin']['showlist'] = "👨‍🔧 آیدی عدد�
 
 
 $textbotlang['Admin']['manageusertest']['getidlimit'] = " ⚜️ آیدی عددی کاربر را ارسال کنید
-توضیحات: در این بخش میتوانید محدودیت ساخت اکانت تست را برای کاربر تغییر دهید. بطور پیشفرض محدودیت ساخت عدد 1 است.";
+توضیحات: در این بخش می‌توانید محدودیت ساخت اکانت تست را برای کاربر تغییر دهید. بطور پیشفرض محدودیت ساخت عدد 1 است.";
 $textbotlang['Admin']['getlimitusertest']['getid'] = "آیدی عددی دریافت شد لطفا تعداد ساخت اکانت تست را ارسال کنید";
 $textbotlang['Admin']['getlimitusertest']['setlimit'] = "محدودیت برای کاربر تنظیم گردید.";
 $textbotlang['Admin']['getlimitusertest']['limitall'] = "تعداد ساخت اکانت تست را وارد نمایید.";
@@ -763,8 +746,8 @@ $textbotlang['Admin']['sumporoduct'] = "🛍 جمع کل سفارشات";
 $textbotlang['Admin']['accept'] = "تایید";
 
 $textbotlang['Admin']['managepanel']['selectpanel'] = "پنل خود را انتخاب کنید";
-$textbotlang['Admin']['managepanel']['paneldeactive'] = "❌ پنل درحال حاضر فعال نمی باشد.";
-$textbotlang['Admin']['managepanel']['notsetlinksub'] = "❌ ادمین عزیز پنل زیر فعال نیست جهت فعالسازی پنل باید حتما لینک ساب را از پنل ثنایی فعال و داخل ربات تنظیم کنید سپس در صورتی که میخواهید کانفیگ دهید یا لینک ساب از مدیریت پنل می توانید تنظیم نمایید.
+$textbotlang['Admin']['managepanel']['paneldeactive'] = "❌ پنل درحال حاضر فعال نمی‌باشد.";
+$textbotlang['Admin']['managepanel']['notsetlinksub'] = "❌ ادمین عزیز پنل زیر فعال نیست جهت فعالسازی پنل باید حتما لینک ساب را از پنل ثنایی فعال و داخل ربات تنظیم کنید سپس در صورتی که می‌خواهید کانفیگ دهید یا لینک ساب از مدیریت پنل می توانید تنظیم نمایید.
 نام پنل : %s";
 $textbotlang['Admin']['managepanel']['connectx-ui'] = "✅ پنل متصل است";
 $textbotlang['Admin']['managepanel']['notconnect'] = "❌ پنل متصل نیست";
@@ -788,7 +771,7 @@ $textbotlang['Admin']['managepanel']['Invalid-domain'] = "🔗 آدرس دامن
 $textbotlang['Admin']['managepanel']['usernameset'] ="👤 آدرس پنل ذخیره شد حالا نام کاربری  را ارسال کنید";
 $textbotlang['Admin']['managepanel']['getpassword'] = "🔑  رمز عبور پنل  خود را وارد نمایید";
 $textbotlang['Admin']['managepanel']['addedpanel'] = "تبریک پنل شما با موفقیت اضافه گردید";
-$textbotlang['Admin']['managepanel']['GetRemoveNamePanel'] = "پنلی که میخواهید حذف کنید را انتخاب کنید.";
+$textbotlang['Admin']['managepanel']['GetRemoveNamePanel'] = "پنلی که می‌خواهید حذف کنید را انتخاب کنید.";
 $textbotlang['Admin']['managepanel']['RemovedPanel'] = "پنل با موفقیت حذف گردید";
 $textbotlang['Admin']['managepanel']['nullpanel'] = "⭕️ موقعیتی یافت نشد برای رفع مشکل با پشتیبانی در ارتباط باشید";
 $textbotlang['Admin']['managepanel']['nullpaneladmin'] = "پنل تعریف نشده است ابتدا پنل را تعریف کنید سپس محصول اضافه کنید";
@@ -826,7 +809,7 @@ $textbotlang['Admin']['managepanel']['selecttypepanel'] = "📌 نوع پنل ر
 $textbotlang['Admin']['managepanel']['settoken'] = "📌 توکن  را از پنل s-ui یا wgdashboard منوی ادمین ساخته و ارسال نمایید.";
 $textbotlang['Admin']['managepanel']['notex-ui'] = "📌 نکات بعد اضافه کردن پنل :‌
 
-۱ - از مدیریت پنل > تنظیم شناسه اینباند  شناسه اینباندی که میخواهید ساخته شود را تنظیم نمایید";
+۱ - از مدیریت پنل > تنظیم شناسه اینباند  شناسه اینباندی که می‌خواهید ساخته شود را تنظیم نمایید";
 $textbotlang['Admin']['managepanel']['notemarzban'] = "📌 نکات بعد اضافه کردن پنل :‌
 
 ۱ -از مدیریت پنل > تنظیم پروتکل و اینباند یک نام کاربری موجود در پنل را ارسال نمایید.";
@@ -835,10 +818,10 @@ $textbotlang['Admin']['managepanel']['wgdashboard'] = "❌ نکته :
 منوی تنظیم شناسه اینباند رفته و نام کانفیگ را تنظیم نمایید در غیراینصورت ربات هیچ کانفیگی نمیسازد";
 $textbotlang['Admin']['managepanel']['showpanelbtn'] = "👁‍🗨 وضعیت نمایش پنل";
 $textbotlang['Admin']['managepanel']['mikrotik'] = "❌ نکات :
-۱ - به مدیریت پنل > نام گروه رفته و نام گروهی که میخواهید بسته از آن ساخته شود را ارسال کنید.";
+۱ - به مدیریت پنل > نام گروه رفته و نام گروهی که می‌خواهید بسته از آن ساخته شود را ارسال کنید.";
 $textbotlang['Admin']['managepanel']['showpaneltestbtn'] = "🎁 وضعیت اکانت تست";
 $textbotlang['Admin']['managepanel']['showpaneltestdec'] = "📌 در این بخش می توانید مشخص نمایید  که پنل در بخش خرید برای کاربر در دسترس باشد یا خیر";
-$textbotlang['Admin']['managepanel']['showpaneldec'] = "📌 در این بخش می توانید مشخص نمایید  که پنل در بخش اکانت تس برای کاربر در دسترس باشد یا خیر در صورت روشن کردن این قابلیت باید وضعیت نمایش پنل را خماوش کنید";
+$textbotlang['Admin']['managepanel']['showpaneldec'] = "📌 در این بخش می توانید مشخص نمایید  که پنل در بخش اکانت تس برای کاربر در دسترس باشد یا خیر در صورت روشن کردن این قابلیت باید وضعیت نمایش پنل را خاموش کنید";
 $textbotlang['Admin']['managepanel']['offpanel'] = "خاموش گردید.";
 $textbotlang['Admin']['managepanel']['onpanel'] = "روشن گردید.";
 $textbotlang['Admin']['managepanel']['sublinkstatus'] = "🔗 ارسال لینک سابسکرایبشن";
@@ -868,11 +851,11 @@ $textbotlang['Admin']['managepanel']['keyboardpanel']['usernotfount'] = "کار�
 $textbotlang['Admin']['managepanel']['setsetting'] = "✅ اطلاعات با موفقیت تنظیم گردید";
 $textbotlang['Admin']['managepanel']['setinbound'] = "⚙️ تنظیم پروتکل و اینباند";
 $textbotlang['Admin']['managepanel']['setgroup'] = "⚙️ تنظیم گروه";
-$textbotlang['Admin']['managepanel']['setinbounddec'] = "📌 برای تنظیم اینباند  و پروتکل باید یک کانفیگ در پنل خود ساخته و  پروتکل و اینباند هایی که میخواهید فعال باشند. را داخل پنل فعال کرده و نام کاربری کانفیگ را ارسال نمایید";
+$textbotlang['Admin']['managepanel']['setinbounddec'] = "📌 برای تنظیم اینباند  و پروتکل باید یک کانفیگ در پنل خود ساخته و  پروتکل و اینباند هایی که می‌خواهید فعال باشند. را داخل پنل فعال کرده و نام کاربری کانفیگ را ارسال نمایید";
 $textbotlang['Admin']['managepanel']['setedinbound'] = "✅ اینباند و پروتکل های شما با موفقیت تنظیم گردیدند.";
 $textbotlang['Admin']['managepanel']['notoffsublink'] = "ابتدا لینک اشتراک را خاموش کنید";
-$textbotlang['Admin']['managepanel']['subinvalidDomain'] = "لینک ساب فعال نمی باشد";
-$textbotlang['Admin']['managepanel']['subinvalid'] = "لینک ساب معتبر نمی باشد";
+$textbotlang['Admin']['managepanel']['subinvalidDomain'] = "لینک ساب فعال نمی‌باشد";
+$textbotlang['Admin']['managepanel']['subinvalid'] = "لینک ساب معتبر نمی‌باشد";
 $textbotlang['Admin']['managepanel']['type']['marzban'] = "پاسارگارد";
 $textbotlang['Admin']['managepanel']['type']['marzneshin'] = "مرزنشین";
 $textbotlang['Admin']['managepanel']['type']['s-ui'] = "s-ui";
@@ -913,13 +896,13 @@ $textbotlang['Admin']['ManageUser']['Acceptedphone'] = "تایید شده";
 $textbotlang['Admin']['ManageUser']['Failedphone'] = "تایید نشده";
 $textbotlang['Admin']['ManageUser']['dataorder'] = " تاریخ ثبت نشده است";
 $textbotlang['Admin']['ManageUser']['SendOrder'] = "لیست سفارشات کاربر ارسال شد";
-$textbotlang['Admin']['ManageUser']['mangebtnuserdec'] = "⭕️ در این بخش میتوانید تمام کاربران را مشاهده کنید 
+$textbotlang['Admin']['ManageUser']['mangebtnuserdec'] = "⭕️ در این بخش می‌توانید تمام کاربران را مشاهده کنید 
 ⚠️ برای مدیریت کاربر روی دکمه مدیریت کاربر جلوی هر کاربر بزنید";
 $textbotlang['Admin']['ManageUser']['backlistuser'] = "🏠 بازگشت به لیست کاربران";
 $textbotlang['Admin']['ManageUser']['addbalanceuser'] = "👆افزایش موجودی";
 $textbotlang['Admin']['ManageUser']['lowbalanceuser'] = "👇 کم کردن موجودی";
-$textbotlang['Admin']['ManageUser']['addbalanceuserdec'] = "⭕️ مبلغی که میخواهید اضافه کنید را ارسال کنید";
-$textbotlang['Admin']['ManageUser']['lowbalanceuserdec'] = "⭕️ مبلغی که میخواهید کسر کنید را ارسال کنید";
+$textbotlang['Admin']['ManageUser']['addbalanceuserdec'] = "⭕️ مبلغی که می‌خواهید اضافه کنید را ارسال کنید";
+$textbotlang['Admin']['ManageUser']['lowbalanceuserdec'] = "⭕️ مبلغی که می‌خواهید کسر کنید را ارسال کنید";
 $textbotlang['Admin']['ManageUser']['addbalanced'] = "✅ موجودی با موفقیت به حساب کاربر افزوده شد.";
 $textbotlang['Admin']['ManageUser']['lowbalanced'] = "✅ موجودی با موفقیت از حساب کاربر کم شد.";
 $textbotlang['Admin']['Balance']['AddBalanceUsers'] = "✅ مبلغ به موجودی کاربران اضافه شد";
@@ -1023,7 +1006,7 @@ $textbotlang['Admin']['Help']['GetAddNameHelp'] ="برای اضافه کردن �
 ⚠️ توجه: نام آموزش نامی است که کاربر در لیست مشاهده می کند.";
 $textbotlang['Admin']['Help']['GetAddDecHelp'] = " 🔗 نام آموزش ذخیره شد حالا توضیحات خود را ارسال کنید 
 ⚠️ توجه:
-🔸 توضیحات میتوانید همراه با عکس یا فیلم ارسال کنید";
+🔸 توضیحات می‌توانید همراه با عکس یا فیلم ارسال کنید";
 $textbotlang['Admin']['Help']['SaveHelp'] = "✅ آموزش با موفقیت ذخیره شد";
 $textbotlang['Admin']['Help']['SelectName'] = "نام آموزش را انتخاب کنید";
 $textbotlang['Admin']['Help']['RemoveHelp'] = "✅ آموزش حذف گردید.";
@@ -1076,9 +1059,9 @@ $textbotlang['Admin']['phone']['NotSend'] = "کاربر شماره موبایل 
 
 
 
-$textbotlang['Admin']['Channel']['ReportChannel'] = "📣در این بخش میتوانید آیدی عددی کانال یا گروه را برای ارسال اعلان ارسال نمایید
+$textbotlang['Admin']['Channel']['ReportChannel'] = "📣در این بخش می‌توانید آیدی عددی کانال یا گروه را برای ارسال اعلان ارسال نمایید
 برای دریافت آیدی عددی کانال می توانید پیامی داخل کانال ارسال کرده و پیام ارسال شده را برای آیدی زیر فوروارد کنید تا ایدی عددی دریافت کنید.
-برای گروه هم میتوانید ربات را اد کرده و دستور ارسال ایدی ارسال کنید تا آیدی عددی گروه را دیافت کنید
+برای گروه هم می‌توانید ربات را اد کرده و دستور ارسال ایدی ارسال کنید تا آیدی عددی گروه را دیافت کنید
         @myidbot
 آیدی عددی فعلی شما:";
 $textbotlang['Admin']['Channel']['SetChannelReport'] ="🔰 کانال با موفقیت تنظیم گردید";
@@ -1101,7 +1084,7 @@ $textbotlang['Admin']['Product']['AddProductStepOne'] = " ابتدا نام اش
 • در کنار نام اشتراک حتما زمان اشتراک را هم وارد کنید.";
 $textbotlang['Admin']['Product']['GetLimit'] = "حجم اشتراک را ارسال کنید توجه واحد حجم گیگابایت است
 
-اگر میخواهید حجم نامحدود باشد عدد 0 ارسال کنید";
+اگر می‌خواهید حجم نامحدود باشد عدد 0 ارسال کنید";
 $textbotlang['Admin']['Product']['Getcategory'] = "دسته بندی محصول را انتخاب کنید";
 $textbotlang['Admin']['Product']['Invalidvolume'] = "حجم نامعتبر است";
 $textbotlang['Admin']['Product']['GettIime'] = "
@@ -1153,13 +1136,13 @@ $textbotlang['Admin']['Usertest']['reset_all_limits'] = "♻️ ریست محد�
 $textbotlang['Admin']['Usertest']['reset_all_limits_ok'] = "✅ محدودیت اکانت تست همه کاربران به مقدار پیش‌فرض ریست شد.\nعدد اعمال‌شده: <code>%s</code>";
 
 
-$textbotlang['Admin']['Balance']['PriceBalance'] = "آیدی عددی دریافت شد مبلغی که میخواهید به کاربر اضافه کنید را ارسال کنید مبلغ به تومان باشد";
-$textbotlang['Admin']['Balance']['PriceBalancek'] = "آیدی عددی دریافت شد مبلغی که میخواهید از کاربرکم کنید را ارسال کنید مبلغ به تومان باشد";
+$textbotlang['Admin']['Balance']['PriceBalance'] = "آیدی عددی دریافت شد مبلغی که می‌خواهید به کاربر اضافه کنید را ارسال کنید مبلغ به تومان باشد";
+$textbotlang['Admin']['Balance']['PriceBalancek'] = "آیدی عددی دریافت شد مبلغی که می‌خواهید از کاربرکم کنید را ارسال کنید مبلغ به تومان باشد";
 $textbotlang['Admin']['Balance']['Invalidprice'] = "مبلغ نامعتبر است";
 $textbotlang['Admin']['Balance']['AddBalanceUser'] = "✅ مبلغ به موجودی کاربر اضافه شد";
 $textbotlang['Admin']['Balance']['NegativeBalanceUser'] = "✅ مبلغ از موجودی کاربر کسر شد";
 $textbotlang['Admin']['Balance']['addallbalance'] = "📌 مبلغ را برای شارژ همگانی ارسال نمایید";
-$textbotlang['Admin']['Balance']['maxpricebalance'] = "حداکثر ۱۰۰ میلیون تومان می باشد";
+$textbotlang['Admin']['Balance']['maxpricebalance'] = "حداکثر ۱۰۰ میلیون تومان می‌باشد";
 $textbotlang['Admin']['Balance']['AddedBalance'] = "💎 کاربر عزیز مبلغ %s تومان به موجودی کیف پول تان اضافه گردید.";
 $textbotlang['Admin']['Balance']['ReduceBalance'] = "❌ کاربر عزیز مبلغ %s تومان از  موجودی کیف پول تان کسر گردید.";
 $textbotlang['Admin']['Balance']['SendBalanceAll'] = "👥 شارژ همگانی";
@@ -1283,7 +1266,7 @@ $textbotlang['Admin']['cron']['remove']['dec'] = "✅ کرون جاب فعال �
 $textbotlang['Admin']['cron']['remove']['timeset'] = "زمان حذف اکانت";
 $textbotlang['Admin']['cron']['remove']['dectime'] = "زمان خود را برای حذف اکانت های اکسپایر شده ارسال کنید.
 نکته : این بخش سرویس هایی که x روز از زمان انقضا شان گذشته باشد حذف می کند. 
- واحد براساس روز می باشد";
+ واحد براساس روز می‌باشد";
 $textbotlang['Admin']['cron']['remove']['invalidtime'] = "زمان ناعمتبر است";
 $textbotlang['Admin']['cron']['remove']['timeseted'] = "زمان با موفقیت تنظیم شد";
 $textbotlang['Admin']['cron']['active_manual'] = "📝 بدلیل غیرفعال بودن تابع shell_exec باید کرون ها بطور دستی  فعال نمایید می توانید از هاست یا سایت های که کار کرون انجام می دهند این کار را انجام دهید.
@@ -1332,54 +1315,34 @@ $textbotlang['Admin']['category']['added'] = "📌 دسته بندی خود را
 
 
 
-$textbotlang['Admin']['Report']['extend'] = "🔄 تمدید سرویس
-
-🆔 کاربر: <code>%s</code>
-👤 یوزرنیم: @%s
-🔑 کانفیگ: <code>%s</code>
-🛍 محصول: %s
-💰 مبلغ: %s تومان
-📍 پنل: %s
+$textbotlang['Admin']['Report']['extend'] = "🔄 <b>تمدید سرویس</b>
+🆔 <code>%s</code> | @%s
+🔑 <code>%s</code> | 📦 %s
+💰 %s تومان | 📍 %s
 💳 موجودی بعد: %s تومان";
-$textbotlang['Admin']['Report']['Extra_volume'] = "⭕️ خرید حجم اضافه
-
-🆔 آیدی عددی کاربر: <code>%s</code>
-🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
-📦 حجم خریداری‌شده: %s گیگ
-💰 مبلغ پرداختی: %s تومان
-📍 پنل / لوکیشن: %s
-👤 یوزرنیم تلگرام: @%s
-💳 موجودی بعد از خرید: %s تومان";
-$textbotlang['Admin']['Report']['NotifRemoveByUser'] = "🗑 حذف سرویس توسط خود کاربر (پس از پایان حجم/زمان)
-
-🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
-🆔 آیدی عددی کاربر: <code>%s</code>
-📍 پنل / لوکیشن: %s";
-$textbotlang['Admin']['Report']['ReportTestCreate'] = "📣 ساخت اکانت تست
-
-🆔 آیدی عددی کاربر: <code>%s</code>
-👤 یوزرنیم تلگرام: @%s
-🔑 نام کاربری کانفیگ: <code>%s</code>
-📝 نام کاربر: %s
-📍 پنل / لوکیشن: %s
-📱 شماره تلفن: %s";
-$textbotlang['Admin']['Report']['acceptcartresid'] = "📣 تأیید رسید پرداخت
-
+$textbotlang['Admin']['Report']['Extra_volume'] = "📦 <b>حجم اضافه</b>
+🆔 <code>%s</code> | 🔑 <code>%s</code>
+📊 %s گیگ | 💰 %s تومان
+📍 %s | @%s
+💳 موجودی بعد: %s تومان";
+$textbotlang['Admin']['Report']['NotifRemoveByUser'] = "🗑 <b>حذف توسط کاربر</b>
+🔑 <code>%s</code>
+🆔 <code>%s</code> | 📍 %s";
+$textbotlang['Admin']['Report']['ReportTestCreate'] = "🧪 <b>اکانت تست</b>
+🆔 <code>%s</code> | @%s
+🔑 <code>%s</code> | 👤 %s
+📍 %s | 📱 %s";
+$textbotlang['Admin']['Report']['acceptcartresid'] = "✅ <b>تأیید رسید</b>
 👨‍💼 ادمین: <code>%s</code>
-🆔 مشتری: <code>%s</code>
-👤 یوزرنیم: @%s
-💳 روش پرداخت: %s
-🏷 نوع واریز: %s
-💰 مبلغ پرداختی: %s تومان
-💎 اعتبار واریزی به کیف پول: %s تومان
-💳 موجودی بعد از تأیید: %s تومان
-🧾 شماره سفارش: <code>%s</code>";
-$textbotlang['Admin']['Report']['reportremove'] = "⭕️ تأیید حذف سرویس + بازگشت وجه
-
-👨‍💼 آیدی ادمین تأییدکننده: <code>%s</code>
-💰 مبلغ بازگشتی به کیف پول: %s تومان
-🔑 نام کاربری سرویس (کانفیگ): <code>%s</code>
-🆔 آیدی عددی مشتری (درخواست‌کننده حذف): <code>%s</code>";
+🆔 <code>%s</code> | @%s
+💳 %s | 🏷 %s
+💰 پرداخت: %s | 💎 اعتبار: %s
+💳 موجودی بعد: %s تومان
+🧾 <code>%s</code>";
+$textbotlang['Admin']['Report']['reportremove'] = "✅ <b>حذف + بازگشت وجه</b>
+👨‍💼 ادمین: <code>%s</code>
+💰 برگشت: %s تومان
+🔑 <code>%s</code> | 🆔 <code>%s</code>";
 $textbotlang['Admin']['Report']['reportremovecron'] = "❌ حذف سرویس (کرون)
 
 🔑 نام کاربری سرویس: <code>%s</code>
@@ -1394,44 +1357,27 @@ $textbotlang['Admin']['Report']['nowpayment'] = "💵 پرداخت جدید
 🆔 آیدی عددی کاربر: <code>%s</code>
 💰 مبلغ تراکنش: %s تومان
 💳 روش پرداخت: NowPayments";
-$textbotlang['Admin']['Report']['autocart'] = "💵 پرداخت جدید (تأیید خودکار بدون بررسی)
-
-🆔 کاربر: <code>%s</code>
-👤 یوزرنیم: @%s
-💳 روش پرداخت: %s
-🏷 نوع واریز: %s
-💰 مبلغ پرداختی: %s تومان
-💎 اعتبار واریزی: %s تومان
-💳 موجودی بعد از واریز: %s تومان
-🧾 سفارش: <code>%s</code>";
-$textbotlang['users']['Report']['discountused'] = "⭕️ یک کاربر با نام کاربری @%s  و آیدی عددی %s از کد تخفیف %s استفاده کرد.";
-$textbotlang['users']['Report']['reportbuy'] = "🛍 خرید جدید
-
-🔑 کانفیگ: <code>%s</code>
-💰 قیمت: %s تومان
-📦 حجم: %s
-🆔 کاربر: <code>%s</code>
-👤 یوزرنیم: @%s
-📱 موبایل: %s
-📍 پنل: %s
-💳 موجودی: %s تومان";
-$textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 خرید پس از پرداخت
-
-🔑 کانفیگ: <code>%s</code>
-💰 قیمت: %s تومان
-📦 حجم: %s
-🆔 کاربر: <code>%s</code>
-👤 یوزرنیم: @%s
-📱 موبایل: %s
-📍 پنل: %s
-💳 موجودی: %s تومان";
-$textbotlang['users']['Report']['reportpayiranpay'] = "💵 پرداخت کریپتو
-
-🆔 کاربر: <code>%s</code>
-👤 یوزرنیم: @%s
-💰 مبلغ: %s تومان
+$textbotlang['Admin']['Report']['autocart'] = "🤖 <b>تأیید خودکار رسید</b>
+🆔 <code>%s</code> | @%s
+💳 %s | 🏷 %s
+💰 پرداخت: %s | 💎 اعتبار: %s
 💳 موجودی بعد: %s تومان
-🧾 سفارش: <code>%s</code>";
+🧾 <code>%s</code>";
+$textbotlang['users']['Report']['discountused'] = "🏷 <b>کد تخفیف</b>
+@%s | 🆔 <code>%s</code>
+کد: <code>%s</code>";
+$textbotlang['users']['Report']['reportbuy'] = "🛍 <b>خرید جدید</b>
+🔑 <code>%s</code> | 💰 %s تومان | 📊 %s گیگ
+🆔 <code>%s</code> | @%s | 📱 %s
+📍 %s | 💳 موجودی: %s تومان";
+$textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>خرید پس از پرداخت</b>
+🔑 <code>%s</code> | 💰 %s تومان | 📊 %s گیگ
+🆔 <code>%s</code> | @%s | 📱 %s
+📍 %s | 💳 موجودی: %s تومان";
+$textbotlang['users']['Report']['reportpayiranpay'] = "💎 <b>پرداخت کریپتو</b>
+🆔 <code>%s</code> | @%s
+💰 %s تومان | 💳 موجودی بعد: %s
+🧾 <code>%s</code>";
 $textbotlang['users']['Report']['discountuser'] = "🎁 استفاده از کد هدیه
 
 🏷 کد: <code>%s</code>
@@ -1602,3 +1548,10 @@ $textbotlang['users']['sell']['buy_disabled'] = "⛔️ فعلا امکان خر
 $textbotlang['users']['usertest']['disabled'] = "⛔️ ساخت اکانت تست فعلا غیرفعال است.";
 $textbotlang['users']['balance_menu'] = "💰 موجودی کیف پول شما: %s تومان";
 
+
+
+// ---- متن‌های وضعیت قابل ویرایش از ادمین ----
+$textbotlang['Admin']['changetext']['msg_buy_disabled'] = "متن: خرید سرویس بسته";
+$textbotlang['Admin']['changetext']['msg_deposit_closed'] = "متن: واریز بسته";
+$textbotlang['Admin']['changetext']['msg_extend_disabled'] = "متن: تمدید بسته";
+$textbotlang['Admin']['changetext']['msg_support_disabled'] = "متن: پشتیبانی بسته";

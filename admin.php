@@ -564,6 +564,65 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings']) {
     update("textbot", "text", $text, "id_text", "text_dec_Tariff_list");
     step('home', $from_id);
 }
+
+#----- متن‌های وضعیت (خرید/واریز/تمدید/پشتیبانی بسته) -----
+if ($text == $textbotlang['Admin']['changetext']['msg_buy_disabled']) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_buy_disabled', $textbotlang['users']['sell']['buy_disabled']) : $textbotlang['users']['sell']['buy_disabled'];
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
+    step('edit_msg_buy_disabled', $from_id);
+} elseif ($user['step'] == 'edit_msg_buy_disabled') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    update("textbot", "text", $text, "id_text", "msg_buy_disabled");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+if ($text == $textbotlang['Admin']['changetext']['msg_deposit_closed']) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']) : $textbotlang['users']['Balance']['deposit_closed'];
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
+    step('edit_msg_deposit_closed', $from_id);
+} elseif ($user['step'] == 'edit_msg_deposit_closed') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    update("textbot", "text", $text, "id_text", "msg_deposit_closed");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+if ($text == $textbotlang['Admin']['changetext']['msg_extend_disabled']) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']) : $textbotlang['users']['extend']['disabled'];
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
+    step('edit_msg_extend_disabled', $from_id);
+} elseif ($user['step'] == 'edit_msg_extend_disabled') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    update("textbot", "text", $text, "id_text", "msg_extend_disabled");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+if ($text == $textbotlang['Admin']['changetext']['msg_support_disabled']) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_support_disabled', $textbotlang['users']['support']['disabled']) : $textbotlang['users']['support']['disabled'];
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
+    step('edit_msg_support_disabled', $from_id);
+} elseif ($user['step'] == 'edit_msg_support_disabled') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    update("textbot", "text", $text, "id_text", "msg_support_disabled");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+
 //_________________________________________________
 if ($text == $textbotlang['Admin']['systemsms']['sendmessageauser']) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetText'], $backadmin, 'HTML');
@@ -2103,13 +2162,10 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['settingscron']) {
     sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($text == $textbotlang['Admin']['cron']['test']['active']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['test']['dec'], null, 'HTML');
-    $phpFilePath = escapeshellarg("https://$domainhosts/cron/configtest.php");
-    $cronCommand = "*/15 * * * * curl $phpFilePath";
-    $existingCronCommands = shell_exec('crontab -l');
-    if (strpos($existingCronCommands, $cronCommand) === false) {
-        $command = "(crontab -l ; echo '$cronCommand') | crontab -";
-        shell_exec($command);
+    sendmessage($from_id, "⚠️ کرون‌های قدیمی غیرفعال شده‌اند.\nاز «تنظیمات کرون جاب» فقط <b>کرون هوشمند</b> را فعال و تنظیم کنید.", null, 'HTML');
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['test']['disable']) {
@@ -2123,13 +2179,10 @@ if ($text == $textbotlang['Admin']['cron']['test']['disable']) {
     unlink('/tmp/crontab.txt');
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['active']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['volume']['dec'], null, 'HTML');
-    $phpFilePath = escapeshellarg("https://$domainhosts/cron/cronvolume.php");
-    $cronCommand = "*/1 * * * * curl $phpFilePath";
-    $existingCronCommands = shell_exec('crontab -l');
-    if (strpos($existingCronCommands, $cronCommand) === false) {
-        $command = "(crontab -l ; echo '$cronCommand') | crontab -";
-        shell_exec($command);
+    sendmessage($from_id, "⚠️ کرون حجم قدیمی حذف شده است.\nاخطار حجم از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['disable']) {
@@ -2142,13 +2195,10 @@ if ($text == $textbotlang['Admin']['cron']['volume']['disable']) {
     unlink('/tmp/crontab.txt');
 }
 if ($text == $textbotlang['Admin']['cron']['time']['active']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['time']['dec'], null, 'HTML');
-    $phpFilePath = escapeshellarg("https://$domainhosts/cron/cronday.php");
-    $cronCommand = "*/1 * * * * curl $phpFilePath";
-    $existingCronCommands = shell_exec('crontab -l');
-    if (strpos($existingCronCommands, $cronCommand) === false) {
-        $command = "(crontab -l ; echo '$cronCommand') | crontab -";
-        shell_exec($command);
+    sendmessage($from_id, "⚠️ کرون زمان قدیمی حذف شده است.\nاخطار زمان از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['time']['disable']) {
@@ -2161,13 +2211,10 @@ if ($text == $textbotlang['Admin']['cron']['time']['disable']) {
     unlink('/tmp/crontab.txt');
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['active']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['remove']['dec'], null, 'HTML');
-    $phpFilePath = "https://$domainhosts/cron/removeexpire.php";
-    $cronCommand = "*/1 * * * * curl $phpFilePath";
-    $existingCronCommands = shell_exec('crontab -l');
-    if (strpos($existingCronCommands, $cronCommand) === false) {
-        $command = "(crontab -l ; echo '$cronCommand') | crontab -";
-        shell_exec($command);
+    sendmessage($from_id, "⚠️ کرون حذف قدیمی حذف شده است.\nحذف فاکتور غایب از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['disable']) {

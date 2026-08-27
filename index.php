@@ -165,6 +165,8 @@ foreach ($datatxtbot as $item) {
         $datatextbot[$item['id_text']] = $item['text'];
     }
 }
+if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+
 if (function_exists('shell_exec') && is_callable('shell_exec')) {
     $existingCronCommands = shell_exec('crontab -l');
     $phpFilePath = "https://$domainhosts/cron/sendmessage.php";
@@ -337,7 +339,7 @@ if ($text == "/new") {
         $__buy_flag_new = strval($setting['status_buy']);
     }
     if ($__buy_flag_new === '0') {
-        sendmessage($from_id, $textbotlang['users']['sell']['buy_disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_buy_disabled', $textbotlang['users']['sell']['buy_disabled']), $keyboard, 'HTML');
         return;
     }
     $locationproduct = select("marzban_panel", "*", "status", "activepanel", "count");
@@ -436,7 +438,7 @@ if ($text == "/status") {
 #-----------/renew (renew service)------------#
 if ($text == "/renew") {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']), $keyboard, 'HTML');
         return;
     }
     $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn')");
@@ -863,16 +865,17 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         if (!isset($setting['status_extend']) || $setting['status_extend'] == '1' || $setting['status_extend'] === 1) {
             $__kb_dis[] = [['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username]];
         }
-        $__kb_dis[] = [['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username]];
-        $__row_rm = [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]];
+        $__row_tog = [['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username]];
         if (!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1) {
-            $__row_rm[] = ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username];
+            $__row_tog[] = ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username];
         }
-        $__kb_dis[] = $__row_rm;
+        $__kb_dis[] = $__row_tog;
+        $__kb_dis[] = [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]];
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
         $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
     } else {
+        // ترتیب دکمه‌ها: لینک/کانفیگ | تمدید/تغییر لینک | غیرفعال/حجم اضافه | بازگشت وجه | بازگشت لیست
         $keyboarddate = array(
             'linksub' => array(
                 'text' => $textbotlang['users']['status']['linksub'],
@@ -896,14 +899,13 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
                     : $textbotlang['users']['togglestatus']['disable_btn']),
                 'callback_data' => "toggleserv_"
             ),
-            'removeservice' => array(
-                'text' => $textbotlang['users']['removeconfig']['btnremoveuser'],
-                'callback_data' => "removeserviceuserco-"
-            )
-            ,
             'Extra_volume' => array(
                 'text' => $textbotlang['users']['Extra_volume']['sellextra'],
                 'callback_data' => "Extra_volume_"
+            ),
+            'removeservice' => array(
+                'text' => $textbotlang['users']['removeconfig']['btnremoveuser'],
+                'callback_data' => "removeserviceuserco-"
             ),
         );
         if ($marzban_list_get['type'] == "wgdashboard") {
@@ -1087,7 +1089,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     step('home', $from_id);
 } elseif (preg_match('/extend_(\w+)/', $datain, $dataget)) {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']), $keyboard, 'HTML');
         return;
     }
     $username = $dataget[1];
@@ -1124,7 +1126,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     Editmessagetext($from_id, $message_id, $textbotlang['users']['extend']['selectservice'], $json_list_product_lists);
 } elseif (preg_match('/serviceextendselect_(\w+)/', $datain, $dataget)) {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']), $keyboard, 'HTML');
         return;
     }
 
@@ -1159,11 +1161,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             ]
         ]
     ]);
-    $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], $product['price_product'], $product['Service_time'], $product['Service_time'], $product['Volume_constraint']);
+    $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], number_format(intval($product['price_product'])), $product['Service_time'], $product['Volume_constraint']);
     Editmessagetext($from_id, $message_id, $textextend, $keyboardextend);
 } elseif (preg_match('/confirmserivce-(.*)/', $datain, $dataget)) {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['extend']['disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']), $keyboard, 'HTML');
         return;
     }
 
@@ -1217,7 +1219,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             if ($__lock_fp) {
                 @fclose($__lock_fp);
             }
-            sendmessage($from_id, "⏳ درخواست تمدید قبلی هنوز در حال پردازش است. لطفاً چند لحظه صبر کنید.", $keyboard, 'HTML');
+            sendmessage($from_id, "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
             return;
         }
     }
@@ -1235,7 +1237,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         @fclose($__lock_fp);
         @unlink($__lock_path);
         if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-            sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+            sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
@@ -1261,7 +1263,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             @flock($__lock_fp, LOCK_UN);
             @fclose($__lock_fp);
             @unlink($__lock_path);
-            sendmessage($from_id, "⏳ این تمدید در حال پردازش است یا موجودی کافی نیست.", $keyboard, 'HTML');
+            sendmessage($from_id, "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
             return;
         }
         $__bal_after = select("user", "Balance", "id", $from_id, "select");
@@ -1574,7 +1576,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     step('home', $from_id);
 } elseif (preg_match('/confirmaextra_(\w+)/', $datain, $dataget)) {
     $volume = $dataget[1];
-    $price_extra = $setting['Extra_volume'] * $volume;
+    $price_extra = intval($setting['Extra_volume']) * intval($volume);
     Editmessagetext($from_id, $message_id, $text_callback, json_encode(['inline_keyboard' => []]));
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
@@ -1586,27 +1588,48 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
         return;
     }
-    if ($user['Balance'] < $price_extra && intval($setting['Extra_volume']) != 0) {
-        if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-            sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
-            step('home', $from_id);
+
+    $__extra_lock = null;
+    $Balance_Low_user = null;
+    if (intval($setting['Extra_volume']) != 0 && $price_extra > 0) {
+        $__extra_lock = function_exists('paymentAcquireLock') ? paymentAcquireLock($from_id, 'extra') : true;
+        if ($__extra_lock === null) {
+            sendmessage($from_id, "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
             return;
         }
-        $Balance_prim = $price_extra - $user['Balance'];
-        if ($Balance_prim < getDepositLimits()['min']) {
-            sendmessage($from_id, msgShortfallBelowMin('extra'), $keyboard, 'HTML');
-            step('home', $from_id);
+        $__bal_row = select("user", "Balance", "id", $from_id, "select");
+        $__bal_now = is_array($__bal_row) ? intval($__bal_row['Balance'] ?? 0) : intval($user['Balance'] ?? 0);
+        if ($__bal_now < $price_extra) {
+            if (function_exists('paymentReleaseLock') && is_array($__extra_lock)) {
+                paymentReleaseLock($__extra_lock);
+            }
+            if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+                sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
+                step('home', $from_id);
+                return;
+            }
+            $Balance_prim = $price_extra - $__bal_now;
+            if ($Balance_prim < getDepositLimits()['min']) {
+                sendmessage($from_id, msgShortfallBelowMin('extra'), $keyboard, 'HTML');
+                step('home', $from_id);
+                return;
+            }
+            update("user", "Processing_value", $Balance_prim, "id", $from_id);
+            sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
+            step('get_step_payment', $from_id);
             return;
         }
-        update("user", "Processing_value", $Balance_prim, "id", $from_id);
-        sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
-        step('get_step_payment', $from_id);
-        return;
-    }
-    if (intval($setting['Extra_volume']) != 0) {
-        $Balance_Low_user = $user['Balance'] - $price_extra;
-        update("user", "Balance", $Balance_Low_user, "id", $from_id);
+        $Balance_Low_user = function_exists('atomicDeductBalance')
+            ? atomicDeductBalance($from_id, $price_extra)
+            : false;
+        if ($Balance_Low_user === false) {
+            if (function_exists('paymentReleaseLock') && is_array($__extra_lock)) {
+                paymentReleaseLock($__extra_lock);
+            }
+            sendmessage($from_id, "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
+            return;
+        }
         if (function_exists('logWalletTx')) {
             logWalletTx($from_id, 'extra_volume', intval($price_extra), $Balance_Low_user, 'خرید حجم اضافه: ' . ($nameloc['username'] ?? ''));
         }
@@ -1685,6 +1708,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (function_exists('resetSmartCronWarnings')) {
         // فقط سطح حجم را صفر می‌کنیم؛ زمان را دست نمی‌زنیم — یا همه هشدارها
         resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
+    }
+    if (function_exists('paymentReleaseLock') && isset($__extra_lock) && is_array($__extra_lock)) {
+        paymentReleaseLock($__extra_lock);
     }
     sendmessage($from_id, $textbotlang['users']['Extra_volume']['extraadded'], $keyboardextrafnished, 'HTML');
     $volumes = $volume;
@@ -2005,7 +2031,7 @@ if ($text == $datatextbot['text_help'] || $datain == "helpbtn" || $text == "/hel
 #-----------support------------#
 if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "support") {
     if (function_exists('isSupportEnabled') && !isSupportEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['support']['disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_support_disabled', $textbotlang['users']['support']['disabled']), $keyboard, 'HTML');
         return;
     }
     // مستقیم درخواست پیام پشتیبانی — بدون منوی وسط سوالات متداول
@@ -2239,7 +2265,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $__buy_flag = strval($setting['status_buy']);
     }
     if ($__buy_flag === '0') {
-        sendmessage($from_id, $textbotlang['users']['sell']['buy_disabled'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_buy_disabled', $textbotlang['users']['sell']['buy_disabled']), $keyboard, 'HTML');
         return;
     }
 
@@ -2382,7 +2408,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
     sendmessage($from_id, $textin, $payment, 'HTML');
     step('payment', $from_id);
-} elseif ($user['step'] == "payment" && $datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount") {
+} elseif ($user['step'] == "payment" && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) {
     Editmessagetext($from_id, $message_id, $text_callback, json_encode(['inline_keyboard' => []]));
     $partsdic = explode("_", $user['Processing_value_four']);
     $stmt = $pdo->prepare("SELECT * FROM product WHERE code_product = :code AND (location = :loc1 OR location = '/all') LIMIT 1");
@@ -2419,7 +2445,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     if ($priceproduct > $user['Balance']) {
         // واریز خاموش باشد → فقط پیام بسته بودن، بدون ساخت فاکتور unpaid
         if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-            sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+            sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
@@ -2442,6 +2468,48 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         update("user", "Processing_value_tow", "getconfigafterpay", "id", $from_id);
         return;
     }
+    // قفل + کسر اتمیک قبل از ساخت سرویس (ضد دابل‌کلیک)
+    $__price_buy = intval($priceproduct);
+    $__buy_lock = function_exists('paymentAcquireLock') ? paymentAcquireLock($from_id, 'buy') : true;
+    if ($__buy_lock === null) {
+        sendmessage($from_id, "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
+        return;
+    }
+    $__bal_row = select("user", "Balance", "id", $from_id, "select");
+    $__bal_before = is_array($__bal_row) ? intval($__bal_row['Balance'] ?? 0) : intval($user['Balance'] ?? 0);
+    if ($__price_buy > $__bal_before) {
+        if (function_exists('paymentReleaseLock') && is_array($__buy_lock)) {
+            paymentReleaseLock($__buy_lock);
+        }
+        if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+            sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
+        $Balance_prim = $__price_buy - $__bal_before;
+        if ($Balance_prim < getDepositLimits()['min']) {
+            sendmessage($from_id, msgShortfallBelowMin('buy'), $keyboard, 'HTML');
+            step('home', $from_id);
+            return;
+        }
+        update("user", "Processing_value", $Balance_prim, "id", $from_id);
+        sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
+        sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+        step('get_step_payment', $from_id);
+        return;
+    }
+    $Balance_prim = function_exists('atomicDeductBalance')
+        ? atomicDeductBalance($from_id, $__price_buy)
+        : false;
+    if ($Balance_prim === false) {
+        if (function_exists('paymentReleaseLock') && is_array($__buy_lock)) {
+            paymentReleaseLock($__buy_lock);
+        }
+        sendmessage($from_id, "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
+        return;
+    }
+    $__buy_deducted = $__price_buy;
+
     if (in_array($randomString, $id_invoice)) {
         $random_number = random_int(1000000, 9999999);
         $randomString = $random_number . $randomString;
@@ -2476,14 +2544,19 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     }
     if ($dataoutput['username'] == null) {
         $err_msg = formatPanelErrorMsg($dataoutput['msg'] ?? null);
-        // در این مسیر موجودی بعد از ساخت موفق کم می‌شود؛ پس اگر به اینجا رسیده‌ایم معمولاً پولی کم نشده
-        $price_try = intval($priceproduct ?? 0);
-        $bal_before = intval($user['Balance'] ?? 0);
-        $bal_now_row = select("user", "Balance", "id", $from_id, "select");
-        $bal_now = is_array($bal_now_row) ? intval($bal_now_row['Balance'] ?? 0) : $bal_before;
+        // موجودی قبل از ساخت کسر شده — در صورت خطا برگردان
+        $price_try = intval($__buy_deducted ?? $priceproduct ?? 0);
+        $bal_before = intval($__bal_before ?? $user['Balance'] ?? 0);
         $refunded = 0;
-        if ($price_try > 0 && $bal_now < $bal_before) {
-            $refunded = refundBalanceIfDeducted($from_id, $price_try, $bal_before);
+        if ($price_try > 0) {
+            if (function_exists('atomicAddBalance')) {
+                $refunded = atomicAddBalance($from_id, $price_try);
+            } else {
+                $refunded = refundBalanceIfDeducted($from_id, $price_try, $bal_before);
+            }
+        }
+        if (function_exists('paymentReleaseLock') && isset($__buy_lock) && is_array($__buy_lock)) {
+            paymentReleaseLock($__buy_lock);
         }
         if ($refunded > 0) {
             $price_fmt = number_format($refunded);
@@ -2630,11 +2703,11 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
         }
     }
-    $Balance_prim = intval($user['Balance']) - intval($priceproduct);
-    if ($Balance_prim < 0) {
-        $Balance_prim = 0;
+    // موجودی قبلاً اتمیک کسر شده — فقط لاگ و آزادسازی قفل
+    $Balance_prim = intval($Balance_prim ?? 0);
+    if (function_exists('paymentReleaseLock') && isset($__buy_lock) && is_array($__buy_lock)) {
+        paymentReleaseLock($__buy_lock);
     }
-    update("user", "Balance", $Balance_prim, "id", $from_id);
     if (function_exists('logWalletTx')) {
         logWalletTx($from_id, 'buy', intval($priceproduct), $Balance_prim, 'خرید سرویس: ' . ($username_ac ?? ''));
     }
@@ -2713,7 +2786,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
 #-------------------[ text_Add_Balance ]---------------------#
 if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         return;
     }
 
@@ -2737,7 +2810,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     }
 } elseif ($datain == "balpkg_custom") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         return;
     }
     $depLim = getDepositLimits();
@@ -2748,7 +2821,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     step('getprice', $from_id);
 } elseif (preg_match('/^balpkg_(.+)$/', strval($datain), $m_bp) && $datain != "balpkg_custom") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         return;
     }
     $pkg = getBalancePackageById($m_bp[1]);
@@ -2782,7 +2855,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "getprice") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         step('home', $from_id);
         return;
     }
@@ -2799,7 +2872,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     step('get_step_payment', $from_id);
 } elseif ($user['step'] == "get_step_payment") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['deposit_closed'], $keyboard, 'HTML');
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         step('home', $from_id);
         return;
     }
