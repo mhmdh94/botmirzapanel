@@ -1175,7 +1175,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
 
     $codeproduct = $dataget[1];
-    deletemessage($from_id, $message_id);
+    // پیام پیش‌فاکتور تمدید را حذف نکن — اگر موجودی کم باشد همان پیام باید به صفحه پرداخت تبدیل شود
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
         sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
@@ -1288,6 +1288,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     if (function_exists('recordSale')) {
         recordSale($from_id, $__price_ext, 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
+    }
+    // دکمه تأیید را غیرفعال کن تا دوباره زده نشود
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, "⏳ در حال تمدید سرویس <code>{$usernamepanel}</code> ...", json_encode(['inline_keyboard' => []]));
     }
     $ManagePanel->ResetUserDataUsage($nameloc['Service_location'], $user['Processing_value']);
     if ($marzban_list_get['type'] == "marzban") {

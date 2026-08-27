@@ -808,11 +808,11 @@ function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test =
             if ($panel_try >= $max_panel_tries) {
                 break;
             }
-            // رفرش توکن پنل و کمی صبر
+            // رفرش توکن پنل و ۵ ثانیه صبر قبل از تلاش بعدی (حداکثر ۳ بار)
             try {
                 update("marzban_panel", "datelogin", null, "name_panel", $panel_name);
             } catch (Exception $e) {}
-            usleep(600000 * $panel_try); // 0.6s, 1.2s, ...
+            sleep(5);
             continue;
         }
 
@@ -1428,6 +1428,7 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
     if (!is_array($user)) {
         return false;
     }
+    $message_id = $message_id ? intval($message_id) : 0;
 
     if ($method_id === 'cart_to_offline') {
         $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
@@ -1444,20 +1445,21 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
                         ['text' => $textbotlang['users']['moeny']['copy_price'], 'copy_text' => ['text' => strval($user['Processing_value'])]],
                     ],
                     [
-                        ['text' => $textbotlang['users']['backhome'], 'callback_data' => 'backuser'],
+                        ['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت به منوی اصلی', 'callback_data' => 'backuser'],
                     ],
                 ],
             ]);
-            if ($message_id) {
-                Editmessagetext($from_id, $message_id, $textcart, $KEYBOARD);
-            } else {
-                sendmessage($from_id, $textcart, $KEYBOARD, 'HTML');
-            }
         } else {
-            if ($message_id) {
-                deletemessage($from_id, $message_id);
-            }
-            sendmessage($from_id, $textcart, $backuser, 'HTML');
+            $KEYBOARD = json_encode([
+                "inline_keyboard" => [
+                    [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت به منوی اصلی', 'callback_data' => 'backuser']],
+                ],
+            ]);
+        }
+        if ($message_id > 0) {
+            Editmessagetext($from_id, $message_id, $textcart, $KEYBOARD);
+        } else {
+            sendmessage($from_id, $textcart, $KEYBOARD, 'HTML');
         }
         step('cart_to_cart_user', $from_id);
         return true;
@@ -1467,18 +1469,32 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
         $amount_toman = intval($user['Processing_value'] ?? 0);
         $built = buildCurrencyPaymentText($amount_toman);
         if (!$built['ok']) {
-            if (($built['error'] ?? '') === 'rate') {
-                sendmessage($from_id, $textbotlang['users']['moeny']['currency_rate_error'], $keyboard, 'HTML');
+            $err = (($built['error'] ?? '') === 'rate')
+                ? ($textbotlang['users']['moeny']['currency_rate_error'] ?? 'خطا در دریافت نرخ')
+                : ($textbotlang['users']['moeny']['currency_empty'] ?? 'ارز فعال نیست');
+            $kb_err = json_encode([
+                "inline_keyboard" => [
+                    [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت', 'callback_data' => 'backuser']],
+                ],
+            ]);
+            if ($message_id > 0) {
+                Editmessagetext($from_id, $message_id, $err, $kb_err);
             } else {
-                sendmessage($from_id, $textbotlang['users']['moeny']['currency_empty'], $keyboard, 'HTML');
+                sendmessage($from_id, $err, $keyboard, 'HTML');
             }
             step('home', $from_id);
             return false;
         }
-        if ($message_id) {
-            deletemessage($from_id, $message_id);
+        $kb_crypto = json_encode([
+            "inline_keyboard" => [
+                [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت به منوی اصلی', 'callback_data' => 'backuser']],
+            ],
+        ]);
+        if ($message_id > 0) {
+            Editmessagetext($from_id, $message_id, $built['text'], $kb_crypto);
+        } else {
+            sendmessage($from_id, $built['text'], $kb_crypto, 'HTML');
         }
-        sendmessage($from_id, $built['text'], $backuser, 'HTML');
         step('crypto_receipt_user', $from_id);
         return true;
     }
@@ -1500,16 +1516,18 @@ function presentPaymentMethods($from_id, $intro_text = null, $message_id = null)
 
     $methods = getActivePaymentMethods();
     $n = count($methods);
+    $message_id = $message_id ? intval($message_id) : 0;
 
     if ($n === 0) {
         $msg = $textbotlang['users']['moeny']['no_payment_method']
             ?? "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در تماس باشید.";
-        if ($message_id) {
-            try {
-                Editmessagetext($from_id, $message_id, $msg, $keyboard);
-            } catch (Throwable $e) {
-                sendmessage($from_id, $msg, $keyboard, 'HTML');
-            }
+        $kb_home = json_encode([
+            'inline_keyboard' => [
+                [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت', 'callback_data' => 'backuser']],
+            ],
+        ]);
+        if ($message_id > 0) {
+            Editmessagetext($from_id, $message_id, $msg, $kb_home);
         } else {
             sendmessage($from_id, $msg, $keyboard, 'HTML');
         }
@@ -1518,23 +1536,19 @@ function presentPaymentMethods($from_id, $intro_text = null, $message_id = null)
     }
 
     if ($n === 1) {
-        // مستقیم همان روش
-        executePaymentMethod($from_id, $methods[0]['id'], $message_id);
+        // مستقیم همان روش — جایگزین همان پیام (پیش‌فاکتور)
+        executePaymentMethod($from_id, $methods[0]['id'], $message_id > 0 ? $message_id : null);
         return 'single';
     }
 
-    // چند روش → انتخاب
+    // چند روش → فقط ویرایش همان پیام
     $text = $intro_text;
     if ($text === null || $text === '') {
         $text = $textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت خود را انتخاب نمایید';
     }
     $kb = buildPaymentMethodsKeyboard();
-    if ($message_id) {
-        try {
-            Editmessagetext($from_id, $message_id, $text, $kb);
-        } catch (Throwable $e) {
-            sendmessage($from_id, $text, $kb, 'HTML');
-        }
+    if ($message_id > 0) {
+        Editmessagetext($from_id, $message_id, $text, $kb);
     } else {
         sendmessage($from_id, $text, $kb, 'HTML');
     }
