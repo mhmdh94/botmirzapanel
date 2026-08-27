@@ -1095,6 +1095,7 @@ function DirectPayment($order_id)
         $pay_amt_fmt = number_format(intval($Payment_report['price'] ?? 0));
         $buy_amt_fmt = number_format(intval($get_invoice['price_product']));
         $order_id_rep = $Payment_report['id_order'] ?? $order_id ?? '-';
+        $active_svc_ap = function_exists('countUserActiveServices') ? countUserActiveServices($get_invoice['id_user']) : 0;
         $text_report = sprintf(
             $textbotlang['users']['Report']['reportbuyafterpay'],
             $get_invoice['username'],
@@ -1103,6 +1104,7 @@ function DirectPayment($order_id)
             $get_invoice['Volume'],
             $get_invoice['id_user'],
             $Balance_id['username'] ?? '-',
+            $active_svc_ap,
             $Balance_id['number'] ?? '-',
             $get_invoice['Service_location'],
             $balanceformatsell,
@@ -1338,6 +1340,33 @@ function getPaymentCreditAmount($Payment_report)
     }
     return intval($Payment_report['price'] ?? 0);
 }
+
+
+/**
+ * تعداد سرویس‌های فعال/نمایش‌داده‌شده کاربر در «سرویس‌های من»
+ */
+function countUserActiveServices($user_id)
+{
+    global $pdo;
+    $user_id = intval($user_id);
+    if ($user_id <= 0) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = ? AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn')");
+        $st->execute([$user_id]);
+        return intval($st->fetchColumn());
+    } catch (Throwable $e) {
+        try {
+            $st = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = ? AND status = 'active'");
+            $st->execute([$user_id]);
+            return intval($st->fetchColumn());
+        } catch (Throwable $e2) {
+            return 0;
+        }
+    }
+}
+
 
 function buildBalancePackageUserKeyboard()
 {

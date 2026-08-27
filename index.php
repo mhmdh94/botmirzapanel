@@ -2748,7 +2748,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     // موجودی بعد از کسر — از مقدار محاسبه‌شده (نه number_format+intval که برای اعداد بالای 999 می‌شود 1)
     $bal_after_fmt = number_format($Balance_prim);
     $price_fmt = number_format(intval(str_replace(',', '', strval($info_product['price_product']))));
-    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $price_fmt, $info_product['Volume_constraint'], $from_id, $username, $user['number'], $user['Processing_value'], $bal_after_fmt);
+    $active_svc_buy = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
+    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $price_fmt, $info_product['Volume_constraint'], $from_id, $username, $active_svc_buy, $user['number'], $user['Processing_value'], $bal_after_fmt);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_buy', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
@@ -3002,7 +3003,8 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
             $pay_note .= "\n" . $caption;
         }
     }
-    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $Processing_value, $user_balance_fmt, $pay_note);
+    $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
+    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $active_svc, $Processing_value, $user_balance_fmt, $pay_note);
     foreach ($admin_ids as $id_admin) {
         telegram('sendphoto', [
             'chat_id' => $id_admin,

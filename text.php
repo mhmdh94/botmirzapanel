@@ -477,6 +477,7 @@ $textbotlang['users']['moeny']['cartresid'] = "🧾 <b>رسید پرداخت ج�
 🆔 کاربر: <code>%s</code>
 🧾 سفارش: <code>%s</code>
 👤 یوزرنیم: @%s
+🛍 سرویس فعال: <b>%s</b>
 
 💰 مبلغ: <b>%s</b> تومان
 💵 موجودی قبل: %s تومان
@@ -1476,6 +1477,7 @@ $textbotlang['users']['Report']['reportbuy'] = "🛍 <b>خرید جدید</b>
 
 🆔 <code>%s</code>
 👤 @%s
+🛍 سرویس فعال: <b>%s</b>
 📱 %s
 
 📍 پنل: %s
@@ -1489,6 +1491,7 @@ $textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>واریز + خ�
 
 🆔 <code>%s</code>
 👤 @%s
+🛍 سرویس فعال: <b>%s</b>
 📱 %s
 
 📍 پنل: %s
