@@ -285,12 +285,18 @@ $backuser = json_encode([
     ],
     'resize_keyboard' => true,
 ]);
+// فقط بازگشت در reply — خودکار انتخاب کن اینلاین زیر پیام یوزرنیم است
 $keyboard_getusername = json_encode([
     'keyboard' => [
-        [['text' => '🎲 خودکار انتخاب کن']],
         [['text' => $textbotlang['users']['backhome']]],
     ],
     'resize_keyboard' => true,
+]);
+$inline_getusername = json_encode([
+    'inline_keyboard' => [
+        [['text' => '🎲 خودکار انتخاب کن', 'callback_data' => 'auto_username']],
+        [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت به منوی اصلی', 'callback_data' => 'backuser']],
+    ],
 ]);
 $backadmin = json_encode([
     'keyboard' => [

@@ -555,7 +555,7 @@ $textbotlang['users']['selectusername'] = "✏️ <b>نام کاربری سرو�
 
 مثال: <code>myuser01</code>
 
-یا از دکمه «خودکار انتخاب کن» استفاده کنید.";
+یا از دکمه زیر «خودکار انتخاب کن» استفاده کنید.";
 $textbotlang['users']['invalidusername'] ="❌ نام کاربری معتبر نیست.
 
 فقط انگلیسی و عدد، بدون فاصله و @
@@ -1355,6 +1355,7 @@ $textbotlang['Admin']['Report']['extend'] = "🔄 <b>تمدید سرویس</b>
 
 🆔 <code>%s</code>
 👤 @%s
+🛍 سرویس فعال: <b>%s</b>
 
 🔑 کانفیگ: <code>%s</code>
 📦 محصول: %s

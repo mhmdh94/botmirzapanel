@@ -1254,7 +1254,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         if (function_exists('presentPaymentMethods')) {
-            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
         } else {
             sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
             step('get_step_payment', $from_id);
@@ -1430,7 +1430,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     // recordSale تمدید قبلاً در ابتدای مسیر ثبت شده — از ثبت تکراری جلوگیری می‌شود
 
     $tg_name = $user['username'] ?? ($username ?? '');
-    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $nameloc['username'], $product['name_product'], $priceproductformat, $nameloc['Service_location'], $balanceformatsell);
+    $active_svc_ext = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
+    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $active_svc_ext, $nameloc['username'], $product['name_product'], $priceproductformat, $nameloc['Service_location'], $balanceformatsell);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_extend', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
@@ -1624,7 +1625,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             }
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
             if (function_exists('presentPaymentMethods')) {
-                presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+                presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
             } else {
                 sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
                 step('get_step_payment', $from_id);
@@ -2373,11 +2374,24 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
 } elseif (preg_match('/^prodcutservices_(.*)/', $datain, $dataget)) {
     $prodcut = $dataget[1];
     update("user", "Processing_value_one", $prodcut, "id", $from_id);
-    sendmessage($from_id, $textbotlang['users']['selectusername'], $keyboard_getusername, 'html');
+    // همان پیام محصول → درخواست یوزرنیم + دکمه اینلاین خودکار
+    $kb_un = isset($inline_getusername) ? $inline_getusername : json_encode([
+        'inline_keyboard' => [
+            [['text' => '🎲 خودکار انتخاب کن', 'callback_data' => 'auto_username']],
+            [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت', 'callback_data' => 'backuser']],
+        ],
+    ]);
+    Editmessagetext($from_id, $message_id, $textbotlang['users']['selectusername'], $kb_un);
+    // ذخیره message_id برای ویرایش بعدی (پیش‌فاکتور)
+    update("user", "Processing_value_four", strval($message_id), "id", $from_id);
     step('endstepuser', $from_id);
-} elseif ($user['step'] == "endstepuser" || preg_match('/prodcutservice_(.*)/', $datain, $dataget)) {
-    if ($user['step'] != "endstepuser") {
-        $prodcut = $dataget[1];
+} elseif ($user['step'] == "endstepuser" || preg_match('/prodcutservice_(.*)/', strval($datain), $dataget)) {
+    // فقط در مرحله endstepuser دکمه خودکار معتبر است
+    if ($datain == "auto_username" && $user['step'] != "endstepuser") {
+        return;
+    }
+    if ($user['step'] != "endstepuser" && preg_match('/prodcutservice_(.*)/', strval($datain), $dg2)) {
+        $prodcut = $dg2[1];
     }
     $panellist = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if ($panellist == false) {
@@ -2385,18 +2399,36 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         step("home", $from_id);
         return;
     }
+    // message_id پیام یوزرنیم برای ویرایش به پیش‌فاکتور
+    $edit_mid = 0;
+    if ($datain == "auto_username" && !empty($message_id)) {
+        $edit_mid = intval($message_id);
+    } elseif (!empty($user['Processing_value_four']) && ctype_digit(strval($user['Processing_value_four']))) {
+        $edit_mid = intval($user['Processing_value_four']);
+    } elseif (!empty($message_id) && isset($update['callback_query'])) {
+        $edit_mid = intval($message_id);
+    }
+
     if ($panellist['MethodUsername'] == $textbotlang['users']['customusername']) {
-        if ($text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن') {
+        if ($datain == "auto_username" || $text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن') {
             $text = generateAvailableUsername($panellist['name_panel']);
         }
-        if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
-            sendmessage($from_id, $textbotlang['users']['invalidusername'], $keyboard_getusername, 'HTML');
+        if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', strval($text))) {
+            $kb_un = isset($inline_getusername) ? $inline_getusername : $keyboard_getusername;
+            if ($edit_mid > 0) {
+                Editmessagetext($from_id, $edit_mid, $textbotlang['users']['invalidusername'] . "\n\n" . $textbotlang['users']['selectusername'], $kb_un);
+            } else {
+                sendmessage($from_id, $textbotlang['users']['invalidusername'], $kb_un, 'HTML');
+            }
             return;
         }
         $loc = $user['Processing_value_one'];
     } else {
-        deletemessage($from_id, $message_id);
-        $loc = $prodcut;
+        if (!empty($message_id)) {
+            // مسیر بدون یوزرنیم سفارشی — همان پیام محصول
+            $edit_mid = intval($message_id);
+        }
+        $loc = $prodcut ?? ($user['Processing_value_one'] ?? null);
     }
     if ($loc == null) {
         sendmessage($from_id, $textbotlang['users']['category']['error'], $keyboard, 'html');
@@ -2428,12 +2460,19 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $price_disp = number_format(intval($info_product['price_product']), 0);
     $bal_disp = number_format(intval($user['Balance']), 0);
     $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $price_disp, $info_product['Volume_constraint'], $bal_disp);
-    // اول کیبورد پایین حذف شود، بعد فاکتور مثل قبل با دکمه‌های پرداخت زیر خودش
-    sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
-    sendmessage($from_id, $textin, $payment, 'HTML');
+    // پیش‌فاکتور جایگزین همان پیام یوزرنیم (نه پیام جدید)
+    if ($edit_mid > 0) {
+        Editmessagetext($from_id, $edit_mid, $textin, $payment);
+        update("user", "Processing_value_four", strval($edit_mid), "id", $from_id);
+    } else {
+        $sent = sendmessage($from_id, $textin, $payment, 'HTML');
+        $new_mid = is_array($sent) && isset($sent['result']['message_id']) ? intval($sent['result']['message_id']) : 0;
+        if ($new_mid > 0) {
+            update("user", "Processing_value_four", strval($new_mid), "id", $from_id);
+        }
+    }
     step('payment', $from_id);
 } elseif ($user['step'] == "payment" && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) {
-    Editmessagetext($from_id, $message_id, $text_callback, json_encode(['inline_keyboard' => []]));
     $partsdic = explode("_", $user['Processing_value_four']);
     $stmt = $pdo->prepare("SELECT * FROM product WHERE code_product = :code AND (location = :loc1 OR location = '/all') LIMIT 1");
     $stmt->bindValue(':code', $user['Processing_value_one']);
@@ -2480,10 +2519,9 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             return;
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
-        sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
         if (function_exists('presentPaymentMethods')) {
 
-            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
 
         } else {
 
@@ -2501,6 +2539,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         update("user", "Processing_value_tow", "getconfigafterpay", "id", $from_id);
         return;
     }
+    Editmessagetext($from_id, $message_id, $text_callback, json_encode(['inline_keyboard' => []]));
     // قفل + کسر اتمیک قبل از ساخت سرویس (ضد دابل‌کلیک)
     $__price_buy = intval($priceproduct);
     $__buy_lock = function_exists('paymentAcquireLock') ? paymentAcquireLock($from_id, 'buy') : true;
@@ -2526,10 +2565,9 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             return;
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
-        sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
         if (function_exists('presentPaymentMethods')) {
 
-            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
 
         } else {
 
