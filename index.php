@@ -2988,7 +2988,21 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     ]);
     $Processing_value = number_format($user['Processing_value']);
     $user_balance_fmt = number_format(intval($user['Balance']));
-    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $Processing_value, $user_balance_fmt, $caption);
+    // توضیح نوع پرداخت برای ادمین (پکیج / خرید / دلخواه)
+    $pay_note = '';
+    if (($user['Processing_value_tow'] ?? '') === 'balpkg' && intval($user['Processing_value_one'] ?? 0) > 0) {
+        $credit_fmt = number_format(intval($user['Processing_value_one']));
+        $pay_note = "🎁 <b>پکیج افزایش موجودی</b>\n💎 اعتبار واریزی: <b>{$credit_fmt}</b> تومان\n💰 مبلغ قابل پرداخت: <b>{$Processing_value}</b> تومان";
+    } elseif (($user['Processing_value_tow'] ?? '') === 'getconfigafterpay') {
+        $svc = htmlspecialchars(strval($user['Processing_value_one'] ?? '-'), ENT_QUOTES, 'UTF-8');
+        $pay_note = "🛒 پرداخت برای خرید سرویس\n🔑 نام کاربری: <code>{$svc}</code>";
+    } else {
+        $pay_note = 'افزایش موجودی (مبلغ دلخواه)';
+        if (!empty($caption)) {
+            $pay_note .= "\n" . $caption;
+        }
+    }
+    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $Processing_value, $user_balance_fmt, $pay_note);
     foreach ($admin_ids as $id_admin) {
         telegram('sendphoto', [
             'chat_id' => $id_admin,
