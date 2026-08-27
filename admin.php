@@ -1141,18 +1141,33 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
             'pay_fmt' => number_format(intval($Payment_report['price'])),
             'credit_fmt' => number_format(intval($Payment_report['price'])),
         ];
-        sendChannelReport('rpt_cart_accept', sprintf(
-            $textbotlang['Admin']['Report']['acceptcartresid'],
-            $from_id,
-            $Payment_report['id_user'],
-            $uname_tg,
-            $pd['method_label'],
-            $pd['type_label'],
-            $pd['pay_fmt'],
-            $pd['credit_fmt'],
-            $bal_after,
-            $Payment_report['id_order']
-        ));
+        if (!empty($pd['is_package'])) {
+            $tpl = $textbotlang['Admin']['Report']['acceptcartresid_pkg'] ?? $textbotlang['Admin']['Report']['acceptcartresid'];
+            sendChannelReport('rpt_cart_accept', sprintf(
+                $tpl,
+                $from_id,
+                $Payment_report['id_user'],
+                $uname_tg,
+                $pd['method_label'],
+                $pd['type_label'],
+                $pd['pay_fmt'],
+                $pd['credit_fmt'],
+                $bal_after,
+                $Payment_report['id_order']
+            ));
+        } else {
+            sendChannelReport('rpt_cart_accept', sprintf(
+                $textbotlang['Admin']['Report']['acceptcartresid'],
+                $from_id,
+                $Payment_report['id_user'],
+                $uname_tg,
+                $pd['method_label'],
+                $pd['type_label'],
+                $pd['pay_fmt'],
+                $bal_after,
+                $Payment_report['id_order']
+            ));
+        }
     }
 }
 #-------------------------#

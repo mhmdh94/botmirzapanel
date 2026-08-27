@@ -1299,7 +1299,9 @@ function describePaymentReport($Payment_report)
     $type_label = 'افزایش موجودی (مبلغ دلخواه)';
     $pay_amount = intval($Payment_report['price'] ?? 0);
     $credit_amount = $pay_amount;
+    $is_package = false;
     if (($parts[0] ?? '') === 'balpkg' && isset($parts[1]) && intval($parts[1]) > 0) {
+        $is_package = true;
         $credit_amount = intval($parts[1]);
         $disc = 0;
         if ($pay_amount > 0 && $credit_amount > $pay_amount) {
@@ -1309,7 +1311,6 @@ function describePaymentReport($Payment_report)
         if ($disc > 0) {
             $type_label .= " (تخفیف {$disc}٪)";
         }
-        $type_label .= "\n   └ اعتبار پکیج: " . number_format($credit_amount) . " تومان | مبلغ پرداختی: " . number_format($pay_amount) . " تومان";
     } elseif (($parts[0] ?? '') === 'getconfigafterpay') {
         $uname = $parts[1] ?? '-';
         $type_label = "🛒 پرداخت برای خرید سرویس\n   └ نام کاربری سرویس: <code>{$uname}</code>";
@@ -1324,6 +1325,7 @@ function describePaymentReport($Payment_report)
         'credit_amount' => $credit_amount,
         'pay_fmt' => number_format($pay_amount),
         'credit_fmt' => number_format($credit_amount),
+        'is_package' => $is_package,
     ];
 }
 

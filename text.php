@@ -1393,10 +1393,25 @@ $textbotlang['Admin']['Report']['acceptcartresid'] = "✅ <b>تأیید رسید
 🏷 نوع: %s
 
 💰 پرداخت: %s تومان
+💳 موجودی بعد: %s تومان
+
+🧾 سفارش: <code>%s</code>";
+
+$textbotlang['Admin']['Report']['acceptcartresid_pkg'] = "✅ <b>تأیید رسید (پکیج)</b>
+
+👨‍💼 ادمین: <code>%s</code>
+🆔 مشتری: <code>%s</code>
+👤 @%s
+
+💳 روش: %s
+🏷 نوع: %s
+
+💰 پرداخت: %s تومان
 💎 اعتبار: %s تومان
 💳 موجودی بعد: %s تومان
 
 🧾 سفارش: <code>%s</code>";
+
 $textbotlang['Admin']['Report']['reportremove'] = "✅ <b>حذف + بازگشت وجه</b>
 
 👨‍💼 ادمین: <code>%s</code>
@@ -1426,10 +1441,24 @@ $textbotlang['Admin']['Report']['autocart'] = "🤖 <b>تأیید خودکار �
 🏷 نوع: %s
 
 💰 پرداخت: %s تومان
+💳 موجودی بعد: %s تومان
+
+🧾 سفارش: <code>%s</code>";
+
+$textbotlang['Admin']['Report']['autocart_pkg'] = "🤖 <b>تأیید خودکار رسید (پکیج)</b>
+
+🆔 <code>%s</code>
+👤 @%s
+
+💳 روش: %s
+🏷 نوع: %s
+
+💰 پرداخت: %s تومان
 💎 اعتبار: %s تومان
 💳 موجودی بعد: %s تومان
 
 🧾 سفارش: <code>%s</code>";
+
 $textbotlang['users']['Report']['discountused'] = "🏷 <b>کد تخفیف</b>
 
 👤 @%s
