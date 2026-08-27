@@ -668,11 +668,11 @@ if ($datain == "usernotlist") {
 #----------- Search My Service ------------#
 if ($datain == "search_myservice") {
     if (isset($setting['status_search_service']) && ($setting['status_search_service'] == '0' || $setting['status_search_service'] === 0)) {
-        sendmessage($from_id, "⛔️ جستجوی سرویس فعلا غیرفعال است.", $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['search']['disabled'], $keyboard, 'HTML');
         return;
     }
 
-    sendmessage($from_id, "🔍 نام کاربری سرویسی که می‌خواهید پیدا کنید را ارسال نمایید:\n\nمثال: <code>user123_1</code>", $backuser, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['search']['prompt'], $backuser, 'HTML');
     step('search_myservice', $from_id);
 }
 if ($user['step'] == "search_myservice") {
@@ -696,7 +696,7 @@ if ($user['step'] == "search_myservice") {
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (count($results) == 0) {
-            sendmessage($from_id, "❌ سرویسی با این نام کاربری برای شما پیدا نشد.\n\nفقط می‌توانید سرویس‌هایی که خودتان خریده‌اید را جستجو کنید.", $backuser, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['search']['notfound'], $backuser, 'HTML');
             return;
         }
         $keyboardlists = ['inline_keyboard' => []];
@@ -706,13 +706,13 @@ if ($user['step'] == "search_myservice") {
             ];
         }
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => '🔎  جستجوی مجدد  🔎', 'callback_data' => 'search_myservice']
+            ['text' => $textbotlang['users']['search']['again'], 'callback_data' => 'search_myservice']
         ];
         $keyboardlists['inline_keyboard'][] = [
             ['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']
         ];
         step('home', $from_id);
-        sendmessage($from_id, "✅ چند سرویس مشابه از خریدهای شما پیدا شد. یکی را انتخاب کنید:", json_encode($keyboardlists), 'HTML');
+        sendmessage($from_id, $textbotlang['users']['search']['multiple'], json_encode($keyboardlists), 'HTML');
         return;
     }
     step('home', $from_id);
@@ -722,14 +722,14 @@ if ($user['step'] == "search_myservice") {
                 ['text' => "🌟" . $invoice['username'] . "🌟", 'callback_data' => "product_" . $invoice['username']]
             ],
             [
-                ['text' => '🔎  جستجوی مجدد  🔎', 'callback_data' => 'search_myservice']
+                ['text' => $textbotlang['users']['search']['again'], 'callback_data' => 'search_myservice']
             ],
             [
                 ['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']
             ]
         ]
     ]);
-    sendmessage($from_id, "✅ سرویس پیدا شد.\nبرای مشاهده اطلاعات، تمدید یا مدیریت روی دکمه زیر کلیک کنید:", $keyboardfound, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['search']['found'], $keyboardfound, 'HTML');
 }
 if ($user['step'] == "getusernameinfo") {
     if (!preg_match('/^\w{3,32}$/', $text)) {
@@ -2560,10 +2560,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         }
         if ($refunded > 0) {
             $price_fmt = number_format($refunded);
-            sendmessage($from_id, "❌ در ساخت سرویس خطایی رخ داد.
-
-💰 مبلغ {$price_fmt} تومان به کیف پول شما برگشت داده شد.
-لطفاً دوباره تلاش کنید.", $keyboard, 'HTML');
+            sendmessage($from_id, sprintf($textbotlang['users']['buy']['create_failed_refund'], $price_fmt), $keyboard, 'HTML');
             $admin_extra = "
 
 💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
@@ -2826,7 +2823,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     }
     $pkg = getBalancePackageById($m_bp[1]);
     if (!$pkg) {
-        sendmessage($from_id, "❌ پکیج یافت نشد.", $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['buy']['package_not_found'], $keyboard, 'HTML');
         return;
     }
     $pay = getBalancePackagePayAmount($pkg['amount'], $pkg['discount']);
@@ -2979,7 +2976,7 @@ if (preg_match('/userinfo_pay_(\d+)/', $datain, $dataget)) {
     if (function_exists('sendAdminUserInfo')) {
         sendAdminUserInfo($from_id, $id_user_info);
     } else {
-        sendmessage($from_id, "❌ نمایش اطلاعات کاربر در دسترس نیست.", null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['admin']['userinfo_unavailable'], null, 'HTML');
     }
 }
 
