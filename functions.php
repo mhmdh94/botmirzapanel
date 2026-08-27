@@ -931,6 +931,22 @@ function DirectPayment($order_id)
             foreach ($admin_ids as $admin) {
                 sendmessage($admin, $texterros, null, 'HTML');
             }
+            if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['create_error'])) {
+                $refund_txt = ($refunded > 0) ? (number_format($refunded) . ' تومان برگشت شد') : 'برگشت وجه نداشت';
+                $panel_n = $get_invoice['Service_location'] ?? '-';
+                $uname_try = $get_invoice['username'] ?? ($dataoutput['username_final'] ?? '-');
+                $ch_err = sprintf(
+                    $textbotlang['Admin']['Report']['create_error'],
+                    $Balance_id['id'],
+                    $Balance_id['username'] ?? '-',
+                    $uname_try,
+                    $panel_n,
+                    $err_msg,
+                    $refund_txt,
+                    'خرید پس از پرداخت / DirectPayment'
+                );
+                sendChannelReport('rpt_create_error', $ch_err);
+            }
             return;
         }
         if (!empty($get_invoice['username']) && $get_invoice['username'] !== $username_ac) {
@@ -1076,7 +1092,22 @@ function DirectPayment($order_id)
         if (function_exists('recordSale')) {
             recordSale($get_invoice['id_user'], $get_invoice['price_product'], 'buy', $get_invoice['username'], $get_invoice['id_invoice'] ?? null);
         }
-        $text_report = sprintf($textbotlang['users']['Report']['reportbuyafterpay'], $get_invoice['username'], $get_invoice['price_product'], $get_invoice['Volume'], $get_invoice['id_user'], $Balance_id['username'] ?? '-', $Balance_id['number'] ?? '-', $get_invoice['Service_location'], $balanceformatsell);
+        $pay_amt_fmt = number_format(intval($Payment_report['price'] ?? 0));
+        $buy_amt_fmt = number_format(intval($get_invoice['price_product']));
+        $order_id_rep = $Payment_report['id_order'] ?? $order_id ?? '-';
+        $text_report = sprintf(
+            $textbotlang['users']['Report']['reportbuyafterpay'],
+            $get_invoice['username'],
+            $buy_amt_fmt,
+            $pay_amt_fmt,
+            $get_invoice['Volume'],
+            $get_invoice['id_user'],
+            $Balance_id['username'] ?? '-',
+            $Balance_id['number'] ?? '-',
+            $get_invoice['Service_location'],
+            $balanceformatsell,
+            $order_id_rep
+        );
         if (function_exists('sendChannelReport')) {
             sendChannelReport('rpt_buy_after_pay', $text_report);
         } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
@@ -1904,7 +1935,7 @@ function reportChannelTypes()
 {
     return [
         'rpt_buy' => '🛍 خرید سرویس',
-        'rpt_buy_after_pay' => '🛍 خرید پس از پرداخت',
+        'rpt_buy_after_pay' => '🛍 واریز + خرید',
         'rpt_extend' => '🔄 تمدید سرویس',
         'rpt_extra_volume' => '➕ حجم اضافه',
         'rpt_test' => '🧪 اکانت تست',
@@ -1920,6 +1951,10 @@ function reportChannelTypes()
         'rpt_admin_balance' => '💰 تغییر موجودی توسط ادمین',
         'rpt_new_user' => '👤 کاربر جدید / استارت',
         'rpt_smart_debug' => '🛠 دیباگ کرون هوشمند',
+        'rpt_block' => '🔒 مسدودسازی کاربر',
+        'rpt_unblock' => '🔓 رفع مسدودی',
+        'rpt_spam_block' => '⛔ مسدود خودکار اسپم',
+        'rpt_create_error' => '⚠️ خطای ساخت سرویس',
     ];
 }
 

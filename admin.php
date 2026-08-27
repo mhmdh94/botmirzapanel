@@ -798,8 +798,21 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockUser'], $backadmin, 'HTML');
     step('adddecriptionblock', $from_id);
 } elseif ($user['step'] == "adddecriptionblock") {
-    update("user", "description_blocking", $text, "id", $user['Processing_value']);
+    $blocked_id = $user['Processing_value'];
+    update("user", "description_blocking", $text, "id", $blocked_id);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['DescriptionBlock'], $keyboardadmin, 'HTML');
+    if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['block_user'])) {
+        $bu = select("user", "*", "id", $blocked_id, "select");
+        $bu_name = is_array($bu) ? ($bu['username'] ?? '-') : '-';
+        $rep = sprintf(
+            $textbotlang['Admin']['Report']['block_user'],
+            $from_id,
+            $blocked_id,
+            $bu_name,
+            $text
+        );
+        sendChannelReport('rpt_block', $rep);
+    }
     step('home', $from_id);
 } elseif (preg_match('/unbanuserr_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
@@ -811,6 +824,16 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     update("user", "User_Status", "Active", "id", $iduser);
     update("user", "description_blocking", "", "id", $iduser);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['UserUnblocked'], $keyboardadmin, 'HTML');
+    if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['unblock_user'])) {
+        $uu_name = is_array($userunblock) ? ($userunblock['username'] ?? '-') : '-';
+        $rep = sprintf(
+            $textbotlang['Admin']['Report']['unblock_user'],
+            $from_id,
+            $iduser,
+            $uu_name
+        );
+        sendChannelReport('rpt_unblock', $rep);
+    }
     step('home', $from_id);
 }
 //_________________________________________________

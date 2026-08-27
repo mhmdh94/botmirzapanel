@@ -256,6 +256,15 @@ if (floor($TimeLastMessage / 60) >= 1) {
             update("user", "User_Status", $User_Status, "id", $from_id);
             update("user", "description_blocking", $textbotlang['users']['spamtext'], "id", $from_id);
             sendmessage($from_id, $textbotlang['users']['spam']['spamedmessage'], null, 'html');
+            if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['spam_block'])) {
+                $spam_txt = sprintf(
+                    $textbotlang['Admin']['Report']['spam_block'],
+                    $from_id,
+                    $username ?? ($user['username'] ?? '-'),
+                    $textbotlang['users']['spamtext'] ?? 'spam'
+                );
+                sendChannelReport('rpt_spam_block', $spam_txt);
+            }
             return;
         }
     }
@@ -1919,6 +1928,19 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
         foreach ($admin_ids as $admin) {
             sendmessage($admin, $texterros, null, 'html');
         }
+        if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['create_error'])) {
+            $ch_err = sprintf(
+                $textbotlang['Admin']['Report']['create_error'],
+                $from_id,
+                $username ?? '-',
+                $username_ac ?? '-',
+                $name_panel ?? ($marzban_list_get['name_panel'] ?? '-'),
+                is_string($dataoutput['msg']) ? $dataoutput['msg'] : json_encode($dataoutput['msg']),
+                'بدون کسر موجودی (تست)',
+                'اکانت تست'
+            );
+            sendChannelReport('rpt_create_error', $ch_err);
+        }
         step('home', $from_id);
         return;
     }
@@ -2574,6 +2596,22 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $texterros .= $admin_extra;
         foreach ($admin_ids as $admin) {
             sendmessage($admin, $texterros, null, 'HTML');
+        }
+        if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['create_error'])) {
+            $refund_txt = ($refunded > 0) ? (number_format($refunded) . ' تومان برگشت شد') : 'برگشت وجه نداشت';
+            $panel_n = $user['Processing_value'] ?? ($info_product['Location'] ?? '-');
+            $uname_try = $username_ac ?? '-';
+            $ch_err = sprintf(
+                $textbotlang['Admin']['Report']['create_error'],
+                $from_id,
+                $username ?? '-',
+                $uname_try,
+                $panel_n,
+                $err_msg,
+                $refund_txt,
+                'خرید از کیف پول'
+            );
+            sendChannelReport('rpt_create_error', $ch_err);
         }
         step('home', $from_id);
         return;
