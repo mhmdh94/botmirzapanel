@@ -678,21 +678,21 @@ $textbotlang['Admin']['Report']['spam_block'] = "⛔ <b>مسدود خودکار 
 🆔 <code>%s</code>
 👤 @%s
 
-📌 دلیل: فشردن زیاد دکمه‌ها / پیام‌های پشت‌سرهم
+📌 دلیل: فشردن زیاد دکمه‌ها
 ✍️ %s";
 
 $textbotlang['Admin']['Report']['create_error'] = "⚠️ <b>خطا در ساخت سرویس</b>
 
 🆔 کاربر: <code>%s</code>
 👤 @%s
-🔑 یوزرنیم تلاش‌شده: <code>%s</code>
+🔑 یوزرنیم: <code>%s</code>
 📍 پنل: %s
 
 ✍️ متن خطا:
 <code>%s</code>
 
 💰 برگشت وجه: %s
-🧾 جزئیات: %s";
+🧾 مسیر: %s";
 
 #--------------[ admin ]--------------#
 $textbotlang['Admin']['commendadmin'] = "ادمین";
@@ -1347,14 +1347,21 @@ $textbotlang['Admin']['category']['added'] = "📌 دسته بندی خود را
 
 
 $textbotlang['Admin']['Report']['extend'] = "🔄 <b>تمدید سرویس</b>
-🆔 <code>%s</code> | @%s
-🔑 <code>%s</code> | 📦 %s
-💰 %s تومان | 📍 %s
+
+🆔 <code>%s</code>
+👤 @%s
+
+🔑 کانفیگ: <code>%s</code>
+📦 محصول: %s
+
+💰 مبلغ: %s تومان
+📍 پنل: %s
+
 💳 موجودی بعد: %s تومان";
 $textbotlang['Admin']['Report']['Extra_volume'] = "📦 <b>حجم اضافه</b>
 
 🆔 <code>%s</code>
-🔑 <code>%s</code>
+🔑 کانفیگ: <code>%s</code>
 
 📊 حجم: %s گیگ
 💰 مبلغ: %s تومان
@@ -1364,17 +1371,17 @@ $textbotlang['Admin']['Report']['Extra_volume'] = "📦 <b>حجم اضافه</b>
 💳 موجودی بعد: %s تومان";
 $textbotlang['Admin']['Report']['NotifRemoveByUser'] = "🗑 <b>حذف توسط کاربر</b>
 
-🔑 <code>%s</code>
-🆔 <code>%s</code>
-📍 %s";
+🔑 کانفیگ: <code>%s</code>
+🆔 کاربر: <code>%s</code>
+📍 پنل: %s";
 $textbotlang['Admin']['Report']['ReportTestCreate'] = "🧪 <b>اکانت تست</b>
 
 🆔 <code>%s</code>
 👤 @%s
-🔑 <code>%s</code>
+🔑 کانفیگ: <code>%s</code>
 
 👤 نام: %s
-📍 %s
+📍 پنل: %s
 📱 %s";
 $textbotlang['Admin']['Report']['acceptcartresid'] = "✅ <b>تأیید رسید</b>
 
@@ -1395,22 +1402,21 @@ $textbotlang['Admin']['Report']['reportremove'] = "✅ <b>حذف + بازگشت 
 👨‍💼 ادمین: <code>%s</code>
 💰 برگشت: %s تومان
 
-🔑 <code>%s</code>
-🆔 <code>%s</code>";
-$textbotlang['Admin']['Report']['reportremovecron'] = "❌ حذف سرویس (کرون)
+🔑 کانفیگ: <code>%s</code>
+🆔 کاربر: <code>%s</code>";
+$textbotlang['Admin']['Report']['reportremovecron'] = "❌ <b>حذف سرویس (کرون)</b>
 
-🔑 نام کاربری سرویس: <code>%s</code>
+🔑 کانفیگ: <code>%s</code>
+
 📝 دلیل: %s";
-$textbotlang['Admin']['Report']['aqayepardakht'] = "💵 پرداخت جدید
+$textbotlang['Admin']['Report']['aqayepardakht'] = "💵 <b>پرداخت آقای پرداخت</b>
 
-🆔 آیدی عددی کاربر: <code>%s</code>
-💰 مبلغ تراکنش: %s تومان
-💳 روش پرداخت: درگاه آقای پرداخت";
-$textbotlang['Admin']['Report']['nowpayment'] = "💵 پرداخت جدید
+🆔 <code>%s</code>
+💰 مبلغ: %s تومان";
+$textbotlang['Admin']['Report']['nowpayment'] = "💵 <b>پرداخت NowPayments</b>
 
-🆔 آیدی عددی کاربر: <code>%s</code>
-💰 مبلغ تراکنش: %s تومان
-💳 روش پرداخت: NowPayments";
+🆔 <code>%s</code>
+💰 مبلغ: %s تومان";
 $textbotlang['Admin']['Report']['autocart'] = "🤖 <b>تأیید خودکار رسید</b>
 
 🆔 <code>%s</code>
@@ -1432,15 +1438,15 @@ $textbotlang['users']['Report']['discountused'] = "🏷 <b>کد تخفیف</b>
 کد: <code>%s</code>";
 $textbotlang['users']['Report']['reportbuy'] = "🛍 <b>خرید جدید</b>
 
-🔑 <code>%s</code>
-💰 %s تومان
-📊 %s گیگ
+🔑 کانفیگ: <code>%s</code>
+💰 مبلغ: %s تومان
+📊 حجم: %s گیگ
 
 🆔 <code>%s</code>
 👤 @%s
 📱 %s
 
-📍 %s
+📍 پنل: %s
 💳 موجودی: %s تومان";
 $textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>واریز + خرید</b>
 
@@ -1453,18 +1459,19 @@ $textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>واریز + خ�
 👤 @%s
 📱 %s
 
-📍 %s
+📍 پنل: %s
 💳 موجودی بعد: %s تومان
+
 🧾 سفارش: <code>%s</code>";
 $textbotlang['users']['Report']['reportpayiranpay'] = "💎 <b>پرداخت کریپتو</b>
 
 🆔 <code>%s</code>
 👤 @%s
 
-💰 %s تومان
+💰 مبلغ: %s تومان
 💳 موجودی بعد: %s تومان
 
-🧾 <code>%s</code>";
+🧾 سفارش: <code>%s</code>";
 $textbotlang['users']['Report']['discountuser'] = "🎁 <b>کد هدیه</b>
 
 🏷 کد: <code>%s</code>

@@ -1387,6 +1387,7 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
 
 👨‍💼 ادمین: <code>{$from_id}</code>
 🆔 کاربر: <code>{$user['Processing_value']}</code>
+
 ➕ مبلغ: {$amt_fmt} تومان
 💳 موجودی جدید: " . number_format($Balance_add_user) . " تومان");
     }
@@ -1421,6 +1422,7 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
 
 👨‍💼 ادمین: <code>{$from_id}</code>
 🆔 کاربر: <code>{$user['Processing_value']}</code>
+
 ➖ مبلغ: {$amt_fmt} تومان
 💳 موجودی جدید: " . number_format($Balance_Low_user) . " تومان");
     }

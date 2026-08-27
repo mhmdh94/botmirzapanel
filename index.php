@@ -1074,15 +1074,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     updateSmartCronState($username_emg, $inv['Service_location'], 'warn_vol_level', 0);
     update("invoice", "status", "active", "username", $username_emg);
     sendmessage($from_id, sprintf($textbotlang['users']['cron']['emergency_ok'], $username_emg), $keyboard, 'HTML');
-    $emg_log = "🆘 تمدید اضطراری استفاده شد
-"
-        . "🔑 نام کاربری سرویس: <code>{$username_emg}</code>
-"
-        . "📍 پنل: {$inv['Service_location']}
-"
-        . "🆔 آیدی کاربر: <code>{$from_id}</code>
-"
-        . "👤 یوزرنیم تلگرام: @" . strval($user['username'] ?? '-');
+    $emg_log = "🆘 <b>تمدید اضطراری</b>\n\n"
+        . "🔑 کانفیگ: <code>{$username_emg}</code>\n"
+        . "📍 پنل: {$inv['Service_location']}\n\n"
+        . "🆔 کاربر: <code>{$from_id}</code>\n"
+        . "👤 @" . strval($user['username'] ?? '-');
     if (function_exists('logChannelReport')) {
         logChannelReport($emg_log);
     } elseif (function_exists('smartCronDebugLog')) {
