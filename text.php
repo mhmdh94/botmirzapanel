@@ -294,6 +294,7 @@ $textbotlang['users']['Balance']['errorprice'] = "❌ خطا
 $textbotlang['users']['Balance']['errorpricelimit'] = "❌ خطا
 💬 مبلغ باید حداقل %s و حداکثر %s تومان باشد";
 $textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت خود را انتخاب نمایید";
+$textbotlang['users']['moeny']['no_payment_method'] = "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در تماس باشید.";
 $textbotlang['users']['Balance']['zarinpal'] = "❌ خطا 
     کمترین مبلغ برای  پرداخت در این درگاه 5000 تومان می‌باشد.";
 $textbotlang['users']['Balance']['linkpayments'] = "درحال ساخت لینک پرداخت...";

@@ -1368,6 +1368,181 @@ function countUserActiveServices($user_id)
 }
 
 
+
+/**
+ * لیست روش‌های پرداخت فعال (کارت / کریپتو)
+ * @return array [['id'=>'cart_to_offline','label'=>...], ...]
+ */
+function getActivePaymentMethods()
+{
+    global $textbotlang;
+    $methods = [];
+    $card = select("PaySetting", "ValuePay", "NamePay", 'Cartstatus', "select");
+    $card_v = is_array($card) ? ($card['ValuePay'] ?? '') : '';
+    if ($card_v === 'oncard') {
+        $methods[] = [
+            'id' => 'cart_to_offline',
+            'label' => $textbotlang['users']['moeny']['cart_to_Cart_btn'] ?? '💳 کارت به کارت',
+        ];
+    }
+    $digi = select("PaySetting", "ValuePay", "NamePay", 'digistatus', "select");
+    $digi_v = is_array($digi) ? ($digi['ValuePay'] ?? '') : '';
+    if ($digi_v === 'ondigi') {
+        $label = function_exists('getCurrencyPaymentButtonText')
+            ? getCurrencyPaymentButtonText()
+            : ($textbotlang['users']['moeny']['currency_rial_gateway'] ?? '💎 کریپتو');
+        $methods[] = [
+            'id' => 'iranpay',
+            'label' => $label,
+        ];
+    }
+    return $methods;
+}
+
+/**
+ * کیبورد انتخاب روش پرداخت بر اساس درگاه‌های روشن
+ */
+function buildPaymentMethodsKeyboard()
+{
+    global $textbotlang;
+    $kb = ['inline_keyboard' => []];
+    foreach (getActivePaymentMethods() as $m) {
+        $kb['inline_keyboard'][] = [
+            ['text' => $m['label'], 'callback_data' => $m['id']],
+        ];
+    }
+    $kb['inline_keyboard'][] = [
+        ['text' => $textbotlang['users']['closelist'] ?? '❌ بستن', 'callback_data' => 'closelist'],
+    ];
+    return json_encode($kb);
+}
+
+/**
+ * اجرای مستقیم یک روش پرداخت (کارت یا کریپتو)
+ */
+function executePaymentMethod($from_id, $method_id, $message_id = null)
+{
+    global $textbotlang, $keyboard, $backuser, $setting, $user;
+
+    $user = select("user", "*", "id", $from_id, "select");
+    if (!is_array($user)) {
+        return false;
+    }
+
+    if ($method_id === 'cart_to_offline') {
+        $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
+        $PaySetting = is_array($PaySetting) ? ($PaySetting['ValuePay'] ?? '') : '';
+        $Processing_value = number_format(intval($user['Processing_value'] ?? 0));
+        $textcart = sprintf($textbotlang['users']['moeny']['carttext'], $Processing_value, $PaySetting);
+        preg_match_all('/\d+/', $PaySetting, $Matches);
+        if (!empty($Matches[0]) && intval($setting['copy_cart'] ?? 0) == 1) {
+            $card_number = implode('', $Matches[0]);
+            $KEYBOARD = json_encode([
+                "inline_keyboard" => [
+                    [
+                        ['text' => $textbotlang['users']['moeny']['copy_card_number'], 'copy_text' => ['text' => $card_number]],
+                        ['text' => $textbotlang['users']['moeny']['copy_price'], 'copy_text' => ['text' => strval($user['Processing_value'])]],
+                    ],
+                    [
+                        ['text' => $textbotlang['users']['backhome'], 'callback_data' => 'backuser'],
+                    ],
+                ],
+            ]);
+            if ($message_id) {
+                Editmessagetext($from_id, $message_id, $textcart, $KEYBOARD);
+            } else {
+                sendmessage($from_id, $textcart, $KEYBOARD, 'HTML');
+            }
+        } else {
+            if ($message_id) {
+                deletemessage($from_id, $message_id);
+            }
+            sendmessage($from_id, $textcart, $backuser, 'HTML');
+        }
+        step('cart_to_cart_user', $from_id);
+        return true;
+    }
+
+    if ($method_id === 'iranpay') {
+        $amount_toman = intval($user['Processing_value'] ?? 0);
+        $built = buildCurrencyPaymentText($amount_toman);
+        if (!$built['ok']) {
+            if (($built['error'] ?? '') === 'rate') {
+                sendmessage($from_id, $textbotlang['users']['moeny']['currency_rate_error'], $keyboard, 'HTML');
+            } else {
+                sendmessage($from_id, $textbotlang['users']['moeny']['currency_empty'], $keyboard, 'HTML');
+            }
+            step('home', $from_id);
+            return false;
+        }
+        if ($message_id) {
+            deletemessage($from_id, $message_id);
+        }
+        sendmessage($from_id, $built['text'], $backuser, 'HTML');
+        step('crypto_receipt_user', $from_id);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * شروع جریان پرداخت:
+ * 0 روش → پیام خطا
+ * 1 روش → مستقیم همان
+ * 2+ → کیبورد انتخاب
+ *
+ * @param string $intro_text متن راهنما وقتی چند روش هست / کمبود موجودی و ...
+ * @return string 'none'|'single'|'multi'
+ */
+function presentPaymentMethods($from_id, $intro_text = null, $message_id = null)
+{
+    global $textbotlang, $keyboard;
+
+    $methods = getActivePaymentMethods();
+    $n = count($methods);
+
+    if ($n === 0) {
+        $msg = $textbotlang['users']['moeny']['no_payment_method']
+            ?? "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در تماس باشید.";
+        if ($message_id) {
+            try {
+                Editmessagetext($from_id, $message_id, $msg, $keyboard);
+            } catch (Throwable $e) {
+                sendmessage($from_id, $msg, $keyboard, 'HTML');
+            }
+        } else {
+            sendmessage($from_id, $msg, $keyboard, 'HTML');
+        }
+        step('home', $from_id);
+        return 'none';
+    }
+
+    if ($n === 1) {
+        // مستقیم همان روش
+        executePaymentMethod($from_id, $methods[0]['id'], $message_id);
+        return 'single';
+    }
+
+    // چند روش → انتخاب
+    $text = $intro_text;
+    if ($text === null || $text === '') {
+        $text = $textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت خود را انتخاب نمایید';
+    }
+    $kb = buildPaymentMethodsKeyboard();
+    if ($message_id) {
+        try {
+            Editmessagetext($from_id, $message_id, $text, $kb);
+        } catch (Throwable $e) {
+            sendmessage($from_id, $text, $kb, 'HTML');
+        }
+    } else {
+        sendmessage($from_id, $text, $kb, 'HTML');
+    }
+    step('get_step_payment', $from_id);
+    return 'multi';
+}
+
+
 function buildBalancePackageUserKeyboard()
 {
     global $textbotlang;

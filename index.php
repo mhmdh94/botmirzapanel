@@ -1253,9 +1253,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             return;
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
-        sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
-        step('get_step_payment', $from_id);
+        if (function_exists('presentPaymentMethods')) {
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+        } else {
+            sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+            step('get_step_payment', $from_id);
+        }
         return;
     }
 
@@ -1620,9 +1623,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
                 return;
             }
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
-            sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
-            step('get_step_payment', $from_id);
+            if (function_exists('presentPaymentMethods')) {
+                presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+            } else {
+                sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+                step('get_step_payment', $from_id);
+            }
             return;
         }
         $Balance_Low_user = function_exists('atomicDeductBalance')
@@ -2475,8 +2481,17 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
-        sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
-        step('get_step_payment', $from_id);
+        if (function_exists('presentPaymentMethods')) {
+
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+
+        } else {
+
+            sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+
+            step('get_step_payment', $from_id);
+
+        }
         $stmt = $connect->prepare("INSERT IGNORE INTO invoice(id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)");
         $Status = "unpaid";
         $stmt->bind_param("ssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status);
@@ -2512,8 +2527,17 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         }
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         sendmessage($from_id, "‌", json_encode(['remove_keyboard' => true]), 'HTML');
-        sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
-        step('get_step_payment', $from_id);
+        if (function_exists('presentPaymentMethods')) {
+
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit']);
+
+        } else {
+
+            sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
+
+            step('get_step_payment', $from_id);
+
+        }
         return;
     }
     $Balance_prim = function_exists('atomicDeductBalance')
@@ -2883,8 +2907,12 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         $disc,
         formatToman($pay)
     );
-    sendmessage($from_id, $info, $step_payment, 'HTML');
-    step('get_step_payment', $from_id);
+    if (function_exists('presentPaymentMethods')) {
+        presentPaymentMethods($from_id, $info);
+    } else {
+        sendmessage($from_id, $info, $step_payment, 'HTML');
+        step('get_step_payment', $from_id);
+    }
 } elseif ($user['step'] == "getprice") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
@@ -2900,8 +2928,12 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     update("user", "Processing_value", $text, "id", $from_id);
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
-    sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
-    step('get_step_payment', $from_id);
+    if (function_exists('presentPaymentMethods')) {
+        presentPaymentMethods($from_id, $textbotlang['users']['Balance']['selectPatment']);
+    } else {
+        sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
+        step('get_step_payment', $from_id);
+    }
 } elseif ($user['step'] == "get_step_payment") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
@@ -2913,37 +2945,10 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         step('home', $from_id);
         return;
     }
-    if ($datain == "cart_to_offline") {
-        $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select")['ValuePay'];
-        $Processing_value = number_format($user['Processing_value']);
-        $textcart = sprintf($textbotlang['users']['moeny']['carttext'], $Processing_value, $PaySetting);
-        preg_match_all('/\d+/', $PaySetting, $Matches);
-        if (!empty($Matches[0]) && intval($setting['copy_cart']) == 1) {
-            $peymentSettings['card_number'] = implode('', $Matches[0]);
-            $MESSAGE = $textcart;
-            $KEYBOARD = json_encode(["inline_keyboard" => [[['text' => $textbotlang['users']['moeny']['copy_card_number'], 'copy_text' => ['text' => $peymentSettings['card_number']]], ['text' => $textbotlang['users']['moeny']['copy_price'], 'copy_text' => ['text' => $user['Processing_value']]]], [['text' => $textbotlang['users']['backhome'], 'callback_data' => 'backuser']]]]);
-            Editmessagetext($from_id, $message_id, $MESSAGE, $KEYBOARD);
-        } else {
-            deletemessage($from_id, $message_id);
-            sendmessage($from_id, $textcart, $backuser, 'HTML');
+    if ($datain == "cart_to_offline" || $datain == "iranpay") {
+        if (function_exists('executePaymentMethod')) {
+            executePaymentMethod($from_id, $datain, $message_id);
         }
-        step('cart_to_cart_user', $from_id);
-    }
-    if ($datain == "iranpay") {
-        $amount_toman = intval($user['Processing_value']);
-        $built = buildCurrencyPaymentText($amount_toman);
-        if (!$built['ok']) {
-            if (($built['error'] ?? '') === 'rate') {
-                sendmessage($from_id, $textbotlang['users']['moeny']['currency_rate_error'], $keyboard, 'HTML');
-            } else {
-                sendmessage($from_id, $textbotlang['users']['moeny']['currency_empty'], $keyboard, 'HTML');
-            }
-            step('home', $from_id);
-            return;
-        }
-        deletemessage($from_id, $message_id);
-        sendmessage($from_id, $built['text'], $backuser, 'HTML');
-        step('crypto_receipt_user', $from_id);
     }
 
 } elseif ($user['step'] == "cart_to_cart_user" || $user['step'] == "crypto_receipt_user") {
