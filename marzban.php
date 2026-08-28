@@ -140,7 +140,13 @@ function adduser($username,$expire,$data_limit,$location,$is_test = false)
     if (is_array($group_ids) && count($group_ids) > 0) {
         $data['group_ids'] = array_map('intval', array_values($group_ids));
     } else {
-        error_log("marzban adduser: no group_ids for panel={$location} — user may be created without group");
+        error_log("marzban adduser: no group_ids for panel={$location}");
+        // بدون گروه کاربر نساز — پاسخ ساختگی شبیه خطای API برای caller
+        return json_encode([
+            'detail' => 'هیچ گروهی از پنل خوانده نشد. در پاسارگارد حداقل یک گروه برای ادمین تعریف کنید.',
+            'msg' => 'no_group_ids',
+            'username' => null,
+        ], JSON_UNESCAPED_UNICODE);
     }
 
     if ($marzban_list_get['inbounds'] != null && $marzban_list_get['inbounds'] != "null") {

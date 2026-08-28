@@ -213,25 +213,101 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     sendmessage($from_id, $statisticsall, null, 'HTML');
 }
 
+
+#----[ گروه‌های پنل پاسارگارد ]----#
+if ($text == ($textbotlang['Admin']['managepanel']['show_groups'] ?? '📂 گروه‌های پنل')) {
+    $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (!$panel || ($panel['type'] ?? '') != 'marzban') {
+        sendmessage($from_id, "این گزینه فقط برای پنل پاسارگارد است.", $optionMarzban, 'HTML');
+        return;
+    }
+    if (function_exists('sendTyping')) { /* noop */ }
+    $g_resp = get_groups($user['Processing_value']);
+    $g_list = function_exists('_extract_groups_array') ? _extract_groups_array($g_resp) : (is_array($g_resp) ? $g_resp : []);
+    if (!is_array($g_list) || count($g_list) === 0) {
+        sendmessage($from_id, "❌ گروهی از پنل خوانده نشد.\n\nآدرس و یوزر/پسورد را چک کنید و در پاسارگارد برای این ادمین گروه بسازید.", $optionMarzban, 'HTML');
+        return;
+    }
+    $lines = ["📂 <b>گروه‌های پنل</b> <code>{$panel['name_panel']}</code>\n"];
+    foreach ($g_list as $g) {
+        if (!is_array($g)) continue;
+        $gid = $g['id'] ?? $g['group_id'] ?? '?';
+        $gn = htmlspecialchars(strval($g['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $dis = (!empty($g['is_disabled']) || !empty($g['disabled'])) ? ' (غیرفعال)' : '';
+        $lines[] = "• <code>{$gid}</code> — {$gn}{$dis}";
+    }
+    $lines[] = "\n✅ ساخت کاربر با این گروه‌ها انجام می‌شود.";
+    sendmessage($from_id, implode("\n", $lines), $optionMarzban, 'HTML');
+}
+
 if ($text == $textbotlang['Admin']['managepanel']['btnshowconnect']) {
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if ($marzban_list_get['type'] == "marzban") {
+        $t0 = microtime(true);
         $Check_token = token_panel($marzban_list_get['id']);
+        $ms_token = (int) round((microtime(true) - $t0) * 1000);
         if (isset($Check_token['access_token'])) {
+            $t1 = microtime(true);
             $System_Stats = Get_System_Stats($user['Processing_value']);
-            $active_users = $System_Stats['users_active'];
-            $total_user = $System_Stats['total_user'];
-            $mem_total = formatBytes($System_Stats['mem_total']);
-            $mem_used = formatBytes($System_Stats['mem_used']);
-            $bandwidth = formatBytes($System_Stats['outgoing_bandwidth'] + $System_Stats['incoming_bandwidth']);
-            $Condition_marzban = "";
-            $text_marzban = sprintf($textbotlang['Admin']['managepanel']['infomarzban'], $total_user, $active_users, $System_Stats['version'], $mem_total, $mem_used, $bandwidth);
-            sendmessage($from_id, $text_marzban, null, 'HTML');
-        } elseif (isset($Check_token['detail']) && $Check_token['detail'] == "Incorrect username or password") {
-            sendmessage($from_id, $textbotlang['Admin']['managepanel']['Incorrectinfo'], null, 'HTML');
+            $ms_stats = (int) round((microtime(true) - $t1) * 1000);
+            $active_users = is_array($System_Stats) ? ($System_Stats['users_active'] ?? $System_Stats['active_users'] ?? '-') : '-';
+            $total_user = is_array($System_Stats) ? ($System_Stats['total_user'] ?? $System_Stats['total_users'] ?? '-') : '-';
+            $version = is_array($System_Stats) ? ($System_Stats['version'] ?? '-') : '-';
+            $mem_total = (is_array($System_Stats) && isset($System_Stats['mem_total'])) ? formatBytes($System_Stats['mem_total']) : '-';
+            $mem_used = (is_array($System_Stats) && isset($System_Stats['mem_used'])) ? formatBytes($System_Stats['mem_used']) : '-';
+            $bw = '-';
+            if (is_array($System_Stats) && isset($System_Stats['outgoing_bandwidth'], $System_Stats['incoming_bandwidth'])) {
+                $bw = formatBytes(intval($System_Stats['outgoing_bandwidth']) + intval($System_Stats['incoming_bandwidth']));
+            }
+            // گروه‌ها
+            $groups_line = "—";
+            $g_count = 0;
+            try {
+                $t2 = microtime(true);
+                $g_resp = function_exists('get_groups') ? get_groups($user['Processing_value']) : null;
+                $ms_groups = (int) round((microtime(true) - $t2) * 1000);
+                $g_list = function_exists('_extract_groups_array') ? _extract_groups_array($g_resp) : (is_array($g_resp) ? $g_resp : []);
+                if (is_array($g_list) && count($g_list) > 0) {
+                    $names = [];
+                    foreach ($g_list as $g) {
+                        if (!is_array($g)) continue;
+                        $gid = $g['id'] ?? $g['group_id'] ?? '?';
+                        $gn = $g['name'] ?? '';
+                        $names[] = ($gn !== '' ? "{$gn} (#{$gid})" : "#{$gid}");
+                    }
+                    $g_count = count($names);
+                    $groups_line = implode("، ", array_slice($names, 0, 15));
+                    if (count($names) > 15) {
+                        $groups_line .= " …";
+                    }
+                } else {
+                    $ms_groups = $ms_groups ?? 0;
+                    $groups_line = "❌ گروهی خوانده نشد";
+                }
+            } catch (Throwable $e) {
+                $ms_groups = 0;
+                $groups_line = "⚠️ خطا در خواندن گروه";
+            }
+            $panel_name = $marzban_list_get['name_panel'] ?? '';
+            $panel_url = $marzban_list_get['url_panel'] ?? '';
+            $text_marzban = "🖥 <b>وضعیت اتصال — پاسارگارد</b>\n\n";
+            $text_marzban .= "✅ اتصال برقرار است\n";
+            $text_marzban .= "🏷 پنل: <code>{$panel_name}</code>\n";
+            $text_marzban .= "🔗 آدرس: <code>{$panel_url}</code>\n\n";
+            $text_marzban .= "👥 کل کاربران: <code>{$total_user}</code>\n";
+            $text_marzban .= "✅ فعال: <code>{$active_users}</code>\n";
+            $text_marzban .= "📦 نسخه: <code>{$version}</code>\n";
+            $text_marzban .= "💾 رم: {$mem_used} / {$mem_total}\n";
+            $text_marzban .= "🌐 پهنای باند: {$bw}\n\n";
+            $text_marzban .= "📂 گروه‌ها ({$g_count}):\n{$groups_line}\n\n";
+            $text_marzban .= "⏱ توکن: {$ms_token}ms | آمار: {$ms_stats}ms | گروه: " . intval($ms_groups ?? 0) . "ms";
+            sendmessage($from_id, $text_marzban, $optionMarzban, 'HTML');
+        } elseif (isset($Check_token['detail']) && (stripos(strval($Check_token['detail']), 'Incorrect') !== false || stripos(strval($Check_token['detail']), 'password') !== false)) {
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['Incorrectinfo'], $optionMarzban, 'HTML');
         } else {
-            $text_marzban = $textbotlang['Admin']['managepanel']['errorstatuspanel'] . json_encode($Check_token);
-            sendmessage($from_id, $text_marzban, null, 'HTML');
+            $err = is_array($Check_token) ? json_encode($Check_token, JSON_UNESCAPED_UNICODE) : strval($Check_token);
+            $text_marzban = ($textbotlang['Admin']['managepanel']['errorstatuspanel'] ?? '❌ خطا:') . "\n<code>" . htmlspecialchars(substr($err, 0, 500), ENT_QUOTES, 'UTF-8') . "</code>";
+            sendmessage($from_id, $text_marzban, $optionMarzban, 'HTML');
         }
     } elseif ($marzban_list_get['type'] == "marzneshin") {
         $Check_token = token_panelm($marzban_list_get['url_panel'], $marzban_list_get['username_panel'], $marzban_list_get['password_panel']);
@@ -1034,7 +1110,17 @@ if ($datain == "bot_update_yes") {
     $result = runBotSelfUpdate();
     if (!empty($result['ok'])) {
         $n = isset($result['files']) ? intval($result['files']) : 0;
-        sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['success'], $n), $setting_panel, 'HTML');
+        $msg = sprintf($textbotlang['Admin']['bot_update']['success'], $n);
+        if (!empty($result['backup'])) {
+            $msg .= "\n\n📦 بک‌آپ: <code>" . htmlspecialchars(strval($result['backup']), ENT_QUOTES, 'UTF-8') . "</code>";
+        }
+        if (!empty($result['failed']) && intval($result['failed']) > 0) {
+            $msg .= "\n\n⚠️ تعداد ناموفق: " . intval($result['failed']);
+            if (!empty($result['message']) && $result['message'] !== 'ok') {
+                $msg .= "\n" . htmlspecialchars(strval($result['message']), ENT_QUOTES, 'UTF-8');
+            }
+        }
+        sendmessage($from_id, $msg, $setting_panel, 'HTML');
     } else {
         $err = isset($result['message']) ? $result['message'] : 'نامشخص';
         sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['fail'], $err), $setting_panel, 'HTML');
@@ -2346,11 +2432,12 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     sendmessage($from_id, $textbotlang['Admin']['Help']['change']['updated'], $helpedit, 'HTML');
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['setinbound']) {
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['setinbounddec'], $backadmin, 'HTML');
-    if (($panel['type'] ?? '') == 'marzban') {
-        sendmessage($from_id, "✅ برای پاسارگارد/مرزبان گروهی، اینباند از گروه پنل خوانده می‌شود و نیاز به تنظیم پروتکل نیست.", $keyboardadmin, 'HTML');
+    $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (is_array($panel) && ($panel['type'] ?? '') == 'marzban') {
+        sendmessage($from_id, "✅ برای <b>پاسارگارد</b> تنظیم اینباند/پروتکل لازم نیست.\nگروه‌ها مستقیم از پنل خوانده می‌شوند.\nاز دکمه «گروه‌های پنل» می‌توانید لیست را ببینید.", $optionMarzban, 'HTML');
         step('home', $from_id);
     } else {
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['setinbounddec'], $backadmin, 'HTML');
         step("setinboundandprotocol", $from_id);
     }
 } elseif ($user['step'] == "setinboundandprotocol") {

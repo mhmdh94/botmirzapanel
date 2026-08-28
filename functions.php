@@ -5,6 +5,7 @@ use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
+
 function ActiveVoucher($ev_number, $ev_code)
 {
     global $connect;
@@ -2459,322 +2460,75 @@ function isBase64($string)
  * آپدیت فایل‌های ربات از گیتهاب فورک (بدون دست زدن به config و فایل‌های حساس)
  * @return array{ok:bool,msg:string,updated:int,skipped:int,errors:array}
  */
-function updateBotFromGithub()
+
+/**
+ * ادمین اصلی = adminnumber در config.php
+ * اگر خالی/placeholder باشد، اولین رکورد جدول admin
+ */
+function isMainBotAdmin($user_id)
 {
-    $result = ['ok' => false, 'msg' => '', 'updated' => 0, 'skipped' => 0, 'errors' => []];
-    $root = realpath(__DIR__);
-    if ($root === false || !is_dir($root)) {
-        $result['msg'] = 'مسیر ربات پیدا نشد.';
-        return $result;
+    global $adminnumber, $pdo;
+    $uid = intval($user_id);
+    if ($uid <= 0) {
+        return false;
     }
-    if (!class_exists('ZipArchive')) {
-        $result['msg'] = 'افزونه ZipArchive روی سرور فعال نیست.';
-        return $result;
-    }
-
-    // فایل‌هایی که هرگز نباید جایگزین شوند
-    $protected_names = [
-        'config.php',
-        'config.php.bak',
-        'error_log',
-        '.env',
-        'config.local.php',
-    ];
-    // پسوند / پوشه‌هایی که از آپدیت خارج می‌شوند
-    $skip_dirs = ['.git', 'vendor']; // vendor اختیاری — اگر در ریپو نیست مشکلی نیست
-
-    $zip_url = 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
-    $tmp_base = rtrim(sys_get_temp_dir(), '/') . '/mirza_bot_upd_' . getmypid() . '_' . time();
-    if (!@mkdir($tmp_base, 0755, true)) {
-        $result['msg'] = 'ساخت پوشه موقت ناموفق بود.';
-        return $result;
-    }
-    $zip_path = $tmp_base . '/bot.zip';
-
-    // دانلود
-    $fp = @fopen($zip_path, 'wb');
-    if (!$fp) {
-        $result['msg'] = 'نمی‌توان فایل zip را ذخیره کرد.';
-        return $result;
-    }
-    $ch = curl_init($zip_url);
-    curl_setopt_array($ch, [
-        CURLOPT_FILE => $fp,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_CONNECTTIMEOUT => 20,
-        CURLOPT_TIMEOUT => 120,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => 0,
-        CURLOPT_USERAGENT => 'MirzaBot-Updater/1.0',
-    ]);
-    $ok = curl_exec($ch);
-    $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
-    $cerr = curl_error($ch);
-    curl_close($ch);
-    fclose($fp);
-    if (!$ok || $code >= 400 || !is_file($zip_path) || filesize($zip_path) < 1000) {
-        $result['msg'] = 'دانلود از گیتهاب ناموفق بود' . ($cerr ? ": $cerr" : " (HTTP $code)");
-        @unlink($zip_path);
-        @rmdir($tmp_base);
-        return $result;
-    }
-
-    $zip = new ZipArchive();
-    if ($zip->open($zip_path) !== true) {
-        $result['msg'] = 'باز کردن فایل zip ناموفق بود.';
-        @unlink($zip_path);
-        return $result;
-    }
-    if (!$zip->extractTo($tmp_base)) {
-        $zip->close();
-        $result['msg'] = 'استخراج zip ناموفق بود.';
-        return $result;
-    }
-    $zip->close();
-    @unlink($zip_path);
-
-    // پیدا کردن پوشه استخراج‌شده
-    $src = null;
-    foreach (scandir($tmp_base) as $d) {
-        if ($d === '.' || $d === '..') continue;
-        $p = $tmp_base . '/' . $d;
-        if (is_dir($p) && (is_file($p . '/index.php') || is_file($p . '/functions.php'))) {
-            $src = $p;
-            break;
-        }
-    }
-    if ($src === null) {
-        $result['msg'] = 'محتوای معتبر در آرشیو پیدا نشد.';
-        return $result;
-    }
-
-    // بک‌آپ config.php
-    $cfg = $root . '/config.php';
-    if (is_file($cfg)) {
-        @copy($cfg, $root . '/config.php.bak.' . date('Ymd_His'));
-    }
-
-    $updated = 0;
-    $skipped = 0;
-    $errors = [];
-
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($src, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::SELF_FIRST
-    );
-    foreach ($iterator as $item) {
-        $rel = substr($item->getPathname(), strlen($src) + 1);
-        $rel = str_replace('\\', '/', $rel);
-        if ($rel === '' || $rel === false) continue;
-
-        // رد کردن vendor و .git
-        $parts = explode('/', $rel);
-        if (isset($parts[0]) && in_array($parts[0], $skip_dirs, true)) {
-            $skipped++;
-            continue;
-        }
-        $base = basename($rel);
-        if (in_array($base, $protected_names, true)) {
-            $skipped++;
-            continue;
-        }
-        // هر فایلی که با config.php شروع شود محافظت شود
-        if (strpos($base, 'config.php') === 0) {
-            $skipped++;
-            continue;
-        }
-
-        $dest = $root . '/' . $rel;
-        if ($item->isDir()) {
-            if (!is_dir($dest)) {
-                if (!@mkdir($dest, 0755, true)) {
-                    $errors[] = "mkdir: $rel";
-                }
+    // از config
+    if (isset($adminnumber)) {
+        $main = trim(strval($adminnumber));
+        // placeholder نصب را نادیده بگیر
+        if ($main !== '' && $main !== '{ADMIN_#ID}' && ctype_digit(str_replace(['-', ' '], '', $main))) {
+            if (intval($main) === $uid) {
+                return true;
             }
-            continue;
-        }
-        $dir = dirname($dest);
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
-        }
-        if (!@copy($item->getPathname(), $dest)) {
-            $errors[] = "copy: $rel";
-        } else {
-            $updated++;
         }
     }
-
-    // پاکسازی موقت
+    // fallback: اولین ادمین ثبت‌شده در جدول
     try {
-        $it = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($tmp_base, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($it as $fdel) {
-            if ($fdel->isDir()) @rmdir($fdel->getPathname());
-            else @unlink($fdel->getPathname());
+        if (isset($pdo) && $pdo instanceof PDO) {
+            $st = $pdo->query("SELECT id_admin FROM admin ORDER BY id_admin ASC LIMIT 1");
+            $row = $st ? $st->fetch(PDO::FETCH_ASSOC) : false;
+            if ($row && intval($row['id_admin']) === $uid) {
+                return true;
+            }
         }
-        @rmdir($tmp_base);
-    } catch (Exception $e) {}
-
-    $result['ok'] = count($errors) === 0 || $updated > 0;
-    $result['updated'] = $updated;
-    $result['skipped'] = $skipped;
-    $result['errors'] = array_slice($errors, 0, 10);
-    if ($result['ok']) {
-        $result['msg'] = "✅ آپدیت انجام شد.\n📁 فایل به‌روز: {$updated}\n⏭ رد شده (محافظت‌شده/غیرضروری): {$skipped}";
-        if (count($errors)) {
-            $result['msg'] .= "\n⚠️ خطا در " . count($errors) . " مورد";
-        }
-        $result['msg'] .= "\n\n🔒 config.php حفظ شد.";
-    } else {
-        $result['msg'] = 'آپدیت ناموفق بود.' . (count($errors) ? "\n" . implode("\n", $errors) : '');
-    }
-    return $result;
-}
-
-function buildAdminKeyboard()
-{
-    global $textbotlang;
-    return json_encode([
-        'keyboard' => [
-            [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
-            [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']], ['text' => $textbotlang['Admin']['keyboardadmin']['add_panel']]],
-            [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
-            [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]],
-            [['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]],
-            [['text' => $textbotlang['Admin']['keyboardadmin']['settings']]],
-            [['text' => $textbotlang['users']['backhome']]]
-        ],
-        'resize_keyboard' => true
-    ]);
-}
-
-/**
- * اطمینان از وجود ستون‌های قابلیت‌های فورک در جدول setting
- */
-
-/** آیا افزایش موجودی / واریز فعال است؟ */
-
-/** آیا دکمه/بخش پشتیبانی فعال است؟ */
-
-/** آیا امکان تمدید سرویس فعال است؟ */
-function isExtendEnabled()
-{
-    $st = select("setting", "*", null, null, "select");
-    if (is_array($st) && array_key_exists('status_extend', $st) && $st['status_extend'] !== null && $st['status_extend'] !== '') {
-        return strval($st['status_extend']) !== '0';
-    }
-    return true;
-}
-
-/** مدت نگهداری فاکتور unpaid (دقیقه) — پیش‌فرض 45 */
-function getUnpaidInvoiceTtlMinutes()
-{
-    if (function_exists('ensurePaySetting')) {
-        ensurePaySetting('unpaid_invoice_ttl_minutes', '45');
-    }
-    $m = intval(function_exists('getPaySettingValue') ? getPaySettingValue('unpaid_invoice_ttl_minutes', '45') : 45);
-    if ($m < 5) $m = 5;
-    if ($m > 1440) $m = 1440;
-    return $m;
-}
-
-/** حذف فاکتورهای unpaid منقضی‌شده */
-function cleanupExpiredUnpaidInvoices($id_user = null)
-{
-    global $pdo;
-    try {
-        $ttl = getUnpaidInvoiceTtlMinutes() * 60;
-        $cutoff = time() - $ttl;
-        if ($id_user !== null) {
-            $st = $pdo->prepare("DELETE FROM invoice WHERE (status = 'unpaid' OR Status = 'unpaid') AND id_user = :u AND time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) > 0 AND CAST(time_sell AS UNSIGNED) < :c");
-            $st->execute([':u' => $id_user, ':c' => $cutoff]);
-        } else {
-            $st = $pdo->prepare("DELETE FROM invoice WHERE (status = 'unpaid' OR Status = 'unpaid') AND time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) > 0 AND CAST(time_sell AS UNSIGNED) < :c");
-            $st->execute([':c' => $cutoff]);
-        }
-        return $st->rowCount();
     } catch (Throwable $e) {
-        return 0;
     }
-}
-
-function isSupportEnabled()
-{
-    $st = select("setting", "*", null, null, "select");
-    if (is_array($st) && array_key_exists('status_support', $st) && $st['status_support'] !== null && $st['status_support'] !== '') {
-        return strval($st['status_support']) !== '0';
-    }
-    return true;
-}
-
-function isDepositEnabled()
-{
-    $st = select("setting", "*", null, null, "select");
-    if (is_array($st) && array_key_exists('status_deposit', $st) && $st['status_deposit'] !== null && $st['status_deposit'] !== '') {
-        return strval($st['status_deposit']) !== '0';
-    }
-    return true;
-}
-
-/** آیا خرید حجم اضافه فعال است؟ */
-function isExtraVolumeEnabled()
-{
-    $st = select("setting", "*", null, null, "select");
-    if (is_array($st) && array_key_exists('status_extra_volume', $st) && $st['status_extra_volume'] !== null && $st['status_extra_volume'] !== '') {
-        return strval($st['status_extra_volume']) !== '0';
-    }
-    return true;
-}
-
-
-function ensureFeatureSettingsColumns() {
-    static $done = false;
-    if ($done) return;
-    $done = true;
-    $fields = [
-        'force_channel' => '1',
-        'show_balance' => '0',
-        'status_usertest' => '1',
-        'status_buy' => '1',
-        'status_search_service' => '1',
-        'status_affiliates_btn' => '1',
-        'status_tariff_list' => '1',
-        'status_extra_volume' => '1',
-        'status_deposit' => '1',
-        'status_support' => '1',
-        'status_extend' => '1',
-    ];
-    foreach ($fields as $name => $default) {
-        if (function_exists('addFieldToTable')) {
-            addFieldToTable('setting', $name, $default, 'VARCHAR(20)');
+    // اگر فقط یک ادمین در لیست هست، همان را اصلی بدان
+    try {
+        $ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
+        if (is_array($ids) && count($ids) === 1 && intval($ids[0]) === $uid) {
+            return true;
         }
-    }
-}
-
-
-
-
-
-/**
- * آیا این کاربر ادمین اصلی ربات است؟
- */
-function isMainBotAdmin($from_id)
-{
-    global $adminnumber, $admin_ids;
-    if (isset($adminnumber) && intval($adminnumber) > 0) {
-        return intval($from_id) === intval($adminnumber);
-    }
-    if (is_array($admin_ids) && count($admin_ids) > 0) {
-        return intval($from_id) === intval($admin_ids[0]);
+        // اگر کاربر در جدول admin است و adminnumber ست نشده
+        if (is_array($ids) && in_array($uid, array_map('intval', $ids), true)) {
+            $main = isset($adminnumber) ? trim(strval($adminnumber)) : '';
+            if ($main === '' || $main === '{ADMIN_#ID}') {
+                return true;
+            }
+        }
+    } catch (Throwable $e) {
     }
     return false;
 }
 
-/**
- * فایل‌های محافظت‌شده که هنگام آپدیت هرگز از گیتهاب بازنویسی نمی‌شوند
- */
+function updateBotFromGithub()
+{
+    // سازگاری با نام قدیمی — همان منطق اسکریپت نصب
+    if (function_exists('runBotSelfUpdate')) {
+        $r = runBotSelfUpdate();
+        return [
+            'ok' => !empty($r['ok']),
+            'msg' => $r['message'] ?? '',
+            'updated' => intval($r['files'] ?? 0),
+            'skipped' => 0,
+            'errors' => empty($r['ok']) ? [$r['message'] ?? 'fail'] : [],
+            'backup' => $r['backup'] ?? '',
+        ];
+    }
+    return ['ok' => false, 'msg' => 'تابع runBotSelfUpdate موجود نیست.', 'updated' => 0, 'skipped' => 0, 'errors' => []];
+}
+
+
 function botUpdateProtectedBasenames()
 {
     return [
@@ -2812,35 +2566,41 @@ function runBotSelfUpdate($repoZipUrl = null)
     if ($root === false || !is_dir($root)) {
         return ['ok' => false, 'message' => 'مسیر ربات یافت نشد.'];
     }
-
+    if (!is_writable($root)) {
+        return ['ok' => false, 'message' => 'پوشه ربات قابل نوشتن نیست (مجوز www-data/apache را چک کنید).'];
+    }
     if (!class_exists('ZipArchive')) {
         return ['ok' => false, 'message' => 'افزونه ZipArchive روی سرور فعال نیست.'];
     }
 
-    // فقط منبع ثابت فورک — پارامتر ورودی نادیده گرفته می‌شود (ضد SSRF)
-    $allowedUrl = 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
-    $url = $allowedUrl;
+    $url = 'https://github.com/mhmdh94/botmirzapanel/archive/refs/heads/main.zip';
 
     @set_time_limit(300);
     @ini_set('max_execution_time', '300');
-    @ini_set('memory_limit', '256M');
+    @ini_set('memory_limit', '512M');
 
     $lockFile = $root . DIRECTORY_SEPARATOR . '.update_lock';
     $lockFp = @fopen($lockFile, 'c+');
-    if (!$lockFp || !flock($lockFp, LOCK_EX | LOCK_NB)) {
+    if (!$lockFp || !@flock($lockFp, LOCK_EX | LOCK_NB)) {
         if ($lockFp) {
             @fclose($lockFp);
         }
-        return ['ok' => false, 'message' => 'آپدیت دیگری در حال اجراست یا قفل فایل آزاد نیست.'];
+        return ['ok' => false, 'message' => 'آپدیت دیگری در حال اجراست یا قفل آزاد نیست.'];
     }
 
-    $tmpBase = sys_get_temp_dir() . '/mirza_upd_' . getmypid() . '_' . time();
+    $stamp = date('Ymd_His');
+    $tmpBase = rtrim(sys_get_temp_dir(), '/\\') . '/mirza_upd_' . getmypid() . '_' . $stamp;
     $zipPath = $tmpBase . '.zip';
     $extractDir = $tmpBase . '_ex';
-    $bakDir = $tmpBase . '_bak';
+    $bakDir = $root . DIRECTORY_SEPARATOR . '.update_backups' . DIRECTORY_SEPARATOR . $stamp;
     $filesUpdated = 0;
+    $copyFail = 0;
+    $copyErrors = [];
 
     $rmTree = function ($p) {
+        if ($p === '' || $p === '/' || $p === '.') {
+            return;
+        }
         if (is_file($p) || is_link($p)) {
             @unlink($p);
             return;
@@ -2855,24 +2615,20 @@ function runBotSelfUpdate($repoZipUrl = null)
             );
             foreach ($it as $f) {
                 $path = $f->getPathname();
-                if ($f->isLink()) {
+                if ($f->isLink() || $f->isFile()) {
                     @unlink($path);
                 } elseif ($f->isDir()) {
                     @rmdir($path);
-                } else {
-                    @unlink($path);
                 }
             }
         } catch (Throwable $e) {
-            // ignore
         }
         @rmdir($p);
     };
 
-    $cleanup = function () use ($zipPath, $extractDir, $bakDir, $lockFp, $lockFile, $rmTree) {
+    $cleanup = function () use ($zipPath, $extractDir, $lockFp, $lockFile, $rmTree) {
         $rmTree($zipPath);
         $rmTree($extractDir);
-        $rmTree($bakDir);
         if (is_resource($lockFp)) {
             @flock($lockFp, LOCK_UN);
             @fclose($lockFp);
@@ -2880,14 +2636,12 @@ function runBotSelfUpdate($repoZipUrl = null)
         @unlink($lockFile);
     };
 
-    /** مسیر مقصد باید داخل $root بماند (ضد Zip Slip) */
-    $safeDest = function ($root, $rel) {
+    $safeRel = function ($rel) {
         $rel = str_replace('\\', '/', strval($rel));
         $rel = ltrim($rel, '/');
         if ($rel === '' || strpos($rel, "\0") !== false) {
             return false;
         }
-        // جلوگیری از .. و مسیر مطلق
         $parts = [];
         foreach (explode('/', $rel) as $seg) {
             if ($seg === '' || $seg === '.') {
@@ -2898,92 +2652,61 @@ function runBotSelfUpdate($repoZipUrl = null)
             }
             $parts[] = $seg;
         }
-        $relNorm = implode('/', $parts);
-        if ($relNorm === '') {
+        if (count($parts) === 0) {
             return false;
         }
-        $dest = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relNorm);
-        $destRealParent = realpath(dirname($dest));
-        // اگر پوشه والد هنوز ساخته نشده، با نرمال‌سازی منطقی چک کن
-        $rootReal = realpath($root);
-        if ($rootReal === false) {
-            return false;
-        }
-        if ($destRealParent !== false) {
-            if (strpos($destRealParent, $rootReal) !== 0) {
-                return false;
-            }
-        } else {
-            // والد وجود ندارد — فقط با مسیر نرمال‌شده
-            $norm = $rootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relNorm);
-            if (strpos($norm, $rootReal . DIRECTORY_SEPARATOR) !== 0 && $norm !== $rootReal) {
-                return false;
-            }
-        }
-        return $dest;
+        return implode('/', $parts);
     };
 
     try {
-        // دانلود
-        $zipData = false;
-        if (function_exists('curl_init')) {
+        // ---- دانلود روی دیسک (نه حافظه) ----
+        $fp = @fopen($zipPath, 'wb');
+        if (!$fp) {
+            // اگر tmp سیستم مشکل داشت داخل پوشه ربات
+            $zipPath = $root . DIRECTORY_SEPARATOR . '.update_tmp_' . $stamp . '.zip';
+            $extractDir = $root . DIRECTORY_SEPARATOR . '.update_tmp_' . $stamp . '_ex';
+            $fp = @fopen($zipPath, 'wb');
+        }
+        if (!$fp) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'نمی‌توان فایل zip موقت ساخت (مجوز نوشتن).'];
+        }
+
+        $downloadOk = false;
+        $lastErr = '';
+        foreach ([true, false] as $verifySsl) {
             $ch = curl_init($url);
             curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FILE => $fp,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_MAXREDIRS => 5,
-                CURLOPT_CONNECTTIMEOUT => 20,
-                CURLOPT_TIMEOUT => 120,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
-                CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
-                CURLOPT_USERAGENT => 'MirzaBot-SelfUpdate/1.0',
+                CURLOPT_CONNECTTIMEOUT => 30,
+                CURLOPT_TIMEOUT => 180,
+                CURLOPT_SSL_VERIFYPEER => $verifySsl,
+                CURLOPT_SSL_VERIFYHOST => $verifySsl ? 2 : 0,
+                CURLOPT_USERAGENT => 'MirzaBot-SelfUpdate/1.1',
             ]);
-            $zipData = curl_exec($ch);
+            // بعد از تلاش اول فایل را از نو بنویس
+            if (!$verifySsl) {
+                ftruncate($fp, 0);
+                rewind($fp);
+            }
+            $ok = curl_exec($ch);
             $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
-            $cerr = curl_error($ch);
+            $lastErr = curl_error($ch);
             curl_close($ch);
-            if ($zipData === false || $code < 200 || $code >= 300) {
-                $cleanup();
-                return ['ok' => false, 'message' => 'دانلود ناموفق (HTTP ' . $code . '). ' . $cerr];
+            if ($ok && $code >= 200 && $code < 300 && filesize($zipPath) > 5000) {
+                $downloadOk = true;
+                break;
             }
-        } else {
-            $ctx = stream_context_create([
-                'http' => [
-                    'timeout' => 120,
-                    'follow_location' => 1,
-                    'max_redirects' => 5,
-                    'header' => "User-Agent: MirzaBot-SelfUpdate/1.0\r\n",
-                ],
-                'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                ],
-            ]);
-            $zipData = @file_get_contents($url, false, $ctx);
-            if ($zipData === false) {
-                $cleanup();
-                return ['ok' => false, 'message' => 'دانلود با file_get_contents ناموفق بود.'];
-            }
+            $lastErr = "HTTP $code " . $lastErr;
         }
+        fclose($fp);
 
-        $zipLen = strlen($zipData);
-        // محدودیت حجم zip (~80MB) ضد zip bomb ساده
-        if ($zipLen < 1000) {
+        if (!$downloadOk) {
             $cleanup();
-            return ['ok' => false, 'message' => 'فایل دانلودی خیلی کوچک یا نامعتبر است.'];
+            return ['ok' => false, 'message' => 'دانلود از گیتهاب ناموفق: ' . $lastErr];
         }
-        if ($zipLen > 80 * 1024 * 1024) {
-            $cleanup();
-            return ['ok' => false, 'message' => 'فایل دانلودی بیش از حد بزرگ است.'];
-        }
-
-        if (@file_put_contents($zipPath, $zipData) === false) {
-            $cleanup();
-            return ['ok' => false, 'message' => 'نوشتن فایل zip موقت ممکن نشد.'];
-        }
-        unset($zipData);
 
         @mkdir($extractDir, 0755, true);
         $zip = new ZipArchive();
@@ -2991,71 +2714,47 @@ function runBotSelfUpdate($repoZipUrl = null)
             $cleanup();
             return ['ok' => false, 'message' => 'باز کردن zip ناموفق بود.'];
         }
-
-        // قبل از extract: رد کردن path traversal و symlink در خود zip
-        $num = $zip->numFiles;
-        if ($num <= 0 || $num > 20000) {
-            $zip->close();
-            $cleanup();
-            return ['ok' => false, 'message' => 'تعداد فایل‌های zip نامعتبر است.'];
-        }
-        $uncompressedTotal = 0;
-        for ($i = 0; $i < $num; $i++) {
-            $stat = $zip->statIndex($i);
-            if ($stat === false) {
-                continue;
-            }
-            $name = str_replace('\\', '/', $stat['name']);
-            if (strpos($name, "\0") !== false || strpos($name, '../') !== false || strpos($name, '..\\') !== false || isset($name[0]) && $name[0] === '/') {
-                $zip->close();
-                $cleanup();
-                return ['ok' => false, 'message' => 'فایل zip دارای مسیر ناامن است (Zip Slip).'];
-            }
-            // رد symlink (type 0120000 در external attributes گاهی)
-            $uncompressedTotal += intval($stat['size'] ?? 0);
-            if ($uncompressedTotal > 200 * 1024 * 1024) {
-                $zip->close();
-                $cleanup();
-                return ['ok' => false, 'message' => 'حجم استخراج‌شده بیش از حد مجاز است.'];
-            }
-        }
-
         if (!$zip->extractTo($extractDir)) {
             $zip->close();
             $cleanup();
             return ['ok' => false, 'message' => 'استخراج zip ناموفق بود.'];
         }
         $zip->close();
+        @unlink($zipPath);
 
-        // پیدا کردن ریشه استخراج‌شده
+        // پیدا کردن ریشه کد (botmirzapanel-main)
         $srcRoot = null;
-        $entries = @scandir($extractDir);
-        if (is_array($entries)) {
-            foreach ($entries as $e) {
-                if ($e === '.' || $e === '..') {
-                    continue;
-                }
-                $p = $extractDir . DIRECTORY_SEPARATOR . $e;
-                if (is_dir($p) && is_file($p . '/index.php') && is_file($p . '/functions.php')) {
-                    $srcRoot = realpath($p);
-                    break;
-                }
+        $entries = @scandir($extractDir) ?: [];
+        foreach ($entries as $e) {
+            if ($e === '.' || $e === '..') {
+                continue;
+            }
+            $p = $extractDir . DIRECTORY_SEPARATOR . $e;
+            if (is_dir($p) && is_file($p . '/index.php') && is_file($p . '/functions.php')) {
+                $srcRoot = realpath($p);
+                break;
             }
         }
         if ($srcRoot === null && is_file($extractDir . '/index.php')) {
             $srcRoot = realpath($extractDir);
         }
-        if ($srcRoot === null || !is_file($srcRoot . '/index.php') || !is_file($srcRoot . '/admin.php') || !is_file($srcRoot . '/functions.php')) {
+        if ($srcRoot === null || !is_file($srcRoot . '/index.php') || !is_file($srcRoot . '/functions.php')) {
             $cleanup();
-            return ['ok' => false, 'message' => 'ساختار مخزن نامعتبر است (فایل‌های اصلی یافت نشد).'];
+            return ['ok' => false, 'message' => 'ساختار zip نامعتبر است (index/functions پیدا نشد).'];
         }
 
-        // بک‌آپ فایل‌های محافظت‌شده فعلی
-        @mkdir($bakDir, 0755, true);
+        // ---- بک‌آپ فایل‌های حساس ----
+        if (!@mkdir($bakDir, 0755, true) && !is_dir($bakDir)) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'ساخت پوشه بک‌آپ ناموفق: ' . $bakDir];
+        }
         foreach (botUpdateProtectedBasenames() as $prot) {
             $cur = $root . DIRECTORY_SEPARATOR . $prot;
             if (is_file($cur) && !is_link($cur)) {
-                @copy($cur, $bakDir . DIRECTORY_SEPARATOR . $prot);
+                if (!@copy($cur, $bakDir . DIRECTORY_SEPARATOR . $prot)) {
+                    $cleanup();
+                    return ['ok' => false, 'message' => 'بک‌آپ ناموفق: ' . $prot];
+                }
             }
         }
         foreach (glob($root . '/config.php.*') ?: [] as $cf) {
@@ -3063,35 +2762,45 @@ function runBotSelfUpdate($repoZipUrl = null)
                 @copy($cf, $bakDir . DIRECTORY_SEPARATOR . basename($cf));
             }
         }
+        if (is_file($root . '/config.php') && !is_file($bakDir . '/config.php')) {
+            $cleanup();
+            return ['ok' => false, 'message' => 'بک‌آپ config.php انجام نشد — آپدیت لغو شد.'];
+        }
 
-        // کپی امن فایل‌ها
+        // ---- کپی فایل‌ها ----
+        $srcRootLen = strlen($srcRoot);
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($srcRoot, RecursiveDirectoryIterator::SKIP_DOTS),
+            new RecursiveDirectoryIterator($srcRoot, FilesystemIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
         foreach ($iterator as $item) {
             /** @var SplFileInfo $item */
             if ($item->isLink()) {
-                continue; // هرگز symlink کپی نشود
-            }
-            $rel = substr($item->getPathname(), strlen($srcRoot) + 1);
-            if ($rel === false || $rel === '') {
                 continue;
             }
-            $rel = str_replace('\\', '/', $rel);
+            $full = $item->getPathname();
+            if (strpos($full, $srcRoot) !== 0) {
+                continue;
+            }
+            $rel = substr($full, $srcRootLen + 1);
+            $rel = $safeRel($rel);
+            if ($rel === false) {
+                continue;
+            }
             $base = basename($rel);
+            $top = explode('/', $rel)[0];
 
-            if (strpos($rel, '.git/') === 0 || $rel === '.git') {
+            if ($top === '.git' || $top === '.update_backups' || $top === '.github') {
                 continue;
             }
+            // vendor را از گیتهاب همگام کن اگر در ریپو هست؛ اگر نه، دست نزن
+            // (اسکریپت هم vendor را کپی می‌کند مگر protected)
+
             if (isBotUpdateProtectedFile($base)) {
                 continue;
             }
 
-            $dest = $safeDest($root, $rel);
-            if ($dest === false) {
-                continue; // مسیر ناامن — رد
-            }
+            $dest = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
 
             if ($item->isDir()) {
                 if (!is_dir($dest)) {
@@ -3102,23 +2811,35 @@ function runBotSelfUpdate($repoZipUrl = null)
             if (!$item->isFile()) {
                 continue;
             }
-            // فقط پسوندهای مجاز کد/دارایی (ضد قرار دادن باینری مشکوک در مسیر عجیب)
-            // همه فایل‌های مخزن رسمی مجازند — محدودسازی پسوند اختیاری سخت‌گیرانه نیست تا vendor/cron خراب نشود
 
             $destDir = dirname($dest);
             if (!is_dir($destDir)) {
                 @mkdir($destDir, 0755, true);
             }
-            // اگر مقصد symlink است، حذف و جایگزینی با فایل عادی
             if (is_link($dest)) {
                 @unlink($dest);
             }
-            if (@copy($item->getPathname(), $dest)) {
+
+            $copied = @copy($full, $dest);
+            if (!$copied) {
+                // fallback برای مجوزهای سخت
+                $data = @file_get_contents($full);
+                if ($data !== false) {
+                    $copied = (@file_put_contents($dest, $data) !== false);
+                }
+            }
+            if ($copied) {
+                @chmod($dest, 0644);
                 $filesUpdated++;
+            } else {
+                $copyFail++;
+                if (count($copyErrors) < 8) {
+                    $copyErrors[] = $rel;
+                }
             }
         }
 
-        // بازگردانی فایل‌های حساس
+        // بازگردانی فایل‌های حساس از بک‌آپ
         foreach (scandir($bakDir) ?: [] as $bf) {
             if ($bf === '.' || $bf === '..') {
                 continue;
@@ -3134,22 +2855,35 @@ function runBotSelfUpdate($repoZipUrl = null)
 
         if (!is_file($root . '/config.php')) {
             $cleanup();
-            return ['ok' => false, 'message' => 'خطای بحرانی: config.php پس از آپدیت موجود نیست.'];
+            return ['ok' => false, 'message' => 'خطای بحرانی: config.php بعد از آپدیت نیست.'];
         }
-
-        // صحت حداقل فایل‌های هسته
-        foreach (['index.php', 'admin.php', 'functions.php', 'config.php'] as $need) {
+        foreach (['index.php', 'admin.php', 'functions.php'] as $need) {
             if (!is_file($root . DIRECTORY_SEPARATOR . $need)) {
                 $cleanup();
-                return ['ok' => false, 'message' => 'پس از آپدیت فایل ضروری کم است: ' . $need];
+                return ['ok' => false, 'message' => 'فایل ضروری کم است: ' . $need];
             }
         }
 
         $cleanup();
+
+        if ($filesUpdated < 1) {
+            $hint = $copyFail > 0
+                ? ('هیچ فایلی کپی نشد. خطا: ' . implode(', ', $copyErrors) . ' — مجوز نوشتن www-data را چک کنید.')
+                : 'هیچ فایلی برای کپی پیدا نشد (zip خالی یا مسیر اشتباه).';
+            return ['ok' => false, 'message' => $hint, 'files' => 0, 'backup' => $bakDir];
+        }
+
+        $msg = 'ok';
+        if ($copyFail > 0) {
+            $msg = "بخشی از فایل‌ها کپی نشد ($copyFail). نمونه: " . implode(', ', $copyErrors);
+        }
+
         return [
             'ok' => true,
-            'message' => 'ok',
+            'message' => $msg,
             'files' => $filesUpdated,
+            'backup' => $bakDir,
+            'failed' => $copyFail,
         ];
     } catch (Throwable $e) {
         if (is_dir($bakDir)) {
@@ -3167,6 +2901,7 @@ function runBotSelfUpdate($repoZipUrl = null)
         return ['ok' => false, 'message' => 'خطا: ' . $e->getMessage()];
     }
 }
+
 
 
 

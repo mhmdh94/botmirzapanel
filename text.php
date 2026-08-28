@@ -825,6 +825,8 @@ $textbotlang['Admin']['managepanel']['ChangedusernamePanel'] = "✅ نام کا�
 $textbotlang['Admin']['managepanel']['getpasswordnew'] = "رمز عبور جدید پنل را ارسال کنید";
 $textbotlang['Admin']['managepanel']['ChangedpasswordPanel'] = "✅ رمز عبور پنل با موفقیت تغییر کرد.";
 $textbotlang['Admin']['managepanel']['btnshowconnect'] = "🔌 وضعیت اتصال پنل";
+$textbotlang['Admin']['managepanel']['show_groups'] = "📂 گروه‌های پنل";
+$textbotlang['Admin']['managepanel']['no_group_error'] = "❌ هیچ گروهی از پنل خوانده نشد.\n\nکاربر ساخته نمی‌شود.\nدر پنل پاسارگارد حداقل یک گروه برای ادمین تعریف کنید و دوباره تلاش کنید.";
 $textbotlang['Admin']['managepanel']['infomarzban'] = "🖥 <b>آمار پنل پاسارگارد</b>
 
 👥 کل کاربران پنل: <code>%s</code>
@@ -846,9 +848,11 @@ $textbotlang['Admin']['managepanel']['settoken'] = "📌 توکن  را از پ�
 $textbotlang['Admin']['managepanel']['notex-ui'] = "📌 نکات بعد اضافه کردن پنل :‌
 
 ۱ - از مدیریت پنل > تنظیم شناسه اینباند  شناسه اینباندی که می‌خواهید ساخته شود را تنظیم نمایید";
-$textbotlang['Admin']['managepanel']['notemarzban'] = "📌 نکات بعد اضافه کردن پنل :‌
+$textbotlang['Admin']['managepanel']['notemarzban'] = "📌 نکات بعد اضافه کردن پنل پاسارگارد:
 
-۱ -از مدیریت پنل > تنظیم پروتکل و اینباند یک نام کاربری موجود در پنل را ارسال نمایید.";
+۱) از «وضعیت اتصال پنل» اتصال و گروه‌ها را چک کنید.
+۲) اینباند/پروتکل لازم نیست — از گروه‌های پنل خوانده می‌شود.
+۳) روش ساخت نام کاربری را در مدیریت پنل تنظیم کنید.";
 $textbotlang['Admin']['managepanel']['wgdashboard'] = "❌ نکته :
 برای فعالسازی پنل باید به منوی مدیریت پنل  رفته و گزینه های 
 منوی تنظیم شناسه اینباند رفته و نام کانفیگ را تنظیم نمایید در غیراینصورت ربات هیچ کانفیگی نمیسازد";
