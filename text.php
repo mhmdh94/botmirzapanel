@@ -345,12 +345,11 @@ $textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وج
 $textbotlang['users']['removeconfig']['rejectremove'] = "❌عدم تایید حذف";
 $textbotlang['users']['removeconfig']['accepetrequest'] = "✅ درخواست شما ارسال گردید پس از بررسی مدیریت نتیجه به شما اطلاع رسانی خواهد شد";
 $textbotlang['users']['status']['notusername'] = "❌ امکان حذف سرویس وجود ندارد.";
-$textbotlang['users']['status']['errorexits'] = "❌ یک درخواست از قبل ثبت شده است لطفا منتظر بمانید تا درخواست قبلی بررسی سپس درخواست جدید ارسال کنید.";
+$textbotlang['users']['status']['errorexits'] = "❌ برای این سرویس قبلاً یک درخواست حذف / بازگشت وجه ثبت شده است.\nبرای همین فاکتور نمی‌توانید درخواست دوم بدهید.\nبرای سرویس‌های دیگر محدودیتی ندارید.";
 $textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید درخواست، حذف سرویس برای بررسی به مدیریت ارسال می‌شود.
 
 در صورت موافقت، مبلغ باقی‌مانده (طبق نظر ادمین) به کیف پول برمی‌گردد.";
-$textbotlang['users']['status']['exitsrequsts'] = "⚠️ یک درخواست حذف باز دارید.
-بعد از بررسی می‌توانید درخواست جدید ثبت کنید.";
+$textbotlang['users']['status']['exitsrequsts'] = "⚠️ برای این سرویس قبلاً درخواست حذف ثبت شده است.";
 $textbotlang['users']['status']['sendrequestsremove'] ="درخواست حذف ثبت شد و برای مدیریت ارسال گردید.
 تا بررسی نهایی صبر کنید.";
 $textbotlang['users']['status']['RemoveSerivecbtn'] = "🗑 حذف سرویس";

@@ -1779,13 +1779,23 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     deletemessage($from_id, $message_id);
     sendmessage($from_id, $textbotlang['users']['status']['RemovedService'], null, 'html');
 } elseif (preg_match('/confirmremoveservices-(\w+)/', $datain, $dataget)) {
-    $checkcancelservice = mysqli_query($connect, "SELECT * FROM cancel_service WHERE id_user = '$from_id' AND status = 'waiting'");
-    if (mysqli_num_rows($checkcancelservice) != 0) {
-        sendmessage($from_id, $textbotlang['users']['status']['exitsrequsts'], null, 'HTML');
+    $usernamepanel = $dataget[1];
+    // فقط برای همین فاکتور/یوزرنیم یک درخواست مجاز است (سرویس‌های دیگر آزاد)
+    $exists_this = select("cancel_service", "*", "username", $usernamepanel, "count");
+    if (intval($exists_this) > 0) {
+        sendmessage($from_id, $textbotlang['users']['status']['errorexits'] ?? '❌ برای این سرویس قبلاً درخواست بازگشت وجه ثبت شده است.', null, 'HTML');
         return;
     }
-    $usernamepanel = $dataget[1];
     $nameloc = select("invoice", "*", "username", $usernamepanel, "select");
+    if (!$nameloc || !is_array($nameloc)) {
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? 'سرویس یافت نشد.', null, 'HTML');
+        return;
+    }
+    // اطمینان از مالکیت فاکتور
+    if (strval($nameloc['id_user'] ?? '') !== strval($from_id) && !in_array($from_id, $admin_ids ?? [])) {
+        sendmessage($from_id, '❌ این سرویس متعلق به شما نیست.', null, 'HTML');
+        return;
+    }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $stmt = $connect->prepare("INSERT IGNORE INTO cancel_service (id_user, username,description,status) VALUES (?, ?, ?, ?)");
     $descriptions = "0";
