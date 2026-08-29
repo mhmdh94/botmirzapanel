@@ -535,8 +535,8 @@ $MethodUsername = json_encode([
     ],
     'resize_keyboard' => true
 ]);
-// منوی مدیریت پاسارگارد — چیدمان طولی (هر ردیف یک دکمه)، بدون اینباند/پروتکل
-$optionMarzban = json_encode([
+// منوی مدیریت پاسارگارد — بدون اینباند (گروه از پنل خوانده می‌شود)
+$optionPasarguard = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['managepanel']['btnshowconnect']], ['text' => $textbotlang['Admin']['managepanel']['show_groups'] ?? '📂 گروه‌های پنل']],
         [['text' => $textbotlang['Admin']['managepanel']['showpanelbtn']], ['text' => $textbotlang['Admin']['managepanel']['showpaneltestbtn']]],
@@ -545,6 +545,23 @@ $optionMarzban = json_encode([
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editpassword']], ['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['on_hold_status']]],
         [['text' => $textbotlang['Admin']['managepanel']['sublinkstatus']], ['text' => $textbotlang['Admin']['managepanel']['configstatus']]],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel']]],
+        [['text' => $textbotlang['Admin']['Back-Adminment']]]
+    ],
+    'resize_keyboard' => true
+]);
+// سازگاری با کدهای قدیمی که $optionMarzban می‌خواهند (پنل فعلی پاسارگارد)
+$optionMarzban = $optionPasarguard;
+
+// منوی مدیریت مرزبان — با تنظیم اینباند و پروتکل
+$optionMarzbanPanel = json_encode([
+    'keyboard' => [
+        [['text' => $textbotlang['Admin']['managepanel']['btnshowconnect']], ['text' => $textbotlang['Admin']['managepanel']['show_groups'] ?? '📂 گروه‌های پنل']],
+        [['text' => $textbotlang['Admin']['managepanel']['showpanelbtn']], ['text' => $textbotlang['Admin']['managepanel']['showpaneltestbtn']]],
+        [['text' => $textbotlang['Admin']['managepanel']['setinbound']], ['text' => $textbotlang['Admin']['managepanel']['methodusername']]],
+        [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['namepanel']], ['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel']]],
+        [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editurl']], ['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editusername']]],
+        [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['editpassword']], ['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['on_hold_status']]],
+        [['text' => $textbotlang['Admin']['managepanel']['sublinkstatus']], ['text' => $textbotlang['Admin']['managepanel']['configstatus']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

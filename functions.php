@@ -2566,13 +2566,23 @@ function deleteFolder($folderPath)
 }
 function outtypepanel($typepanel, $message)
 {
-    global $from_id, $optionMarzban, $optionX_ui_single, $optionMarzneshin, $optionmikrotik, $options_ui, $optionwgdashboard;
-    // پاسارگارد و مرزبان (و type قدیمی marzban) یک منوی مدیریت دارند
-    if ($typepanel == "marzban" || $typepanel == "pasarguard") {
-        sendmessage($from_id, $message, $optionMarzban, 'HTML');
-    } elseif ($typepanel == "x-ui_single") {
-        sendmessage($from_id, $message, isset($optionX_ui_single) ? $optionX_ui_single : $optionMarzban, 'HTML');
-    } elseif ($typepanel == "alireza") {
+    global $from_id, $optionMarzban, $optionPasarguard, $optionMarzbanPanel, $optionX_ui_single, $optionMarzneshin, $optionmikrotik, $options_ui, $optionwgdashboard;
+    $typepanel = strval($typepanel);
+    // پاسارگارد: بدون اینباند
+    if ($typepanel === 'pasarguard') {
+        $kb = isset($optionPasarguard) ? $optionPasarguard : $optionMarzban;
+        sendmessage($from_id, $message, $kb, 'HTML');
+        return;
+    }
+    // مرزبان: با تنظیم اینباند/پروتکل
+    // توجه: پنل‌های قدیمی با type=marzban که در عمل پاسارگارد بودند هم این منو را می‌بینند؛
+    // API همان است و بدون تنظیم اینباند همچنان با گروه پنل کار می‌کند.
+    if ($typepanel === 'marzban') {
+        $kb = isset($optionMarzbanPanel) ? $optionMarzbanPanel : $optionMarzban;
+        sendmessage($from_id, $message, $kb, 'HTML');
+        return;
+    }
+    if ($typepanel == "x-ui_single" || $typepanel == "alireza") {
         sendmessage($from_id, $message, isset($optionX_ui_single) ? $optionX_ui_single : $optionMarzban, 'HTML');
     } elseif ($typepanel == "marzneshin") {
         sendmessage($from_id, $message, isset($optionMarzneshin) ? $optionMarzneshin : $optionMarzban, 'HTML');
@@ -2586,6 +2596,7 @@ function outtypepanel($typepanel, $message)
         sendmessage($from_id, $message, $optionMarzban, 'HTML');
     }
 }
+
 
 
 function isBase64($string)

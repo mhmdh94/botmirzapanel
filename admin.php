@@ -416,7 +416,11 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     sendmessage($from_id, "🥳", $keyboardadmin, 'HTML');
     if ($userdata['type'] == "x-ui_single" or $userdata['type'] == "alireza") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['notex-ui'], null, 'HTML');
-    } elseif ($userdata['type'] == "marzban" || $userdata['type'] == "pasarguard" || $userdata['type'] == "s_ui" || $userdata['type'] == "marzneshin") {
+    } elseif ($userdata['type'] == "pasarguard") {
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['notemarzban'] ?? "📌 پس از افزودن پاسارگارد، از مدیریت پنل «تست اتصال» و «گروه‌ها» را چک کنید.", null, 'HTML');
+    } elseif ($userdata['type'] == "marzban") {
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['notemarzban_inbound'] ?? "📌 پس از افزودن مرزبان، از مدیریت پنل «تنظیم پروتکل و اینباند» را حتماً انجام دهید.", null, 'HTML');
+    } elseif ($userdata['type'] == "s_ui" || $userdata['type'] == "marzneshin") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['notemarzban'], null, 'HTML');
     } elseif ($userdata['type'] == "wgdashboard") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['wgdashboard'], null, 'HTML');
@@ -2441,7 +2445,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['setinbound']) {
     $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    if (is_array($panel) && ($panel['type'] ?? '') == 'marzban') {
+    if (is_array($panel) && strval($panel['type'] ?? '') === 'pasarguard') {
         sendmessage($from_id, "✅ برای <b>پاسارگارد</b> تنظیم اینباند/پروتکل لازم نیست.\nگروه‌ها مستقیم از پنل خوانده می‌شوند.\nاز دکمه «گروه‌های پنل» می‌توانید لیست را ببینید.", $optionMarzban, 'HTML');
         step('home', $from_id);
     } else {
@@ -2482,7 +2486,13 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         }
         update("marzban_panel", "proxies", json_encode($servies, true), "name_panel", $user['Processing_value']);
     }
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['setedinbound'], $optionMarzban, 'HTML');
+    $__kb_after_inb = $optionMarzban;
+    if (isset($panel['type']) && $panel['type'] === 'marzban' && isset($optionMarzbanPanel)) {
+        $__kb_after_inb = $optionMarzbanPanel;
+    } elseif (isset($panel['type']) && $panel['type'] === 'pasarguard' && isset($optionPasarguard)) {
+        $__kb_after_inb = $optionPasarguard;
+    }
+    sendmessage($from_id, $textbotlang['Admin']['managepanel']['setedinbound'], $__kb_after_inb, 'HTML');
     step("home", $from_id);
 } elseif ($text == $textbotlang['Admin']['keyboardadmin']['seetingstatus']) {
     if ($setting['Bot_Status'] == "✅  ربات روشن است") {
