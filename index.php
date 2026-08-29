@@ -854,18 +854,14 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     #-----------------------------#
     if (!in_array($status, ['active', "on_hold"])) {
         $__kb_dis = [];
-        // تمدید
         if (!isset($setting['status_extend']) || $setting['status_extend'] == '1' || $setting['status_extend'] === 1) {
             $__kb_dis[] = [['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username]];
         }
-        // حجم اضافه | فعال‌سازی
-        $__row_tog = [];
+        $__row_tog = [['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username]];
         if (!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1) {
             $__row_tog[] = ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username];
         }
-        $__row_tog[] = ['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username];
         $__kb_dis[] = $__row_tog;
-        // حذف
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]];
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
@@ -927,20 +923,9 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         if ($nameloc['name_product'] == "usertest") {
             unset($keyboarddate['removeservice']);
         }
-        // چیدمان ثابت دکمه‌ها (۲ ستونه، مرتب)
-        // اتصال | کانفیگ
-        // تمدید | تغییر لینک
-        // حجم اضافه | فعال/غیرفعال
-        // بازگشت وجه
-        // بازگشت به لیست
-        $order_keys = ['linksub', 'config', 'extend', 'changelink', 'Extra_volume', 'togglestatus', 'removeservice'];
-        $keyboardsetting = ['inline_keyboard' => []];
         $tempArray = [];
-        foreach ($order_keys as $okey) {
-            if (!isset($keyboarddate[$okey])) {
-                continue;
-            }
-            $keyboardtext = $keyboarddate[$okey];
+        $keyboardsetting = ['inline_keyboard' => []];
+        foreach ($keyboarddate as $keyboardtext) {
             $tempArray[] = ['text' => $keyboardtext['text'], 'callback_data' => $keyboardtext['callback_data'] . $username];
             if (count($tempArray) == 2) {
                 $keyboardsetting['inline_keyboard'][] = $tempArray;

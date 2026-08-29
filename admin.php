@@ -3139,7 +3139,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
 
 #----------------[ Deposit min/max ]------------------#
 if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_limits_settings") {
-    ensurePaySetting('min_deposit', '100000');
+    ensurePaySetting('min_deposit', '300000');
     ensurePaySetting('max_deposit', '10000000');
     $lim = getDepositLimits();
     sendmessage($from_id, sprintf(
@@ -3153,7 +3153,7 @@ if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_lim
         sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'], $backadmin, 'HTML');
         return;
     }
-    ensurePaySetting('min_deposit', '100000');
+    ensurePaySetting('min_deposit', '300000');
     update("PaySetting", "ValuePay", strval(intval($text)), "NamePay", "min_deposit");
     sendmessage($from_id, sprintf($textbotlang['Admin']['deposit']['getmax'], formatToman(intval($text))), $backadmin, 'HTML');
     step('deposit_set_max', $from_id);
@@ -3162,7 +3162,7 @@ if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_lim
         sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'], $backadmin, 'HTML');
         return;
     }
-    $min = intval(getPaySettingValue('min_deposit', '100000'));
+    $min = intval(getPaySettingValue('min_deposit', '300000'));
     $max = intval($text);
     if ($max < $min) {
         sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'] . "\nحداکثر باید بزرگ‌تر یا مساوی حداقل باشد.", $backadmin, 'HTML');
