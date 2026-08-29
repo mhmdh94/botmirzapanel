@@ -501,8 +501,16 @@ function generateUsername($from_id, $Metode, $username, $randomString, $text)
 function generateAvailableUsername($panel_name)
 {
     global $ManagePanel, $usernameinvoice;
-    for ($i = 0; $i < 12; $i++) {
-        $candidate = 'user' . bin2hex(random_bytes(4));
+    // فرمت: ۵ حرف کوچک + ۲ رقم (مثلاً kxmqp47) — کوتاه و خوانا
+    $make = function () {
+        $letters = '';
+        for ($j = 0; $j < 5; $j++) {
+            $letters .= chr(random_int(97, 122)); // a-z
+        }
+        return $letters . strval(random_int(10, 99));
+    };
+    for ($i = 0; $i < 20; $i++) {
+        $candidate = $make();
         if (is_array($usernameinvoice) && in_array($candidate, $usernameinvoice)) {
             continue;
         }
@@ -510,22 +518,25 @@ function generateAvailableUsername($panel_name)
         if ($row) {
             continue;
         }
-        $DataUserOut = $ManagePanel->DataUser($panel_name, $candidate);
-        if (isset($DataUserOut['username']) && $DataUserOut['username'] && ($DataUserOut['msg'] ?? '') !== 'User not found') {
-            if (($DataUserOut['status'] ?? '') === 'Unsuccessful' && ($DataUserOut['msg'] ?? '') === 'User not found') {
-                return $candidate;
-            }
-            if (($DataUserOut['status'] ?? '') !== 'Unsuccessful') {
+        if ($panel_name && isset($ManagePanel) && is_object($ManagePanel)) {
+            $DataUserOut = $ManagePanel->DataUser($panel_name, $candidate);
+            if (isset($DataUserOut['username']) && $DataUserOut['username'] && ($DataUserOut['msg'] ?? '') !== 'User not found') {
+                if (($DataUserOut['status'] ?? '') === 'Unsuccessful' && ($DataUserOut['msg'] ?? '') === 'User not found') {
+                    return $candidate;
+                }
+                if (($DataUserOut['status'] ?? '') !== 'Unsuccessful') {
+                    continue;
+                }
+                if (($DataUserOut['msg'] ?? '') === 'User not found') {
+                    return $candidate;
+                }
                 continue;
             }
-            if (($DataUserOut['msg'] ?? '') === 'User not found') {
-                return $candidate;
-            }
-            continue;
         }
         return $candidate;
     }
-    return 'user' . bin2hex(random_bytes(5)) . random_int(10, 99);
+    // آخرین تلاش
+    return $make() . strval(random_int(0, 9));
 }
 
 
@@ -2820,21 +2831,48 @@ function runBotSelfUpdate($repoZipUrl = null)
                 @unlink($dest);
             }
 
-            $copied = @copy($full, $dest);
-            if (!$copied) {
-                // fallback برای مجوزهای سخت
-                $data = @file_get_contents($full);
-                if ($data !== false) {
-                    $copied = (@file_put_contents($dest, $data) !== false);
+            // نوشتن قوی: chmod → temp+rename → copy → put_contents
+            $copied = false;
+            $data = @file_get_contents($full);
+            if ($data === false) {
+                $copyFail++;
+                if (count($copyErrors) < 12) {
+                    $copyErrors[] = $rel . ' (خواندن منبع)';
                 }
+                continue;
+            }
+            if (is_file($dest)) {
+                @chmod($dest, 0666);
+            }
+            $tmpWrite = $dest . '.upd.' . getmypid();
+            if (@file_put_contents($tmpWrite, $data) !== false) {
+                if (@rename($tmpWrite, $dest)) {
+                    $copied = true;
+                } else {
+                    // rename بین فایل‌سیستم‌ها گاهی fail — unlink+copy
+                    @unlink($dest);
+                    $copied = @rename($tmpWrite, $dest);
+                    if (!$copied) {
+                        $copied = @copy($tmpWrite, $dest);
+                        @unlink($tmpWrite);
+                    }
+                }
+            }
+            if (!$copied) {
+                @unlink($tmpWrite);
+                $copied = @copy($full, $dest);
+            }
+            if (!$copied) {
+                $copied = (@file_put_contents($dest, $data) !== false);
             }
             if ($copied) {
                 @chmod($dest, 0644);
                 $filesUpdated++;
             } else {
                 $copyFail++;
-                if (count($copyErrors) < 8) {
-                    $copyErrors[] = $rel;
+                $why = is_writable(dirname($dest)) ? (is_file($dest) && !is_writable($dest) ? 'مجوز فایل' : 'نوشتن ناموفق') : 'مجوز پوشه';
+                if (count($copyErrors) < 12) {
+                    $copyErrors[] = $rel . " ($why)";
                 }
             }
         }
@@ -2866,16 +2904,40 @@ function runBotSelfUpdate($repoZipUrl = null)
 
         $cleanup();
 
+        $critical = ['index.php', 'admin.php', 'functions.php', 'keyboard.php', 'text.php', 'marzban.php', 'panels.php', 'botapi.php'];
+        $criticalFailed = [];
+        foreach ($copyErrors as $ce) {
+            $bn = explode(' ', $ce)[0];
+            $bn = basename(str_replace('\\', '/', $bn));
+            if (in_array($bn, $critical, true)) {
+                $criticalFailed[] = $bn;
+            }
+        }
+
         if ($filesUpdated < 1) {
             $hint = $copyFail > 0
-                ? ('هیچ فایلی کپی نشد. خطا: ' . implode(', ', $copyErrors) . ' — مجوز نوشتن www-data را چک کنید.')
-                : 'هیچ فایلی برای کپی پیدا نشد (zip خالی یا مسیر اشتباه).';
+                ? ('هیچ فایلی کپی نشد: ' . implode(', ', $copyErrors) . '\nروی سرور اجرا کنید:\nchown -R www-data:www-data ' . $root . '\nchmod -R u+w ' . $root)
+                : 'هیچ فایلی برای کپی پیدا نشد.';
             return ['ok' => false, 'message' => $hint, 'files' => 0, 'backup' => $bakDir];
+        }
+
+        if (count($criticalFailed) > 0) {
+            return [
+                'ok' => false,
+                'message' => 'فایل‌های حیاتی جایگزین نشدند: ' . implode(', ', array_unique($criticalFailed)) .
+                    '\nعلت معمولاً مالکیت root است. روی سرور:\n' .
+                    'chown -R www-data:www-data ' . $root . '\n' .
+                    'chmod -R u+w ' . $root . '\n' .
+                    'بعد دوباره از ربات آپدیت کنید.\nجزئیات: ' . implode(', ', $copyErrors),
+                'files' => $filesUpdated,
+                'backup' => $bakDir,
+                'failed' => $copyFail,
+            ];
         }
 
         $msg = 'ok';
         if ($copyFail > 0) {
-            $msg = "بخشی از فایل‌ها کپی نشد ($copyFail). نمونه: " . implode(', ', $copyErrors);
+            $msg = "بخشی از فایل‌ها کپی نشد ($copyFail): " . implode(', ', $copyErrors);
         }
 
         return [
