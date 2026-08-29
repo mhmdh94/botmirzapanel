@@ -2241,7 +2241,15 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
         sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel), null, 'HTML');
     }
     if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_remove', sprintf($textbotlang['Admin']['Report']['reportremove'], $from_id, $pricecancel, $username, $nameloc['id_user']));
+        // کانفیگ = نام کاربری سرویس (نه یوزرنیم تلگرام ادمین/کاربر)
+        $config_user = $nameloc['username'] ?? ($user['Processing_value'] ?? '');
+        sendChannelReport('rpt_remove', sprintf(
+            $textbotlang['Admin']['Report']['reportremove'],
+            $from_id,
+            $pricecancel,
+            $config_user,
+            $nameloc['id_user']
+        ));
     }
 }
 if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['on_hold_status']) {
