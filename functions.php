@@ -1135,6 +1135,131 @@ function DirectPayment($order_id)
         if ($Payment_report['Payment_Method'] == "cart to cart") {
             update("invoice", "Status", "active", "id_invoice", $get_invoice['id_invoice']);
         }
+    } elseif (($steppay[0] ?? '') === 'extendafterpay') {
+        // تمدید بعد از تأیید رسید
+        $ext_username = $steppay[1] ?? '';
+        $ext_code = $steppay[2] ?? '';
+        $uid = intval($Payment_report['id_user']);
+        $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
+        // ۱) واریز مبلغ پرداختی
+        $Balance_id = select("user", "*", "id", $uid, "select");
+        $bal_now = intval($Balance_id['Balance'] ?? 0) + $credit_amount;
+        update("user", "Balance", $bal_now, "id", $uid);
+        if (function_exists('logWalletTx')) {
+            logWalletTx($uid, 'deposit', $credit_amount, $bal_now, 'واریز برای تمدید سرویس: ' . $ext_username);
+        }
+        $nameloc = select("invoice", "*", "username", $ext_username, "select");
+        $product = false;
+        if ($nameloc && $ext_code !== '') {
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product LIMIT 1");
+            $stmt->bindValue(':Location', $nameloc['Service_location']);
+            $stmt->bindValue(':code_product', $ext_code);
+            $stmt->execute();
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        if (!$nameloc || !$product) {
+            update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
+            sendmessage($uid, "✅ مبلغ " . number_format($credit_amount) . " تومان به کیف پول واریز شد.\n⚠️ تمدید خودکار انجام نشد؛ از «سرویس‌های من» دوباره تمدید کنید.", null, 'HTML');
+            return;
+        }
+        $price_ext = intval($product['price_product']);
+        $bal_row = select("user", "Balance", "id", $uid, "select");
+        $bal_now = is_array($bal_row) ? intval($bal_row['Balance'] ?? 0) : intval($bal_row);
+        if ($bal_now < $price_ext) {
+            update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
+            sendmessage($uid, "✅ مبلغ " . number_format($credit_amount) . " تومان واریز شد.\n⚠️ موجودی برای تکمیل تمدید کافی نیست. از «سرویس‌های من» تمدید را دوباره بزنید.", null, 'HTML');
+            return;
+        }
+        // ۲) کسر هزینه تمدید
+        if (function_exists('atomicDeductBalance')) {
+            $bal_after = atomicDeductBalance($uid, $price_ext);
+            if ($bal_after === false) {
+                update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
+                sendmessage($uid, "✅ مبلغ واریز شد ولی کسر تمدید ممکن نشد. از «سرویس‌های من» تمدید کنید.", null, 'HTML');
+                return;
+            }
+        } else {
+            $bal_after = $bal_now - $price_ext;
+            update("user", "Balance", $bal_after, "id", $uid);
+        }
+        if (function_exists('logWalletTx')) {
+            logWalletTx($uid, 'renew', $price_ext, $bal_after, 'تمدید سرویس (پس از پرداخت): ' . $ext_username);
+        }
+        $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
+        try {
+            if ($ManagePanel && $marzban_list_get) {
+                $ManagePanel->ResetUserDataUsage($nameloc['Service_location'], $ext_username);
+                $ptype = $marzban_list_get['type'] ?? '';
+                if (intval($product['Service_time']) == 0) {
+                    $newDate = 0;
+                } else {
+                    $newDate = strtotime(date("Y-m-d H:i:s", strtotime("+" . $product['Service_time'] . "day")));
+                }
+                $data_limit = intval($product['Volume_constraint']) * pow(1024, 3);
+                if (in_array($ptype, ['marzban', 'marzneshin', 'pasarguard', 'Pasarguard', 'passtguard'], true) || true) {
+                    $datam = ["expire" => $newDate, "data_limit" => $data_limit];
+                    $ManagePanel->Modifyuser($ext_username, $nameloc['Service_location'], $datam);
+                }
+            }
+            update("invoice", "Status", "active", "id_invoice", $nameloc['id_invoice']);
+            update("invoice", "Service_time", $product['Service_time'], "username", $ext_username);
+            update("invoice", "Volume", $product['Volume_constraint'], "username", $ext_username);
+            update("invoice", "price_product", $product['price_product'], "username", $ext_username);
+            if (function_exists('resetSmartCronWarnings')) {
+                resetSmartCronWarnings($ext_username, $nameloc['Service_location']);
+            }
+            if (function_exists('recordSale')) {
+                recordSale($uid, $price_ext, 'renew', $ext_username, $nameloc['id_invoice'] ?? null);
+            }
+            $keyb = json_encode([
+                'inline_keyboard' => [
+                    [['text' => $textbotlang['users']['status']['backlist'] ?? 'سرویس‌های من', 'callback_data' => 'backorder']],
+                    [['text' => $textbotlang['users']['status']['backservice'] ?? 'جزئیات سرویس', 'callback_data' => 'product_' . $ext_username]],
+                ]
+            ]);
+            sendmessage($uid, $textbotlang['users']['extend']['thanks'] ?? '✅ تمدید با موفقیت انجام شد.', $keyb, 'HTML');
+            $tg_name = $Balance_id['username'] ?? '-';
+            $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($uid) : 0;
+            $bal_fmt = number_format(intval(select("user", "Balance", "id", $uid, "select")['Balance'] ?? $bal_after));
+            $text_report = sprintf(
+                $textbotlang['Admin']['Report']['extend'],
+                $uid,
+                $tg_name,
+                $active_svc,
+                $ext_username,
+                $product['name_product'],
+                number_format($price_ext),
+                $nameloc['Service_location'],
+                $bal_fmt
+            );
+            if (function_exists('sendChannelReport')) {
+                sendChannelReport('rpt_extend', $text_report);
+            }
+        } catch (Throwable $e) {
+            // برگرداندن هزینه تمدید در صورت خطای پنل
+            if (function_exists('atomicAddBalance')) {
+                atomicAddBalance($uid, $price_ext);
+            } else {
+                $br = select("user", "Balance", "id", $uid, "select");
+                $bv = is_array($br) ? intval($br['Balance'] ?? 0) : intval($br);
+                update("user", "Balance", $bv + $price_ext, "id", $uid);
+            }
+            sendmessage($uid, "❌ تمدید با خطا مواجه شد. مبلغ تمدید به کیف پول برگشت.\nاز «سرویس‌های من» دوباره تلاش کنید.", null, 'HTML');
+            error_log('extendafterpay fail: ' . $e->getMessage());
+        }
+        update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
+        if ($Payment_report['Payment_Method'] == "cart to cart" && !empty($callback_query_id)) {
+            telegram('answerCallbackQuery', [
+                'callback_query_id' => $callback_query_id,
+                'text' => $textbotlang['users']['moeny']['acceptedcart'] ?? 'تأیید شد',
+                'show_alert' => true,
+                'cache_time' => 5,
+            ]);
+        }
+        // پاک کردن state کاربر
+        update("user", "Processing_value_tow", "0", "id", $uid);
+        update("user", "Processing_value", "0", "id", $uid);
     } else {
         $credit_amount = getPaymentCreditAmount($Payment_report);
         $Balance_confrim = intval($Balance_id['Balance']) + intval($credit_amount);

@@ -1283,6 +1283,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             step('home', $from_id);
             return;
         }
+        // قصد تمدید بعد از پرداخت
+        $ext_user = strval($nameloc['username'] ?? '');
+        $ext_code = strval($codeproduct ?? '');
+        update("user", "Processing_value_tow", "extendafterpay|" . $ext_user . "|" . $ext_code, "id", $from_id);
+        update("user", "Processing_value_one", $ext_code, "id", $from_id);
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         if (function_exists('presentPaymentMethods')) {
             presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
@@ -3141,9 +3146,13 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     $randomString = bin2hex(random_bytes(5));
     $payment_Status = "waiting";
     $Payment_Method = ($user['step'] == "crypto_receipt_user") ? "crypto" : "cart to cart";
-    if ($user['Processing_value_tow'] == "getconfigafterpay") {
+    $pv_tow = strval($user['Processing_value_tow'] ?? '');
+    if ($pv_tow == "getconfigafterpay") {
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
-    } elseif ($user['Processing_value_tow'] == "balpkg" && intval($user['Processing_value_one']) > 0) {
+    } elseif (strpos($pv_tow, 'extendafterpay|') === 0) {
+        // تمدید پس از پرداخت: extendafterpay|username|code_product
+        $invoice = $pv_tow;
+    } elseif ($pv_tow == "balpkg" && intval($user['Processing_value_one']) > 0) {
         $invoice = "balpkg|" . intval($user['Processing_value_one']);
     } else {
         $invoice = "0|0";
@@ -3177,7 +3186,11 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     $user_balance_fmt = number_format(intval($user['Balance']));
     // توضیح نوع پرداخت برای ادمین (پکیج / خرید / دلخواه)
     $pay_note = '';
-    if (($user['Processing_value_tow'] ?? '') === 'balpkg' && intval($user['Processing_value_one'] ?? 0) > 0) {
+    $pv_tow_note = strval($user['Processing_value_tow'] ?? '');
+    if (strpos($pv_tow_note, 'extendafterpay|') === 0) {
+        $parts_n = explode('|', $pv_tow_note);
+        $pay_note = "\n🔄 نوع: تمدید سرویس <code>" . htmlspecialchars($parts_n[1] ?? '', ENT_QUOTES, 'UTF-8') . "</code>";
+    } elseif (($user['Processing_value_tow'] ?? '') === 'balpkg' && intval($user['Processing_value_one'] ?? 0) > 0) {
         $credit_fmt = number_format(intval($user['Processing_value_one']));
         $pay_note = "🎁 <b>پکیج افزایش موجودی</b>\n💎 اعتبار واریزی: <b>{$credit_fmt}</b> تومان\n💰 مبلغ قابل پرداخت: <b>{$Processing_value}</b> تومان";
     } elseif (($user['Processing_value_tow'] ?? '') === 'getconfigafterpay') {
