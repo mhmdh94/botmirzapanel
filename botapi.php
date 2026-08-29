@@ -6,8 +6,8 @@ function telegram($method, $datas = [])
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 4);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $datas);
@@ -60,8 +60,10 @@ function telegram($method, $datas = [])
  * ارسال به تلگرام با تلاش مجدد برای خطاهای موقت شبکه/سرور
  * @return array|false
  */
-function telegramRetry($method, $datas = [], $maxAttempts = 3)
+function telegramRetry($method, $datas = [], $maxAttempts = 2)
 {
+    // حداکثر ۲ تلاش — بدون sleep چندثانیه‌ای (جلوگیری از فریز PHP-FPM)
+    $maxAttempts = max(1, min(3, intval($maxAttempts)));
     $last = false;
     for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
         $last = telegram($method, $datas);
@@ -72,7 +74,6 @@ function telegramRetry($method, $datas = [], $maxAttempts = 3)
         if (is_array($last) && isset($last['description'])) {
             $desc = mb_strtolower(strval($last['description']), 'UTF-8');
         }
-        // خطاهای دائمی — تکرار بی‌فایده
         $permanent = [
             'chat not found',
             'bot was blocked',
@@ -85,33 +86,24 @@ function telegramRetry($method, $datas = [], $maxAttempts = 3)
             'group_deactivated',
             'chat_id is empty',
         ];
-        $isPermanent = false;
         foreach ($permanent as $p) {
             if ($desc !== '' && strpos($desc, $p) !== false) {
-                $isPermanent = true;
-                break;
+                return $last;
             }
         }
-        if ($isPermanent) {
-            return $last;
+        if ($attempt >= $maxAttempts) {
+            break;
         }
-        // Too Many Requests — صبر بیشتر
-        $wait = 1;
+        // حداکثر ~0.4s — sleep ثانیه‌ای در webhook ممنوع
+        $us = 200000;
         if (is_array($last) && isset($last['parameters']['retry_after'])) {
-            $wait = min(10, max(1, intval($last['parameters']['retry_after'])));
-        } elseif ($desc !== '' && (strpos($desc, 'too many') !== false || strpos($desc, 'retry') !== false)) {
-            $wait = 2 * $attempt;
-        } else {
-            $wait = $attempt; // 1s, 2s, 3s
+            $us = min(800000, max(200000, intval($last['parameters']['retry_after']) * 150000));
         }
-        if ($attempt < $maxAttempts) {
-            @sleep($wait);
-        }
+        @usleep($us);
     }
     return $last;
 }
 
-/** آیا پاسخ تلگرام موفق بوده؟ */
 function telegramOk($res)
 {
     return is_array($res) && !empty($res['ok']);
@@ -141,7 +133,7 @@ function notifyAdmins($method, $payload, $admins = null)
         }
         $data = $payload;
         $data['chat_id'] = $aid;
-        $res = telegramRetry($method, $data, 3);
+        $res = telegramRetry($method, $data, 2);
         if (telegramOk($res)) {
             $ok++;
         } else {

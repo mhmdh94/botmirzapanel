@@ -824,7 +824,7 @@ function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test =
             try {
                 update("marzban_panel", "datelogin", null, "name_panel", $panel_name);
             } catch (Exception $e) {}
-            sleep(5);
+            usleep(800000); // ~0.8s instead of 5s — avoid worker freeze
             continue;
         }
 
@@ -2329,9 +2329,9 @@ function getPaySettingValue($name, $default = '')
 /** حداقل و حداکثر مبلغ واریز/فاکتور (تومان) */
 function getDepositLimits()
 {
-    ensurePaySetting('min_deposit', '300000');
+    ensurePaySetting('min_deposit', '100000');
     ensurePaySetting('max_deposit', '10000000');
-    $min = intval(getPaySettingValue('min_deposit', '300000'));
+    $min = intval(getPaySettingValue('min_deposit', '100000'));
     $max = intval(getPaySettingValue('max_deposit', '10000000'));
     if ($min < 1000) {
         $min = 1000;
