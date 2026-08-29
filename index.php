@@ -1816,30 +1816,44 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $timeDiff = $DataUserOut['expire'] - time();
     $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
-    $textinfoadmin = sprintf($textbotlang['users']['status']['RequestInfoRemove'], $from_id, $username, $nameloc['username'], $status_var, $nameloc['Service_location'], $nameloc['id_invoice'], $usedTrafficGb, $LastTraffic, $RemainingVolume, $expirationDate, $day);
+    $paid_price = number_format(intval($nameloc['price_product'] ?? $nameloc['price'] ?? 0));
+    $prod_name = htmlspecialchars(strval($nameloc['name_product'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $textinfoadmin = sprintf(
+        $textbotlang['users']['status']['RequestInfoRemove'],
+        $from_id,
+        $username,
+        $nameloc['username'],
+        $status_var,
+        $nameloc['Service_location'],
+        $nameloc['id_invoice'],
+        $usedTrafficGb,
+        $LastTraffic,
+        $RemainingVolume,
+        $expirationDate,
+        $day,
+        $paid_price
+    );
+    if ($prod_name !== '') {
+        $textinfoadmin .= "\n📦 محصول: <b>{$prod_name}</b>";
+    }
     $confirmremoveadmin = json_encode([
         'inline_keyboard' => [
             [
                 ['text' => $textbotlang['users']['removeconfig']['btnremoveuser'], 'callback_data' => "remoceserviceadmin-$usernamepanel"],
                 ['text' => $textbotlang['users']['removeconfig']['rejectremove'], 'callback_data' => "rejectremoceserviceadmin-$usernamepanel"],
             ],
+            [
+                ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $from_id],
+            ],
         ]
     ]);
     if (function_exists('notifyAdmins')) {
-        $__nr = notifyAdmins('sendmessage', [
+        notifyAdmins('sendmessage', [
             'text' => $textinfoadmin,
             'reply_markup' => $confirmremoveadmin,
             'parse_mode' => 'html',
             'disable_web_page_preview' => true,
         ], $admin_ids);
-        if (intval($__nr['ok'] ?? 0) === 0 && !empty($setting['Channel_Report'])) {
-            telegramRetry('sendmessage', [
-                'chat_id' => $setting['Channel_Report'],
-                'text' => "⚠️ درخواست بازگشت وجه به ادمین نرسید:\n\n" . $textinfoadmin,
-                'parse_mode' => 'html',
-                'disable_web_page_preview' => true,
-            ], 3);
-        }
     } else {
         foreach ($admin_ids as $admin) {
             if (function_exists('telegramRetry')) {
@@ -1853,6 +1867,21 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             } else {
                 sendmessage($admin, $textinfoadmin, $confirmremoveadmin, 'html');
             }
+        }
+    }
+    // همیشه در کانال گزارش ثبت شود (همان لحظه ارسال به ادمین — نه فقط بعد از تأیید/رد)
+    $ch_txt = "🗑 <b>درخواست بازگشت وجه / حذف سرویس</b>\n\n" . $textinfoadmin;
+    $ch_id = $setting['Channel_Report'] ?? '';
+    if ($ch_id !== '' && $ch_id !== null) {
+        if (function_exists('telegramRetry')) {
+            telegramRetry('sendmessage', [
+                'chat_id' => $ch_id,
+                'text' => $ch_txt,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => true,
+            ], 3);
+        } else {
+            sendmessage($ch_id, $ch_txt, null, 'HTML');
         }
     }
     // step ادمین را تغییر نده (باگ قبلی)
