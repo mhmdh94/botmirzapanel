@@ -167,6 +167,8 @@ foreach ($datatxtbot as $item) {
 }
 if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
 
+
+
 if (function_exists('shell_exec') && is_callable('shell_exec')) {
     $existingCronCommands = shell_exec('crontab -l');
     $phpFilePath = "https://$domainhosts/cron/sendmessage.php";
@@ -478,32 +480,13 @@ if ($text == "/renew") {
 }
 #-----------back------------#
 if ($text == $textbotlang['users']['backhome'] || $datain == "backuser") {
-    update("user", "Processing_value", "0", "id", $from_id);
-    update("user", "Processing_value_one", "0", "id", $from_id);
-    update("user", "Processing_value_tow", "0", "id", $from_id);
     if ($datain == "backuser")
         deletemessage($from_id, $message_id);
     sendmessage($from_id, $textbotlang['users']['back'], $keyboard, 'html');
     step('home', $from_id);
-    return;
-}
-#-----------get_number------------#
-if ($user['step'] == 'get_number') {
-    if (empty($user_phone)) {
-        sendmessage($from_id, $textbotlang['users']['number']['false'], $request_contact, 'html');
-        return;
-    }
-    if ($contact_id != $from_id) {
-        sendmessage($from_id, $textbotlang['users']['number']['Warning'], $request_contact, 'html');
-        return;
-    }
-    if ($setting['iran_number'] == "1" && !preg_match("/989[0-9]{9}$/", $user_phone)) {
-        sendmessage($from_id, $textbotlang['users']['number']['erroriran'], $request_contact, 'html');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['users']['number']['active'], $keyboard, 'html');
-    update("user", "number", $user_phone, "id", $from_id);
-    step('home', $from_id);
+    update("user", "Processing_value", "0", "id", $from_id);
+    update("user", "Processing_value_one", "0", "id", $from_id);
+    update("user", "Processing_value_tow", "0", "id", $from_id);
 }
 #-----------Purchased services------------#
 if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" || $text == "/services") {
@@ -1842,10 +1825,37 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             ],
         ]
     ]);
-    foreach ($admin_ids as $admin) {
-        sendmessage($admin, $textinfoadmin, $confirmremoveadmin, 'html');
-        step('home', $admin);
+    if (function_exists('notifyAdmins')) {
+        $__nr = notifyAdmins('sendmessage', [
+            'text' => $textinfoadmin,
+            'reply_markup' => $confirmremoveadmin,
+            'parse_mode' => 'html',
+            'disable_web_page_preview' => true,
+        ], $admin_ids);
+        if (intval($__nr['ok'] ?? 0) === 0 && !empty($setting['Channel_Report'])) {
+            telegramRetry('sendmessage', [
+                'chat_id' => $setting['Channel_Report'],
+                'text' => "⚠️ درخواست بازگشت وجه به ادمین نرسید:\n\n" . $textinfoadmin,
+                'parse_mode' => 'html',
+                'disable_web_page_preview' => true,
+            ], 3);
+        }
+    } else {
+        foreach ($admin_ids as $admin) {
+            if (function_exists('telegramRetry')) {
+                telegramRetry('sendmessage', [
+                    'chat_id' => $admin,
+                    'text' => $textinfoadmin,
+                    'reply_markup' => $confirmremoveadmin,
+                    'parse_mode' => 'html',
+                    'disable_web_page_preview' => true,
+                ], 3);
+            } else {
+                sendmessage($admin, $textinfoadmin, $confirmremoveadmin, 'html');
+            }
+        }
     }
+    // step ادمین را تغییر نده (باگ قبلی)
     deletemessage($from_id, $message_id);
     sendmessage($from_id, $textbotlang['users']['removeconfig']['accepetrequest'], $keyboard, 'html');
 }
@@ -2087,20 +2097,40 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
             ],
         ]
     ]);
-    foreach ($admin_ids as $id_admin) {
-        if ($text) {
-            $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $text);
-            sendmessage($id_admin, $textsendadmin, $Response, 'HTML');
+    if ($text) {
+        $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $text);
+        if (function_exists('notifyAdmins')) {
+            notifyAdmins('sendmessage', [
+                'text' => $textsendadmin,
+                'reply_markup' => $Response,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => true,
+            ], $admin_ids);
+        } else {
+            foreach ($admin_ids as $id_admin) {
+                sendmessage($id_admin, $textsendadmin, $Response, 'HTML');
+            }
         }
-        if ($photo) {
-            $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $caption);
-            telegram('sendphoto', [
-                'chat_id' => $id_admin,
+    }
+    if ($photo) {
+        $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $caption);
+        if (function_exists('notifyAdmins')) {
+            notifyAdmins('sendphoto', [
                 'photo' => $photoid,
                 'reply_markup' => $Response,
                 'caption' => $textsendadmin,
-                'parse_mode' => "HTML",
-            ]);
+                'parse_mode' => 'HTML',
+            ], $admin_ids);
+        } else {
+            foreach ($admin_ids as $id_admin) {
+                telegram('sendphoto', [
+                    'chat_id' => $id_admin,
+                    'photo' => $photoid,
+                    'reply_markup' => $Response,
+                    'caption' => $textsendadmin,
+                    'parse_mode' => 'HTML',
+                ]);
+            }
         }
     }
     step('home', $from_id);
@@ -3052,14 +3082,28 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     }
     $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
     $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $active_svc, $Processing_value, $user_balance_fmt, $pay_note);
-    foreach ($admin_ids as $id_admin) {
-        telegram('sendphoto', [
-            'chat_id' => $id_admin,
-            'photo' => $photoid,
-            'reply_markup' => $Confirm_pay,
-            'caption' => $textsendrasid,
-            'parse_mode' => "HTML",
-        ]);
+    $__adm_photo = [
+        'photo' => $photoid,
+        'reply_markup' => $Confirm_pay,
+        'caption' => $textsendrasid,
+        'parse_mode' => "HTML",
+    ];
+    if (function_exists('notifyAdmins')) {
+        $__nr = notifyAdmins('sendphoto', $__adm_photo, $admin_ids);
+        // اگر همه ادمین fail شدند، به کانال گزارش هم بفرست
+        if (intval($__nr['ok'] ?? 0) === 0 && !empty($setting['Channel_Report'])) {
+            telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $setting['Channel_Report']]), 3);
+            telegramRetry('sendmessage', [
+                'chat_id' => $setting['Channel_Report'],
+                'text' => "⚠️ فیش واریزی به ادمین‌ها نرسید — در کانال ثبت شد.\n" . $textsendrasid,
+                'parse_mode' => 'HTML',
+                'disable_web_page_preview' => true,
+            ], 2);
+        }
+    } else {
+        foreach ($admin_ids as $id_admin) {
+            telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $id_admin]), 3);
+        }
     }
     step('home', $from_id);
 }

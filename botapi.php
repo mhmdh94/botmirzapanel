@@ -55,6 +55,106 @@ function telegram($method, $datas = [])
     }
     return $res;
 }
+
+/**
+ * ارسال به تلگرام با تلاش مجدد برای خطاهای موقت شبکه/سرور
+ * @return array|false
+ */
+function telegramRetry($method, $datas = [], $maxAttempts = 3)
+{
+    $last = false;
+    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+        $last = telegram($method, $datas);
+        if (is_array($last) && !empty($last['ok'])) {
+            return $last;
+        }
+        $desc = '';
+        if (is_array($last) && isset($last['description'])) {
+            $desc = mb_strtolower(strval($last['description']), 'UTF-8');
+        }
+        // خطاهای دائمی — تکرار بی‌فایده
+        $permanent = [
+            'chat not found',
+            'bot was blocked',
+            'user is deactivated',
+            'peer_id_invalid',
+            'bot can\'t initiate conversation',
+            'forbidden: bot was blocked',
+            'have no rights',
+            'need administrator rights',
+            'group_deactivated',
+            'chat_id is empty',
+        ];
+        $isPermanent = false;
+        foreach ($permanent as $p) {
+            if ($desc !== '' && strpos($desc, $p) !== false) {
+                $isPermanent = true;
+                break;
+            }
+        }
+        if ($isPermanent) {
+            return $last;
+        }
+        // Too Many Requests — صبر بیشتر
+        $wait = 1;
+        if (is_array($last) && isset($last['parameters']['retry_after'])) {
+            $wait = min(10, max(1, intval($last['parameters']['retry_after'])));
+        } elseif ($desc !== '' && (strpos($desc, 'too many') !== false || strpos($desc, 'retry') !== false)) {
+            $wait = 2 * $attempt;
+        } else {
+            $wait = $attempt; // 1s, 2s, 3s
+        }
+        if ($attempt < $maxAttempts) {
+            @sleep($wait);
+        }
+    }
+    return $last;
+}
+
+/** آیا پاسخ تلگرام موفق بوده؟ */
+function telegramOk($res)
+{
+    return is_array($res) && !empty($res['ok']);
+}
+
+/**
+ * ارسال پیام/عکس به همه ادمین‌ها با retry
+ * $payload بدون chat_id (یا با chat_id که جایگزین می‌شود)
+ * @return array{ok:int,fail:int,results:array}
+ */
+function notifyAdmins($method, $payload, $admins = null)
+{
+    global $admin_ids;
+    if ($admins === null) {
+        $admins = $admin_ids ?? [];
+    }
+    if (!is_array($admins)) {
+        $admins = $admins ? [$admins] : [];
+    }
+    $admins = array_values(array_unique(array_filter(array_map('intval', $admins))));
+    $ok = 0;
+    $fail = 0;
+    $results = [];
+    foreach ($admins as $aid) {
+        if ($aid <= 0) {
+            continue;
+        }
+        $data = $payload;
+        $data['chat_id'] = $aid;
+        $res = telegramRetry($method, $data, 3);
+        if (telegramOk($res)) {
+            $ok++;
+        } else {
+            $fail++;
+            $results[$aid] = is_array($res) ? ($res['description'] ?? 'fail') : 'false';
+        }
+    }
+    if ($ok === 0 && $fail > 0) {
+        error_log('notifyAdmins all failed method=' . $method . ' errs=' . json_encode($results, JSON_UNESCAPED_UNICODE));
+    }
+    return ['ok' => $ok, 'fail' => $fail, 'results' => $results];
+}
+
 function sendmessage($chat_id, $text, $keyboard, $parse_mode)
 {
     return telegram('sendmessage', [
