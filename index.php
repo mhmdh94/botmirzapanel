@@ -1816,8 +1816,25 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $timeDiff = $DataUserOut['expire'] - time();
     $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
-    $paid_price = number_format(intval($nameloc['price_product'] ?? $nameloc['price'] ?? 0));
-    $prod_name = htmlspecialchars(strval($nameloc['name_product'] ?? ''), ENT_QUOTES, 'UTF-8');
+    // مبلغ پرداختی از فاکتور (و در صورت خالی بودن از جدول محصول)
+    $paid_raw = $nameloc['price_product'] ?? ($nameloc['price'] ?? 0);
+    if (is_string($paid_raw)) {
+        $paid_raw = str_replace([',', ' ', 'تومان', 'تومن'], '', $paid_raw);
+    }
+    $paid_int = intval($paid_raw);
+    $prod_name = strval($nameloc['name_product'] ?? '');
+    if ($paid_int <= 0 && $prod_name !== '') {
+        $prod_row = select("product", "*", "name_product", $prod_name, "select");
+        if (is_array($prod_row) && isset($prod_row['price_product'])) {
+            $paid_int = intval(str_replace([',', ' '], '', strval($prod_row['price_product'])));
+        }
+    }
+    $paid_fmt = number_format($paid_int);
+    $prod_safe = htmlspecialchars($prod_name, ENT_QUOTES, 'UTF-8');
+    $price_block = "💰 <b>مبلغ پرداختی کاربر برای این سرویس:</b> <code>{$paid_fmt}</code> تومان";
+    if ($prod_safe !== '') {
+        $price_block .= "\n📦 محصول: <b>{$prod_safe}</b>";
+    }
     $textinfoadmin = sprintf(
         $textbotlang['users']['status']['RequestInfoRemove'],
         $from_id,
@@ -1831,11 +1848,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $RemainingVolume,
         $expirationDate,
         $day,
-        $paid_price
+        $price_block
     );
-    if ($prod_name !== '') {
-        $textinfoadmin .= "\n📦 محصول: <b>{$prod_name}</b>";
-    }
     $confirmremoveadmin = json_encode([
         'inline_keyboard' => [
             [

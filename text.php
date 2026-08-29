@@ -398,7 +398,9 @@ $textbotlang['users']['status']['RequestInfoRemove'] = "🗑 <b>درخواست �
 📥 مصرف: %s | 📊 کل: %s | 🪫 باقی: %s
 📅 تا: %s (%s)
 
-⚠️ مبلغ بازگشت را شما تعیین می‌کنید.";
+%s
+
+⚠️ مبلغ بازگشت نهایی را خودتان بعداً وارد می‌کنید.";
 $textbotlang['users']['status']['residaccepted'] = "این درخواست قبلاً بررسی شده است.";
 $textbotlang['users']['status']['acceptrequest'] = "دلیل رد درخواست حذف را بفرستید:";
 $textbotlang['users']['status']['acceptrequestnote'] = "✅ ثبت شد.";
