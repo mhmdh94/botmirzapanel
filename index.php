@@ -502,6 +502,42 @@ if ($text == $textbotlang['users']['backhome'] || $datain == "backuser") {
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
 }
+#-----------get_number (احراز هویت موبایل)------------#
+if (isset($user['step']) && $user['step'] == 'get_number') {
+    if (empty($user_phone) || $user_phone === 0 || $user_phone === '0') {
+        if (isset($text) && is_string($text) && (strpos($text, 'بازگشت') !== false)) {
+            step('home', $from_id);
+            sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی بازگشتید.', $keyboard, 'HTML');
+            return;
+        }
+        sendmessage($from_id, $textbotlang['users']['number']['false'], $request_contact, 'HTML');
+        return;
+    }
+    if (!empty($contact_id) && intval($contact_id) !== intval($from_id)) {
+        sendmessage($from_id, $textbotlang['users']['number']['Warning'], $request_contact, 'HTML');
+        return;
+    }
+    $phone_norm = preg_replace('/[^0-9]/', '', strval($user_phone));
+    if (strpos($phone_norm, '09') === 0 && strlen($phone_norm) === 11) {
+        $phone_norm = '98' . substr($phone_norm, 1);
+    }
+    if (strpos($phone_norm, '9') === 0 && strlen($phone_norm) === 10) {
+        $phone_norm = '98' . $phone_norm;
+    }
+    if (isset($setting['iran_number']) && strval($setting['iran_number']) === '1') {
+        if (!preg_match('/^989[0-9]{9}$/', $phone_norm)) {
+            sendmessage($from_id, $textbotlang['users']['number']['erroriran'], $request_contact, 'HTML');
+            return;
+        }
+    }
+    update("user", "number", $phone_norm, "id", $from_id);
+    step('home', $from_id);
+    $user['number'] = $phone_norm;
+    $user['step'] = 'home';
+    sendmessage($from_id, $textbotlang['users']['number']['active'], $keyboard, 'HTML');
+    return;
+}
+
 #-----------Purchased services------------#
 if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" || $text == "/services") {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')");
