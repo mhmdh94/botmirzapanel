@@ -4,8 +4,10 @@ $textbotlang =[];
 $textbotlang['users']['channel']['link'] = "تنظیم نشده";
 $textbotlang['users']['channel']['text_join'] = "🔗 عضویت در کانال";
 $textbotlang['users']['channel']['confirmjoin'] = "✅ بررسی عضویت";
-$textbotlang['users']['channel']['confirmed'] = "عضویت شما با موفقیت تایید گردید با تشکر از شما❤️";
-$textbotlang['users']['channel']['notconfirmed'] = "❌ هنوز عضو کانال نشده اید.️";
+$textbotlang['users']['channel']['confirmed'] = "✅ عضویت شما تأیید شد.
+از خدمات ربات استفاده کنید.";
+$textbotlang['users']['channel']['notconfirmed'] = "❌ هنوز عضو کانال نشده‌اید.
+لطفاً عضو شوید و دوباره «بررسی عضویت» را بزنید.";
 
 $textbotlang['users']['affiliates']['invalidMutual'] =
     "❌ متأسفم؛ شما نمی‌توانید با کاربری که از دعوت‌شدگان شماست لینک شوید.";
@@ -26,17 +28,21 @@ $textbotlang['users']['fqDescription'] = "💡 <b>سوالات متداول</b>
 • حجم/زمان تمام شد چه کنم؟ از «سرویس‌های من» تمدید کنید.
 • پرداخت تأیید نشد؟ رسید را دوباره بفرستید یا به پشتیبانی پیام دهید.";
 $textbotlang['users']['fqbtn'] = "❓ سوالات متداول";
-$textbotlang['users']['channeldosntjoin'] = "   
-        ⚠️ کاربر گرامی؛ شما عضو چنل ما نیستید
-از طریق دکمه زیر وارد کانال شده و عضو شوید
-پس از عضویت دکمه بررسی عضویت را کلیک کنید";
+$textbotlang['users']['channeldoesntjoin'] = "⚠️ برای استفاده از ربات باید عضو کانال باشید.
+
+1️⃣ روی «عضویت در کانال» بزنید و عضو شوید
+2️⃣ سپس «بررسی عضویت» را بزنید";
+$textbotlang['users']['channeldosntjoin'] = $textbotlang['users']['channeldoesntjoin'];
 $textbotlang['users']['back'] = "به صفحه اصلی بازگشتید!";
 $textbotlang['users']['backorder'] = "🏠 بازگشت به اطلاعات سرویس";
-$textbotlang['users']['spamtext'] = "اسپم در ربات";
+$textbotlang['users']['spamtext'] = "ارسال بیش از حد پیام (اسپم)";
 $textbotlang['users']['online'] = "آنلاین";
 $textbotlang['users']['offline'] = "آفلاین";
 $textbotlang['users']['unlimited'] = "نامحدود";
-$textbotlang['users']['start'] = "سلام خوش آمدید🌹";
+$textbotlang['users']['start'] = "سلام، خوش آمدید 🌹
+
+از منوی پایین می‌توانید سرویس بخرید، سرویس‌های خود را مدیریت کنید یا موجودی افزایش دهید.
+در صورت نیاز، پشتیبانی در خدمت شماست.";
 $textbotlang['users']['sendmessagesupport'] = "🎟 ارسال پیام به پشتیبانی";
 
 
@@ -61,12 +67,16 @@ $textbotlang['users']['number']['Confirming'] = "📞 برای ادامه بای
 ⚠️ شماره را دستی تایپ نکنید؛ فقط از همان دکمه استفاده کنید.";
 
 
-$textbotlang['users']['sell']['service_not_available'] = "⛔️ سرویسی ندارید.
-از منو می‌توانید اشتراک جدید بخرید.";
+$textbotlang['users']['sell']['service_not_available'] = "📭 <b>هنوز سرویسی ندارید</b>
+
+از دکمه «خرید سرویس» در منوی اصلی می‌توانید اشتراک جدید بگیرید.
+پس از خرید، سرویس‌ها اینجا نمایش داده می‌شوند.";
 $textbotlang['users']['sell']['service_sell'] = "🛍 <b>سرویس‌های من</b>
+
 روی نام کاربری بزنید تا جزئیات را ببینید.
 
-⚠️ بدون تمدید، پس از ۱ هفته سرویس از سرور و این لیست حذف می‌شود.";
+⚠️ بدون تمدید، پس از حدود ۱ هفته سرویس از سرور و این لیست حذف می‌شود.";
+$textbotlang['users']['sell']['service_empty_hint'] = "برای خرید اشتراک جدید از منوی اصلی استفاده کنید.";
 $textbotlang['users']['sell']['Service-select'] = "🛒 لوکیشن انتخاب شد.
 سرویس مورد نظر را انتخاب کنید:";
 $textbotlang['users']['sell']['Service-Location'] = "⚠️ لوکیشن انتخاب‌شده معتبر نیست.
@@ -100,11 +110,14 @@ $textbotlang['users']['status']['usedTrafficGb'] = "حجم مصرف شده سر�
 $textbotlang['users']['status']['LastTraffic'] = "حجم کل سرویس :";
 $textbotlang['users']['status']['RemainingVolume'] = "حجم باقی مانده سرویس :";
 $textbotlang['users']['status']['info'] = "📊 اطلاعات سرویس:";
-$textbotlang['users']['status']['error'] = "⚠️ خطایی رخ داد. لطفاً دوباره تلاش کنید.";
+$textbotlang['users']['status']['error'] = "⚠️ مشکلی پیش آمد.
+لطفاً چند لحظه بعد دوباره تلاش کنید یا با پشتیبانی در تماس باشید.";
 $textbotlang['users']['status']['error_onhold'] = "⚠️ هنوز به سرویس متصل نشده‌اید.
 ابتدا یک‌بار متصل شوید، سپس تمدید کنید.";
-$textbotlang['users']['status']['error2'] = "⚠️ خطایی رخ داد. لطفاً مراحل را از اول انجام دهید.";
-$textbotlang['users']['status']['usernotfound'] = "⚠️ این کاربر روی سرور نیست.";
+$textbotlang['users']['status']['error2'] = "⚠️ مراحل ناقص ماند.
+از منوی اصلی دوباره شروع کنید.";
+$textbotlang['users']['status']['usernotfound'] = "⚠️ این سرویس روی سرور یافت نشد.
+اگر تمدید کرده‌اید چند لحظه صبر کنید یا با پشتیبانی تماس بگیرید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗  دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
 $textbotlang['users']['status']['backlist'] = "🏠 بازگشت به لیست سرویس ها";
@@ -113,7 +126,7 @@ $textbotlang['users']['status']['Invalidusername'] = "❌ نام کاربری م
 دوباره بفرستید (فقط انگلیسی و عدد):";
 $textbotlang['users']['status']['manageService'] = "⚙️ تنظیمات سرویس";
 $textbotlang['users']['status']['manageServicedec'] = "📌 برای تنظیم سرویس یک کانفیگ در پنل خود ساخته و  سرویس هایی که می‌خواهید فعال باشند. را داخل پنل فعال کرده و نام کاربری کانفیگ را ارسال نمایید";
-$textbotlang['users']['status']['DecManageService '] = "⭕️ در این بخش می توانید سرویس خود را مدیریت کنید";
+$textbotlang['users']['status']['DecManageService'] = "⚙️ از دکمه‌های زیر برای مدیریت سرویس استفاده کنید.";
 $textbotlang['users']['status']['config'] ="🔰 کانفیگ دستی";
 $textbotlang['users']['status']['notconnected'] ="متصل نشده";
 
@@ -224,7 +237,8 @@ $textbotlang['users']['buy']['configwg'] = "⚙️ کانفیگ شما";
 
 $textbotlang['users']['category']['NotFound'] = "❌ دسته‌بندی‌ای برای نمایش نیست.";
 $textbotlang['users']['category']['selectCategory'] = "📌 دسته مورد نظر را انتخاب کنید:";
-$textbotlang['users']['category']['error'] = "⚠️ خطایی رخ داد. خرید را از اول انجام دهید.";
+$textbotlang['users']['category']['error'] = "⚠️ خرید کامل نشد.
+از منوی اصلی دوباره «خرید سرویس» را بزنید.";
 
 
 $textbotlang['users']['changetext']['set_start_text'] = "تنظیم متن شروع";
@@ -281,11 +295,14 @@ $textbotlang['users']['help']['btninlinebuy'] = "📚 مشاهده آموزش ا
 
 
 $textbotlang['users']['support']['title'] = "☎️ پشتیبانی";
-$textbotlang['users']['support']['sendmessageadmin'] = "🚀 پیام شما ارسال شد منتظر پاسخ مدیریت باشید";
+$textbotlang['users']['support']['sendmessageadmin'] = "✅ پیام شما برای پشتیبانی ارسال شد.
+به‌زودی از همین ربات پاسخ می‌گیرید.";
 $textbotlang['users']['support']['answermessage'] = "پاسخ به پیام";
-$textbotlang['users']['support']['sendmessageuser'] = "📨 برای ارتباط با پشتیبانی پیام خود را ارسال کنید";
+$textbotlang['users']['support']['sendmessageuser'] = "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.
+پاسخ از همین ربات برایتان می‌آید.";
 $textbotlang['users']['support']['reply_btn'] = "💬 پاسخ به پشتیبانی";
-$textbotlang['users']['support']['btnsupport'] = "☎️  در دکمه زیر ( سوالات متداول ) سوالات پرتکرار شما آمده است. روی دکمه زیر کلیک کنید در صورت نیافتن سوال خود روی دکمه پشتیبانی کلیک کنید";
+$textbotlang['users']['support']['btnsupport'] = "☎️ ابتدا «سوالات متداول» را ببینید.
+اگر پاسخ‌تان نبود، برای پشتیبانی پیام بفرستید.";
 $textbotlang['users']['support']['GetMessageOfUser'] = "📥 یک پیام از کاربر دریافت شد
 آیدی عددی : %s
 نام کاربری کاربر : @%s
@@ -319,7 +336,8 @@ $textbotlang['users']['Balance']['refunded'] = "مبلغ به کیف پول شم
 $textbotlang['users']['Balance']['waiting'] = "در انتظار تایید پرداخت";
 $textbotlang['users']['Balance']['Failed'] = "⭕️ پرداخت شما تایید نگردیده است";
 $textbotlang['users']['Balance']['Confirmpay'] = "✅ <b>پرداخت تأیید شد</b>\nمبلغ به موجودی کیف پول شما اضافه شد.";
-$textbotlang['users']['Balance']['Invalid-receipt'] = "رسید نامعتبر است رسید باید فقط عکس باشد";
+$textbotlang['users']['Balance']['Invalid-receipt'] = "❌ رسید نامعتبر است.
+فقط <b>عکس</b> رسید را ارسال کنید (نه فایل PDF یا متن).";
 $textbotlang['users']['Balance']['Confirmpaying']  = "✅ تایید پرداخت";
 $textbotlang['users']['Balance']['Send-receipt'] ="🚀 رسید پرداخت  شما ارسال شد پس از تایید توسط مدیریت مبلغ به کیف پول شما واریز خواهد شد لطفا صبور باشید";
 $textbotlang['users']['Balance']['Send-receip-buy'] ="🚀 رسید پرداخت شما ارسال شد پس از تایید توسط مدیریت سفارش شما ارسال خواهد شد";
@@ -343,7 +361,8 @@ $textbotlang['users']['togglestatus']['error'] = "❌ خطا در تغییر و�
 
 $textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وجه ";
 $textbotlang['users']['removeconfig']['rejectremove'] = "❌عدم تایید حذف";
-$textbotlang['users']['removeconfig']['accepetrequest'] = "✅ درخواست شما ارسال گردید پس از بررسی مدیریت نتیجه به شما اطلاع رسانی خواهد شد";
+$textbotlang['users']['removeconfig']['acceptrequest'] = "✅ درخواست شما ثبت شد.\nپس از بررسی مدیریت، نتیجه از همین ربات اعلام می‌شود.";
+$textbotlang['users']['removeconfig']['accepetrequest'] = $textbotlang['users']['removeconfig']['acceptrequest'];
 $textbotlang['users']['status']['notusername'] = "❌ امکان حذف سرویس وجود ندارد.";
 $textbotlang['users']['status']['errorexits'] = "❌ برای این سرویس قبلاً یک درخواست حذف / بازگشت وجه ثبت شده است.\nبرای همین فاکتور نمی‌توانید درخواست دوم بدهید.\nبرای سرویس‌های دیگر محدودیتی ندارید.";
 $textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید درخواست، حذف سرویس برای بررسی به مدیریت ارسال می‌شود.

@@ -396,8 +396,22 @@ if ($text == "/status") {
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $invoices = $stmt->rowCount();
-    if ($invoices == 0 && $setting['NotUser'] == "offnotuser") {
-        sendmessage($from_id, $textbotlang['users']['sell']['service_not_available'], null, 'html');
+    if ($invoices == 0) {
+        $empty_kb = null;
+        // اگر افزودن سرویس دستی روشن باشد همان را نشان بده؛ وگرنه فقط متن
+        if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
+            $empty_kb = json_encode([
+                'inline_keyboard' => [
+                    [['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']],
+                ]
+            ]);
+        }
+        $msg_empty = $textbotlang['users']['sell']['service_not_available'];
+        if ($datain == "backorder" && !empty($message_id)) {
+            Editmessagetext($from_id, $message_id, $msg_empty, $empty_kb);
+        } else {
+            sendmessage($from_id, $msg_empty, $empty_kb, 'HTML');
+        }
         return;
     }
     update("user", "pagenumber", "1", "id", $from_id);
@@ -490,25 +504,42 @@ if ($text == $textbotlang['users']['backhome'] || $datain == "backuser") {
 }
 #-----------Purchased services------------#
 if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" || $text == "/services") {
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn')");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
-    $invoices = $stmt->rowCount();
-    if ($invoices == 0 && $setting['NotUser'] == "offnotuser") {
-        sendmessage($from_id, $textbotlang['users']['sell']['service_not_available'], null, 'html');
+    $invoices = intval($stmt->fetchColumn());
+    if ($invoices <= 0) {
+        $empty_kb = ['inline_keyboard' => []];
+        if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
+            $empty_kb['inline_keyboard'][] = [
+                ['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']
+            ];
+        }
+        $empty_json = count($empty_kb['inline_keyboard']) ? json_encode($empty_kb) : null;
+        $msg_empty = $textbotlang['users']['sell']['service_not_available'];
+        if ($datain == "backorder" && !empty($message_id)) {
+            Editmessagetext($from_id, $message_id, $msg_empty, $empty_json);
+        } else {
+            sendmessage($from_id, $msg_empty, $empty_json, 'HTML');
+        }
         return;
     }
     update("user", "pagenumber", "1", "id", $from_id);
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
         'inline_keyboard' => [],
     ];
+    $service_count = 0;
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if (empty($row['username'])) {
+            continue;
+        }
+        $service_count++;
         $keyboardlists['inline_keyboard'][] = [
             [
                 'text' => "🌟" . $row['username'] . "🌟",
@@ -516,31 +547,33 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             ],
         ];
     }
-    $usernotlist = [
-        [
-            'text' => $textbotlang['Admin']['Status']['notusenameinbot'],
-            'callback_data' => 'usernotlist'
-        ]
-    ];
-    $pagination_buttons = [
-        [
-            'text' => $textbotlang['users']['page']['next'],
-            'callback_data' => 'next_page'
-        ],
-        [
-            'text' => $textbotlang['users']['page']['previous'],
-            'callback_data' => 'previous_page'
-        ]
-    ];
+    // اگر به هر دلیل لیست خالی بود
+    if ($service_count === 0) {
+        $msg_empty = $textbotlang['users']['sell']['service_not_available'];
+        if ($datain == "backorder" && !empty($message_id)) {
+            Editmessagetext($from_id, $message_id, $msg_empty, null);
+        } else {
+            sendmessage($from_id, $msg_empty, null, 'HTML');
+        }
+        return;
+    }
     if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
         $keyboardlists['inline_keyboard'][] = [
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
-    if ($setting['NotUser'] == "1") {
-        $keyboardlists['inline_keyboard'][] = $usernotlist;
+    if (($setting['NotUser'] ?? '') == "1") {
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']
+        ];
     }
-    $keyboardlists['inline_keyboard'][] = $pagination_buttons;
+    // صفحه‌بندی فقط وقتی بیش از یک صفحه سرویس هست
+    if ($invoices > $items_per_page) {
+        $keyboardlists['inline_keyboard'][] = [
+            ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'next_page'],
+            ['text' => $textbotlang['users']['page']['previous'], 'callback_data' => 'previous_page'],
+        ];
+    }
     $keyboard_json = json_encode($keyboardlists);
     if ($datain == "backorder") {
         Editmessagetext($from_id, $message_id, $textbotlang['users']['sell']['service_sell'], $keyboard_json);
@@ -1925,7 +1958,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     // step ادمین را تغییر نده (باگ قبلی)
     deletemessage($from_id, $message_id);
-    sendmessage($from_id, $textbotlang['users']['removeconfig']['accepetrequest'], $keyboard, 'html');
+    sendmessage($from_id, ($textbotlang['users']['removeconfig']['acceptrequest'] ?? $textbotlang['users']['removeconfig']['accepetrequest']), $keyboard, 'html');
 }
 #-----------usertest------------#
 if ($text == $datatextbot['text_usertest']) {
@@ -2965,7 +2998,15 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $info_product['price_product'] = round($info_product['price_product']);
     if ($info_product['price_product'] < 0)
         $info_product['price_product'] = 0;
-    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $user['Processing_value_tow'], $info_product['name_product'], $info_product['Service_time'], $info_product['price_product'], $info_product['Volume_constraint'], $user['Balance']);
+    $textin = sprintf(
+        $textbotlang['users']['buy']['invoicebuy'],
+        $user['Processing_value_tow'],
+        $info_product['name_product'],
+        $info_product['Service_time'],
+        number_format(intval($info_product['price_product'])),
+        $info_product['Volume_constraint'],
+        number_format(intval($user['Balance']))
+    );
     $paymentDiscount = json_encode([
         'inline_keyboard' => [
             [['text' => $textbotlang['users']['buy']['payandGet'], 'callback_data' => "confirmandgetserviceDiscount"]],
@@ -3226,13 +3267,13 @@ if ($datain == "Discount") {
     $get_codesql = $stmt->fetch(PDO::FETCH_ASSOC);
     step('home', $from_id);
     number_format($get_codesql['price']);
-    $text_balance_code = sprintf($textbotlang['users']['Discount']['acceptdiscount'], $get_codesql['price']);
+    $text_balance_code = sprintf($textbotlang['users']['Discount']['acceptdiscount'], number_format(intval($get_codesql['price'])));
     sendmessage($from_id, $text_balance_code, $keyboard, 'HTML');
     $stmt = $pdo->prepare("INSERT INTO Giftcodeconsumed (id_user, code) VALUES (?, ?)");
     $stmt->bindParam(1, $from_id);
     $stmt->bindParam(2, $text, PDO::PARAM_STR);
     $stmt->execute();
-    $text_report = sprintf($textbotlang['users']['Report']['discountuser'], $text, $from_id, $username, $get_codesql['price']);
+    $text_report = sprintf($textbotlang['users']['Report']['discountuser'], $text, $from_id, $username, number_format(intval($get_codesql['price'])));
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_gift', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
