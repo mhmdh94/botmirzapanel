@@ -2329,9 +2329,9 @@ function getPaySettingValue($name, $default = '')
 /** حداقل و حداکثر مبلغ واریز/فاکتور (تومان) */
 function getDepositLimits()
 {
-    ensurePaySetting('min_deposit', '300000');
+    ensurePaySetting('min_deposit', '100000');
     ensurePaySetting('max_deposit', '10000000');
-    $min = intval(getPaySettingValue('min_deposit', '300000'));
+    $min = intval(getPaySettingValue('min_deposit', '100000'));
     $max = intval(getPaySettingValue('max_deposit', '10000000'));
     if ($min < 1000) {
         $min = 1000;
