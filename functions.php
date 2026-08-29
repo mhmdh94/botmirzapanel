@@ -1197,7 +1197,7 @@ function DirectPayment($order_id)
                     $newDate = strtotime(date("Y-m-d H:i:s", strtotime("+" . $product['Service_time'] . "day")));
                 }
                 $data_limit = intval($product['Volume_constraint']) * pow(1024, 3);
-                if (in_array($ptype, ['marzban', 'marzneshin', 'pasarguard', 'Pasarguard', 'passtguard'], true) || true) {
+                if (in_array($ptype, ['marzban', 'pasarguard', 'marzneshin', 'Pasarguard', 'passtguard'], true) || true) {
                     $datam = ["expire" => $newDate, "data_limit" => $data_limit];
                     $ManagePanel->Modifyuser($ext_username, $nameloc['Service_location'], $datam);
                 }
@@ -2567,22 +2567,27 @@ function deleteFolder($folderPath)
 function outtypepanel($typepanel, $message)
 {
     global $from_id, $optionMarzban, $optionX_ui_single, $optionMarzneshin, $optionmikrotik, $options_ui, $optionwgdashboard;
-    if ($typepanel == "marzban") {
+    // پاسارگارد و مرزبان (و type قدیمی marzban) یک منوی مدیریت دارند
+    if ($typepanel == "marzban" || $typepanel == "pasarguard") {
         sendmessage($from_id, $message, $optionMarzban, 'HTML');
     } elseif ($typepanel == "x-ui_single") {
-        sendmessage($from_id, $message, $optionX_ui_single, 'HTML');
+        sendmessage($from_id, $message, isset($optionX_ui_single) ? $optionX_ui_single : $optionMarzban, 'HTML');
     } elseif ($typepanel == "alireza") {
-        sendmessage($from_id, $message, $optionX_ui_single, 'HTML');
+        sendmessage($from_id, $message, isset($optionX_ui_single) ? $optionX_ui_single : $optionMarzban, 'HTML');
     } elseif ($typepanel == "marzneshin") {
-        sendmessage($from_id, $message, $optionMarzneshin, 'HTML');
+        sendmessage($from_id, $message, isset($optionMarzneshin) ? $optionMarzneshin : $optionMarzban, 'HTML');
     } elseif ($typepanel == "wgdashboard") {
-        sendmessage($from_id, $message, $optionwgdashboard, 'HTML');
+        sendmessage($from_id, $message, isset($optionwgdashboard) ? $optionwgdashboard : $optionMarzban, 'HTML');
     } elseif ($typepanel == "s_ui") {
-        sendmessage($from_id, $message, $options_ui, 'HTML');
+        sendmessage($from_id, $message, isset($options_ui) ? $options_ui : $optionMarzban, 'HTML');
     } elseif ($typepanel == "mikrotik") {
-        sendmessage($from_id, $message, $optionmikrotik, 'HTML');
+        sendmessage($from_id, $message, isset($optionmikrotik) ? $optionmikrotik : $optionMarzban, 'HTML');
+    } else {
+        sendmessage($from_id, $message, $optionMarzban, 'HTML');
     }
 }
+
+
 function isBase64($string)
 {
     if (base64_encode(base64_decode($string, true)) === $string) {

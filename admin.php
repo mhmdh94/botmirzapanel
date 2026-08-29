@@ -217,7 +217,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
 #----[ گروه‌های پنل پاسارگارد ]----#
 if ($text == ($textbotlang['Admin']['managepanel']['show_groups'] ?? '📂 گروه‌های پنل')) {
     $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    if (!$panel || ($panel['type'] ?? '') != 'marzban') {
+    if (!$panel || (!in_array(($panel['type'] ?? ''), ['marzban', 'pasarguard'], true))) {
         sendmessage($from_id, "این گزینه فقط برای پنل پاسارگارد است.", $optionMarzban, 'HTML');
         return;
     }
@@ -242,7 +242,7 @@ if ($text == ($textbotlang['Admin']['managepanel']['show_groups'] ?? '📂 گر�
 
 if ($text == $textbotlang['Admin']['managepanel']['btnshowconnect']) {
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    if ($marzban_list_get['type'] == "marzban") {
+    if (($marzban_list_get['type'] == "marzban" || $marzban_list_get['type'] == "pasarguard")) {
         $t0 = microtime(true);
         $Check_token = token_panel($marzban_list_get['id']);
         $ms_token = (int) round((microtime(true) - $t0) * 1000);
@@ -416,7 +416,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     sendmessage($from_id, "🥳", $keyboardadmin, 'HTML');
     if ($userdata['type'] == "x-ui_single" or $userdata['type'] == "alireza") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['notex-ui'], null, 'HTML');
-    } elseif ($userdata['type'] == "marzban" || $userdata['type'] == "s_ui" || $userdata['type'] == "marzneshin") {
+    } elseif ($userdata['type'] == "marzban" || $userdata['type'] == "pasarguard" || $userdata['type'] == "s_ui" || $userdata['type'] == "marzneshin") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['notemarzban'], null, 'HTML');
     } elseif ($userdata['type'] == "wgdashboard") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['wgdashboard'], null, 'HTML');
@@ -2450,7 +2450,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     }
 } elseif ($user['step'] == "setinboundandprotocol") {
     $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    if ($panel['type'] == "marzban") {
+    if (($panel['type'] == "marzban" || $panel['type'] == "pasarguard")) {
         $DataUserOut = getuser($text, $user['Processing_value']);
         if ((isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") or !isset($DataUserOut['proxies'])) {
             sendmessage($from_id, $textbotlang['users']['status']['usernotfound'], null, 'html');

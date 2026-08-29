@@ -631,19 +631,8 @@ $affiliates = json_encode([
 $typepanel = json_encode([
     'inline_keyboard' => [
         [
-            ['text' => $textbotlang['Admin']['managepanel']['type']['marzban'], 'callback_data' => "typepanel%marzban"],
-            ['text' => $textbotlang['Admin']['managepanel']['type']['3x-ui'], 'callback_data' => "typepanel%x-ui_single"]
-        ],
-        [
-            ['text' => $textbotlang['Admin']['managepanel']['type']['marzneshin'], 'callback_data' => "typepanel%marzneshin"],
-            ['text' => $textbotlang['Admin']['managepanel']['type']['alireza'], 'callback_data' => "typepanel%alireza"]
-        ],
-        [
-            ['text' => $textbotlang['Admin']['managepanel']['type']['s-ui'], 'callback_data' => "typepanel%s_ui"],
-            ['text' => $textbotlang['Admin']['managepanel']['type']['wgdashboard'], 'callback_data' => "typepanel%wgdashboard"]
-        ],
-        [
-            ['text' => $textbotlang['Admin']['managepanel']['type']['mikrotik'], 'callback_data' => "typepanel%mikrotik"]
+            ['text' => $textbotlang['Admin']['managepanel']['type']['pasarguard'] ?? 'پاسارگارد', 'callback_data' => "typepanel%pasarguard"],
+            ['text' => $textbotlang['Admin']['managepanel']['type']['marzban'] ?? 'مرزبان', 'callback_data' => "typepanel%marzban"],
         ],
         [
             ['text' => $textbotlang['Admin']['Back-Adminment'], 'callback_data' => "back_admin"]

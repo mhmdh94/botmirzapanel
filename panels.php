@@ -1,13 +1,15 @@
 <?php
 ini_set('error_log', 'error_log');
 require_once 'config.php';
+// پنل‌های پشتیبانی‌شده: پاسارگارد + مرزبان (منطق API در pasarguard.php)
+require_once 'pasarguard.php';
 require_once 'marzban.php';
-require_once 'x-ui_single.php';
-require_once 'marzneshin.php';
-require_once 'alireza_single.php';
-require_once 's_ui.php';
-require_once 'wgdashboard.php';
-require_once 'mikrotik.php';
+// سایر پنل‌ها حذف شده‌اند؛ در صورت وجود فایل قدیمی برای سازگاری لود می‌شوند
+foreach (['x-ui_single.php', 'marzneshin.php', 'alireza_single.php', 's_ui.php', 'wgdashboard.php', 'mikrotik.php'] as $__pf) {
+    if (is_file(__DIR__ . '/' . $__pf)) {
+        require_once __DIR__ . '/' . $__pf;
+    }
+}
 class ManagePanel
 {
     public $name_panel;
@@ -185,7 +187,7 @@ class ManagePanel
                 'msg' => ""
             );
         }
-        if ($Get_Data_Panel['type'] == "marzban") {
+        if ($Get_Data_Panel['type'] == "marzban" || $Get_Data_Panel['type'] == "pasarguard") {
             $UsernameData = getuser($username, $Get_Data_Panel['name_panel']);
             if (isset($UsernameData['detail']) && $UsernameData['detail']) {
                 return array(
@@ -500,7 +502,7 @@ class ManagePanel
         $Output = array();
         global $connect;
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");
-        if ($Get_Data_Panel['type'] == "marzban") {
+        if ($Get_Data_Panel['type'] == "marzban" || $Get_Data_Panel['type'] == "pasarguard") {
             $revoke_sub = revoke_sub($username, $name_panel);
             if (isset($revoke_sub['detail']) && $revoke_sub['detail']) {
                 $Output = array(
@@ -711,7 +713,7 @@ class ManagePanel
         $Output = array();
         global $connect;
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");
-        if ($Get_Data_Panel['type'] == "marzban") {
+        if ($Get_Data_Panel['type'] == "marzban" || $Get_Data_Panel['type'] == "pasarguard") {
             $UsernameData = removeuser($Get_Data_Panel['name_panel'], $username);
             if (isset($UsernameData['detail']) && $UsernameData['detail']) {
                 $Output = array(
@@ -804,7 +806,7 @@ class ManagePanel
         $Output = array();
         global $connect;
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");
-        if ($Get_Data_Panel['type'] == "marzban") {
+        if ($Get_Data_Panel['type'] == "marzban" || $Get_Data_Panel['type'] == "pasarguard") {
             ResetUserDataUsage($username, $name_panel);
         } elseif ($Get_Data_Panel['type'] == "marzneshin") {
             ResetUserDataUsagem($username, $name_panel);
@@ -825,7 +827,7 @@ class ManagePanel
         $Output = array();
         global $connect;
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");
-        if ($Get_Data_Panel['type'] == "marzban") {
+        if ($Get_Data_Panel['type'] == "marzban" || $Get_Data_Panel['type'] == "pasarguard") {
             Modifyuser($name_panel, $username, $config);
         } elseif ($Get_Data_Panel['type'] == "marzneshin") {
             $UsernameData = getuserm($username, $Get_Data_Panel['name_panel']);

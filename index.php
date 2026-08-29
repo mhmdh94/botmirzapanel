@@ -1366,7 +1366,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         Editmessagetext($from_id, $message_id, "⏳ در حال تمدید سرویس <code>{$usernamepanel}</code> ...", json_encode(['inline_keyboard' => []]));
     }
     $ManagePanel->ResetUserDataUsage($nameloc['Service_location'], $user['Processing_value']);
-    if ($marzban_list_get['type'] == "marzban") {
+    if (($marzban_list_get['type'] == "marzban" || $marzban_list_get['type'] == "pasarguard")) {
         if (intval($product['Service_time']) == 0) {
             $newDate = 0;
         } else {
@@ -1588,7 +1588,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     $ptype = $marzban_list_get['type'];
     $enabled_now = false;
-    if (in_array($ptype, ['marzban', 'marzneshin'])) {
+    if (in_array($ptype, ['marzban', 'pasarguard', 'marzneshin'])) {
         $newstatus = ($cur === 'disabled') ? 'active' : 'disabled';
         $ManagePanel->Modifyuser($usernameconfig, $marzban_list_get['name_panel'], ['status' => $newstatus]);
         $enabled_now = ($newstatus === 'active');
@@ -1727,7 +1727,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $user['Processing_value']);
     $data_limit = $DataUserOut['data_limit'] + ($volume * pow(1024, 3));
-    if ($marzban_list_get['type'] == "marzban") {
+    if (($marzban_list_get['type'] == "marzban" || $marzban_list_get['type'] == "pasarguard")) {
         $datam = array(
             "data_limit" => $data_limit
         );
