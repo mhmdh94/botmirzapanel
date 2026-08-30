@@ -427,7 +427,7 @@ if ($text == "/status") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "🌟" . $row['username'] . "🌟",
+                'text' => "✅ " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -501,6 +501,7 @@ if ($text == $textbotlang['users']['backhome'] || $datain == "backuser") {
     update("user", "Processing_value", "0", "id", $from_id);
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
+    return;
 }
 #-----------get_number (احراز هویت موبایل)------------#
 if (isset($user['step']) && $user['step'] == 'get_number') {
@@ -578,7 +579,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
         $service_count++;
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "🌟" . $row['username'] . "🌟",
+                'text' => "✅ " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -637,7 +638,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "🌟️" . $row['username'] . "🌟️",
+                'text' => "✅ " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -688,7 +689,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "🌟️" . $row['username'] . "🌟️",
+                'text' => "✅ " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -763,7 +764,7 @@ if ($user['step'] == "search_myservice") {
         $keyboardlists = ['inline_keyboard' => []];
         foreach ($results as $row) {
             $keyboardlists['inline_keyboard'][] = [
-                ['text' => "🌟" . $row['username'] . "🌟", 'callback_data' => "product_" . $row['username']]
+                ['text' => "✅ " . $row['username'], 'callback_data' => "product_" . $row['username']]
             ];
         }
         $keyboardlists['inline_keyboard'][] = [
@@ -780,7 +781,7 @@ if ($user['step'] == "search_myservice") {
     $keyboardfound = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => "🌟" . $invoice['username'] . "🌟", 'callback_data' => "product_" . $invoice['username']]
+                ['text' => "✅ " . $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
             ],
             [
                 ['text' => $textbotlang['users']['search']['again'], 'callback_data' => 'search_myservice']
@@ -2219,6 +2220,29 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
     sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
     step('gettextpm', $from_id);
 } elseif ($user['step'] == 'gettextpm') {
+    // نادیده گرفتن دکمه‌های منو / بازگشت تا به‌عنوان پیام پشتیبانی ارسال نشوند
+    $__nav_texts = array_filter([
+        $textbotlang['users']['backhome'] ?? null,
+        $textbotlang['users']['backmenu'] ?? null,
+        $textbotlang['users']['back'] ?? null,
+        $datatextbot['text_support'] ?? null,
+        $datatextbot['text_sell'] ?? null,
+        $datatextbot['text_Purchased_services'] ?? null,
+        $datatextbot['text_Add_Balance'] ?? null,
+        $datatextbot['text_account'] ?? null,
+        $datatextbot['text_start'] ?? null,
+        '/start',
+        '/support',
+    ]);
+    if ($datain == 'backuser' || (isset($text) && is_string($text) && (in_array($text, $__nav_texts, true) || strpos($text, 'منوی اصلی') !== false || strpos($text, 'بازگشت') !== false))) {
+        step('home', $from_id);
+        sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
+        return;
+    }
+    if ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
+        sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
+        return;
+    }
     sendmessage($from_id, $textbotlang['users']['support']['sendmessageadmin'], $keyboard, 'HTML');
     if (function_exists('ensureSupportPendingTable')) {
         ensureSupportPendingTable();
