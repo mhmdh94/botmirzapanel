@@ -258,12 +258,11 @@ $textbotlang['users']['changetext']['faq_description'] = "📝 تنظیم متن
 
 
 
-$textbotlang['users']['Extra_volume']['SetPrice'] = "⭕️ قیمتی که می خواهید برای هرگیگ حجم اضافه تعیین کنید را ارسال کنید.
-قیمت فعلی :";
-$textbotlang['users']['Extra_volume']['ChangedPrice'] = "✅ مبلغ با موفقیت ذخیره گردید.";
+$textbotlang['users']['Extra_volume']['SetPrice'] = "💰 قیمت هر گیگ حجم اضافه را به تومان بفرستید.\nقیمت فعلی:";
+$textbotlang['users']['Extra_volume']['ChangedPrice'] = "✅ قیمت حجم اضافه ذخیره شد.";
 $textbotlang['users']['Extra_volume']['sellextra'] = "➕ خرید حجم اضافه";
 $textbotlang['users']['Extra_volume']['extraadded'] = "✅ <b>حجم اضافه شد</b>\nحجم با موفقیت به سرویس شما اضافه شد.";
-$textbotlang['users']['Extra_volume']['extracheck'] = "تایید و دریافت حجم اضافه";
+$textbotlang['users']['Extra_volume']['extracheck'] = "✅ تأیید و دریافت حجم اضافه";
 $textbotlang['users']['Extra_volume']['invalidprice'] = "⚠️ حداقل حجم ۱ گیگابایت است.";
 $textbotlang['users']['Extra_volume']['VolumeValue'] = "📊 حجم مورد نظر را به گیگابایت بفرستید (حداقل ۱).
 
@@ -617,18 +616,17 @@ $textbotlang['users']['pricelist'] = "💰 تعرفه اشتراک‌ها";
 
 
 
-$textbotlang['users']['affiliates']['setpercentage'] = "📌 درصدی که می‌خواهید بعد خرید  به کاربر واریز شود  را ارسال کنید";
-$textbotlang['users']['affiliates']['changedpercentage'] = "✅ درصد واریز به کاربر با موفقیت تنظیم شد";
-$textbotlang['users']['affiliates']['banner'] = "⭕️ بنر مشارکت در فروش خود را ارسال کنید 
-❌ بنر باید حتما همراه با عکس باشد";
+$textbotlang['users']['affiliates']['setpercentage'] = "📊 درصد پورسانت بعد از خرید را بفرستید:";
+$textbotlang['users']['affiliates']['changedpercentage'] = "✅ درصد پورسانت ذخیره شد.";
+$textbotlang['users']['affiliates']['banner'] = "📸 بنر مشارکت در فروش را ارسال کنید.\nبنر باید همراه با عکس باشد.";
 $textbotlang['users']['affiliates']['affiliatesyou'] = "❌ امکان ثبت با این شناسه وجود ندارد.";
 $textbotlang['users']['affiliates']['invalidbanner'] = "❌ بنر نامعتبر است. حتماً همراه با عکس ارسال کنید.";
 $textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر با موفقیت ثبت شد.";
 $textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ نمی‌توانید با لینک مشارکت خودتان ثبت شوید";
-$textbotlang['users']['affiliates']['priceDiscount'] = "📌 مبلغی که می‌خواهید که کاربر با هر دعوت جدید دریافت کند را وارد کنید";
-$textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ مشارکت در فروش با موفقیت ثبت شد";
+$textbotlang['users']['affiliates']['priceDiscount'] = "🎁 مبلغ هدیه هر دعوت موفق را به تومان بفرستید:";
+$textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ هدیه دعوت ذخیره شد.";
 $textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش است.";
-$textbotlang['users']['affiliates']['affiliateseduser'] = "❌ شما هم اکنون از طریق لینک مشارکت یک کاربر ثبت شده‌اید و نمی‌توانید لینک فرد دیگری را استفاده کنید";
+$textbotlang['users']['affiliates']['affiliateseduser'] = "❌ قبلاً با لینک دعوت یک کاربر ثبت شده‌اید و نمی‌توانید لینک دیگری را استفاده کنید.";
 $textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ <b>%s</b> تومان از طرف دعوت‌کننده (<code>%s</code>) به موجودی شما اضافه شد.";
 $textbotlang['users']['affiliates']['porsantuser'] = "🎁 <b>پورسانت واریز شد</b>
 
@@ -941,7 +939,7 @@ $textbotlang['Admin']['managepanel']['type']['alireza'] = "علیرضا";
 
 
 
-$textbotlang['Admin']['ManageUser']['SendMessageuser'] = "✅ پیام با موفقیت برای کاربر ارسال گردید.";
+$textbotlang['Admin']['ManageUser']['SendMessageuser'] = "✅ پیام برای کاربر ارسال شد.";
 $textbotlang['Admin']['ManageUser']['GetTextResponse'] = "برای پاسخ به کاربر متن خود را ارسال کنید.";
 $textbotlang['Admin']['ManageUser']['GetText'] = "متن خود را ارسال کنید";
 $textbotlang['Admin']['ManageUser']['ForwardGetext'] = "متن فورواردی خود را ارسال کنید";
@@ -992,48 +990,49 @@ $textbotlang['Admin']['ManageUser']['viewpaymentuser'] = "💰 مشاهده پر
 $textbotlang['Admin']['ManageUser']['sendpayemntlist'] = "✅ لیست پرداختی های کاربر ارسال شد";
 $textbotlang['Admin']['ManageUser']['removeservice'] = "❌ حذف سفارش";
 $textbotlang['Admin']['ManageUser']['removeserviceandback'] = "❌ حذف سفارش و بازگشت مبلغ";
-$textbotlang['Admin']['ManageUser']['sendmessageUser'] = "ارسال پیام به کاربر";
-$textbotlang['Admin']['ManageUser']['NewUserMessage'] = "
-🎉یک کاربر جدید ربات را استارت کرد
-نام : %s
-نام کاربری : @%s
-آیدی عددی : <a href = \"tg://user?id=%s\">%s</a>";
-$textbotlang['Admin']['ManageUser']['Datails'] = "
-🛒 شماره سفارش  :  <code>%s</code>
-وضعیت سفارش : <code>%s</code>
-🙍‍♂️ شناسه کاربر : <code>%s</code>
-👤 نام کاربری اشتراک :  <code>%s</code> 
-📍 لوکیشن سرویس :  %s
-🛍 نام محصول :  %s
-💰 قیمت پرداختی سرویس :  %s تومان
-⚜️ حجم سرویس خریداری شده : %s
-⏳ زمان سرویس خریداری شده : %s روزه
-📆 تاریخ خرید : %s";
+$textbotlang['Admin']['ManageUser']['sendmessageUser'] = "✉️ ارسال پیام به کاربر";
+$textbotlang['Admin']['ManageUser']['NewUserMessage'] = "🎉 <b>کاربر جدید</b>
+
+👤 نام: %s
+🔗 یوزرنیم: @%s
+🆔 <a href=\"tg://user?id=%s\">%s</a>";
+$textbotlang['Admin']['ManageUser']['Datails'] = "🧾 <b>جزئیات سفارش</b>
+
+🛒 شماره سفارش: <code>%s</code>
+📌 وضعیت: <code>%s</code>
+🆔 کاربر: <code>%s</code>
+👤 نام کاربری: <code>%s</code>
+📍 لوکیشن: %s
+🛍 محصول: %s
+💰 مبلغ: %s تومان
+📊 حجم: %s
+⏳ مدت: %s روز
+📆 تاریخ خرید: %s";
 $textbotlang['Admin']['ManageUser']['removeorderbtn'] = "❌ حذف سرویس کاربر";
 $textbotlang['Admin']['ManageUser']['verify'] = "احراز هویت";
 $textbotlang['Admin']['ManageUser']['verifyed'] = "کاربر از قبل احراز نبوده است";
 $textbotlang['Admin']['ManageUser']['verifyeduser'] = "کاربر از قبل احراز شده است";
-$textbotlang['Admin']['ManageUser']['unverifyed'] = "✅ کاربر با موفقیت از احراز خارج گردید.";
-$textbotlang['Admin']['ManageUser']['verifyeduser'] = "✅ کاربر با موفقیت احراز گردید.";
+$textbotlang['Admin']['ManageUser']['unverifyed'] = "✅ احراز هویت کاربر برداشته شد.";
+$textbotlang['Admin']['ManageUser']['verifyeduser'] = "✅ کاربر احراز شد.";
 $textbotlang['Admin']['ManageUser']['removeverify'] = "حذف احراز هویت";
-$textbotlang['Admin']['ManageUser']['infouser'] = "👀 اطلاعات کاربر:
+$textbotlang['Admin']['ManageUser']['infouser'] = "👤 <b>اطلاعات کاربر</b>
 
-⭕️ وضعیت کاربر : %s
-⭕️ نام کاربری کاربر : @%s
-⭕️ آیدی عددی کاربر :  <a href = \"tg://user?id=%s\">%s</a>
-⭕️ آخرین زمان  استفاده کاربر از ربات : %s
-⭕️ محدودیت اکانت تست :  %s
-⭕️ وضعیت تایید قانون : %s
-⭕️ شماره موبایل : <code>%s</code>
-⭕️ موجودی کاربر : %s
-⭕️ تعداد خرید کل کاربر : %s
-⭕️ مبلغ کل پرداختی  :  %s
-⭕️ جمع کل خرید : %s
-⭕️ تعداد افراد دعوت‌شده کاربر : %s
-⭕  معرف کاربر : %s
-⭕  وضعیت احراز کاربر : %s
-💰 درآمد مشارکت در فروش (پورسانت): <code>%s</code> تومان
-⚙️ تأیید خودکار رسید کاربر: %s";
+📌 وضعیت: %s
+👤 یوزرنیم: @%s
+🆔 آیدی: <a href=\"tg://user?id=%s\">%s</a>
+🕐 آخرین فعالیت: %s
+🧪 محدودیت تست: %s
+📋 تأیید قوانین: %s
+📱 موبایل: <code>%s</code>
+💰 موجودی: %s
+🛒 تعداد خرید: %s
+💵 مبلغ پرداختی: %s
+🛍 جمع خرید: %s
+🤝 دعوت‌شده‌ها: %s
+👥 معرف: %s
+✅ احراز: %s
+💸 پورسانت: <code>%s</code> تومان
+⚙️ تأیید خودکار رسید: %s";
 $textbotlang['Admin']['ManageUser']['addorder'] = "🛒 افزودن دستی سفارش";
 
 $textbotlang['Admin']['systemsms']['sendbulkbtn'] = "✉️ ارسال همگانی";
