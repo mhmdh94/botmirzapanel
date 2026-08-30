@@ -101,15 +101,15 @@ $textbotlang['users']['status']['disabled'] = "❌ غیرفعال";
 $textbotlang['users']['status']['expired'] = "🔚 پایان زمان سرویس";
 $textbotlang['users']['status']['Unlimited'] = "نامحدود";
 $textbotlang['users']['status']['day'] = "روز";
-$textbotlang['users']['status']['Notconsumed'] = "مصرف نشده";
-$textbotlang['users']['status']['username'] = "نام کاربری : ";
-$textbotlang['users']['status']['status'] = "وضعیت:";
-$textbotlang['users']['status']['expirationDate'] = "زمان پایان:";
-$textbotlang['users']['status']['daysleft'] = "زمان باقی مانده سرویس:";
-$textbotlang['users']['status']['usedTrafficGb'] = "حجم مصرف شده سرویس:";
-$textbotlang['users']['status']['LastTraffic'] = "حجم کل سرویس :";
-$textbotlang['users']['status']['RemainingVolume'] = "حجم باقی مانده سرویس :";
-$textbotlang['users']['status']['info'] = "📊 اطلاعات سرویس:";
+$textbotlang['users']['status']['Notconsumed'] = "مصرف‌نشده";
+$textbotlang['users']['status']['username'] = "نام کاربری";
+$textbotlang['users']['status']['status'] = "وضعیت";
+$textbotlang['users']['status']['expirationDate'] = "زمان پایان";
+$textbotlang['users']['status']['daysleft'] = "زمان باقی‌مانده";
+$textbotlang['users']['status']['usedTrafficGb'] = "حجم مصرف‌شده";
+$textbotlang['users']['status']['LastTraffic'] = "حجم کل";
+$textbotlang['users']['status']['RemainingVolume'] = "حجم باقی‌مانده";
+$textbotlang['users']['status']['info'] = "📊 اطلاعات سرویس";
 $textbotlang['users']['status']['error'] = "⚠️ مشکلی پیش آمد.
 لطفاً چند لحظه بعد دوباره تلاش کنید یا با پشتیبانی در تماس باشید.";
 $textbotlang['users']['status']['error_onhold'] = "⚠️ هنوز به سرویس متصل نشده‌اید.
@@ -345,9 +345,9 @@ $textbotlang['users']['Balance']['Send-receip-buy'] = "🚀 <b>رسید ارسا
 
 
 $textbotlang['users']['changelink']['btntitle'] = "🔄 تغییر لینک اتصال";
-$textbotlang['users']['changelink']['warnchange'] = "⚠️ در صورت بروزرسانی لینک اشتراک کانفیگ ها سرویس شما قطع شده و باید از بخش تنظیمات سرویس کانفیگ یا لینک اشتراک جدید را دریافت کنید.";
-$textbotlang['users']['changelink']['confirm'] = "تغییر لینک اتصال";
-$textbotlang['users']['changelink']['confirmed'] = "✅ لینک اتصال شما بروزرسانی و کانفیگ قبلی قطع گردید برای دریافت کانفیگ جدید منوی تنظمیات سرویس مراجعه کرده و کانفیگ جدید را تهیه کنید.";
+$textbotlang['users']['changelink']['warnchange'] = "⚠️ با تغییر لینک، اتصال فعلی قطع می‌شود.\nبعد از تأیید، لینک/کانفیگ جدید را از جزئیات سرویس بگیرید.";
+$textbotlang['users']['changelink']['confirm'] = "✅ تأیید تغییر لینک";
+$textbotlang['users']['changelink']['confirmed'] = "✅ لینک اتصال به‌روز شد و کانفیگ قبلی قطع شد.\n\nبرای دریافت لینک یا کانفیگ جدید به جزئیات سرویس بروید.";
 
 $textbotlang['users']['togglestatus']['disable_btn'] = "⏸ غیرفعال کردن سرویس";
 $textbotlang['users']['togglestatus']['enable_btn'] = "▶️ فعال کردن سرویس";
@@ -359,20 +359,21 @@ $textbotlang['users']['togglestatus']['error'] = "❌ خطا در تغییر و�
 
 
 
-$textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وجه ";
-$textbotlang['users']['removeconfig']['rejectremove'] = "❌عدم تایید حذف";
+$textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وجه";
+$textbotlang['users']['removeconfig']['rejectremove'] = "❌ رد حذف";
 $textbotlang['users']['removeconfig']['acceptrequest'] = "✅ درخواست شما ثبت شد.\nپس از بررسی مدیریت، نتیجه از همین ربات اعلام می‌شود.";
 $textbotlang['users']['removeconfig']['accepetrequest'] = $textbotlang['users']['removeconfig']['acceptrequest'];
 $textbotlang['users']['status']['notusername'] = "❌ امکان حذف سرویس وجود ندارد.";
-$textbotlang['users']['status']['errorexits'] = "❌ برای این سرویس قبلاً یک درخواست حذف / بازگشت وجه ثبت شده است.\nبرای همین فاکتور نمی‌توانید درخواست دوم بدهید.\nبرای سرویس‌های دیگر محدودیتی ندارید.";
-$textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید درخواست، حذف سرویس برای بررسی به مدیریت ارسال می‌شود.
+$textbotlang['users']['status']['errorexits'] = "❌ برای این سرویس قبلاً درخواست حذف/بازگشت وجه ثبت شده است.\nبرای همین فاکتور درخواست دوم ممکن نیست.\nبرای سرویس‌های دیگر محدودیتی ندارید.";
+$textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید، درخواست حذف برای مدیریت ارسال می‌شود.
 
 در صورت موافقت، مبلغ باقی‌مانده (طبق نظر ادمین) به کیف پول برمی‌گردد.";
 $textbotlang['users']['status']['exitsrequsts'] = "⚠️ برای این سرویس قبلاً درخواست حذف ثبت شده است.";
-$textbotlang['users']['status']['sendrequestsremove'] ="درخواست حذف ثبت شد و برای مدیریت ارسال گردید.
+$textbotlang['users']['status']['sendrequestsremove'] ="✅ درخواست حذف ثبت شد و برای مدیریت ارسال شد.
 تا بررسی نهایی صبر کنید.";
 $textbotlang['users']['status']['RemoveSerivecbtn'] = "🗑 حذف سرویس";
-$textbotlang['users']['status']['InfoSerivceDisable'] = "وضعیت: %s
+$textbotlang['users']['status']['InfoSerivceDisable'] = "📌 وضعیت: %s
+
 👤 نام کاربری: <code>%s</code>
 📍 لوکیشن: %s
 🆔 کد سرویس: <code>%s</code>
@@ -380,7 +381,8 @@ $textbotlang['users']['status']['InfoSerivceDisable'] = "وضعیت: %s
 📊 حجم کل: %s
 📥 مصرف: %s
 📅 تا تاریخ: %s (%s)";
-$textbotlang['users']['status']['InfoSerivceActive'] = "وضعیت: %s
+$textbotlang['users']['status']['InfoSerivceActive'] = "📌 وضعیت: %s
+
 👤 نام کاربری: <code>%s</code>
 📍 لوکیشن: %s
 🆔 کد سرویس: <code>%s</code>
@@ -391,7 +393,8 @@ $textbotlang['users']['status']['InfoSerivceActive'] = "وضعیت: %s
 📅 تا تاریخ: %s (%s)
 
 💡 برای قطع دسترسی دیگران از «تغییر لینک اتصال» استفاده کنید.";
-$textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "وضعیت: %s
+$textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "📌 وضعیت: %s
+
 👤 نام کاربری: <code>%s</code>
 🔑 رمز: <code>%s</code>
 📍 لوکیشن: %s
@@ -419,7 +422,7 @@ $textbotlang['users']['status']['RequestInfoRemove'] = "🗑 <b>درخواست �
 %s
 
 ⚠️ مبلغ بازگشت نهایی را خودتان بعداً وارد می‌کنید.";
-$textbotlang['users']['status']['residaccepted'] = "این درخواست قبلاً بررسی شده است.";
+$textbotlang['users']['status']['residaccepted'] = "ℹ️ این درخواست قبلاً بررسی شده است.";
 $textbotlang['users']['status']['acceptrequest'] = "دلیل رد درخواست حذف را بفرستید:";
 $textbotlang['users']['status']['acceptrequestnote'] = "✅ ثبت شد.";
 $textbotlang['users']['status']['rejectsendtouser'] = "❌ درخواست حذف سرویس <code>%s</code> پذیرفته نشد.
@@ -662,9 +665,9 @@ $textbotlang['users']['cron']['cronvolume'] = "📊 سرویس <code>%s</code>
 حجم رو به اتمام است (باقی‌مانده حدود <b>%s</b>).
 %s
 برای ادامه، تمدید یا حجم اضافه بگیرید.";
-$textbotlang['users']['cron']['removeexpire'] = "📌 کاربر گرامی بدلیل عدم تمدید، سرویس %s  از لیست سرویس های شما حذف گردید
+$textbotlang['users']['cron']['removeexpire'] = "⚠️ سرویس <code>%s</code> به‌دلیل عدم تمدید از لیست سرویس‌های شما حذف شد.
 
-🌟 جهت تهیه سرویس جدید از بخش خرید سرویس اقدام فرمایید";
+برای تهیه سرویس جدید از «خرید سرویس» استفاده کنید.";
 $textbotlang['users']['cron']['sendedmessage'] = "📌 پیام برای تمامی کاربران ارسال گردید.";
 
 
