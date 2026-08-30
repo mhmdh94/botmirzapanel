@@ -69,7 +69,7 @@ $textbotlang['users']['number']['Confirming'] = "📞 برای ادامه بای
 
 $textbotlang['users']['sell']['service_not_available'] = "📭 <b>هنوز سرویسی ندارید</b>
 
-از دکمه «خرید سرویس» در منوی اصلی می‌توانید اشتراک جدید بگیرید.
+از دکمه زیر می‌توانید اشتراک جدید بگیرید.
 پس از خرید، سرویس‌ها اینجا نمایش داده می‌شوند.";
 $textbotlang['users']['sell']['service_sell'] = "🛍 <b>سرویس‌های من</b>
 
@@ -166,7 +166,7 @@ $textbotlang['users']['buy']['createservicetest'] = "✅ <b>اکانت تست س
 ⏳ مدت: %s ساعت
 📊 حجم: %s مگابایت
 
-🔗 لینک:
+📎 برای استفاده از سرویس، لینک زیر را داخل برنامه اضافه کنید:
 <code>%s</code>
 <code>%s</code>";
 $textbotlang['users']['buy']['createservicewg'] = "✅ <b>اکانت تست ساخته شد</b>
@@ -213,7 +213,7 @@ $textbotlang['users']['buy']['createservice'] = "✅ <b>سرویس فعال شد
 📆 مدت: %s روز
 📊 حجم: %s گیگ
 
-🔗 لینک:
+📎 برای استفاده از سرویس، لینک زیر را داخل برنامه اضافه کنید:
 <code>%s</code>
 <code>%s</code>";
 $textbotlang['users']['buy']['selectService'] = "🛒 <b>انتخاب محصول</b>

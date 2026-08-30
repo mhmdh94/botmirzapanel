@@ -379,7 +379,12 @@ if ($text == "/new") {
                 return;
             }
             $textproduct = sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']);
-            sendmessage($from_id, $textproduct, KeyboardProduct($panel['name_panel'], "backuser", $panel['MethodUsername']), 'HTML');
+            $kbprod = KeyboardProduct($panel['name_panel'], "backuser", $panel['MethodUsername']);
+            if ($datain == "buy" && !empty($message_id)) {
+                Editmessagetext($from_id, $message_id, $textproduct, $kbprod);
+            } else {
+                sendmessage($from_id, $textproduct, $kbprod, 'HTML');
+            }
         } else {
             $emptycategory = select("category", "*", null, null, "count");
             if ($emptycategory == 0) {
@@ -400,15 +405,7 @@ if ($text == "/status") {
     $stmt->execute();
     $invoices = $stmt->rowCount();
     if ($invoices == 0) {
-        $empty_kb = null;
-        // اگر افزودن سرویس دستی روشن باشد همان را نشان بده؛ وگرنه فقط متن
-        if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
-            $empty_kb = json_encode([
-                'inline_keyboard' => [
-                    [['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']],
-                ]
-            ]);
-        }
+        $empty_kb = function_exists('emptyServicesKeyboard') ? emptyServicesKeyboard() : null;
         $msg_empty = $textbotlang['users']['sell']['service_not_available'];
         if ($datain == "backorder" && !empty($message_id)) {
             Editmessagetext($from_id, $message_id, $msg_empty, $empty_kb);
@@ -474,7 +471,8 @@ if ($text == "/renew") {
     $stmt->execute();
     $invoices = $stmt->rowCount();
     if ($invoices == 0) {
-        sendmessage($from_id, $textbotlang['users']['sell']['service_not_available'], null, 'html');
+        $empty_json = function_exists('emptyServicesKeyboard') ? emptyServicesKeyboard() : null;
+        sendmessage($from_id, $textbotlang['users']['sell']['service_not_available'], $empty_json, 'HTML');
         return;
     }
     $keyboardlists = [
@@ -549,13 +547,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     $stmt->execute();
     $invoices = intval($stmt->fetchColumn());
     if ($invoices <= 0) {
-        $empty_kb = ['inline_keyboard' => []];
-        if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
-            $empty_kb['inline_keyboard'][] = [
-                ['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']
-            ];
-        }
-        $empty_json = count($empty_kb['inline_keyboard']) ? json_encode($empty_kb) : null;
+        $empty_json = function_exists('emptyServicesKeyboard') ? emptyServicesKeyboard() : null;
         $msg_empty = $textbotlang['users']['sell']['service_not_available'];
         if ($datain == "backorder" && !empty($message_id)) {
             Editmessagetext($from_id, $message_id, $msg_empty, $empty_json);
@@ -590,10 +582,11 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     // اگر به هر دلیل لیست خالی بود
     if ($service_count === 0) {
         $msg_empty = $textbotlang['users']['sell']['service_not_available'];
+        $empty_json = function_exists('emptyServicesKeyboard') ? emptyServicesKeyboard() : null;
         if ($datain == "backorder" && !empty($message_id)) {
-            Editmessagetext($from_id, $message_id, $msg_empty, null);
+            Editmessagetext($from_id, $message_id, $msg_empty, $empty_json);
         } else {
-            sendmessage($from_id, $msg_empty, null, 'HTML');
+            sendmessage($from_id, $msg_empty, $empty_json, 'HTML');
         }
         return;
     }
@@ -2148,13 +2141,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
         }
         $text_config = $config;
     }
-    $Shoppinginfo = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['help']['btninlinebuy'], 'callback_data' => "helpbtn"],
-            ]
-        ]
-    ]);
+    $Shoppinginfo = null; // دکمه آموزش استفاده حذف شد
     if ($marzban_list_get['type'] == "wgdashboard") {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewg'], $username_ac, $marzban_list_get['name_panel'], $setting['time_usertest'], $setting['val_usertest']);
     } elseif ($marzban_list_get['type'] == "mikrotik") {
@@ -2528,7 +2515,12 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
                 return;
             }
             $textproduct = sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']);
-            sendmessage($from_id, $textproduct, KeyboardProduct($panel['name_panel'], "backuser", $panel['MethodUsername']), 'HTML');
+            $kbprod = KeyboardProduct($panel['name_panel'], "backuser", $panel['MethodUsername']);
+            if ($datain == "buy" && !empty($message_id)) {
+                Editmessagetext($from_id, $message_id, $textproduct, $kbprod);
+            } else {
+                sendmessage($from_id, $textproduct, $kbprod, 'HTML');
+            }
         } else {
             $emptycategory = select("category", "*", null, null, "count");
             if ($emptycategory == 0) {
@@ -2949,13 +2941,7 @@ if (isset($datain) && $datain === 'product_header') {
         }
         $text_config = $config;
     }
-    $Shoppinginfo = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['help']['btninlinebuy'], 'callback_data' => "helpbtn"],
-            ]
-        ]
-    ]);
+    $Shoppinginfo = null; // دکمه آموزش استفاده حذف شد
     if ($marzban_list_get['type'] == "wgdashboard") {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $username_ac, $info_product['name_product'], $marzban_list_get['name_panel'], $info_product['Service_time'], $info_product['Volume_constraint']);
     } elseif ($marzban_list_get['type'] == "mikrotik") {

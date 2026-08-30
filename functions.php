@@ -966,13 +966,7 @@ function DirectPayment($order_id)
         }
         $output_config_link = "";
         $config = "";
-        $Shoppinginfo = [
-            'inline_keyboard' => [
-                [
-                    ['text' => $textbotlang['users']['help']['btninlinebuy'], 'callback_data' => "helpbtn"],
-                ]
-            ]
-        ];
+        $Shoppinginfo = null;
         if ($marzban_list_get['sublink'] == "onsublink") {
             $output_config_link = $dataoutput['subscription_url'];
         }
@@ -988,7 +982,7 @@ function DirectPayment($order_id)
                 $configqr .= "";
             }
         }
-        $Shoppinginfo = json_encode($Shoppinginfo);
+        $Shoppinginfo = $Shoppinginfo ? json_encode($Shoppinginfo) : null;
         if ($marzban_list_get['type'] == "wgdashboard") {
             $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $dataoutput['username'], $get_invoice['name_product'], $marzban_list_get['name_panel'], $get_invoice['Service_time'], $get_invoice['Volume']);
         }
@@ -3136,3 +3130,27 @@ function ensureBotCommands($force = false)
     return false;
 }
 
+/**
+ * کیبورد حالت خالی «سرویس‌های من»: دکمه خرید (+ اختیاری افزودن دستی)
+ */
+function emptyServicesKeyboard()
+{
+    global $setting, $textbotlang, $datatextbot;
+    $rows = [];
+    $buy_label = $datatextbot['text_sell'] ?? ($textbotlang['users']['buybtn'] ?? '🛒 خرید سرویس');
+    if (function_exists('isBuyEnabled') && !isBuyEnabled()) {
+        // اگر خرید خاموش است دکمه را نگذار
+    } else {
+        $rows[] = [['text' => $buy_label, 'callback_data' => 'buy']];
+    }
+    if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
+        $rows[] = [[
+            'text' => $textbotlang['Admin']['Status']['notusenameinbot'] ?? 'افزودن سرویس',
+            'callback_data' => 'usernotlist',
+        ]];
+    }
+    if (!$rows) {
+        return null;
+    }
+    return json_encode(['inline_keyboard' => $rows]);
+}
