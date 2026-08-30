@@ -1292,7 +1292,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             if ($__lock_fp) {
                 @fclose($__lock_fp);
             }
-            sendmessage($from_id, "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['busy_request'] ?? "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
             return;
         }
     }
@@ -1344,7 +1344,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             @flock($__lock_fp, LOCK_UN);
             @fclose($__lock_fp);
             @unlink($__lock_path);
-            sendmessage($from_id, "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['busy_or_balance'] ?? "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
             return;
         }
         $__bal_after = select("user", "Balance", "id", $from_id, "select");
@@ -1680,7 +1680,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (intval($setting['Extra_volume']) != 0 && $price_extra > 0) {
         $__extra_lock = function_exists('paymentAcquireLock') ? paymentAcquireLock($from_id, 'extra') : true;
         if ($__extra_lock === null) {
-            sendmessage($from_id, "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['busy_request'] ?? "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
             return;
         }
         $__bal_row = select("user", "Balance", "id", $from_id, "select");
@@ -1716,7 +1716,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             if (function_exists('paymentReleaseLock') && is_array($__extra_lock)) {
                 paymentReleaseLock($__extra_lock);
             }
-            sendmessage($from_id, "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['busy_or_balance'] ?? "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
             return;
         }
         if (function_exists('logWalletTx')) {
@@ -2744,7 +2744,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $__price_buy = intval($priceproduct);
     $__buy_lock = function_exists('paymentAcquireLock') ? paymentAcquireLock($from_id, 'buy') : true;
     if ($__buy_lock === null) {
-        sendmessage($from_id, "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['busy_request'] ?? "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.", $keyboard, 'HTML');
         return;
     }
     $__bal_row = select("user", "Balance", "id", $from_id, "select");
@@ -2785,7 +2785,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         if (function_exists('paymentReleaseLock') && is_array($__buy_lock)) {
             paymentReleaseLock($__buy_lock);
         }
-        sendmessage($from_id, "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['busy_or_balance'] ?? "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.", $keyboard, 'HTML');
         return;
     }
     $__buy_deducted = $__price_buy;

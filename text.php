@@ -55,8 +55,8 @@ $textbotlang['users']['number']['false'] = "❌ شماره دریافت نشد.
 $textbotlang['users']['number']['Warning'] = "⚠️ شماره باید متعلق به همین حساب تلگرام باشد.
 
 👇 دوباره از دکمه <b>☎️ ارسال شماره تلفن</b> در پایین صفحه ارسال کنید.";
-$textbotlang['users']['number']['erroriran'] = "⭕️ شماره موبایل نامعتبر است. فقط شماره های ایرانی مورد قبول می‌باشد";
-$textbotlang['users']['number']['active'] = "✅ شماره موبایل شما با موفقیت تایید شد";
+$textbotlang['users']['number']['erroriran'] = "❌ فقط شماره موبایل ایرانی پذیرفته می‌شود.";
+$textbotlang['users']['number']['active'] = "✅ شماره موبایل شما تأیید شد.";
 $textbotlang['users']['number']['Confirming'] = "📞 برای ادامه باید شماره موبایل خود را تأیید کنید.
 
 لطفاً این دو مرحله را انجام دهید:
@@ -297,27 +297,26 @@ $textbotlang['users']['help']['btninlinebuy'] = "📚 مشاهده آموزش ا
 $textbotlang['users']['support']['title'] = "☎️ پشتیبانی";
 $textbotlang['users']['support']['sendmessageadmin'] = "✅ پیام شما برای پشتیبانی ارسال شد.
 به‌زودی از همین ربات پاسخ می‌گیرید.";
-$textbotlang['users']['support']['answermessage'] = "پاسخ به پیام";
+$textbotlang['users']['support']['answermessage'] = "💬 پاسخ به پیام";
 $textbotlang['users']['support']['sendmessageuser'] = "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.
 پاسخ از همین ربات برایتان می‌آید.";
 $textbotlang['users']['support']['reply_btn'] = "💬 پاسخ به پشتیبانی";
 $textbotlang['users']['support']['btnsupport'] = "☎️ ابتدا «سوالات متداول» را ببینید.
 اگر پاسخ‌تان نبود، برای پشتیبانی پیام بفرستید.";
-$textbotlang['users']['support']['GetMessageOfUser'] = "📥 یک پیام از کاربر دریافت شد
-آیدی عددی : %s
-نام کاربری کاربر : @%s
+$textbotlang['users']['support']['GetMessageOfUser'] = "📥 <b>پیام پشتیبانی</b>
 
-📝 متن پیام :
+🆔 <code>%s</code>
+👤 @%s
+
+📝 متن پیام:
+
 %s";
 
 
 $textbotlang['users']['Balance']['priceinput'] = "💸 مبلغ را به تومان وارد کنید:
 ✅ حداقل %s و حداکثر %s تومان";
-$textbotlang['users']['Balance']['errorprice'] = "❌ خطا 
-💬 لطفا فقط عدد وارد کنید
-اعداد به صورت لاتین (کیبورد روی انگلیسی) باشد";
-$textbotlang['users']['Balance']['errorpricelimit'] = "❌ خطا
-💬 مبلغ باید حداقل %s و حداکثر %s تومان باشد";
+$textbotlang['users']['Balance']['errorprice'] = "❌ فقط عدد لاتین وارد کنید (کیبورد انگلیسی).";
+$textbotlang['users']['Balance']['errorpricelimit'] = "❌ مبلغ باید بین <b>%s</b> و <b>%s</b> تومان باشد.";
 $textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت را انتخاب کنید:";
 $textbotlang['users']['moeny']['no_payment_method'] = "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در تماس باشید.";
 $textbotlang['users']['Balance']['zarinpal'] = "❌ خطا 
@@ -532,11 +531,7 @@ $textbotlang['users']['moeny']['rejectresid'] = "❌ <b>پرداخت رد شد</
 🧾 کد پیگیری: <code>%s</code>
 
 در صورت نیاز با پشتیبانی در ارتباط باشید.";
-$textbotlang['users']['moeny']['sendcart'] = "💳 شماره کارت خود را ارسال کنید
-    
-⭕️ همراه با شماره کارت می توانید نام صاحب کارت هم ارسال نمایید.
-    
-💳 شماره کارت فعلی شما :%s";
+$textbotlang['users']['moeny']['sendcart'] = "💳 شماره کارت را بفرستید.\nمی‌توانید نام صاحب کارت را هم بنویسید.\n\nشماره کارت فعلی: <code>%s</code>";
 $textbotlang['users']['moeny']['getapinowpayment'] = "⚙️ api سایت nowpayments.io را ارسال نمایید
     
 api nowpayment :%s";
@@ -601,23 +596,24 @@ $textbotlang['users']['customusernameandorder'] = 'نام کاربری + حرو�
 $textbotlang['users']['customidAndRandom'] = 'آیدی عددی + حروف و عدد رندوم';
 $textbotlang['users']['customusername'] = 'نام کاربری دلخواه';
 $textbotlang['users']['sendnumber'] = "☎️ ارسال شماره تلفن";
-$textbotlang['users']['account']  = "👤 <b>حساب کاربری</b>
+$textbotlang['users']['account'] = "👤 <b>حساب کاربری</b>
 
-نام: %s
-شناسه: <code>%s</code>
+👤 نام: %s
+🆔 شناسه: <code>%s</code>
 💰 موجودی: <b>%s</b> تومان
 🛍 تعداد سرویس: %s
 🤝 دعوت‌شده‌ها: %s نفر
 💸 پورسانت دریافتی: <b>%s</b> تومان
 
-📆 %s  ⏰ %s";
+📆 %s
+⏰ %s";
 $textbotlang['users']['accountbtn'] = "👨🏻‍💻 مشخصات کاربری";
 $textbotlang['users']['buybtn'] = "🔐 خرید اشتراک";
 $textbotlang['users']['add_balance'] = "💰 افزایش موجودی";
 $textbotlang['users']['Percentage'] = " درصد ";
 $textbotlang['users']['IRT'] = " تومان ";
-$textbotlang['users']['botoff'] =  "❌ ربات خاموش است، لطفا دقایقی دیگر مراجعه کنید";
-$textbotlang['users']['pricelist'] = "💰 تعرفه اشتراک ها";
+$textbotlang['users']['botoff'] = "❌ ربات موقتاً خاموش است.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید.";
+$textbotlang['users']['pricelist'] = "💰 تعرفه اشتراک‌ها";
 
 
 
@@ -625,18 +621,18 @@ $textbotlang['users']['affiliates']['setpercentage'] = "📌 درصدی که م�
 $textbotlang['users']['affiliates']['changedpercentage'] = "✅ درصد واریز به کاربر با موفقیت تنظیم شد";
 $textbotlang['users']['affiliates']['banner'] = "⭕️ بنر مشارکت در فروش خود را ارسال کنید 
 ❌ بنر باید حتما همراه با عکس باشد";
-$textbotlang['users']['affiliates']['affiliatesyou'] = "❌امکان ثبت با این شناسه کاربری وجود ندارد";
-$textbotlang['users']['affiliates']['invalidbanner'] = "❌ بنر ارسال شده نامعتبر است ( بنر حتما باید با عکس ارسال شود)";
-$textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر شما با موفقیت ثبت گردید.";
+$textbotlang['users']['affiliates']['affiliatesyou'] = "❌ امکان ثبت با این شناسه وجود ندارد.";
+$textbotlang['users']['affiliates']['invalidbanner'] = "❌ بنر نامعتبر است. حتماً همراه با عکس ارسال کنید.";
+$textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر با موفقیت ثبت شد.";
 $textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ نمی‌توانید با لینک مشارکت خودتان ثبت شوید";
 $textbotlang['users']['affiliates']['priceDiscount'] = "📌 مبلغی که می‌خواهید که کاربر با هر دعوت جدید دریافت کند را وارد کنید";
 $textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ مشارکت در فروش با موفقیت ثبت شد";
-$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش می‌باشد";
+$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش است.";
 $textbotlang['users']['affiliates']['affiliateseduser'] = "❌ شما هم اکنون از طریق لینک مشارکت یک کاربر ثبت شده‌اید و نمی‌توانید لینک فرد دیگری را استفاده کنید";
-$textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ %s به موجودی شما از طرف مشارکت‌کننده با شناسه کاربری %s اضافه گردید.";
-$textbotlang['users']['affiliates']['porsantuser'] = "🎁  پرداخت پورسانت 
-    
-مبلغ %s تومان به حساب شما از طرف مشارکت‌کننده شما به کیف پول شما واریز گردید";
+$textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ <b>%s</b> تومان از طرف دعوت‌کننده (<code>%s</code>) به موجودی شما اضافه شد.";
+$textbotlang['users']['affiliates']['porsantuser'] = "🎁 <b>پورسانت واریز شد</b>
+
+💰 مبلغ <b>%s</b> تومان به کیف پول شما اضافه شد.";
 $textbotlang['users']['affiliates']['btn'] = "🤝 مشارکت در فروش";
 $textbotlang['users']['affiliates']['infotext'] = "🤝 <b>مشارکت در فروش</b>
 
@@ -647,7 +643,7 @@ $textbotlang['users']['affiliates']['infotext'] = "🤝 <b>مشارکت در ف�
 📊 درصد پورسانت: <b>%s</b>٪
 
 از دکمه‌های زیر لینک و بنر خود را بگیرید.";
-$textbotlang["users"]["affiliates"]["share"] = "🔗 اشتراک گذاری لینک";
+$textbotlang['users']['affiliates']['share'] = "🔗 اشتراک‌گذاری لینک";
 $textbotlang['users']['closelist'] = "❌ بستن لیست";
 
 
@@ -680,7 +676,7 @@ $textbotlang['users']['search']['prompt'] = "🔍 نام کاربری سرویس
 $textbotlang['users']['search']['notfound'] = "❌ سرویسی با این نام برای شما پیدا نشد.
 فقط سرویس‌های خرید خودتان قابل جستجو است.";
 
-$textbotlang['users']['search']['multiple'] = "چند سرویس مشابه پیدا شد. یکی را انتخاب کنید:";
+$textbotlang['users']['search']['multiple'] = "🔎 چند سرویس مشابه پیدا شد.\nیکی را انتخاب کنید:";
 
 $textbotlang['users']['search']['found'] = "✅ سرویس پیدا شد.
 برای مدیریت، دکمه زیر را بزنید:";
@@ -695,6 +691,10 @@ $textbotlang['users']['buy']['create_failed_refund'] = "⚠️ ساخت سروی
 $textbotlang['users']['buy']['package_not_found'] = "❌ پکیج یافت نشد.";
 
 $textbotlang['users']['admin']['userinfo_unavailable'] = "❌ نمایش اطلاعات کاربر در دسترس نیست.";
+
+
+$textbotlang['users']['busy_request'] = "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.";
+$textbotlang['users']['busy_or_balance'] = "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.";
 
 $textbotlang['Admin']['Report']['block_user'] = "🔒 <b>مسدودسازی کاربر</b>
 
@@ -742,7 +742,7 @@ $textbotlang['Admin']['Back-Adminment'] = "🏠 منوی مدیریت";
 $textbotlang['Admin']['Addedadmin'] = "👨‍💻 اضافه کردن ادمین";
 $textbotlang['Admin']['Removeedadmin'] = "❌ حذف ادمین";
 $textbotlang['Admin']['not-user'] = "کاربری با این شناسه یافت نشد";
-$textbotlang['Admin']['invalidvalue'] = "⭕️ ورودی نا معتبر";
+$textbotlang['Admin']['invalidvalue'] = "❌ ورودی نامعتبر است.";
 $textbotlang['Admin']['maxvalue'] = "❌ مبلغ بازگشتی بزرگ تر از مبلغ محصول است!";
 $textbotlang['Admin']['turnon'] = "✅ روشن";
 $textbotlang['Admin']['turnoff'] = "❌ خاموش";
@@ -750,8 +750,7 @@ $textbotlang['Admin']['turnoff'] = "❌ خاموش";
 
 
 
-$textbotlang['Admin']['channel']['changechannel'] = "برای تنظیم کانال عضویت اجباری لطفا آیدی کانال خود را بدون @ وارد نمایید.
-    کانال فعلی شما: @";
+$textbotlang['Admin']['channel']['changechannel'] = "آیدی کانال عضویت اجباری را بدون @ بفرستید.\nکانال فعلی: @";
 $textbotlang['Admin']['channel']['setchannel'] = "🔰 کانال با موفقیت تنظیم گردید.
 ❌❌  برای کار کردن  عضویت اجباری ربات باید ادمین کانال باشد.";
 $textbotlang['Admin']['channel']['setting'] = "📯 تنظیمات کانال";
@@ -781,7 +780,7 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 
 
 
-$textbotlang['Admin']['manageadmin']['getid'] ="🌟آیدی عددی ادمین را ارسال نمایید";
+$textbotlang['Admin']['manageadmin']['getid'] = "آیدی عددی ادمین را بفرستید:";
 $textbotlang['Admin']['manageadmin']['addadminset'] ="🥳 ادمین با موفقیت اضافه گردید";
 $textbotlang['Admin']['manageadmin']['setrule'] ="⭕️ سطح دسترسی ادمین را ارسال کنید
 سطح دسترسی administrator به تمامی بخش ها دسترسی دارد
