@@ -427,7 +427,7 @@ if ($text == "/status") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "✅ " . $row['username'],
+                'text' => $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -579,7 +579,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
         $service_count++;
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "✅ " . $row['username'],
+                'text' => $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -638,7 +638,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "✅ " . $row['username'],
+                'text' => $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -689,7 +689,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => "✅ " . $row['username'],
+                'text' => $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -764,7 +764,7 @@ if ($user['step'] == "search_myservice") {
         $keyboardlists = ['inline_keyboard' => []];
         foreach ($results as $row) {
             $keyboardlists['inline_keyboard'][] = [
-                ['text' => "✅ " . $row['username'], 'callback_data' => "product_" . $row['username']]
+                ['text' => $row['username'], 'callback_data' => "product_" . $row['username']]
             ];
         }
         $keyboardlists['inline_keyboard'][] = [
@@ -781,7 +781,7 @@ if ($user['step'] == "search_myservice") {
     $keyboardfound = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => "✅ " . $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
+                ['text' => $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
             ],
             [
                 ['text' => $textbotlang['users']['search']['again'], 'callback_data' => 'search_myservice']
