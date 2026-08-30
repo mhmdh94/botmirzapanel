@@ -1508,7 +1508,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 
     $tg_name = $user['username'] ?? ($username ?? '');
     $active_svc_ext = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
-    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $from_id, $tg_name, $active_svc_ext, $nameloc['username'], $product['name_product'], $priceproductformat, $nameloc['Service_location'], $balanceformatsell);
+    $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $nameloc['username'], $priceproductformat, $product['name_product'], $from_id, $tg_name, $active_svc_ext, $nameloc['Service_location'], $balanceformatsell);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_extend', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');

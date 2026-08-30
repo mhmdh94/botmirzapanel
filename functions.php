@@ -1224,12 +1224,12 @@ function DirectPayment($order_id)
             $bal_fmt = number_format(intval(select("user", "Balance", "id", $uid, "select")['Balance'] ?? $bal_after));
             $text_report = sprintf(
                 $textbotlang['Admin']['Report']['extend'],
+                $ext_username,
+                number_format($price_ext),
+                $product['name_product'],
                 $uid,
                 $tg_name,
                 $active_svc,
-                $ext_username,
-                $product['name_product'],
-                number_format($price_ext),
                 $nameloc['Service_location'],
                 $bal_fmt
             );

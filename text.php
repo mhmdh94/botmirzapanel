@@ -1389,17 +1389,16 @@ $textbotlang['Admin']['category']['added'] = "📌 دسته بندی خود را
 
 $textbotlang['Admin']['Report']['extend'] = "🔄 <b>تمدید سرویس</b>
 
+🔑 کانفیگ: <code>%s</code>
+💰 مبلغ: %s تومان
+📦 محصول: %s
+
 🆔 <code>%s</code>
 👤 @%s
 🛍 سرویس فعال: <b>%s</b>
 
-🔑 کانفیگ: <code>%s</code>
-📦 محصول: %s
-
-💰 مبلغ: %s تومان
 📍 پنل: %s
-
-💳 موجودی بعد: %s تومان";
+💳 موجودی: %s تومان";
 $textbotlang['Admin']['Report']['Extra_volume'] = "📦 <b>حجم اضافه</b>
 
 🆔 <code>%s</code>
