@@ -322,25 +322,25 @@ $textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت ر
 $textbotlang['users']['moeny']['no_payment_method'] = "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در تماس باشید.";
 $textbotlang['users']['Balance']['zarinpal'] = "❌ خطا 
     کمترین مبلغ برای  پرداخت در این درگاه 5000 تومان می‌باشد.";
-$textbotlang['users']['Balance']['linkpayments'] = "درحال ساخت لینک پرداخت...";
+$textbotlang['users']['Balance']['linkpayments'] = "⏳ در حال ساخت لینک پرداخت…";
 $textbotlang['users']['Balance']['payments'] = "پرداخت";
 $textbotlang['users']['Balance']['changeto'] = "❌ خطا 
     کمترین مبلغ برای  پرداخت در این درگاه 2 ترون می‌باشد";
-$textbotlang['users']['Balance']['errorLinkPayment'] = "❌ خطایی در ساخت لینک پرداخت رخ داده است برای رفع  با پشتیبانی در ارتباط باشید.";
-$textbotlang['users']['Balance']['reject_pay']  = "❌ رد پرداخت";
-$textbotlang['users']['Balance']['Confirmpayadmin']  = "⭕️  پرداخت از قبل تایید شده است";
-$textbotlang['users']['Balance']['finished'] = "پزداخت شما با موفقیت تایید شد";
-$textbotlang['users']['Balance']['sending'] = "پرداخت دریافت شده و درحال بررسی می‌باشد لطفا منتظر بمانید";
-$textbotlang['users']['Balance']['expired'] = "زمان لینک پرداخت منقضی شده و قابل بررسی نیست";
-$textbotlang['users']['Balance']['refunded'] = "مبلغ به کیف پول شما بازگشته است";
-$textbotlang['users']['Balance']['waiting'] = "در انتظار تایید پرداخت";
-$textbotlang['users']['Balance']['Failed'] = "⭕️ پرداخت شما تایید نگردیده است";
+$textbotlang['users']['Balance']['errorLinkPayment'] = "❌ خطا در ساخت لینک پرداخت.\nبا پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['Balance']['reject_pay'] = "❌ رد پرداخت";
+$textbotlang['users']['Balance']['Confirmpayadmin'] = "ℹ️ این پرداخت قبلاً تأیید شده است.";
+$textbotlang['users']['Balance']['finished'] = "✅ پرداخت شما با موفقیت تأیید شد.";
+$textbotlang['users']['Balance']['sending'] = "⏳ پرداخت دریافت شد و در حال بررسی است.\nلطفاً منتظر بمانید.";
+$textbotlang['users']['Balance']['expired'] = "⚠️ زمان لینک پرداخت تمام شده و قابل بررسی نیست.";
+$textbotlang['users']['Balance']['refunded'] = "↩️ مبلغ به کیف پول شما برگشت داده شد.";
+$textbotlang['users']['Balance']['waiting'] = "⏳ در انتظار تأیید پرداخت";
+$textbotlang['users']['Balance']['Failed'] = "❌ پرداخت شما تأیید نشد.";
 $textbotlang['users']['Balance']['Confirmpay'] = "✅ <b>پرداخت تأیید شد</b>\nمبلغ به موجودی کیف پول شما اضافه شد.";
 $textbotlang['users']['Balance']['Invalid-receipt'] = "❌ رسید نامعتبر است.
 فقط <b>عکس</b> رسید را ارسال کنید (نه فایل PDF یا متن).";
-$textbotlang['users']['Balance']['Confirmpaying']  = "✅ تایید پرداخت";
-$textbotlang['users']['Balance']['Send-receipt'] ="🚀 رسید پرداخت  شما ارسال شد پس از تایید توسط مدیریت مبلغ به کیف پول شما واریز خواهد شد لطفا صبور باشید";
-$textbotlang['users']['Balance']['Send-receip-buy'] ="🚀 رسید پرداخت شما ارسال شد پس از تایید توسط مدیریت سفارش شما ارسال خواهد شد";
+$textbotlang['users']['Balance']['Confirmpaying'] = "✅ تأیید پرداخت";
+$textbotlang['users']['Balance']['Send-receipt'] = "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید.";
+$textbotlang['users']['Balance']['Send-receip-buy'] = "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، سفارش شما انجام می‌شود.\nلطفاً صبور باشید.";
 
 
 
@@ -431,14 +431,14 @@ $textbotlang['users']['status']['rejectrequest'] = "دلیل رد را بفرس�
 
 $textbotlang['users']['Discount']['titlebtn'] = "🎁 کد هدیه";
 $textbotlang['users']['Discount']['getcode'] = "🎁 کد هدیه را ارسال کنید:";
-$textbotlang['users']['Discount']['notcode']  = "❌ کد نامعتبر است";
-$textbotlang['users']['Discount']['onecode']  = "⭕️ این کد تنها یک بار قابل استفاده است";
-$textbotlang['users']['Discount']['getcodesell']  = "🧑‍💻 کد تخفیف خود را ارسال کنید";
-$textbotlang['users']['Discount']['correctcode']  = "🤩 کد تخفیف شما درست بود و مبلغ روی فاکتور شما اعمال شد.";
-$textbotlang['users']['Discount']['erorrlimit']  = "❌ محدودیت استفاده از این کد تخفیف به پایان رسیده است";
-$textbotlang['users']['Discount']['erorrlimitdiscount']  = "❌ محدودیت استفاده از این کد هدیه به پایان رسیده است";
-$textbotlang['users']['Discount']['firstdiscount']  = "❌ این کد تخفیف مخصوص خرید اول است";
-$textbotlang['users']['Discount']['acceptdiscount']  = "کد هدیه با موفقیت ثبت شد و به موجودی شما مبلغ %s تومان اضافه گردید. 🥳";
+$textbotlang['users']['Discount']['notcode'] = "❌ کد نامعتبر است.";
+$textbotlang['users']['Discount']['onecode'] = "⚠️ این کد فقط یک‌بار قابل استفاده است.";
+$textbotlang['users']['Discount']['getcodesell'] = "🏷 کد تخفیف را ارسال کنید:";
+$textbotlang['users']['Discount']['correctcode'] = "✅ کد تخفیف اعمال شد و مبلغ فاکتور به‌روز شد.";
+$textbotlang['users']['Discount']['erorrlimit'] = "❌ سقف استفاده از این کد تخفیف تمام شده است.";
+$textbotlang['users']['Discount']['erorrlimitdiscount'] = "❌ سقف استفاده از این کد هدیه تمام شده است.";
+$textbotlang['users']['Discount']['firstdiscount'] = "❌ این کد فقط برای خرید اول است.";
+$textbotlang['users']['Discount']['acceptdiscount'] = "✅ کد هدیه ثبت شد.\n💰 <b>%s</b> تومان به موجودی شما اضافه شد.";
 
 
 
