@@ -216,8 +216,11 @@ $textbotlang['users']['buy']['createservice'] = "✅ <b>سرویس فعال شد
 🔗 لینک:
 <code>%s</code>
 <code>%s</code>";
-$textbotlang['users']['buy']['selectService'] = "🛍 برای خرید اشتراک سرویس مدنظر خود را انتخاب کنید
-لوکیشن سرویس  : %s";
+$textbotlang['users']['buy']['selectService'] = "🛒 <b>انتخاب محصول</b>
+
+📍 لوکیشن: <b>%s</b>
+
+یکی از محصولات زیر را انتخاب کنید:";
 $textbotlang['users']['buy']['invoicebuy'] = "🧾 <b>پیش‌فاکتور خرید</b>
 
 👤 نام کاربری: <code>%s</code>

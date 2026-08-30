@@ -717,26 +717,36 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
 {
     global $pdo, $textbotlang;
     $query = "SELECT * FROM product WHERE (Location = :location OR Location = '/all') ";
-    if ($categoryid != null) {
-        $query .= "AND category = '$categoryid'";
+    if ($categoryid !== null && $categoryid !== '') {
+        $query .= " AND category = :category ";
     }
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':location', $location, PDO::PARAM_STR);
+    if ($categoryid !== null && $categoryid !== '') {
+        $stmt->bindValue(':category', $categoryid, PDO::PARAM_STR);
+    }
     $stmt->execute();
     $product = ['inline_keyboard' => []];
+    // ردیف عنوان (مثل اسکرین دوستونه: محصول | قیمت)
+    // در تلگرام اندیس ۰ = چپ، اندیس ۱ = راست → قیمت چپ، محصول راست
+    $product['inline_keyboard'][] = [
+        ['text' => '💵 قیمت', 'callback_data' => 'product_header'],
+        ['text' => '🛍 محصول', 'callback_data' => 'product_header'],
+    ];
     while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        if ($MethodUsername == $textbotlang['users']['customusername']) {
-            $product['inline_keyboard'][] = [
-                ['text' => $result['name_product'], 'callback_data' => "prodcutservices_" . $result['code_product']]
-            ];
-        } else {
-            $product['inline_keyboard'][] = [
-                ['text' => $result['name_product'], 'callback_data' => "prodcutservice_{$result['code_product']}"]
-            ];
-        }
+        $cb = ($MethodUsername == ($textbotlang['users']['customusername'] ?? ''))
+            ? ("prodcutservices_" . $result['code_product'])
+            : ("prodcutservice_" . $result['code_product']);
+        $name = strval($result['name_product'] ?? '');
+        $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
+        // دو ستون: نام محصول + قیمت — هر دو همان callback انتخاب محصول
+        $product['inline_keyboard'][] = [
+            ['text' => $price, 'callback_data' => $cb],
+            ['text' => $name, 'callback_data' => $cb],
+        ];
     }
     $product['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['backmenu'], 'callback_data' => $backdata]
+        ['text' => $textbotlang['users']['backmenu'] ?? '↩️ بازگشت', 'callback_data' => $backdata],
     ];
 
     return json_encode($product);

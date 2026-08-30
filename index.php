@@ -333,6 +333,9 @@ if (function_exists('cleanupExpiredUnpaidInvoices') && intval($from_id) != 0) {
 }
 #-----------/start------------#
 if ($text == "/start") {
+    if (function_exists('ensureBotCommands')) {
+        ensureBotCommands(false);
+    }
     update("user", "Processing_value", "0", "id", $from_id);
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
@@ -1186,9 +1189,18 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->bindValue(':Location', $nameloc['Service_location']);
     $stmt->execute();
     $productextend = ['inline_keyboard' => []];
+    // دو ستون مثل خرید: چپ قیمت، راست نام محصول
+    $productextend['inline_keyboard'][] = [
+        ['text' => '💵 قیمت', 'callback_data' => 'product_header'],
+        ['text' => '🛍 محصول', 'callback_data' => 'product_header'],
+    ];
     while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $cb = "serviceextendselect_" . $result['code_product'];
+        $name = strval($result['name_product'] ?? '');
+        $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
         $productextend['inline_keyboard'][] = [
-            ['text' => $result['name_product'], 'callback_data' => "serviceextendselect_" . $result['code_product']]
+            ['text' => $price, 'callback_data' => $cb],
+            ['text' => $name, 'callback_data' => $cb],
         ];
     }
     $productextend['inline_keyboard'][] = [
@@ -2571,6 +2583,19 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         }
         Editmessagetext($from_id, $message_id, $textbotlang['users']['category']['selectCategory'], KeyboardCategorybuy("buy", $panellist['name_panel']));
     }
+
+#-----------product list header (noop)------------#
+if (isset($datain) && $datain === 'product_header') {
+    if (!empty($callback_query_id)) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'یک محصول از لیست انتخاب کنید',
+            'show_alert' => false,
+        ]);
+    }
+    return;
+}
+
 } elseif (preg_match('/^prodcutservices_(.*)/', $datain, $dataget)) {
     $prodcut = $dataget[1];
     update("user", "Processing_value_one", $prodcut, "id", $from_id);

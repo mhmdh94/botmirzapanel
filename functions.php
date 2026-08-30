@@ -3105,6 +3105,34 @@ function runBotSelfUpdate($repoZipUrl = null)
     }
 }
 
-
-
+/**
+ * ثبت دستورات منوی تلگرام (Bot Commands)
+ * فقط در صورت تغییر یا نبود کش، یک‌بار به API زده می‌شود.
+ */
+function ensureBotCommands($force = false)
+{
+    $cache = __DIR__ . '/.bot_commands_ok';
+    $signature = 'v1_start_new_renew_status_support';
+    if (!$force && is_file($cache) && trim(@file_get_contents($cache)) === $signature) {
+        return true;
+    }
+    if (!function_exists('telegram')) {
+        return false;
+    }
+    $commands = [
+        ['command' => 'start', 'description' => 'شروع مجدد'],
+        ['command' => 'new', 'description' => 'خرید سرویس جدید'],
+        ['command' => 'renew', 'description' => 'تمدید سرویس'],
+        ['command' => 'status', 'description' => 'سرویس‌های من'],
+        ['command' => 'support', 'description' => 'پشتیبانی'],
+    ];
+    $res = telegram('setMyCommands', [
+        'commands' => json_encode($commands, JSON_UNESCAPED_UNICODE),
+    ]);
+    if (is_array($res) && !empty($res['ok'])) {
+        @file_put_contents($cache, $signature);
+        return true;
+    }
+    return false;
+}
 

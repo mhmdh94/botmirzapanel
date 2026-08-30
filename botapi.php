@@ -212,6 +212,14 @@ $update = json_decode(file_get_contents("php://input"), true);
 $from_id = $update['message']['from']['id'] ?? $update['callback_query']['from']['id'] ?? 0;
 $Chat_type = $update["message"]["chat"]["type"] ?? $update['callback_query']['message']['chat']['type'] ?? '';
 $text = $update["message"]["text"] ?? '';
+# نرمال‌سازی دستورات منوی تلگرام: /new@MyBot → /new
+if (is_string($text) && strpos($text, '/') === 0) {
+    $__parts = explode(' ', $text, 2);
+    if (strpos($__parts[0], '@') !== false) {
+        $__parts[0] = explode('@', $__parts[0], 2)[0];
+    }
+    $text = isset($__parts[1]) ? ($__parts[0] . ' ' . $__parts[1]) : $__parts[0];
+}
 $text_callback = $update["callback_query"]["message"]["text"] ?? '';
 $message_id = $update["message"]["message_id"] ?? $update["callback_query"]["message"]["message_id"] ?? 0;
 $photo = $update["message"]["photo"] ?? 0;
