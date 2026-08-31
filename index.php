@@ -333,22 +333,25 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
         return;
         } // end else: real support message
     }
-    // هر چیز دیگر برای کاربر مسدود: فقط پیام + دکمه پشتیبانی
-    $reason = $user['description_blocking'] ?? '';
-    if ($reason === '' || $reason === null) {
-        $reason = $textbotlang['users']['spamtext'] ?? 'مسدود';
-    }
-    $is_spam = (mb_strpos(strval($reason), 'اسپم') !== false)
-        || (strval($reason) === strval($textbotlang['users']['spamtext'] ?? ''));
+    // هر چیز دیگر برای کاربر مسدود: پیام مناسب (اسپم ≠ دستی)
+    $reason = trim(strval($user['description_blocking'] ?? ''));
+    $spam_reason = strval($textbotlang['users']['spamtext'] ?? 'ارسال بیش از حد پیام (اسپم)');
+    $is_spam = ($reason !== '' && $reason === $spam_reason);
     if ($is_spam) {
         $textblock = $textbotlang['users']['spam']['spamedmessage']
-            ?? "⛔ به دلیل اسپم مسدود شدید.\nفقط می‌توانید به پشتیبانی پیام دهید.";
-    } else {
+            ?? "⛔ مسدود خودکار — اسپم
+فقط می‌توانید به پشتیبانی پیام دهید.";
+    } elseif ($reason !== '') {
         $textblock = sprintf(
-            $textbotlang['users']['spam']['blocked_only_support']
-                ?? ($textbotlang['Admin']['ManageUser']['BlockedUser'] ?? "🚫 مسدود هستید.\nدلیل: %s"),
+            $textbotlang['users']['spam']['blocked_manual']
+                ?? ($textbotlang['users']['spam']['blocked_only_support'] ?? "🔒 حساب شما مسدود است.
+✍️ دلیل: %s"),
             $reason
         );
+    } else {
+        $textblock = $textbotlang['users']['spam']['blocked_generic']
+            ?? "🔒 حساب شما مسدود است.
+فقط امکان ارسال پیام به پشتیبانی وجود دارد.";
     }
     sendmessage($from_id, $textblock, $kb_block_support, 'HTML');
     return;

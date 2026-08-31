@@ -880,23 +880,42 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     }
     update("user", "Processing_value", $iduser, "id", $from_id);
     update("user", "User_Status", "block", "id", $iduser);
+    // دلیل موقت تا ادمین دلیل نهایی را بنویسد (نباید پیام اسپم نشان دهد)
+    update("user", "description_blocking", "مسدود توسط مدیریت", "id", $iduser);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockUser'], $backadmin, 'HTML');
     step('adddecriptionblock', $from_id);
 } elseif ($user['step'] == "adddecriptionblock") {
     $blocked_id = $user['Processing_value'];
-    update("user", "description_blocking", $text, "id", $blocked_id);
+    $reason_text = is_string($text) ? trim($text) : '';
+    if ($reason_text === '') {
+        $reason_text = 'مسدود توسط مدیریت';
+    }
+    update("user", "description_blocking", $reason_text, "id", $blocked_id);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['DescriptionBlock'], $keyboardadmin, 'HTML');
+    // پیام به کاربر مسدودشده (دستی — نه اسپم)
+    $kb_u = json_encode([
+        'inline_keyboard' => [[
+            ['text' => $textbotlang['users']['spam']['btn_support'] ?? '📨 ارسال پیام به پشتیبانی', 'callback_data' => 'support_blocked'],
+        ]],
+    ]);
+    $msg_u = sprintf(
+        $textbotlang['users']['spam']['blocked_manual']
+            ?? "🔒 حساب شما توسط مدیریت مسدود شد.
+✍️ دلیل: %s",
+        $reason_text
+    );
+    sendmessage($blocked_id, $msg_u, $kb_u, 'HTML');
     $bu = select("user", "*", "id", $blocked_id, "select");
     $bu_name = is_array($bu) ? ($bu['username'] ?? '-') : '-';
     if (function_exists('notifyUserBlocked')) {
-        notifyUserBlocked($blocked_id, $bu_name, $text, 'admin', $from_id);
+        notifyUserBlocked($blocked_id, $bu_name, $reason_text, 'admin', $from_id);
     } elseif (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['block_user'])) {
         $rep = sprintf(
             $textbotlang['Admin']['Report']['block_user'],
             $from_id,
             $blocked_id,
             $bu_name,
-            $text
+            $reason_text
         );
         sendChannelReport('rpt_block', $rep);
     }
