@@ -451,7 +451,15 @@ if (!in_array($from_id, $admin_ids)) {
                 $kb_spam,
                 'HTML'
             );
-            if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['spam_block'])) {
+            if (function_exists('notifyUserBlocked')) {
+                notifyUserBlocked(
+                    $from_id,
+                    $username ?? ($user['username'] ?? '-'),
+                    $textbotlang['users']['spamtext'] ?? 'ارسال بیش از حد پیام (اسپم)',
+                    'auto_spam',
+                    null
+                );
+            } elseif (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['spam_block'])) {
                 $spam_txt = sprintf(
                     $textbotlang['Admin']['Report']['spam_block'],
                     $from_id,

@@ -881,9 +881,11 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     $blocked_id = $user['Processing_value'];
     update("user", "description_blocking", $text, "id", $blocked_id);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['DescriptionBlock'], $keyboardadmin, 'HTML');
-    if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['block_user'])) {
-        $bu = select("user", "*", "id", $blocked_id, "select");
-        $bu_name = is_array($bu) ? ($bu['username'] ?? '-') : '-';
+    $bu = select("user", "*", "id", $blocked_id, "select");
+    $bu_name = is_array($bu) ? ($bu['username'] ?? '-') : '-';
+    if (function_exists('notifyUserBlocked')) {
+        notifyUserBlocked($blocked_id, $bu_name, $text, 'admin', $from_id);
+    } elseif (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['block_user'])) {
         $rep = sprintf(
             $textbotlang['Admin']['Report']['block_user'],
             $from_id,

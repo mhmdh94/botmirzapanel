@@ -2500,6 +2500,91 @@ function isReportChannelEnabled($key)
     return strval(getPaySettingValue($key, '1')) === '1';
 }
 
+
+/**
+ * اطلاع‌رسانی مسدود شدن کاربر به ادمین‌ها (داخل ربات) و کانال گزارش
+ * @param int|string $user_id
+ * @param string $username بدون @
+ * @param string $reason
+ * @param string $source auto_spam | admin
+ * @param int|string|null $admin_id اگر توسط ادمین باشد
+ */
+function notifyUserBlocked($user_id, $username = '-', $reason = '', $source = 'auto_spam', $admin_id = null)
+{
+    global $textbotlang, $admin_ids;
+    $user_id = strval($user_id);
+    $username = $username ? ltrim(strval($username), '@') : '-';
+    if ($username === '') {
+        $username = '-';
+    }
+    $reason = trim(strval($reason));
+    if ($reason === '') {
+        $reason = $textbotlang['users']['spamtext'] ?? 'مسدود';
+    }
+
+    if ($source === 'admin') {
+        $txt = sprintf(
+            $textbotlang['Admin']['Report']['block_user']
+                ?? "🔒 مسدودسازی\nمدیر: %s\nکاربر: %s\n@%s\nدلیل: %s",
+            strval($admin_id ?? '-'),
+            $user_id,
+            $username,
+            $reason
+        );
+        $channel_key = 'rpt_block';
+    } else {
+        $txt = sprintf(
+            $textbotlang['Admin']['Report']['spam_block']
+                ?? "⛔ مسدود خودکار (اسپم)\n🆔 %s\n👤 @%s\n✍️ %s",
+            $user_id,
+            $username,
+            $reason
+        );
+        $channel_key = 'rpt_spam_block';
+    }
+
+    // مسدود دستی ادمین: فقط کانال گزارش
+    // مسدود اسپم: هم ربات ادمین هم کانال گزارش
+    if ($source !== 'admin') {
+        $kb = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $user_id],
+                ],
+            ],
+        ]);
+        $admins = is_array($admin_ids ?? null) ? $admin_ids : [];
+        if (function_exists('notifyAdmins') && count($admins) > 0) {
+            try {
+                notifyAdmins('sendmessage', [
+                    'text' => $txt,
+                    'parse_mode' => 'HTML',
+                    'reply_markup' => $kb,
+                    'disable_web_page_preview' => true,
+                ], $admins);
+            } catch (Throwable $e) {
+                foreach ($admins as $aid) {
+                    if (function_exists('sendmessage')) {
+                        sendmessage($aid, $txt, $kb, 'HTML');
+                    }
+                }
+            }
+        } else {
+            foreach ($admins as $aid) {
+                if (function_exists('sendmessage')) {
+                    sendmessage($aid, $txt, $kb, 'HTML');
+                }
+            }
+        }
+    }
+
+    // کانال گزارش (هر دو حالت)
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport($channel_key, $txt);
+    }
+}
+
+
 function sendChannelReport($key, $text)
 {
     if ($text === null || $text === '') {
