@@ -466,6 +466,8 @@ $textbotlang['users']['moeny']['carttext'] = "💳 <b>واریز کارت‌به
 
 💰 مبلغ: <b>%s</b> تومان
 
+⚠️ مبلغ به <b>تومان</b> است. لطفاً قبل از واریز دقت کنید.
+
 🔢 شماره کارت:
 <code>%s</code>
 
@@ -509,6 +511,7 @@ $textbotlang['users']['moeny']['eror'] = "
 $textbotlang['users']['moeny']['cartresid'] = "🧾 <b>رسید پرداخت جدید</b>
 
 💰 مبلغ رسید: <b>%s</b> تومان
+
 
 🆔 کاربر: <code>%s</code>
 🧾 سفارش: <code>%s</code>
