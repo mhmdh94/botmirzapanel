@@ -1712,101 +1712,123 @@ if ($text == $textbotlang['Admin']['managepanel']['methodusername']) {
 #----------------[  MANAGE PAYMENT   ]------------------#
 
 if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
-    $sqlstatus_cart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select")['ValuePay'];
-    $sqlstatus_iranpay = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select")['ValuePay'];
-    $status_cart = [
-        'oncard' => $textbotlang['Admin']['turnon'],
-        'offcard' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_cart];
-    $status_iranpay = [
-        'ondigi' => $textbotlang['Admin']['turnon'],
-        'offdigi' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_iranpay];
-    $keyboardmoeny = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "settingcart"],
-                ['text' => $status_cart, 'callback_data' => "editpay-cart-" . $sqlstatus_cart],
-                ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'], 'callback_data' => "none"],
-            ],
-            [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "setting_currency_wallets"],
-                ['text' => $status_iranpay, 'callback_data' => "editpay-iranpay-" . $sqlstatus_iranpay],
-                ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'], 'callback_data' => "none"],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['deposit']['menu'], 'callback_data' => "deposit_limits_settings"],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['balance_pkg']['menu'], 'callback_data' => "balance_packages_settings"],
-            ],
-        ]
-    ]);
-    $fin_summary = "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز و پکیج‌های شارژ را مدیریت کنید.";
+    $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : json_encode(['inline_keyboard' => []]);
+    $fin_summary = "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز، پکیج شارژ و تأیید خودکار رسید را مدیریت کنید.";
     sendmessage($from_id, $fin_summary, $keyboardmoeny, 'HTML');
-} elseif (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
+}
+
+#----------- finance auto cart confirm ------------#
+if ($datain == "finance_menu_back") {
+    $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
+    Editmessagetext($from_id, $message_id, "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز، پکیج شارژ و تأیید خودکار رسید را مدیریت کنید.", $keyboardmoeny);
+}
+if ($datain == "finance_auto_cart_settings") {
+    $min = function_exists('getAutoCartIntervalMinutes') ? getAutoCartIntervalMinutes() : 4;
+    $on = function_exists('isAutomaticCartConfirmEnabled') && isAutomaticCartConfirmEnabled();
+    $st = $on ? '✅ فعال' : '❌ غیرفعال';
+    $kb = function_exists('buildAutoCartSettingsKeyboard') ? buildAutoCartSettingsKeyboard() : null;
+    $txt = "🤖 <b>تنظیمات تأیید خودکار بدون بررسی</b>\n\nوضعیت: {$st}\nفاصله فعلی: هر <b>{$min}</b> دقیقه\n\nاز این صفحه می‌توانید فاصله را تنظیم کنید.";
+    Editmessagetext($from_id, $message_id, $txt, $kb);
+}
+if ($datain == "finance_auto_cart_info") {
+    $on = function_exists('isAutomaticCartConfirmEnabled') && isAutomaticCartConfirmEnabled();
+    $min = function_exists('getAutoCartIntervalMinutes') ? getAutoCartIntervalMinutes() : 4;
+    $st = $on ? '✅ فعال' : '❌ غیرفعال';
+    sendmessage($from_id, "🤖 <b>تأیید خودکار بدون بررسی</b>\n\nوضعیت: {$st}\nفاصله: هر <b>{$min}</b> دقیقه\n\nبا روشن بودن، رسیدهای کارت‌به‌کارت در انتظار بدون بررسی دستی تأیید می‌شوند.\nبرای کاربرهای ریسکی می‌توانید در اطلاعات کاربر این قابلیت را جداگانه خاموش کنید.", null, 'HTML');
+}
+if ($datain == "finance_auto_cart_toggle") {
+    $cur = function_exists('isAutomaticCartConfirmEnabled') && isAutomaticCartConfirmEnabled();
+    $new_state = !$cur;
+    if (function_exists('setPaySettingValue')) {
+        setPaySettingValue('auto_cart_confirm', $new_state ? '1' : '0');
+    } else {
+        if (function_exists('ensurePaySetting')) {
+            ensurePaySetting('auto_cart_confirm', $new_state ? '1' : '0');
+        }
+        update("PaySetting", "ValuePay", $new_state ? '1' : '0', "NamePay", "auto_cart_confirm");
+    }
+    if (function_exists('syncAutoCartCron')) {
+        $ok = syncAutoCartCron($new_state);
+        if (!$ok && $new_state) {
+            $cmd = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : '';
+            sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'] ?? "کرون را دستی اضافه کنید:\n%s", $cmd), null, 'HTML');
+        }
+    } elseif ($new_state && !(function_exists('shell_exec') && is_callable('shell_exec'))) {
+        $cmd = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
+        sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'] ?? $cmd, $cmd), null, 'HTML');
+    }
+    $auto_on = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : $new_state;
+    // رفرش همان صفحه‌ای که کاربر هست (مالی یا زیرمنوی تنظیمات)
+    $from_settings = !empty($text_callback) && (
+        strpos($text_callback, 'تنظیمات تأیید') !== false
+        || strpos($text_callback, 'تنظیمات تایید') !== false
+        || (strpos($text_callback, 'فاصله') !== false && strpos($text_callback, 'تأیید خودکار') !== false)
+    );
+    if ($from_settings) {
+        $min = function_exists('getAutoCartIntervalMinutes') ? getAutoCartIntervalMinutes() : 4;
+        $kb = function_exists('buildAutoCartSettingsKeyboard') ? buildAutoCartSettingsKeyboard() : null;
+        $txt = "🤖 <b>تنظیمات تأیید خودکار بدون بررسی</b>\n\nوضعیت: " . ($auto_on ? '✅ فعال' : '❌ غیرفعال') . "\nفاصله فعلی: هر <b>{$min}</b> دقیقه";
+        Editmessagetext($from_id, $message_id, $txt, $kb);
+    } else {
+        $kb = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
+        $txt = "💳 <b>تنظیمات مالی</b>\n\nتأیید خودکار: " . ($auto_on ? '✅ روشن' : '❌ خاموش');
+        Editmessagetext($from_id, $message_id, $txt, $kb);
+    }
+}
+if ($datain == "finance_auto_cart_interval") {
+    $cur = function_exists('getAutoCartIntervalMinutes') ? getAutoCartIntervalMinutes() : 4;
+    sendmessage($from_id, sprintf($textbotlang['Admin']['Automatic_confirmation']['interval_prompt'] ?? "عددی بین 1 تا 60 بفرستید (فعلی: %s)", $cur), $backadmin, 'HTML');
+    step('set_auto_cart_interval', $from_id);
+}
+if (isset($user['step']) && $user['step'] == 'set_auto_cart_interval') {
+    if (is_string($text) && (strpos($text, 'بازگشت') !== false || $text == ($textbotlang['Admin']['Back'] ?? ''))) {
+        step('home', $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['Back'] ?? 'بازگشت', $keyboardadmin, 'HTML');
+        return;
+    }
+    if (!ctype_digit(strval($text))) {
+        sendmessage($from_id, $textbotlang['Admin']['Automatic_confirmation']['interval_invalid'] ?? 'عدد نامعتبر', $backadmin, 'HTML');
+        return;
+    }
+    $mins = intval($text);
+    if ($mins < 1 || $mins > 60) {
+        sendmessage($from_id, $textbotlang['Admin']['Automatic_confirmation']['interval_invalid'] ?? 'عدد نامعتبر', $backadmin, 'HTML');
+        return;
+    }
+    if (function_exists('setPaySettingValue')) {
+        setPaySettingValue('auto_cart_interval', strval($mins));
+    } else {
+        if (function_exists('ensurePaySetting')) {
+            ensurePaySetting('auto_cart_interval', strval($mins));
+        }
+        update("PaySetting", "ValuePay", strval($mins), "NamePay", "auto_cart_interval");
+    }
+    $enabled = function_exists('isAutomaticCartConfirmEnabled') && isAutomaticCartConfirmEnabled();
+    if ($enabled && function_exists('syncAutoCartCron')) {
+        syncAutoCartCron(true);
+    }
+    sendmessage($from_id, sprintf($textbotlang['Admin']['Automatic_confirmation']['interval_saved'] ?? '✅ %s دقیقه', $mins), $keyboardadmin, 'HTML');
+    step('home', $from_id);
+}
+
+if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     $methodpay = $dataget[1];
     $status = $dataget[2];
     if ($methodpay == "cart") {
-        if ($status == "oncard") {
-            $value = "offcard";
-        } else {
-            $value = "oncard";
-        }
+        $value = ($status == "oncard") ? "offcard" : "oncard";
         update("PaySetting", "ValuePay", $value, "NamePay", "Cartstatus");
     } elseif ($methodpay == "nowpayment") {
-        if ($status == "onnowpayment") {
-            $value = "offnowpayment";
-        } else {
-            $value = "onnowpayment";
-        }
+        $value = ($status == "onnowpayment") ? "offnowpayment" : "onnowpayment";
         update("PaySetting", "ValuePay", $value, "NamePay", "nowpaymentstatus");
     } elseif ($methodpay == "iranpay") {
-        if ($status == "ondigi") {
-            $value = "offdigi";
-        } else {
-            $value = "ondigi";
-        }
+        $value = ($status == "ondigi") ? "offdigi" : "ondigi";
         update("PaySetting", "ValuePay", $value, "NamePay", "digistatus");
     } elseif ($methodpay == "aqayepardakht") {
-        if ($status == "onaqayepardakht") {
-            $value = "offaqayepardakht";
-        } else {
-            $value = "onaqayepardakht";
-        }
+        $value = ($status == "onaqayepardakht") ? "offaqayepardakht" : "onaqayepardakht";
         update("PaySetting", "ValuePay", $value, "NamePay", "statusaqayepardakht");
     }
-    $sqlstatus_cart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select")['ValuePay'];
-    $sqlstatus_iranpay = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select")['ValuePay'];
-    $status_cart = [
-        'oncard' => $textbotlang['Admin']['turnon'],
-        'offcard' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_cart];
-    $status_iranpay = [
-        'ondigi' => $textbotlang['Admin']['turnon'],
-        'offdigi' => $textbotlang['Admin']['turnoff'],
-    ][$sqlstatus_iranpay];
-    $keyboardmoeny = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "settingcart"],
-                ['text' => $status_cart, 'callback_data' => "editpay-cart-" . $sqlstatus_cart],
-                ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'], 'callback_data' => "none"],
-            ],
-            [
-                ['text' => $textbotlang['users']['moeny']['setting'], 'callback_data' => "setting_currency_wallets"],
-                ['text' => $status_iranpay, 'callback_data' => "editpay-iranpay-" . $sqlstatus_iranpay],
-                ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'], 'callback_data' => "none"],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['deposit']['menu'], 'callback_data' => "deposit_limits_settings"],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['balance_pkg']['menu'], 'callback_data' => "balance_packages_settings"],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['users']['moeny']['settingpay'], $keyboardmoeny);
+    $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
+    Editmessagetext($from_id, $message_id, $textbotlang['users']['moeny']['settingpay'] ?? '💳 تنظیمات مالی', $keyboardmoeny);
 } elseif ($datain == "settingcart") {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $CartManage, 'HTML');
 }
@@ -2673,10 +2695,6 @@ if ($text == $textbotlang['users']['status']['manageService']) {
                 ['text' => $textbotlang['Admin']['category']['status'], 'callback_data' => "statuscategory"],
             ],
             [
-                ['text' => $status_Automatic_confirmation, 'callback_data' => "editstsuts-Automatic_confirmation-$cronstatus"],
-                ['text' => $textbotlang['Admin']['Automatic_confirmation']['title'], 'callback_data' => "Automatic_confirmation"],
-            ],
-            [
                 ['text' => $status_copy_cart, 'callback_data' => "editstsuts-copycart-{$setting['copy_cart']}"],
                 ['text' => $textbotlang['users']['moeny']['copy_cart_status'], 'callback_data' => "copycart"],
             ],
@@ -2829,28 +2847,20 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         update("setting", "status_support", $valuenew);
 
     } elseif ($type == "Automatic_confirmation") {
-        if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
-            $cronstatus = 1;
-            $cronCommand = "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
-            sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
-        } else {
-            if ($value == "1") {
-                $currentCronJobs = shell_exec("crontab -l");
-                $jobToRemove = "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
-                $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', $currentCronJobs);
-                file_put_contents('/tmp/crontab.txt', $newCronJobs);
-                shell_exec('crontab /tmp/crontab.txt');
-                unlink('/tmp/crontab.txt');
-            } else {
-                $existingCronCommands = shell_exec('crontab -l');
-                $phpFilePath = escapeshellarg("https://$domainhosts/cron/croncard.php");
-                $cronCommand = "*/4 * * * * curl $phpFilePath";
-                if (strpos($existingCronCommands, $cronCommand) === false) {
-                    $command = "(crontab -l;  echo '$cronCommand') | crontab -";
-                    error_log($command);
-                    shell_exec($command);
-                }
+        // سازگاری قدیمی — تنظیم اصلی در بخش مالی است
+        $enable = ($value != "1");
+        if (function_exists('setPaySettingValue')) {
+            setPaySettingValue('auto_cart_confirm', $enable ? '1' : '0');
+        }
+        if (function_exists('syncAutoCartCron')) {
+            $ok = syncAutoCartCron($enable);
+            if (!$ok && $enable) {
+                $cronCommand = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
+                sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
             }
+        } elseif ($enable && !(function_exists('shell_exec') && is_callable('shell_exec'))) {
+            $cronCommand = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
+            sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
         }
     }
     $cronCommand = "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
@@ -2991,10 +3001,6 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $statusv_category, 'callback_data' => "editstsuts-category-{$setting['statuscategory']}"],
                 ['text' => $textbotlang['Admin']['category']['status'], 'callback_data' => "statuscategory"],
-            ],
-            [
-                ['text' => $status_Automatic_confirmation, 'callback_data' => "editstsuts-Automatic_confirmation-$cronstatus"],
-                ['text' => $textbotlang['Admin']['Automatic_confirmation']['title'], 'callback_data' => "Automatic_confirmation"],
             ],
             [
                 ['text' => $status_copy_cart, 'callback_data' => "editstsuts-copycart-{$setting['copy_cart']}"],

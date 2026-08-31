@@ -2102,20 +2102,193 @@ function sendAdminUserInfo($admin_id, $target_user_id)
 }
 
 
-function isAutomaticCartConfirmEnabled()
+function setPaySettingValue($name, $value)
+{
+    global $pdo;
+    if (!function_exists('ensurePaySetting')) {
+        return false;
+    }
+    ensurePaySetting($name, $value);
+    try {
+        $stmt = $pdo->prepare("UPDATE PaySetting SET ValuePay = ? WHERE NamePay = ?");
+        $stmt->execute([strval($value), $name]);
+        return true;
+    } catch (Throwable $e) {
+        error_log('setPaySettingValue: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/** فاصله تأیید خودکار کارت‌به‌کارت (دقیقه) — پیش‌فرض ۴ */
+
+/**
+ * کیبورد تنظیمات مالی (کارت / کریپتو / تأیید خودکار / محدودیت / پکیج)
+ */
+function buildFinanceKeyboard()
+{
+    global $textbotlang;
+    $sqlstatus_cart = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select");
+    $sqlstatus_cart = is_array($sqlstatus_cart) ? ($sqlstatus_cart['ValuePay'] ?? 'offcard') : 'offcard';
+    $sqlstatus_iranpay = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select");
+    $sqlstatus_iranpay = is_array($sqlstatus_iranpay) ? ($sqlstatus_iranpay['ValuePay'] ?? 'offdigi') : 'offdigi';
+    $status_cart = [
+        'oncard' => $textbotlang['Admin']['turnon'] ?? 'روشن ✅',
+        'offcard' => $textbotlang['Admin']['turnoff'] ?? 'خاموش ❌',
+    ][$sqlstatus_cart] ?? $sqlstatus_cart;
+    $status_iranpay = [
+        'ondigi' => $textbotlang['Admin']['turnon'] ?? 'روشن ✅',
+        'offdigi' => $textbotlang['Admin']['turnoff'] ?? 'خاموش ❌',
+    ][$sqlstatus_iranpay] ?? $sqlstatus_iranpay;
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('auto_cart_confirm', '0');
+        ensurePaySetting('auto_cart_interval', '4');
+    }
+    $auto_on = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
+    $auto_status_txt = $auto_on
+        ? ($textbotlang['Admin']['turnon'] ?? 'روشن ✅')
+        : ($textbotlang['Admin']['turnoff'] ?? 'خاموش ❌');
+    $rows = [
+        [
+            ['text' => $textbotlang['users']['moeny']['setting'] ?? '⚙️ تنظیمات', 'callback_data' => 'settingcart'],
+            ['text' => $status_cart, 'callback_data' => 'editpay-cart-' . $sqlstatus_cart],
+            ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'] ?? '💳 کارت به کارت', 'callback_data' => 'none'],
+        ],
+        [
+            ['text' => $textbotlang['users']['moeny']['setting'] ?? '⚙️ تنظیمات', 'callback_data' => 'setting_currency_wallets'],
+            ['text' => $status_iranpay, 'callback_data' => 'editpay-iranpay-' . $sqlstatus_iranpay],
+            ['text' => $textbotlang['users']['moeny']['currency_rial_gateway'] ?? '💎 کریپتو', 'callback_data' => 'none'],
+        ],
+        [
+            ['text' => $textbotlang['users']['moeny']['setting'] ?? '⚙️ تنظیمات', 'callback_data' => 'finance_auto_cart_settings'],
+            ['text' => $auto_status_txt, 'callback_data' => 'finance_auto_cart_toggle'],
+            ['text' => ($textbotlang['Admin']['Automatic_confirmation']['finance_line'] ?? '🤖 تأیید خودکار بدون بررسی'), 'callback_data' => 'finance_auto_cart_settings'],
+        ],
+        [
+            ['text' => $textbotlang['Admin']['deposit']['menu'] ?? '💰 حداقل / حداکثر واریز', 'callback_data' => 'deposit_limits_settings'],
+        ],
+        [
+            ['text' => $textbotlang['Admin']['balance_pkg']['menu'] ?? '🎁 پکیج افزایش موجودی', 'callback_data' => 'balance_packages_settings'],
+        ],
+    ];
+    return json_encode(['inline_keyboard' => $rows]);
+}
+
+/**
+ * زیرمنوی تنظیمات تأیید خودکار (فاصله دقیقه)
+ */
+function buildAutoCartSettingsKeyboard()
+{
+    global $textbotlang;
+    $auto_min = function_exists('getAutoCartIntervalMinutes') ? getAutoCartIntervalMinutes() : 4;
+    $auto_on = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
+    $st = $auto_on
+        ? ($textbotlang['Admin']['turnon'] ?? 'روشن ✅')
+        : ($textbotlang['Admin']['turnoff'] ?? 'خاموش ❌');
+    return json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $st, 'callback_data' => 'finance_auto_cart_toggle'],
+                ['text' => ($textbotlang['Admin']['Automatic_confirmation']['finance_line'] ?? 'تأیید خودکار'), 'callback_data' => 'finance_auto_cart_info'],
+            ],
+            [
+                ['text' => "هر {$auto_min} دقیقه", 'callback_data' => 'finance_auto_cart_interval'],
+                ['text' => ($textbotlang['Admin']['Automatic_confirmation']['interval_btn'] ?? '⏱ فاصله تأیید خودکار'), 'callback_data' => 'finance_auto_cart_interval'],
+            ],
+            [
+                ['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back'],
+            ],
+        ],
+    ]);
+}
+
+
+function getAutoCartIntervalMinutes()
+{
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('auto_cart_interval', '4');
+    }
+    $m = intval(function_exists('getPaySettingValue') ? getPaySettingValue('auto_cart_interval', '4') : 4);
+    if ($m < 1) {
+        $m = 1;
+    }
+    if ($m > 60) {
+        $m = 60;
+    }
+    return $m;
+}
+
+function getAutoCartCronCommand($minutes = null)
 {
     global $domainhosts;
-    // تأیید خودکار بدون بررسی = وجود کرون croncard
-    if (function_exists('shell_exec') && is_callable('shell_exec')) {
-        $existing = @shell_exec('crontab -l 2>/dev/null');
-        if (is_string($existing) && strpos($existing, 'croncard.php') !== false) {
+    $m = $minutes !== null ? intval($minutes) : getAutoCartIntervalMinutes();
+    if ($m < 1) {
+        $m = 1;
+    }
+    if ($m > 60) {
+        $m = 60;
+    }
+    $host = strval($domainhosts ?? '');
+    return "*/{$m} * * * * curl https://{$host}/cron/croncard.php";
+}
+
+/** حذف هر کرون croncard و در صورت فعال بودن، نصب با فاصله جدید */
+function syncAutoCartCron($enabled)
+{
+    global $domainhosts;
+    if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
+        return false;
+    }
+    $existing = @shell_exec('crontab -l 2>/dev/null');
+    if (!is_string($existing)) {
+        $existing = '';
+    }
+    $lines = preg_split("/\r\n|\n|\r/", $existing);
+    $kept = [];
+    foreach ($lines as $line) {
+        if ($line === '' || $line === false) {
+            continue;
+        }
+        if (strpos($line, 'croncard.php') !== false) {
+            continue;
+        }
+        $kept[] = $line;
+    }
+    if ($enabled) {
+        $kept[] = getAutoCartCronCommand();
+    }
+    $content = implode("\n", $kept);
+    if ($content !== '' && substr($content, -1) !== "\n") {
+        $content .= "\n";
+    }
+    $tmp = '/tmp/crontab_mirza_autocart.txt';
+    @file_put_contents($tmp, $content);
+    @shell_exec('crontab ' . escapeshellarg($tmp));
+    @unlink($tmp);
+    return true;
+}
+
+function isAutomaticCartConfirmEnabled()
+{
+    // منبع اصلی: PaySetting
+    if (function_exists('getPaySettingValue')) {
+        if (function_exists('ensurePaySetting')) {
+            ensurePaySetting('auto_cart_confirm', '0');
+        }
+        if (getPaySettingValue('auto_cart_confirm', '0') === '1') {
             return true;
+        }
+        // سازگاری با نصب‌های قدیمی که فقط کرون دارند
+        if (function_exists('shell_exec') && is_callable('shell_exec')) {
+            $existing = @shell_exec('crontab -l 2>/dev/null');
+            if (is_string($existing) && strpos($existing, 'croncard.php') !== false) {
+                return true;
+            }
         }
         return false;
     }
-    // بدون shell: از PaySetting اختیاری
-    if (function_exists('getPaySettingValue')) {
-        return getPaySettingValue('auto_cart_confirm', '0') === '1';
+    if (function_exists('shell_exec') && is_callable('shell_exec')) {
+        $existing = @shell_exec('crontab -l 2>/dev/null');
+        return is_string($existing) && strpos($existing, 'croncard.php') !== false;
     }
     return false;
 }
@@ -3143,6 +3316,10 @@ function emptyServicesKeyboard()
     } else {
         $rows[] = [['text' => $buy_label, 'callback_data' => 'buy']];
     }
+    $rows[] = [[
+        'text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک',
+        'callback_data' => 'import_sub_link',
+    ]];
     if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
         $rows[] = [[
             'text' => $textbotlang['Admin']['Status']['notusenameinbot'] ?? 'افزودن سرویس',
@@ -3153,4 +3330,167 @@ function emptyServicesKeyboard()
         return null;
     }
     return json_encode(['inline_keyboard' => $rows]);
+}
+
+
+/**
+ * استخراج نام‌های کاربری محتمل از لینک ساب یا متن
+ * @return string[]
+ */
+function extractServiceImportCandidates($input)
+{
+    $input = trim(strval($input));
+    $out = [];
+    if ($input === '') {
+        return $out;
+    }
+    // نام کاربری خام
+    $plain = ltrim($input, '@');
+    if (preg_match('~^[a-zA-Z0-9_\-\.]{3,64}$~', $plain) && strpos($plain, 'http') !== 0) {
+        $out[] = $plain;
+    }
+    if (preg_match('~https?://~i', $input)) {
+        $path = parse_url($input, PHP_URL_PATH);
+        if (is_string($path) && $path !== '') {
+            $parts = array_values(array_filter(explode('/', $path), function ($p) {
+                return $p !== '' && strtolower($p) !== 'sub' && strtolower($p) !== 'subscribe';
+            }));
+            if (!empty($parts)) {
+                $last = rawurldecode(end($parts));
+                $last = explode('?', $last)[0];
+                $out[] = $last;
+                // توکن با نقطه: بخش اول را base64 امتحان کن
+                if (strpos($last, '.') !== false) {
+                    $seg = explode('.', $last)[0];
+                    $pad = str_repeat('=', (4 - strlen($seg) % 4) % 4);
+                    $dec = base64_decode(strtr($seg, '-_', '+/') . $pad, true);
+                    if (is_string($dec) && $dec !== '') {
+                        if (preg_match_all('~[a-zA-Z][a-zA-Z0-9_]{2,31}~', $dec, $mm)) {
+                            foreach ($mm[0] as $u) {
+                                $out[] = $u;
+                            }
+                        }
+                    }
+                }
+                // کل last اگر شبیه یوزرنیم باشد
+                if (preg_match('~^[a-zA-Z0-9_]{3,32}$~', $last)) {
+                    $out[] = $last;
+                }
+            }
+        }
+        // query ?username=
+        $q = parse_url($input, PHP_URL_QUERY);
+        if (is_string($q)) {
+            parse_str($q, $qs);
+            foreach (['username', 'user', 'name'] as $k) {
+                if (!empty($qs[$k])) {
+                    $out[] = strval($qs[$k]);
+                }
+            }
+        }
+    }
+    $out = array_values(array_unique(array_filter(array_map('strval', $out))));
+    return $out;
+}
+
+/**
+ * جستجو در پنل‌های ربات و افزودن به invoice کاربر
+ * @return array{ok:bool,msg?:string,username?:string,panel?:string}
+ */
+function tryImportUserService($telegram_id, $input)
+{
+    global $pdo, $ManagePanel, $textbotlang;
+    $telegram_id = intval($telegram_id);
+    $candidates = extractServiceImportCandidates($input);
+    if (empty($candidates)) {
+        return ['ok' => false, 'msg' => 'invalid'];
+    }
+    // جلوگیری از لیست خیلی بلند
+    $candidates = array_slice($candidates, 0, 8);
+    $panels = select("marzban_panel", "*", "status", "activepanel", "fetchAll");
+    if (!is_array($panels) || count($panels) === 0) {
+        $panels = select("marzban_panel", "*", null, null, "fetchAll");
+    }
+    if (!is_array($panels) || count($panels) === 0) {
+        return ['ok' => false, 'msg' => 'notfound'];
+    }
+    if (!isset($ManagePanel) || !is_object($ManagePanel)) {
+        return ['ok' => false, 'msg' => 'notfound'];
+    }
+    $found = null;
+    $found_panel = null;
+    $found_data = null;
+    foreach ($panels as $panel) {
+        $pname = $panel['name_panel'] ?? '';
+        if ($pname === '') {
+            continue;
+        }
+        foreach ($candidates as $cand) {
+            try {
+                $data = $ManagePanel->DataUser($pname, $cand);
+            } catch (Throwable $e) {
+                continue;
+            }
+            if (!is_array($data)) {
+                continue;
+            }
+            if (($data['status'] ?? '') === 'Unsuccessful' || (isset($data['msg']) && $data['msg'] === 'User not found')) {
+                continue;
+            }
+            if (empty($data['username']) && empty($cand)) {
+                continue;
+            }
+            // اگر لینک ساب برگشتی شامل بخش توکن ورودی بود، اولویت بده
+            $found = $data['username'] ?? $cand;
+            $found_panel = $pname;
+            $found_data = $data;
+            break 2;
+        }
+    }
+    if ($found === null) {
+        return ['ok' => false, 'msg' => 'notfound'];
+    }
+    // مالکیت
+    $stmt = $pdo->prepare("SELECT id_user, username FROM invoice WHERE username = :u ORDER BY time_sell DESC LIMIT 1");
+    $stmt->execute([':u' => $found]);
+    $ex = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($ex) {
+        if (intval($ex['id_user']) === $telegram_id) {
+            return ['ok' => false, 'msg' => 'exists', 'username' => $found];
+        }
+        return ['ok' => false, 'msg' => 'owned', 'username' => $found];
+    }
+    // ساخت فاکتور
+    $id_invoice = strval(time()) . strval(random_int(100, 999));
+    $vol = 0;
+    if (!empty($found_data['data_limit'])) {
+        $vol = intval(round(intval($found_data['data_limit']) / (1024 * 1024 * 1024)));
+    }
+    $days = 0;
+    if (!empty($found_data['expire']) && intval($found_data['expire']) > time()) {
+        $days = max(1, intval(floor((intval($found_data['expire']) - time()) / 86400)));
+    }
+    $status = 'active';
+    $st_panel = strtolower(strval($found_data['status'] ?? 'active'));
+    if (in_array($st_panel, ['expired', 'limited', 'disabled'], true)) {
+        $status = $st_panel === 'limited' ? 'end_of_volume' : ($st_panel === 'expired' ? 'end_of_time' : 'active');
+    }
+    $name_product = 'imported';
+    $price = 0;
+    $date = time();
+    $sql = "INSERT IGNORE INTO invoice (id_user, id_invoice, username, time_sell, Service_location, name_product, price_product, Volume, Service_time, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        $telegram_id,
+        $id_invoice,
+        $found,
+        $date,
+        $found_panel,
+        $name_product,
+        $price,
+        $vol,
+        $days,
+        $status,
+    ]);
+    return ['ok' => true, 'username' => $found, 'panel' => $found_panel];
 }

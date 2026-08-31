@@ -1390,6 +1390,12 @@ $textbotlang['Admin']['cron']['active_manual_sendmessage'] = "جهت فعالس�
 
 <blockquote>%s</blockquote>";
 $textbotlang['Admin']['Automatic_confirmation']['title'] = "🤖 تایید خودکار بدون بررسی";
+$textbotlang['Admin']['Automatic_confirmation']['interval_btn'] = "⏱ فاصله تأیید خودکار";
+$textbotlang['Admin']['Automatic_confirmation']['interval_prompt'] = "⏱ هر چند دقیقه یک‌بار رسیدهای در انتظار به‌صورت خودکار تأیید شوند؟\n\nعددی بین <b>1</b> تا <b>60</b> بفرستید.\nمقدار فعلی: <b>%s</b> دقیقه";
+$textbotlang['Admin']['Automatic_confirmation']['interval_saved'] = "✅ فاصله تأیید خودکار روی <b>%s</b> دقیقه تنظیم شد.";
+$textbotlang['Admin']['Automatic_confirmation']['interval_invalid'] = "❌ عدد نامعتبر. بین 1 تا 60 بفرستید.";
+$textbotlang['Admin']['Automatic_confirmation']['finance_line'] = "🤖 تأیید خودکار بدون بررسی";
+
 
 
 
