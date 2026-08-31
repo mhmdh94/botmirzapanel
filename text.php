@@ -709,17 +709,6 @@ $textbotlang['users']['admin']['userinfo_unavailable'] = "❌ نمایش اطل�
 
 
 
-$textbotlang['users']['import']['btn'] = "🔗 افزودن سرویس با لینک";
-$textbotlang['users']['import']['prompt'] = "🔗 <b>افزودن سرویس به لیست</b>
-
-لینک اشتراک (ساب) یا <b>نام کاربری</b> سرویس را بفرستید.
-
-ربات فقط در پنل‌های همین ربات جستجو می‌کند و در صورت وجود، به «سرویس‌های من» اضافه می‌شود.";
-$textbotlang['users']['import']['notfound'] = "❌ سرویسی با این لینک/نام کاربری در پنل‌های این ربات پیدا نشد.";
-$textbotlang['users']['import']['exists'] = "ℹ️ این سرویس از قبل در لیست شما هست.";
-$textbotlang['users']['import']['owned'] = "❌ این سرویس متعلق به کاربر دیگری است.";
-$textbotlang['users']['import']['ok'] = "✅ سرویس <code>%s</code> به لیست شما اضافه شد.\n📍 پنل: %s";
-$textbotlang['users']['import']['invalid'] = "❌ لینک یا نام کاربری نامعتبر است.";
 
 $textbotlang['users']['busy_request'] = "⏳ درخواست قبلی در حال انجام است. چند لحظه صبر کنید.";
 $textbotlang['users']['busy_or_balance'] = "⏳ امکان انجام همزمان نیست یا موجودی کافی نیست.";

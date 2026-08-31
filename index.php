@@ -409,21 +409,30 @@ if (strpos($text, "/start ") !== false) {
     }
 }
 $timebot = time();
-$TimeLastMessage = $timebot - intval($user['last_message_time'] ?? 0);
-// ضداسپم اصلاح‌شده: پنجره ۴۵ثانیه، سقف ۶۰ کلیک (قبلاً ۳۵/۶۰ثانیه باعث بلاک اشتباه هنگام کندی ربات می‌شد)
-$__spam_window = 45;
-$__spam_limit = 60;
-if ($TimeLastMessage >= $__spam_window) {
-    update("user", "last_message_time", $timebot, "id", $from_id);
-    update("user", "message_count", "1", "id", $from_id);
-} else {
-    if (!in_array($from_id, $admin_ids)) {
+$__last_msg_ts = intval($user['last_message_time'] ?? 0);
+$__gap = ($__last_msg_ts > 0) ? ($timebot - $__last_msg_ts) : 999;
+// همیشه زمان آخرین پیام به‌روز شود
+update("user", "last_message_time", $timebot, "id", $from_id);
+/*
+ * ضداسپم صحیح:
+ * فقط کلیک/پیام پشت‌سرهم سریع اسپم است.
+ * اگر فاصله از پیام قبلی >= 3 ثانیه باشد → استفاده عادی → شمارنده ریست.
+ * اگر فاصله < 3 ثانیه باشد → شمارنده +1؛ با رسیدن به 25 بلاک (اسپم واقعی).
+ * استفاده عادی خرید/منو دیگر با جمع‌شدن شمارنده در چند دقیقه بلاک نمی‌شود.
+ */
+$__spam_gap_reset = 3;
+$__spam_limit = 25;
+if (!in_array($from_id, $admin_ids)) {
+    if ($__gap >= $__spam_gap_reset) {
+        update("user", "message_count", "1", "id", $from_id);
+    } else {
         $addmessage = intval($user['message_count'] ?? 0) + 1;
         update("user", "message_count", $addmessage, "id", $from_id);
         if ($addmessage >= $__spam_limit) {
             $User_Status = "block";
             update("user", "User_Status", $User_Status, "id", $from_id);
             update("user", "description_blocking", $textbotlang['users']['spamtext'], "id", $from_id);
+            update("user", "message_count", "0", "id", $from_id);
             $kb_spam = json_encode([
                 'inline_keyboard' => [
                     [
@@ -454,14 +463,16 @@ if ($TimeLastMessage >= $__spam_window) {
             return;
         }
     }
-    if ($setting['Bot_Status'] == "✅  ربات روشن است" and !in_array($from_id, $admin_ids)) {
-        sendmessage($from_id, $textbotlang['users']['updatingbot'], null, 'html');
-        foreach ($admin_ids as $admin) {
-            sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعالسازی به منوی تنظیمات عمومی > وضعیت قابلیت ها بروید تا رباتتان فعال شود.", null, 'html');
-        }
-        return;
+}
+// وضعیت ربات (مستقل از ضداسپم)
+if (($setting['Bot_Status'] ?? '') == "✅  ربات روشن است" && !in_array($from_id, $admin_ids)) {
+    sendmessage($from_id, $textbotlang['users']['updatingbot'], null, 'html');
+    foreach ($admin_ids as $admin) {
+        sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعالسازی به منوی تنظیمات عمومی > وضعیت قابلیت ها بروید تا رباتتان فعال شود.", null, 'html');
     }
-} #-----------Channel------------#
+    return;
+}
+#-----------Channel------------#
 $force_channel_on = !isset($setting['force_channel']) || $setting['force_channel'] == '1' || $setting['force_channel'] === 1;
 $chanelcheck = ($force_channel_on && !empty($channels['link'])) ? channel($channels['link']) : [];
 if ($datain == "confirmchannel") {
@@ -637,9 +648,6 @@ if ($text == "/status") {
         ];
     }
     $keyboardlists['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
-    ];
-    $keyboardlists['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"],
     ];
     $keyboardlistss = json_encode($keyboardlists);
@@ -782,9 +790,6 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
-    $keyboardlists['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
-    ];
     if (($setting['NotUser'] ?? '') == "1") {
         $keyboardlists['inline_keyboard'][] = [
             ['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']
@@ -850,9 +855,6 @@ if ($datain == 'next_page') {
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
-    $keyboardlists['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
-    ];
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -904,9 +906,6 @@ if ($datain == 'next_page') {
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
-    $keyboardlists['inline_keyboard'][] = [
-        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
-    ];
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -918,40 +917,6 @@ if ($datain == 'next_page') {
 if ($datain == "usernotlist") {
     sendmessage($from_id, $textbotlang['users']['status']['SendUsername'], $backuser, 'html');
     step('getusernameinfo', $from_id);
-}
-
-#----------- import service by sub link ------------#
-if ($datain == "import_sub_link") {
-    sendmessage($from_id, $textbotlang['users']['import']['prompt'] ?? 'لینک ساب یا نام کاربری را بفرستید', $backuser, 'HTML');
-    step('import_sub_link', $from_id);
-    return;
-}
-if (isset($user['step']) && $user['step'] == 'import_sub_link') {
-    if ($text == ($textbotlang['users']['backhome'] ?? '') || $text == '/start' || (is_string($text) && strpos($text, 'منوی اصلی') !== false)) {
-        step('home', $from_id);
-        sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
-        return;
-    }
-    if (empty($text) || !is_string($text)) {
-        sendmessage($from_id, $textbotlang['users']['import']['invalid'] ?? 'نامعتبر', $backuser, 'HTML');
-        return;
-    }
-    $res = function_exists('tryImportUserService') ? tryImportUserService($from_id, $text) : ['ok' => false, 'msg' => 'notfound'];
-    if (!empty($res['ok'])) {
-        $msg = sprintf($textbotlang['users']['import']['ok'] ?? '✅ %s | %s', $res['username'], $res['panel']);
-        sendmessage($from_id, $msg, $keyboard, 'HTML');
-        step('home', $from_id);
-        return;
-    }
-    $code = $res['msg'] ?? 'notfound';
-    $map = [
-        'invalid' => $textbotlang['users']['import']['invalid'] ?? 'نامعتبر',
-        'notfound' => $textbotlang['users']['import']['notfound'] ?? 'پیدا نشد',
-        'exists' => $textbotlang['users']['import']['exists'] ?? 'از قبل هست',
-        'owned' => $textbotlang['users']['import']['owned'] ?? 'مالک دیگری',
-    ];
-    sendmessage($from_id, $map[$code] ?? $map['notfound'], $backuser, 'HTML');
-    return;
 }
 
 #----------- Search My Service ------------#
