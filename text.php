@@ -1457,8 +1457,7 @@ $textbotlang['Admin']['Report']['ReportTestCreate'] = "🧪 <b>اکانت تست
 🔑 کانفیگ: <code>%s</code>
 
 👤 نام: %s
-📍 پنل: %s
-📱 %s";
+📍 پنل: %s";
 $textbotlang['Admin']['Report']['acceptcartresid'] = "✅ <b>تأیید رسید</b>
 
 👨‍💼 ادمین: <code>%s</code>
@@ -1550,7 +1549,6 @@ $textbotlang['users']['Report']['reportbuy'] = "🛍 <b>خرید جدید</b>
 🆔 <code>%s</code>
 👤 @%s
 🛍 سرویس فعال: <b>%s</b>
-📱 %s
 
 📍 پنل: %s
 💳 موجودی: %s تومان";
@@ -1564,7 +1562,6 @@ $textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>واریز + خ�
 🆔 <code>%s</code>
 👤 @%s
 🛍 سرویس فعال: <b>%s</b>
-📱 %s
 
 📍 پنل: %s
 💳 موجودی بعد: %s تومان

@@ -1111,7 +1111,6 @@ function DirectPayment($order_id)
             $get_invoice['id_user'],
             $Balance_id['username'] ?? '-',
             $active_svc_ap,
-            $Balance_id['number'] ?? '-',
             $get_invoice['Service_location'],
             $balanceformatsell,
             $order_id_rep
@@ -2077,6 +2076,9 @@ function sendAdminUserInfo($admin_id, $target_user_id)
         $username_disp = '';
     }
     $number_disp = $u['number'] ?? 'none';
+    if ($number_disp === '' || $number_disp === null) {
+        $number_disp = 'none';
+    }
     $text_msg = sprintf(
         $textbotlang['Admin']['ManageUser']['infouser'],
         $u['User_Status'] ?? '-',

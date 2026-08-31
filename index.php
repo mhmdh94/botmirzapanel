@@ -2421,7 +2421,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     $limit_usertest = $user['limit_usertest'] - 1;
     update("user", "limit_usertest", $limit_usertest, "id", $from_id);
     step('home', $from_id);
-    $text_report = sprintf($textbotlang['Admin']['Report']['ReportTestCreate'], $from_id, $username, $username_ac, $first_name, $marzban_list_get['name_panel'], $user['number']);
+    $text_report = sprintf($textbotlang['Admin']['Report']['ReportTestCreate'], $from_id, $username, $username_ac, $first_name, $marzban_list_get['name_panel']);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_test', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
@@ -3260,7 +3260,7 @@ if (isset($datain) && $datain === 'product_header') {
     $bal_after_fmt = number_format($Balance_prim);
     $price_fmt = number_format(intval(str_replace(',', '', strval($info_product['price_product']))));
     $active_svc_buy = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
-    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $price_fmt, $info_product['Volume_constraint'], $from_id, $username, $active_svc_buy, $user['number'], $user['Processing_value'], $bal_after_fmt);
+    $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $price_fmt, $info_product['Volume_constraint'], $from_id, $username, $active_svc_buy, $user['Processing_value'], $bal_after_fmt);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_buy', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
