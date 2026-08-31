@@ -2284,10 +2284,15 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     }
     if ($user['step'] == "createusertest") {
         $name_panel = $user['Processing_value_one'];
-        // دکمه خودکار انتخاب کن نباید با اعتبارسنجی نام کاربری رد شود
-        $is_auto_username = ($text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن');
-        if (!$is_auto_username && !preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
-            sendmessage($from_id, $textbotlang['users']['invalidusername'], $keyboard_getusername, 'HTML');
+        // دکمه خودکار انتخاب کن (اینلاین یا متن)
+        $is_auto_username = (
+            $datain == 'auto_username'
+            || $text === '🎲 خودکار انتخاب کن'
+            || $text === 'خودکار انتخاب کن'
+        );
+        if (!$is_auto_username && !preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', strval($text))) {
+            $kb_un = isset($inline_getusername) ? $inline_getusername : $keyboard_getusername;
+            sendmessage($from_id, $textbotlang['users']['invalidusername'], $kb_un, 'HTML');
             return;
         }
     } else {
@@ -2303,11 +2308,16 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
         if ($user['step'] != "createusertest") {
             step('createusertest', $from_id);
             update("user", "Processing_value_one", $name_panel, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['selectusername'], $keyboard_getusername, 'html');
+            $kb_un = isset($inline_getusername) ? $inline_getusername : $keyboard_getusername;
+            sendmessage($from_id, $textbotlang['users']['selectusername'], $kb_un, 'html');
             return;
         }
     }
-        if ($marzban_list_get['MethodUsername'] == $textbotlang['users']['customusername'] && ($text === '🎲 خودکار انتخاب کن' || $text === 'خودکار انتخاب کن')) {
+    if ($marzban_list_get['MethodUsername'] == $textbotlang['users']['customusername'] && (
+        $datain == 'auto_username'
+        || $text === '🎲 خودکار انتخاب کن'
+        || $text === 'خودکار انتخاب کن'
+    )) {
         $text = generateAvailableUsername($marzban_list_get['name_panel']);
     }
     $username_ac = strtolower(generateUsername($from_id, $marzban_list_get['MethodUsername'], $user['username'], $randomString, $text));
