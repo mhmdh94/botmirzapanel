@@ -204,7 +204,7 @@ if ($user['User_Status'] == "block") {
         sendmessage(
             $from_id,
             $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
-            $kb_block_support,
+            null,
             'HTML'
         );
         step('gettextpm_blocked', $from_id);
@@ -216,7 +216,7 @@ if ($user['User_Status'] == "block") {
             sendmessage(
                 $from_id,
                 $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
-                $kb_block_support,
+                null,
                 'HTML'
             );
             return;
@@ -225,7 +225,7 @@ if ($user['User_Status'] == "block") {
             sendmessage(
                 $from_id,
                 $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
-                $kb_block_support,
+                null,
                 'HTML'
             );
             return;
