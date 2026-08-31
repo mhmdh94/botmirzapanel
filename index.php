@@ -196,6 +196,35 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
             ],
         ],
     ]);
+    // آیا این درخواست مربوط به پشتیبانی است؟
+    $__block_is_support = (
+        $datain == 'support'
+        || $datain == 'support_blocked'
+        || (isset($user['step']) && $user['step'] == 'gettextpm_blocked')
+        || (isset($text) && is_string($text) && ($text === '/support' || $text === ($datatextbot['text_support'] ?? '')))
+    );
+    /*
+     * ضد‌فشار / ضد‌اتک برای کاربر مسدود:
+     * غیر از مسیر پشتیبانی، حداکثر هر ۶۰ ثانیه یک پاسخ داده می‌شود.
+     * بقیه آپدیت‌ها بدون sendMessage و کار اضافه قطع می‌شوند.
+     */
+    if (!$__block_is_support) {
+        $__now = time();
+        $__last_block_reply = intval($user['last_message_time'] ?? 0);
+        $__block_throttle = 60; // ثانیه
+        if ($__last_block_reply > 0 && ($__now - $__last_block_reply) < $__block_throttle) {
+            // فقط loading کال‌بک را ببند؛ هیچ پیام و کوئری اضافه‌ای نزن
+            if (!empty($callback_query_id)) {
+                telegram('answerCallbackQuery', [
+                    'callback_query_id' => $callback_query_id,
+                    'text' => '',
+                    'show_alert' => false,
+                ]);
+            }
+            return;
+        }
+        update("user", "last_message_time", $__now, "id", $from_id);
+    }
     // ورود به پشتیبانی برای کاربر مسدود
     if (
         $datain == 'support'
