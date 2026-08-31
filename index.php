@@ -427,7 +427,7 @@ if ($text == "/status") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => $row['username'],
+                'text' => "🔐 " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -452,6 +452,9 @@ if ($text == "/status") {
             ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'nextpage_' . ($page + 1)]
         ];
     }
+    $keyboardlists['inline_keyboard'][] = [
+        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
+    ];
     $keyboardlists['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"],
     ];
@@ -574,7 +577,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
         $service_count++;
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => $row['username'],
+                'text' => "🔐 " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -595,6 +598,9 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
+    $keyboardlists['inline_keyboard'][] = [
+        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
+    ];
     if (($setting['NotUser'] ?? '') == "1") {
         $keyboardlists['inline_keyboard'][] = [
             ['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']
@@ -634,7 +640,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => $row['username'],
+                'text' => "🔐 " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -660,6 +666,9 @@ if ($datain == 'next_page') {
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
+    $keyboardlists['inline_keyboard'][] = [
+        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
+    ];
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -685,7 +694,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => $row['username'],
+                'text' => "🔐 " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -711,6 +720,9 @@ if ($datain == 'next_page') {
             ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
         ];
     }
+    $keyboardlists['inline_keyboard'][] = [
+        ['text' => $textbotlang['users']['import']['btn'] ?? '🔗 افزودن سرویس با لینک', 'callback_data' => 'import_sub_link']
+    ];
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -723,6 +735,41 @@ if ($datain == "usernotlist") {
     sendmessage($from_id, $textbotlang['users']['status']['SendUsername'], $backuser, 'html');
     step('getusernameinfo', $from_id);
 }
+
+#----------- import service by sub link ------------#
+if ($datain == "import_sub_link") {
+    sendmessage($from_id, $textbotlang['users']['import']['prompt'] ?? 'لینک ساب یا نام کاربری را بفرستید', $backuser, 'HTML');
+    step('import_sub_link', $from_id);
+    return;
+}
+if (isset($user['step']) && $user['step'] == 'import_sub_link') {
+    if ($text == ($textbotlang['users']['backhome'] ?? '') || $text == '/start' || (is_string($text) && strpos($text, 'منوی اصلی') !== false)) {
+        step('home', $from_id);
+        sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
+        return;
+    }
+    if (empty($text) || !is_string($text)) {
+        sendmessage($from_id, $textbotlang['users']['import']['invalid'] ?? 'نامعتبر', $backuser, 'HTML');
+        return;
+    }
+    $res = function_exists('tryImportUserService') ? tryImportUserService($from_id, $text) : ['ok' => false, 'msg' => 'notfound'];
+    if (!empty($res['ok'])) {
+        $msg = sprintf($textbotlang['users']['import']['ok'] ?? '✅ %s | %s', $res['username'], $res['panel']);
+        sendmessage($from_id, $msg, $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
+    $code = $res['msg'] ?? 'notfound';
+    $map = [
+        'invalid' => $textbotlang['users']['import']['invalid'] ?? 'نامعتبر',
+        'notfound' => $textbotlang['users']['import']['notfound'] ?? 'پیدا نشد',
+        'exists' => $textbotlang['users']['import']['exists'] ?? 'از قبل هست',
+        'owned' => $textbotlang['users']['import']['owned'] ?? 'مالک دیگری',
+    ];
+    sendmessage($from_id, $map[$code] ?? $map['notfound'], $backuser, 'HTML');
+    return;
+}
+
 #----------- Search My Service ------------#
 if ($datain == "search_myservice") {
     if (isset($setting['status_search_service']) && ($setting['status_search_service'] == '0' || $setting['status_search_service'] === 0)) {
@@ -760,7 +807,7 @@ if ($user['step'] == "search_myservice") {
         $keyboardlists = ['inline_keyboard' => []];
         foreach ($results as $row) {
             $keyboardlists['inline_keyboard'][] = [
-                ['text' => $row['username'], 'callback_data' => "product_" . $row['username']]
+                ['text' => "🔐 " . $row['username'], 'callback_data' => "product_" . $row['username']]
             ];
         }
         $keyboardlists['inline_keyboard'][] = [
@@ -777,7 +824,7 @@ if ($user['step'] == "search_myservice") {
     $keyboardfound = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
+                ['text' => "🔐 " . $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
             ],
             [
                 ['text' => $textbotlang['users']['search']['again'], 'callback_data' => 'search_myservice']
@@ -3274,7 +3321,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         }
     }
     $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
-    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $from_id, $randomString, $username, $active_svc, $Processing_value, $pay_note, $user_balance_fmt);
+    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $Processing_value, $from_id, $randomString, $username, $active_svc, $pay_note, $user_balance_fmt);
     $__adm_photo = [
         'photo' => $photoid,
         'reply_markup' => $Confirm_pay,
