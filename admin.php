@@ -892,19 +892,7 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     }
     update("user", "description_blocking", $reason_text, "id", $blocked_id);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['DescriptionBlock'], $keyboardadmin, 'HTML');
-    // پیام به کاربر مسدودشده (دستی — نه اسپم)
-    $kb_u = json_encode([
-        'inline_keyboard' => [[
-            ['text' => $textbotlang['users']['spam']['btn_support'] ?? '📨 ارسال پیام به پشتیبانی', 'callback_data' => 'support_blocked'],
-        ]],
-    ]);
-    $msg_u = sprintf(
-        $textbotlang['users']['spam']['blocked_manual']
-            ?? "🔒 حساب شما توسط مدیریت مسدود شد.
-✍️ دلیل: %s",
-        $reason_text
-    );
-    sendmessage($blocked_id, $msg_u, $kb_u, 'HTML');
+    // به کاربر پیام فوری ارسال نمی‌شود؛ وقتی خودش با ربات کار کند پیام مسدودی + پشتیبانی می‌بیند
     $bu = select("user", "*", "id", $blocked_id, "select");
     $bu_name = is_array($bu) ? ($bu['username'] ?? '-') : '-';
     if (function_exists('notifyUserBlocked')) {
