@@ -3366,7 +3366,7 @@ function runBotSelfUpdate($repoZipUrl = null)
 function ensureBotCommands($force = false)
 {
     $cache = __DIR__ . '/.bot_commands_ok';
-    $signature = 'v1_start_new_renew_status_support';
+    $signature = 'v2_start_new_renew_only';
     if (!$force && is_file($cache) && trim(@file_get_contents($cache)) === $signature) {
         return true;
     }
@@ -3377,8 +3377,6 @@ function ensureBotCommands($force = false)
         ['command' => 'start', 'description' => 'شروع مجدد'],
         ['command' => 'new', 'description' => 'خرید سرویس جدید'],
         ['command' => 'renew', 'description' => 'تمدید سرویس'],
-        ['command' => 'status', 'description' => 'سرویس‌های من'],
-        ['command' => 'support', 'description' => 'پشتیبانی'],
     ];
     $res = telegram('setMyCommands', [
         'commands' => json_encode($commands, JSON_UNESCAPED_UNICODE),
