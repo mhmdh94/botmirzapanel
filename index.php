@@ -3321,7 +3321,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         }
     }
     $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
-    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $Processing_value, $from_id, $randomString, $username, $active_svc, $pay_note, $user_balance_fmt);
+    $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $Processing_value, $from_id, $randomString, $username, $active_svc, $pay_note);
     $__adm_photo = [
         'photo' => $photoid,
         'reply_markup' => $Confirm_pay,

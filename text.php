@@ -517,7 +517,6 @@ $textbotlang['users']['moeny']['cartresid'] = "🧾 <b>رسید پرداخت ج�
 
 🏷 نوع:
 %s
-💵 موجودی قبل: %s تومان
 
 در صورت صحت رسید، تأیید کنید.";
 $textbotlang['users']['moeny']['Charged.'] = "✅ <b>شارژ انجام شد</b>
