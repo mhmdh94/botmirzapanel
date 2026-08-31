@@ -184,8 +184,139 @@ if ($user['username'] == "none" || $user['username'] == null) {
 }
 #-----------User_Status------------#
 if ($user['User_Status'] == "block") {
-    $textblock = sprintf($textbotlang['Admin']['ManageUser']['BlockedUser'], $user['description_blocking']);
-    sendmessage($from_id, $textblock, null, 'html');
+    $kb_block_support = json_encode([
+        'inline_keyboard' => [
+            [
+                [
+                    'text' => $textbotlang['users']['spam']['btn_support']
+                        ?? ($textbotlang['users']['sendmessagesupport'] ?? '📨 ارسال پیام به پشتیبانی'),
+                    'callback_data' => 'support_blocked',
+                ],
+            ],
+        ],
+    ]);
+    // ورود به پشتیبانی برای کاربر مسدود
+    if (
+        $datain == 'support'
+        || $datain == 'support_blocked'
+        || (isset($text) && is_string($text) && ($text === '/support' || $text === ($datatextbot['text_support'] ?? '')))
+    ) {
+        sendmessage(
+            $from_id,
+            $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+            $kb_block_support,
+            'HTML'
+        );
+        step('gettextpm_blocked', $from_id);
+        return;
+    }
+    // دریافت متن پشتیبانی در حالت مسدود
+    if (isset($user['step']) && $user['step'] == 'gettextpm_blocked') {
+        if ($datain == 'support_blocked' || $datain == 'support') {
+            sendmessage(
+                $from_id,
+                $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+                $kb_block_support,
+                'HTML'
+            );
+            return;
+        }
+        if ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
+            sendmessage(
+                $from_id,
+                $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+                $kb_block_support,
+                'HTML'
+            );
+            return;
+        }
+        // ارسال به ادمین‌ها
+        if (function_exists('ensureSupportPendingTable')) {
+            ensureSupportPendingTable();
+            global $pdo;
+            try {
+                $st = $pdo->prepare("INSERT INTO support_pending (id_user, username, message_text, created_at, status) VALUES (?,?,?,?, 'waiting')");
+                $st->execute([$from_id, $username ?? '', isset($text) && is_string($text) ? $text : ($caption ?? ''), time()]);
+            } catch (Exception $e) {
+            }
+        }
+        $Response = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => $textbotlang['users']['support']['answermessage'] ?? 'پاسخ', 'callback_data' => 'Response_' . $from_id],
+                ],
+                [
+                    ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $from_id],
+                ],
+            ],
+        ]);
+        $body = (isset($text) && is_string($text) && trim($text) !== '') ? $text : ($caption ?? '[رسانه]');
+        $textsendadmin = sprintf(
+            $textbotlang['users']['support']['GetMessageOfUser'] ?? "📥 پیام پشتیبانی\n\n🆔 %s\n👤 @%s\n\n%s",
+            $from_id,
+            $username ?? '-',
+            $body
+        );
+        $textsendadmin = "⛔ <b>پیام از کاربر مسدود</b>\n" . $textsendadmin;
+        if (function_exists('notifyAdmins')) {
+            if (!empty($photo) && !empty($photoid)) {
+                notifyAdmins('sendphoto', [
+                    'photo' => $photoid,
+                    'reply_markup' => $Response,
+                    'caption' => $textsendadmin,
+                    'parse_mode' => 'HTML',
+                ], $admin_ids);
+            } else {
+                notifyAdmins('sendmessage', [
+                    'text' => $textsendadmin,
+                    'reply_markup' => $Response,
+                    'parse_mode' => 'HTML',
+                    'disable_web_page_preview' => true,
+                ], $admin_ids);
+            }
+        } else {
+            foreach ($admin_ids as $id_admin) {
+                if (!empty($photo) && !empty($photoid)) {
+                    telegram('sendphoto', [
+                        'chat_id' => $id_admin,
+                        'photo' => $photoid,
+                        'caption' => $textsendadmin,
+                        'reply_markup' => $Response,
+                        'parse_mode' => 'HTML',
+                    ]);
+                } else {
+                    sendmessage($id_admin, $textsendadmin, $Response, 'HTML');
+                }
+            }
+        }
+        sendmessage(
+            $from_id,
+            $textbotlang['users']['spam']['support_sent']
+                ?? ($textbotlang['users']['support']['sendmessageadmin'] ?? '✅ پیام ارسال شد.'),
+            $kb_block_support,
+            'HTML'
+        );
+        step('gettextpm_blocked', $from_id);
+        return;
+    }
+    // هر چیز دیگر برای کاربر مسدود: فقط پیام + دکمه پشتیبانی
+    $reason = $user['description_blocking'] ?? '';
+    if ($reason === '' || $reason === null) {
+        $reason = $textbotlang['users']['spamtext'] ?? 'مسدود';
+    }
+    $is_spam = (mb_strpos(strval($reason), 'اسپم') !== false)
+        || (strval($reason) === strval($textbotlang['users']['spamtext'] ?? ''));
+    if ($is_spam) {
+        $textblock = $textbotlang['users']['spam']['spamedmessage']
+            ?? "⛔ به دلیل اسپم مسدود شدید.\nفقط می‌توانید به پشتیبانی پیام دهید.";
+    } else {
+        $textblock = sprintf(
+            $textbotlang['users']['spam']['blocked_only_support']
+                ?? ($textbotlang['Admin']['ManageUser']['BlockedUser'] ?? "🚫 مسدود هستید.\nدلیل: %s"),
+            $reason
+        );
+    }
+    sendmessage($from_id, $textblock, $kb_block_support, 'HTML');
     return;
 }
 if (strpos($text, "/start ") !== false) {
@@ -257,7 +388,24 @@ if (floor($TimeLastMessage / 60) >= 1) {
             $User_Status = "block";
             update("user", "User_Status", $User_Status, "id", $from_id);
             update("user", "description_blocking", $textbotlang['users']['spamtext'], "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['spam']['spamedmessage'], null, 'html');
+            $kb_spam = json_encode([
+                'inline_keyboard' => [
+                    [
+                        [
+                            'text' => $textbotlang['users']['spam']['btn_support']
+                                ?? ($textbotlang['users']['sendmessagesupport'] ?? '📨 ارسال پیام به پشتیبانی'),
+                            'callback_data' => 'support_blocked',
+                        ],
+                    ],
+                ],
+            ]);
+            sendmessage(
+                $from_id,
+                $textbotlang['users']['spam']['spamedmessage']
+                    ?? "⛔ به دلیل اسپم مسدود شدید. فقط می‌توانید به پشتیبانی پیام دهید.",
+                $kb_spam,
+                'HTML'
+            );
             if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['spam_block'])) {
                 $spam_txt = sprintf(
                     $textbotlang['Admin']['Report']['spam_block'],

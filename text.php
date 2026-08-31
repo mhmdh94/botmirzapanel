@@ -36,6 +36,18 @@ $textbotlang['users']['channeldosntjoin'] = $textbotlang['users']['channeldoesnt
 $textbotlang['users']['back'] = "به منوی اصلی برگشتید.";
 $textbotlang['users']['backorder'] = "🏠 جزئیات سرویس";
 $textbotlang['users']['spamtext'] = "ارسال بیش از حد پیام (اسپم)";
+$textbotlang['users']['spam']['spamedmessage'] = "⛔ <b>به دلیل ارسال بیش از حد پیام (اسپم) مسدود شدید.</b>
+
+فقط می‌توانید از طریق دکمه زیر برای پشتیبانی پیام بفرستید.
+ادمین پس از بررسی می‌تواند حساب شما را آزاد کند.";
+$textbotlang['users']['spam']['blocked_only_support'] = "⛔ حساب شما مسدود است.
+
+✍️ دلیل: %s
+
+فقط امکان ارسال پیام به پشتیبانی وجود دارد.";
+$textbotlang['users']['spam']['support_sent'] = "✅ پیام شما برای پشتیبانی ارسال شد.\nپس از بررسی، در صورت امکان حساب آزاد می‌شود.";
+$textbotlang['users']['spam']['btn_support'] = "📨 ارسال پیام به پشتیبانی";
+
 $textbotlang['users']['online'] = "آنلاین";
 $textbotlang['users']['offline'] = "آفلاین";
 $textbotlang['users']['unlimited'] = "نامحدود";
