@@ -183,7 +183,8 @@ if ($user['username'] == "none" || $user['username'] == null) {
     update("user", "username", $username, "id", $from_id);
 }
 #-----------User_Status------------#
-if ($user['User_Status'] == "block") {
+// ادمین‌ها حتی اگر وضعیت block داشته باشند محدود نمی‌شوند
+if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('strval', (array)$admin_ids), true)) {
     $kb_block_support = json_encode([
         'inline_keyboard' => [
             [
@@ -422,7 +423,8 @@ update("user", "last_message_time", $timebot, "id", $from_id);
  */
 $__spam_gap_reset = 3;
 $__spam_limit = 25;
-if (!in_array($from_id, $admin_ids)) {
+$__is_admin = in_array(strval($from_id), array_map('strval', (array)($admin_ids ?? [])), true);
+if (!$__is_admin) {
     if ($__gap >= $__spam_gap_reset) {
         update("user", "message_count", "1", "id", $from_id);
     } else {

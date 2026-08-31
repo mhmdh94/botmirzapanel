@@ -869,6 +869,11 @@ if ($datain == "ontestshowpanel") {
 elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
     $userblock = select("user", "*", "id", $iduser, "select");
+    global $admin_ids;
+    if (in_array(strval($iduser), array_map('strval', (array)($admin_ids ?? [])), true)) {
+        sendmessage($from_id, "❌ امکان مسدود کردن ادمین وجود ندارد.", $backadmin, 'HTML');
+        return;
+    }
     if ($userblock['User_Status'] == "block") {
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockedUser'], $backadmin, 'HTML');
         return;
