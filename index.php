@@ -409,15 +409,18 @@ if (strpos($text, "/start ") !== false) {
     }
 }
 $timebot = time();
-$TimeLastMessage = $timebot - intval($user['last_message_time']);
-if (floor($TimeLastMessage / 60) >= 1) {
+$TimeLastMessage = $timebot - intval($user['last_message_time'] ?? 0);
+// ضداسپم اصلاح‌شده: پنجره ۴۵ثانیه، سقف ۶۰ کلیک (قبلاً ۳۵/۶۰ثانیه باعث بلاک اشتباه هنگام کندی ربات می‌شد)
+$__spam_window = 45;
+$__spam_limit = 60;
+if ($TimeLastMessage >= $__spam_window) {
     update("user", "last_message_time", $timebot, "id", $from_id);
     update("user", "message_count", "1", "id", $from_id);
 } else {
     if (!in_array($from_id, $admin_ids)) {
-        $addmessage = intval($user['message_count']) + 1;
+        $addmessage = intval($user['message_count'] ?? 0) + 1;
         update("user", "message_count", $addmessage, "id", $from_id);
-        if ($user['message_count'] >= "35") {
+        if ($addmessage >= $__spam_limit) {
             $User_Status = "block";
             update("user", "User_Status", $User_Status, "id", $from_id);
             update("user", "description_blocking", $textbotlang['users']['spamtext'], "id", $from_id);

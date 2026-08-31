@@ -903,6 +903,7 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     }
     update("user", "User_Status", "Active", "id", $iduser);
     update("user", "description_blocking", "", "id", $iduser);
+    update("user", "message_count", "0", "id", $iduser);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['UserUnblocked'], $keyboardadmin, 'HTML');
     if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['unblock_user'])) {
         $uu_name = is_array($userunblock) ? ($userunblock['username'] ?? '-') : '-';
@@ -929,6 +930,83 @@ elseif ($text == $textbotlang['Admin']['changetext']['ruletext']) {
 if ($text == $textbotlang['Admin']['keyboardadmin']['user_services']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $User_Services, 'HTML');
 }
+
+#----------- list blocked users ------------#
+if ($text == ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها')) {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT id, username, description_blocking FROM user WHERE User_Status = 'block' ORDER BY id DESC LIMIT 80");
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Exception $e) {
+        $rows = [];
+    }
+    if (empty($rows)) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['blocked_empty'] ?? 'هیچ کاربر مسدودی نیست.', $User_Services, 'HTML');
+        return;
+    }
+    try {
+        $total = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status = 'block'")->fetchColumn());
+    } catch (Exception $e) {
+        $total = count($rows);
+    }
+    $lines = [];
+    foreach ($rows as $r) {
+        $uid = $r['id'] ?? '-';
+        $un = !empty($r['username']) ? $r['username'] : '-';
+        $reason = trim(strval($r['description_blocking'] ?? ''));
+        if ($reason === '') {
+            $reason = '-';
+        }
+        if (function_exists('mb_substr')) {
+            $reason = mb_substr($reason, 0, 40);
+        } else {
+            $reason = substr($reason, 0, 40);
+        }
+        $lines[] = "🆔 <code>{$uid}</code> | @{$un}\n✍️ {$reason}";
+    }
+    $msg = "🚫 <b>کاربران مسدود</b>\nتعداد کل: <b>{$total}</b>" . ($total > 80 ? " (نمایش ۸۰ مورد آخر)" : "") . "\n\n" . implode("\n\n", $lines);
+    if (strlen($msg) > 3900) {
+        $msg = substr($msg, 0, 3900) . "\n…";
+    }
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['unblock_all'] ?? '✅ خارج کردن همه از مسدودی', 'callback_data' => 'unblock_all_users_confirm'],
+            ],
+        ],
+    ]);
+    sendmessage($from_id, $msg, $kb, 'HTML');
+}
+if ($datain == 'unblock_all_users_confirm') {
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => '✅ بله، همه آزاد شوند', 'callback_data' => 'unblock_all_users_yes'],
+                ['text' => '❌ انصراف', 'callback_data' => 'unblock_all_users_no'],
+            ],
+        ],
+    ]);
+    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['ManageUser']['unblock_all_confirm'] ?? 'آیا مطمئن هستید؟', $kb);
+}
+if ($datain == 'unblock_all_users_no') {
+    Editmessagetext($from_id, $message_id, '❌ لغو شد.', null);
+}
+if ($datain == 'unblock_all_users_yes') {
+    global $pdo;
+    $n = 0;
+    try {
+        $stmt = $pdo->prepare("UPDATE user SET User_Status = 'Active', description_blocking = '', message_count = 0 WHERE User_Status = 'block'");
+        $stmt->execute();
+        $n = $stmt->rowCount();
+    } catch (Exception $e) {
+        $n = 0;
+    }
+    Editmessagetext($from_id, $message_id, sprintf($textbotlang['Admin']['ManageUser']['unblock_all_done'] ?? '✅ %s کاربر آزاد شدند.', $n), null);
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_unblock', "🔓 <b>آزادسازی گروهی مسدودها</b>\n👤 توسط ادمین: <code>{$from_id}</code>\n✅ تعداد: <b>{$n}</b>");
+    }
+}
+
 #-------------------------#
 elseif (preg_match('/confirmnumber_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];

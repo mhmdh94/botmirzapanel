@@ -993,6 +993,12 @@ $textbotlang['Admin']['ManageUser']['DescriptionBlock'] = "✍️ دلیل مس�
 $textbotlang['Admin']['ManageUser']['GetIdUserunblock'] = "👤 آیدی عددی کاربر را ارسال کنید";
 $textbotlang['Admin']['ManageUser']['UserNotBlock'] = "کاربر بلاک نیست 😐";
 $textbotlang['Admin']['ManageUser']['UserUnblocked'] = "کاربر از حالت مسدودی خارج گردید. 🤩";
+$textbotlang['Admin']['ManageUser']['list_blocked'] = "🚫 مسدود شده‌ها";
+$textbotlang['Admin']['ManageUser']['unblock_all'] = "✅ خارج کردن همه از مسدودی";
+$textbotlang['Admin']['ManageUser']['unblock_all_confirm'] = "⚠️ آیا مطمئن هستید همه کاربران مسدود از مسدودی خارج شوند؟";
+$textbotlang['Admin']['ManageUser']['unblock_all_done'] = "✅ تعداد <b>%s</b> کاربر از مسدودی خارج شدند.";
+$textbotlang['Admin']['ManageUser']['blocked_empty'] = "📭 هیچ کاربر مسدودی وجود ندارد.";
+
 $textbotlang['Admin']['ManageUser']['Acceptedphone'] = "تایید شده";
 $textbotlang['Admin']['ManageUser']['Failedphone'] = "تایید نشده";
 $textbotlang['Admin']['ManageUser']['dataorder'] = " تاریخ ثبت نشده است";

@@ -229,6 +229,7 @@ $User_Services = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['ManageUser']['searchorder']]],
         [['text' => $textbotlang['Admin']['ManageUser']['removeorderbtn']], ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll']]],
+        [['text' => $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها']],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true
