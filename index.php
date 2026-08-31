@@ -221,7 +221,39 @@ if ($user['User_Status'] == "block") {
             );
             return;
         }
-        if ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
+        // دستورات منو / استارت نباید به‌عنوان پیام پشتیبانی بروند
+        $__nav_blocked = array_filter([
+            $textbotlang['users']['backhome'] ?? null,
+            $textbotlang['users']['backmenu'] ?? null,
+            $textbotlang['users']['back'] ?? null,
+            $datatextbot['text_support'] ?? null,
+            $datatextbot['text_sell'] ?? null,
+            $datatextbot['text_Purchased_services'] ?? null,
+            $datatextbot['text_Add_Balance'] ?? null,
+            $datatextbot['text_account'] ?? null,
+            $datatextbot['text_tariff'] ?? null,
+            $datatextbot['text_affiliates'] ?? null,
+            $datatextbot['text_help'] ?? null,
+            $datatextbot['text_start'] ?? null,
+            '/start',
+            '/support',
+            '/help',
+            '/new',
+            '/renew',
+            '/status',
+        ]);
+        if ($datain == 'backuser' || (isset($text) && is_string($text) && (
+            in_array($text, $__nav_blocked, true)
+            || strpos($text, '/start') === 0
+            || strpos($text, 'منوی اصلی') !== false
+            || strpos($text, 'خرید') !== false
+            || strpos($text, 'سرویس') !== false
+            || strpos($text, 'افزایش موجودی') !== false
+        ))) {
+            step('home', $from_id);
+            // می‌افتد به پیام مسدودی پایین همین بلاک
+            $user['step'] = 'home';
+        } elseif ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
             sendmessage(
                 $from_id,
                 $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
@@ -229,7 +261,7 @@ if ($user['User_Status'] == "block") {
                 'HTML'
             );
             return;
-        }
+        } else {
         // ارسال به ادمین‌ها
         if (function_exists('ensureSupportPendingTable')) {
             ensureSupportPendingTable();
@@ -296,8 +328,9 @@ if ($user['User_Status'] == "block") {
             $kb_block_support,
             'HTML'
         );
-        step('gettextpm_blocked', $from_id);
+        step('home', $from_id);
         return;
+        } // end else: real support message
     }
     // هر چیز دیگر برای کاربر مسدود: فقط پیام + دکمه پشتیبانی
     $reason = $user['description_blocking'] ?? '';
