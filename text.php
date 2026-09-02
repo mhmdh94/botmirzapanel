@@ -10,12 +10,12 @@ $textbotlang['users']['channel']['notconfirmed'] = "❌ هنوز عضو کانا
 لطفاً عضو شوید و دوباره «بررسی عضویت» را بزنید.";
 
 $textbotlang['users']['affiliates']['invalidMutual'] =
-    "❌ متأسفم؛ شما نمی‌توانید با کاربری که از دعوت‌شدگان شماست لینک شوید.";
+    "❌ شما نمی‌توانید با کاربری که از دعوت‌شدگان شماست لینک شوید.";
 
 $textbotlang['users']['Rules'] = "✅ قوانین تأیید شد.\nاز حالا می‌توانید از خدمات ربات استفاده کنید.";
-$textbotlang['users']['Rulesbtn'] = "♨️ بخش قوانین";
+$textbotlang['users']['Rulesbtn'] = "بخش قوانین";
 $textbotlang['users']['maangeuser'] = "👤 دکمه نام کاربری";
-$textbotlang['users']['RulesDescription'] = "♨️ <b>قوانین استفاده</b>
+$textbotlang['users']['RulesDescription'] = "<b>قوانین استفاده</b>
 
 1) به اطلاعیه‌های کانال توجه کنید.
 2) مسئولیت اشتراک‌گذاری اکانت با خودتان است.
@@ -55,7 +55,7 @@ $textbotlang['users']['spam']['btn_support'] = "📨 ارسال پیام به پ
 $textbotlang['users']['online'] = "آنلاین";
 $textbotlang['users']['offline'] = "آفلاین";
 $textbotlang['users']['unlimited'] = "نامحدود";
-$textbotlang['users']['start'] = "سلام، خوش آمدید 🌹
+$textbotlang['users']['start'] = "سلام، خوش آمدید.
 
 از منوی پایین می‌توانید سرویس بخرید، سرویس‌ها را مدیریت کنید یا موجودی را افزایش دهید.
 در صورت نیاز، از پشتیبانی پیام بفرستید.";
@@ -127,13 +127,13 @@ $textbotlang['users']['status']['LastTraffic'] = "حجم کل";
 $textbotlang['users']['status']['RemainingVolume'] = "حجم باقی‌مانده";
 $textbotlang['users']['status']['info'] = "📊 اطلاعات سرویس";
 $textbotlang['users']['status']['error'] = "⚠️ مشکلی پیش آمد.
-لطفاً چند لحظه بعد دوباره تلاش کنید یا با پشتیبانی در تماس باشید.";
+لطفاً چند لحظه بعد دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['status']['error_onhold'] = "⚠️ هنوز به سرویس متصل نشده‌اید.
 ابتدا یک‌بار متصل شوید، سپس تمدید کنید.";
 $textbotlang['users']['status']['error2'] = "⚠️ مراحل ناقص ماند.
 از منوی اصلی دوباره شروع کنید.";
 $textbotlang['users']['status']['usernotfound'] = "⚠️ این سرویس روی سرور یافت نشد.
-اگر تمدید کرده‌اید چند لحظه صبر کنید یا با پشتیبانی تماس بگیرید.";
+اگر تمدید کرده‌اید چند لحظه صبر کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗 دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
 $textbotlang['users']['status']['backlist'] = "🏠 لیست سرویس‌ها";
@@ -308,7 +308,7 @@ $textbotlang['users']['usertest']['usertestbtn'] = "🔑 اکانت تست";
 
 
 $textbotlang['users']['help']['title'] = "📚 آموزش";
-$textbotlang['users']['help']['disablehelp'] = "کاربر گرامی بخش آموزش درحال حاضر غیرفعال است. 😔";
+$textbotlang['users']['help']['disablehelp'] = "بخش آموزش در حال حاضر غیرفعال است.";
 $textbotlang['users']['help']['btninlinebuy'] = "📚 مشاهده آموزش استفاده ";
 
 
@@ -317,7 +317,7 @@ $textbotlang['users']['support']['sendmessageadmin'] = "✅ پیام شما بر
 به‌زودی از همین ربات پاسخ می‌گیرید.";
 $textbotlang['users']['support']['answermessage'] = "💬 پاسخ به پیام";
 $textbotlang['users']['support']['sendmessageuser'] = "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.
-پاسخ از همین ربات برایتان می‌آید.";
+پاسخ از همین ربات برای شما می‌آید.";
 $textbotlang['users']['support']['reply_btn'] = "💬 پاسخ به پشتیبانی";
 $textbotlang['users']['support']['btnsupport'] = "☎️ ابتدا «سوالات متداول» را ببینید.
 اگر پاسخ‌تان نبود، برای پشتیبانی پیام بفرستید.";
@@ -336,7 +336,7 @@ $textbotlang['users']['Balance']['priceinput'] = "💸 مبلغ را به توم
 $textbotlang['users']['Balance']['errorprice'] = "❌ فقط عدد لاتین وارد کنید (کیبورد انگلیسی).";
 $textbotlang['users']['Balance']['errorpricelimit'] = "❌ مبلغ باید بین <b>%s</b> و <b>%s</b> تومان باشد.";
 $textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت را انتخاب کنید:";
-$textbotlang['users']['moeny']['no_payment_method'] = "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در تماس باشید.";
+$textbotlang['users']['moeny']['no_payment_method'] = "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['Balance']['zarinpal'] = "❌ خطا 
     کمترین مبلغ برای  پرداخت در این درگاه 5000 تومان می‌باشد.";
 $textbotlang['users']['Balance']['linkpayments'] = "⏳ در حال ساخت لینک پرداخت…";
@@ -608,7 +608,7 @@ $textbotlang['users']['invalidusername'] ="❌ نام کاربری معتبر ن
 فقط انگلیسی و عدد، بدون فاصله و @
 دوباره بفرستید:";
 $textbotlang['users']['VerifyUser'] = "⚠️ حساب شما احراز نشده است جهت احراز هویت به اکانت پشتیبانی پیام دهید.";
-$textbotlang['users']['updatingbot'] = "❌ ربات درحال بروزرسانی است ساعتی دیگر مراجعه کنید";
+$textbotlang['users']['updatingbot'] = "❌ ربات در حال بروزرسانی است ساعتی دیگر مراجعه کنید";
 $textbotlang['users']['rulesaccept'] = "✅ قوانین را می پذیرم";
 $textbotlang['users']['customtextandrandom'] = 'متن دلخواه + عدد رندوم';
 $textbotlang['users']['customusernameorder'] = 'نام کاربری + عدد به ترتیب';
@@ -683,7 +683,7 @@ $textbotlang['users']['cron']['cronvolume'] = "📊 سرویس <code>%s</code>
 $textbotlang['users']['cron']['removeexpire'] = "⚠️ سرویس <code>%s</code> به‌دلیل عدم تمدید از لیست سرویس‌های شما حذف شد.
 
 برای تهیه سرویس جدید از «خرید سرویس» استفاده کنید.";
-$textbotlang['users']['cron']['sendedmessage'] = "📌 پیام برای تمامی کاربران ارسال گردید.";
+$textbotlang['users']['cron']['sendedmessage'] = "📌 پیام برای تمامی کاربران ارسال شد.";
 
 
 $textbotlang['users']['search']['disabled'] = "⛔️ جستجوی سرویس فعلاً غیرفعال است.";
@@ -802,12 +802,12 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 
 
 $textbotlang['Admin']['manageadmin']['getid'] = "آیدی عددی ادمین را بفرستید:";
-$textbotlang['Admin']['manageadmin']['addadminset'] ="🥳 ادمین با موفقیت اضافه گردید";
+$textbotlang['Admin']['manageadmin']['addadminset'] ="🥳 ادمین با موفقیت اضافه شد";
 $textbotlang['Admin']['manageadmin']['setrule'] ="⭕️ سطح دسترسی ادمین را ارسال کنید
 سطح دسترسی administrator به تمامی بخش ها دسترسی دارد
 سطح دسترسی Seller فقط به بخش های تایید رسید  ، خدمات کاربر ، آمار ربات دسترسی دارید
 سطح دسترسی support به بخش های خدمات کاربر ، پاسخ پیام پشتیبانی دسترسی دارد";
-$textbotlang['Admin']['manageadmin']['removedadmin'] ="✅ ادمین با موفقیت حذف گردید.";
+$textbotlang['Admin']['manageadmin']['removedadmin'] ="✅ ادمین با موفقیت حذف شد.";
 $textbotlang['Admin']['manageadmin']['InfoAdd'] ="❌امکان حذف ادمین اصلی وجود ندارد برای تغییر ادمین اصلی باید از فایل config.php  ابتدا ایدی عددی ادمین اصلی  را تغییر سپس از این بخش حذف نمایید";
 $textbotlang['Admin']['manageadmin']['showlistbtn'] = "📜 مشاهده لیست ادمین ها";
 $textbotlang['Admin']['manageadmin']['showlist'] = "👨‍🔧 آیدی عددی ادمین ها: \n\n %s";
@@ -816,7 +816,7 @@ $textbotlang['Admin']['manageadmin']['showlist'] = "👨‍🔧 آیدی عدد�
 
 $textbotlang['Admin']['manageusertest']['getidlimit'] = " ⚜️ آیدی عددی کاربر را ارسال کنید
 توضیحات: در این بخش می‌توانید محدودیت ساخت اکانت تست را برای کاربر تغییر دهید. بطور پیشفرض محدودیت ساخت عدد 1 است.";
-$textbotlang['Admin']['getlimitusertest']['getid'] = "آیدی عددی دریافت شد لطفا تعداد ساخت اکانت تست را ارسال کنید";
+$textbotlang['Admin']['getlimitusertest']['getid'] = "آیدی عددی دریافت شد لطفاً تعداد ساخت اکانت تست را ارسال کنید";
 $textbotlang['Admin']['getlimitusertest']['setlimit'] = "محدودیت برای کاربر تنظیم گردید.";
 $textbotlang['Admin']['getlimitusertest']['limitall'] = "تعداد ساخت اکانت تست را وارد نمایید.";
 $textbotlang['Admin']['getlimitusertest']['setlimitall'] = "محدودیت ساخت اکانت برای تمام کاربران تنظیم شد";
@@ -834,12 +834,12 @@ $textbotlang['Admin']['sumporoduct'] = "🛍 جمع کل سفارشات";
 $textbotlang['Admin']['accept'] = "تایید";
 
 $textbotlang['Admin']['managepanel']['selectpanel'] = "پنل خود را انتخاب کنید";
-$textbotlang['Admin']['managepanel']['paneldeactive'] = "❌ پنل درحال حاضر فعال نمی‌باشد.";
-$textbotlang['Admin']['managepanel']['notsetlinksub'] = "❌ ادمین عزیز پنل زیر فعال نیست جهت فعالسازی پنل باید حتما لینک ساب را از پنل ثنایی فعال و داخل ربات تنظیم کنید سپس در صورتی که می‌خواهید کانفیگ دهید یا لینک ساب از مدیریت پنل می توانید تنظیم نمایید.
+$textbotlang['Admin']['managepanel']['paneldeactive'] = "❌ پنل در حال حاضر فعال نمی‌باشد.";
+$textbotlang['Admin']['managepanel']['notsetlinksub'] = "❌ پنل زیر فعال نیست. برای فعال‌سازی باید حتما لینک ساب را از پنل ثنایی فعال و داخل ربات تنظیم کنید سپس در صورتی که می‌خواهید کانفیگ دهید یا لینک ساب از مدیریت پنل می توانید تنظیم نمایید.
 نام پنل : %s";
 $textbotlang['Admin']['managepanel']['connectx-ui'] = "✅ پنل متصل است";
 $textbotlang['Admin']['managepanel']['notconnect'] = "❌ پنل متصل نیست";
-$textbotlang['Admin']['managepanel']['errorstatuspanel'] = "امکان اتصال به پنل  وجود ندارد 😔
+$textbotlang['Admin']['managepanel']['errorstatuspanel'] = "امکان اتصال به پنل  وجود ندارد
             
 ⭕️ در صورت وارد کردن دامنه طبق شرایط اعلام شده  این خطا بدلیل  بسته بودن خروجی پورت پنل روی هاست ربات اتفاق می افتد.
     
@@ -858,9 +858,9 @@ $textbotlang['Admin']['managepanel']['addpanelurl'] = "🔗 نام پنل ذخی
 $textbotlang['Admin']['managepanel']['Invalid-domain'] = "🔗 آدرس دامنه نامعتبر است";
 $textbotlang['Admin']['managepanel']['usernameset'] ="👤 آدرس پنل ذخیره شد حالا نام کاربری  را ارسال کنید";
 $textbotlang['Admin']['managepanel']['getpassword'] = "🔑  رمز عبور پنل  خود را وارد نمایید";
-$textbotlang['Admin']['managepanel']['addedpanel'] = "تبریک پنل شما با موفقیت اضافه گردید";
+$textbotlang['Admin']['managepanel']['addedpanel'] = "تبریک پنل شما با موفقیت اضافه شد";
 $textbotlang['Admin']['managepanel']['GetRemoveNamePanel'] = "پنلی که می‌خواهید حذف کنید را انتخاب کنید.";
-$textbotlang['Admin']['managepanel']['RemovedPanel'] = "پنل با موفقیت حذف گردید";
+$textbotlang['Admin']['managepanel']['RemovedPanel'] = "پنل با موفقیت حذف شد";
 $textbotlang['Admin']['managepanel']['nullpanel'] = "⭕️ موقعیتی یافت نشد برای رفع مشکل با پشتیبانی در ارتباط باشید";
 $textbotlang['Admin']['managepanel']['nullpaneladmin'] = "پنل تعریف نشده است ابتدا پنل را تعریف کنید سپس محصول اضافه کنید";
 $textbotlang['Admin']['managepanel']['getloc'] = "برای ویرایش پنل نام پنل را ارسال کنید";
@@ -981,11 +981,11 @@ $textbotlang['Admin']['ManageUser']['BlockedUser'] = "کاربر از قبل ب�
 $textbotlang['Admin']['ManageUser']['BlockUser'] = "🚫 کاربر مسدود شد حالا دلیل مسدودی هم ارسال کنید.";
 $textbotlang['Admin']['ManageUser']['RemoveService'] = "در این بخش می توانید  سرویسی  داخل ربات حذف نمایید.
 برای حذف سرویس نام کاربری که داخل پنل ثبت شده بود را ارسال نمایید";
-$textbotlang['Admin']['ManageUser']['RemovedService'] = "✅ سرویس کاربر حذف گردید.";
+$textbotlang['Admin']['ManageUser']['RemovedService'] = "✅ سرویس کاربر حذف شد.";
 $textbotlang['Admin']['ManageUser']['DescriptionBlock'] = "✍️ دلیل مسدودی کاربر ذخیره شد";
 $textbotlang['Admin']['ManageUser']['GetIdUserunblock'] = "👤 آیدی عددی کاربر را ارسال کنید";
 $textbotlang['Admin']['ManageUser']['UserNotBlock'] = "کاربر بلاک نیست 😐";
-$textbotlang['Admin']['ManageUser']['UserUnblocked'] = "کاربر از حالت مسدودی خارج گردید. 🤩";
+$textbotlang['Admin']['ManageUser']['UserUnblocked'] = "کاربر از حالت مسدودی خارج شد.";
 $textbotlang['Admin']['ManageUser']['list_blocked'] = "🚫 مسدود شده‌ها";
 $textbotlang['Admin']['ManageUser']['unblock_all'] = "✅ خارج کردن همه از مسدودی";
 $textbotlang['Admin']['ManageUser']['unblock_all_confirm'] = "⚠️ آیا مطمئن هستید همه کاربران مسدود از مسدودی خارج شوند؟";
@@ -1072,7 +1072,7 @@ $textbotlang['Admin']['systemsms']['acceptsend'] = "در صورت تایید م�
 $textbotlang['Admin']['systemsms']['cancelsend'] = "لغو ارسال";
 $textbotlang['Admin']['systemsms']['sendingmessage'] = "📌 پیام شما  در صف ارسال قرار گرفت پس از ارسال پیام تایید برای شما ارسال می شود ( ارسال پیام ممکن است  حداکثر 8 ساعت زمان ببرد بدلیل محدودیت های تلگرام )";
 $textbotlang['Admin']['systemsms']['canceledmessage'] = "📌 ارسال پیام لغو گردید.";
-$textbotlang['Admin']['systemsms']['sendingforward'] = "درحال ارسال پیام";
+$textbotlang['Admin']['systemsms']['sendingforward'] = "در حال ارسال پیام";
 $textbotlang['Admin']['systemsms']['sendforwardtousers'] = "✅ پیام به تمامی کاربران ارسال شد";
 $textbotlang['Admin']['systemsms']['sendmessageauser'] = "✍️ ارسال پیام برای یک کاربر";
 $textbotlang['Admin']['systemsms']['sendedmessagetouser'] = "📩 یک پیام از طرف مدیریت ارسال شده است
@@ -1110,7 +1110,7 @@ $textbotlang['Admin']['Help']['GetAddDecHelp'] = " 🔗 نام آموزش ذخی
 🔸 توضیحات می‌توانید همراه با عکس یا فیلم ارسال کنید";
 $textbotlang['Admin']['Help']['SaveHelp'] = "✅ آموزش با موفقیت ذخیره شد";
 $textbotlang['Admin']['Help']['SelectName'] = "نام آموزش را انتخاب کنید";
-$textbotlang['Admin']['Help']['RemoveHelp'] = "✅ آموزش حذف گردید.";
+$textbotlang['Admin']['Help']['RemoveHelp'] = "✅ آموزش حذف شد.";
 $textbotlang['Admin']['Help']['statushelp'] = "💡 وضعیت بخش آموزش";
 $textbotlang['Admin']['Help']['change']['name'] = "ویرایش نام";
 $textbotlang['Admin']['Help']['change']['sendnewname'] = "نام جدید را ارسال کنید";
@@ -1137,10 +1137,10 @@ $textbotlang['Admin']['Status']['onhold'] = "وضعیت قابلیت اولین 
 $textbotlang['Admin']['Status']['onstatus'] = "روشن شد";
 $textbotlang['Admin']['Status']['offstatus'] = "خاموش شد";
 $textbotlang['Admin']['Status']['subTitle'] = "در این قسمت می توانید تنظیم کنید که کاربر بعد از خرید لینک سابسکرایبشن دریافت کند یا نه";
-$textbotlang['Admin']['Status']['subStatusOff'] = "⭕️ ارسال لینک اشتراک غیرفعال گردید. از این پس کاربر پس از خرید لینک سابسکرایب دریافت نخواهد کرد.";
-$textbotlang['Admin']['Status']['subStatuson'] = "لینک سابسکرایب فعال گردید. از این پس کاربر پس خرید لینک سابسکرایب دریافت خواهد کرد";
+$textbotlang['Admin']['Status']['subStatusOff'] = "⭕️ ارسال لینک اشتراک غیرفعال شد. از این پس کاربر پس از خرید لینک سابسکرایب دریافت نخواهد کرد.";
+$textbotlang['Admin']['Status']['subStatuson'] = "لینک سابسکرایب فعال شد. از این پس کاربر پس خرید لینک سابسکرایب دریافت خواهد کرد";
 $textbotlang['Admin']['Status']['configTitle'] = "در این قسمت می توانید تعیین کنید که بعد از خرید کاربر کانفیگ های دستی دریافت کند یا خیر";
-$textbotlang['Admin']['Status']['configStatusOff'] = "⭕️ ارسال کانفیگ دستی غیرفعال گردید. از این پس کاربر پس از خرید  کانفیگ دستی دریافت نخواهد کرد.";
+$textbotlang['Admin']['Status']['configStatusOff'] = "⭕️ ارسال کانفیگ دستی غیرفعال شد. از این پس کاربر پس از خرید  کانفیگ دستی دریافت نخواهد کرد.";
 $textbotlang['Admin']['Status']['configStatuson'] = "ارسال کانفیگ بعد خرید فعال شد از این پس کاربران کانفیگ دستی هم دریافت خواهند کرد";
 $textbotlang['Admin']['Status']['affiliates'] = "📌 در این بخش می توانید قابلیت مشارکت در فروش در ربات را خاموش یا روشن کنید";
 $textbotlang['Admin']['Status']['affiliatesStatusOff'] = "قابلیت مشارکت در فروش غیرفعال شد";
@@ -1178,7 +1178,7 @@ $textbotlang['Admin']['Product']['Rmove_location'] ="📌 موقعیت محصو�
 $textbotlang['Admin']['Product']['selectRemoveProduct'] ="محصولی که میخوای حذف کنی ر و انتخاب کن";
 $textbotlang['Admin']['Product']['selectEditProduct'] ="محصولی که میخوای ویرایش کنی رو انتخاب کن";
 $textbotlang['Admin']['Product']['selectfieldProduct'] ="فیلدی که مخیواهید ویرایش کنید را انتخاب کنید";
-$textbotlang['Admin']['Product']['RemoveedProduct'] ="✅ محصول با موفقیت حذف گردید.";
+$textbotlang['Admin']['Product']['RemoveedProduct'] ="✅ محصول با موفقیت حذف شد.";
 $textbotlang['Admin']['Product']['AddProductStepOne'] = " ابتدا نام اشتراک خود را ارسال نمایید
 ⚠️ نکات هنگام وارد کردن ام محصول:
 • در کنار نام اشتراک حتما قیمت اشتراک را هم وارد کنید.
@@ -1244,8 +1244,8 @@ $textbotlang['Admin']['Balance']['AddBalanceUser'] = "✅ مبلغ به موجو
 $textbotlang['Admin']['Balance']['NegativeBalanceUser'] = "✅ مبلغ از موجودی کاربر کسر شد";
 $textbotlang['Admin']['Balance']['addallbalance'] = "📌 مبلغ را برای شارژ همگانی ارسال نمایید";
 $textbotlang['Admin']['Balance']['maxpricebalance'] = "حداکثر ۱۰۰ میلیون تومان می‌باشد";
-$textbotlang['Admin']['Balance']['AddedBalance'] = "💎 کاربر عزیز مبلغ %s تومان به موجودی کیف پول تان اضافه گردید.";
-$textbotlang['Admin']['Balance']['ReduceBalance'] = "❌ کاربر عزیز مبلغ %s تومان از  موجودی کیف پول تان کسر گردید.";
+$textbotlang['Admin']['Balance']['AddedBalance'] = "💎 مبلغ %s تومان به موجودی کیف پول شما اضافه شد.";
+$textbotlang['Admin']['Balance']['ReduceBalance'] = "❌ مبلغ %s تومان از موجودی کیف پول شما کسر شد.";
 $textbotlang['Admin']['Balance']['SendBalanceAll'] = "👥 شارژ همگانی";
 
 
@@ -1256,9 +1256,9 @@ $textbotlang['Admin']['Discount']['titlebtnremove'] ="❌ حذف کد هدیه";
 $textbotlang['Admin']['Discount']['GetCode'] ="کدی را برای کدهدیه ارسال کنید";
 $textbotlang['Admin']['Discount']['ErrorCode'] ="کد نامعتبر است کد باید حتما انگلیسی بدون کاراکتر اضافی باشد";
 $textbotlang['Admin']['Discount']['PriceCode'] ="کد دریافت شد حالا مبلغ کد  رو بفرست";
-$textbotlang['Admin']['Discount']['SaveCode'] ="✅  کد با موفقیت ثبت گردید";
+$textbotlang['Admin']['Discount']['SaveCode'] ="✅  کد با موفقیت ثبت شد";
 $textbotlang['Admin']['Discount']['RemoveCode'] ="کد که میخوای حذف کنی رو انتخاب کن";
-$textbotlang['Admin']['Discount']['RemovedCode'] ="✅ کد  با موفقیت حذف گردید.";
+$textbotlang['Admin']['Discount']['RemovedCode'] ="✅ کد  با موفقیت حذف شد.";
 $textbotlang['Admin']['Discount']['NotCode'] = "❌ خطا 
 📝 کد هدیه انتخابی وجود ندارد";
 
@@ -1269,7 +1269,7 @@ $textbotlang['Admin']['addorder']['onestep'] = "📌 جهت اضافه کردن 
 $textbotlang['Admin']['addorder']['user_exits'] = "❌ این نام کاربری از قبل داخل ربات وجود دارد.";
 $textbotlang['Admin']['addorder']['getname_panel'] = "📌 پنل خود را انتخاب کنید";
 $textbotlang['Admin']['addorder']['get_product'] = "📌 محصول را انتخاب نمایید";
-$textbotlang['Admin']['addorder']['added_order'] = "✅ سفارش با موفقیت به لیست سرویس های کاربر اضافه گردید.";
+$textbotlang['Admin']['addorder']['added_order'] = "✅ سفارش با موفقیت به لیست سرویس های کاربر اضافه شد.";
 
 $textbotlang['Admin']['AlgortimeUsername']['SaveData'] = "✅روش ساخت نام کاربری با موفقیت آپدیت شد";
 
@@ -1285,7 +1285,7 @@ $textbotlang['Admin']['Discountsell']['GetCode'] ="کدی را برای کد ت�
 $textbotlang['Admin']['Discountsell']['getlimit'] ="محدودیت استفاده برای کاربر را ارسال کنید";
 $textbotlang['Admin']['Discount']['PriceCodesell'] ="کد دریافت شد حالا درصد کد  را بفرست";
 $textbotlang['Admin']['Discount']['invalidcodedis'] ="❌  کد تخفیف نامعتبر است";
-$textbotlang['Admin']['Discount']['Discountused'] = "❌ این کد تخفیف وجود دارد لطفا از کد تخفیف دیگری استفاده کنید";
+$textbotlang['Admin']['Discount']['Discountused'] = "❌ این کد تخفیف وجود دارد لطفاً از کد تخفیف دیگری استفاده کنید";
 $textbotlang['Admin']['Discount']['typediscount'] = "📌 کد تخفیف برای خرید اول باشد یا همه خرید ها
     0 : همه خرید ها
     1 : خرید اول ";
@@ -1353,17 +1353,17 @@ $textbotlang['Admin']['affiliate']['giftstart'] = "🌟 مبلغ هدیه است
 
 $textbotlang['Admin']['cron']['test']['active'] = "فعال شدن کرون تست";
 $textbotlang['Admin']['cron']['test']['disable'] = "غیر فعال شدن کرون تست";
-$textbotlang['Admin']['cron']['test']['disabled'] = "کرون جاب غیرفعال گردید";
-$textbotlang['Admin']['cron']['test']['dec'] = "✅ کرون جاب فعال گردید این کرون هر 15 دقیقه اجرا می شود";
+$textbotlang['Admin']['cron']['test']['disabled'] = "کرون جاب غیرفعال شد";
+$textbotlang['Admin']['cron']['test']['dec'] = "✅ کرون جاب فعال شد این کرون هر 15 دقیقه اجرا می شود";
 $textbotlang['Admin']['cron']['volume']['active'] = "فعال شدن کرون حجم";
 $textbotlang['Admin']['cron']['volume']['disable'] = "غیر فعال شدن کرون حجم";
-$textbotlang['Admin']['cron']['volume']['dec'] = "✅ کرون جاب فعال گردید این کرون هر 1 دقیقه اجرا می شود";
+$textbotlang['Admin']['cron']['volume']['dec'] = "✅ کرون جاب فعال شد این کرون هر 1 دقیقه اجرا می شود";
 $textbotlang['Admin']['cron']['time']['active'] = "فعال شدن کرون زمان";
 $textbotlang['Admin']['cron']['time']['disable'] = "غیر فعال شدن کرون زمان";
-$textbotlang['Admin']['cron']['time']['dec'] = "✅ کرون جاب فعال گردید این کرون هر 1 دقیقه اجرا می شود";
+$textbotlang['Admin']['cron']['time']['dec'] = "✅ کرون جاب فعال شد این کرون هر 1 دقیقه اجرا می شود";
 $textbotlang['Admin']['cron']['remove']['active'] = "فعال شدن کرون حذف";
 $textbotlang['Admin']['cron']['remove']['disable'] = "غیر فعال شدن کرون حذف";
-$textbotlang['Admin']['cron']['remove']['dec'] = "✅ کرون جاب فعال گردید این کرون هر 1 دقیقه اجرا می شود";
+$textbotlang['Admin']['cron']['remove']['dec'] = "✅ کرون جاب فعال شد این کرون هر 1 دقیقه اجرا می شود";
 $textbotlang['Admin']['cron']['remove']['timeset'] = "زمان حذف اکانت";
 $textbotlang['Admin']['cron']['remove']['dectime'] = "زمان خود را برای حذف اکانت های اکسپایر شده ارسال کنید.
 نکته : این بخش سرویس هایی که x روز از زمان انقضا شان گذشته باشد حذف می کند. 
@@ -1415,9 +1415,9 @@ $textbotlang['Admin']['category']['status'] = "🕹 دسته بندی";
 $textbotlang['Admin']['category']['add'] = "🛒 اضافه کردن دسته بندی";
 $textbotlang['Admin']['category']['remove'] = "❌ حذف دسته بندی";
 $textbotlang['Admin']['category']['getname'] = "📌 جهت اضافه کردن دسته بندی نام دسته بندی را ارسال کنید.";
-$textbotlang['Admin']['category']['addedcategry'] = "✅ دسته بندی با موفقیت اضافه گردید.";
+$textbotlang['Admin']['category']['addedcategry'] = "✅ دسته بندی با موفقیت اضافه شد.";
 $textbotlang['Admin']['category']['getcatgory'] = "📌 دسته بندی خود را جهت حذف انتخاب کنید";
-$textbotlang['Admin']['category']['removedcategory'] = "✅ دسته بندی با موفقیت حذف گردید.";
+$textbotlang['Admin']['category']['removedcategory'] = "✅ دسته بندی با موفقیت حذف شد.";
 $textbotlang['Admin']['category']['added'] = "📌 دسته بندی خود را جهت حذف انتخاب کنید";
 
 
@@ -1743,7 +1743,7 @@ $textbotlang['users']['Extra_volume']['disabled'] = "⛔️ خرید حجم اض
 $textbotlang['Admin']['Status']['status_tariff_list'] = "دکمه لیست تعرفه";
 $textbotlang['users']['sell']['tariff_disabled'] = "⛔️ نمایش لیست تعرفه فعلا غیرفعال است.";
 $textbotlang['users']['sell']['buy_disabled'] = "⛔️ فعلا امکان خرید سرویس جدید وجود ندارد.
-لطفا بعداً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
+لطفاً بعداً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['usertest']['disabled'] = "⛔️ ساخت اکانت تست فعلا غیرفعال است.";
 $textbotlang['users']['balance_menu'] = "💰 موجودی کیف پول شما: %s تومان";
 
