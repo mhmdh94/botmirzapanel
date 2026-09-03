@@ -356,7 +356,10 @@ $textbotlang['users']['Balance']['Confirmpay'] = "✅ <b>پرداخت تأیید
 $textbotlang['users']['Balance']['Invalid-receipt'] = "❌ رسید نامعتبر است.
 فقط <b>عکس</b> رسید را ارسال کنید (نه فایل PDF یا متن).";
 $textbotlang['users']['Balance']['Confirmpaying'] = "✅ تأیید پرداخت";
-$textbotlang['users']['Balance']['Send-receipt'] = "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید.";
+$textbotlang['users']['Balance']['Send-receipt'] = "🚀 <b>رسید ارسال شد</b>
+
+پس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.
+لطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.";
 $textbotlang['users']['Balance']['Send-receip-buy'] = "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، سفارش شما انجام می‌شود.\nلطفاً صبور باشید.";
 
 
