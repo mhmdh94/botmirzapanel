@@ -359,13 +359,18 @@ if ($text == $textbotlang['Admin']['managepanel']['btnshowconnect']) {
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['manageadmin']['showlistbtn']) {
+    if (!function_exists('isMainBotAdmin') || !isMainBotAdmin($from_id)) {
+        sendmessage($from_id, "❌ این بخش فقط برای ادمین اصلی قابل دسترسی است.", function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel, 'HTML');
+        return;
+    }
     $List_admin = null;
     $admin_ids = array_filter($admin_ids);
     foreach ($admin_ids as $admin) {
         $List_admin .= "$admin\n";
     }
     $list_admin_text = sprintf($textbotlang['Admin']['manageadmin']['showlist'], $List_admin);
-    sendmessage($from_id, $list_admin_text, $admin_section_panel, 'HTML');
+    $kb_admin_sec = function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel;
+    sendmessage($from_id, $list_admin_text, $kb_admin_sec, 'HTML');
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['selecttypepanel'], $typepanel, 'HTML');
@@ -1158,7 +1163,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['shop_section']) {
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['admin_section']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $admin_section_panel, 'HTML');
+    $kb_admin_sec = function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel;
+    sendmessage($from_id, $textbotlang['users']['selectoption'], $kb_admin_sec, 'HTML');
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {

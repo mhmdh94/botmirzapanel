@@ -2917,6 +2917,36 @@ function isMainBotAdmin($user_id)
     return false;
 }
 
+
+/**
+ * کیبورد بخش ادمین‌ها — دکمه «مشاهده لیست» فقط برای ادمین اصلی
+ */
+function getAdminSectionPanelKeyboard($user_id = null)
+{
+    global $textbotlang, $from_id;
+    if ($user_id === null) {
+        $user_id = $from_id ?? 0;
+    }
+    $rows = [
+        [
+            ['text' => $textbotlang['Admin']['Addedadmin']],
+            ['text' => $textbotlang['Admin']['Removeedadmin']],
+        ],
+    ];
+    if (function_exists('isMainBotAdmin') && isMainBotAdmin($user_id)) {
+        $rows[] = [
+            ['text' => $textbotlang['Admin']['manageadmin']['showlistbtn']],
+        ];
+    }
+    $rows[] = [
+        ['text' => $textbotlang['Admin']['Back-Adminment']],
+    ];
+    return json_encode([
+        'keyboard' => $rows,
+        'resize_keyboard' => true,
+    ], JSON_UNESCAPED_UNICODE);
+}
+
 function updateBotFromGithub()
 {
     // سازگاری با نام قدیمی — همان منطق اسکریپت نصب
