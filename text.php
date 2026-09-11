@@ -1436,7 +1436,7 @@ $textbotlang['Admin']['Report']['extend'] = "🔄 <b>تمدید سرویس</b>
 🛍 سرویس فعال: <b>%s</b>
 
 📍 پنل: %s
-💳 موجودی: %s تومان";
+💳 موجودی بعد از خرید: %s تومان";
 $textbotlang['Admin']['Report']['Extra_volume'] = "📦 <b>حجم اضافه</b>
 
 🆔 <code>%s</code>
@@ -1554,7 +1554,7 @@ $textbotlang['users']['Report']['reportbuy'] = "🛍 <b>خرید جدید</b>
 🛍 سرویس فعال: <b>%s</b>
 
 📍 پنل: %s
-💳 موجودی: %s تومان";
+💳 موجودی بعد از خرید: %s تومان";
 $textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>واریز + خرید</b>
 
 🔑 کانفیگ: <code>%s</code>
@@ -1567,7 +1567,7 @@ $textbotlang['users']['Report']['reportbuyafterpay'] = "🛍 <b>واریز + خ�
 🛍 سرویس فعال: <b>%s</b>
 
 📍 پنل: %s
-💳 موجودی بعد: %s تومان
+💳 موجودی بعد از خرید: %s تومان
 
 🧾 سفارش: <code>%s</code>";
 $textbotlang['users']['Report']['reportpayiranpay'] = "💎 <b>پرداخت کریپتو</b>
