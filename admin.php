@@ -1296,6 +1296,8 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         return;
     }
     $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
+    $GLOBALS['defer_post_payment_reports'] = true;
+    $GLOBALS['deferred_channel_reports'] = [];
     DirectPayment($order_id);
     $id_user_pay = $Payment_report['id_user'];
     $keyboard_accept = json_encode([
@@ -1356,6 +1358,12 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
                 $Payment_report['id_order']
             ));
         }
+    }
+    // بعد از پیام تأیید رسید، گزارش خرید/تمدید ارسال شود
+    if (function_exists('flushDeferredChannelReports')) {
+        flushDeferredChannelReports();
+    } else {
+        $GLOBALS['defer_post_payment_reports'] = false;
     }
 }
 #-------------------------#

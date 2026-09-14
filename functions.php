@@ -2592,6 +2592,15 @@ function sendChannelReport($key, $text)
     if ($text === null || $text === '') {
         return;
     }
+    // اگر تأیید رسید در جریان است، گزارش خرید/تمدید را نگه دار تا بعد از پیام تأیید برسد
+    $defer_keys = ['rpt_buy', 'rpt_buy_after_pay', 'rpt_extend', 'rpt_extra_volume'];
+    if (!empty($GLOBALS['defer_post_payment_reports']) && in_array($key, $defer_keys, true)) {
+        if (!isset($GLOBALS['deferred_channel_reports']) || !is_array($GLOBALS['deferred_channel_reports'])) {
+            $GLOBALS['deferred_channel_reports'] = [];
+        }
+        $GLOBALS['deferred_channel_reports'][] = ['key' => $key, 'text' => $text];
+        return;
+    }
     if (!isReportChannelEnabled($key)) {
         return;
     }
@@ -2600,6 +2609,32 @@ function sendChannelReport($key, $text)
         return;
     }
     sendmessage($setting['Channel_Report'], $text, null, 'HTML');
+}
+
+/** ارسال گزارش‌های به‌تعویق‌افتاده خرید بعد از پیام تأیید رسید */
+function flushDeferredChannelReports()
+{
+    $list = $GLOBALS['deferred_channel_reports'] ?? [];
+    $GLOBALS['deferred_channel_reports'] = [];
+    $GLOBALS['defer_post_payment_reports'] = false;
+    if (!is_array($list) || count($list) === 0) {
+        return;
+    }
+    foreach ($list as $item) {
+        if (!is_array($item) || empty($item['text'])) {
+            continue;
+        }
+        $key = $item['key'] ?? 'rpt_buy';
+        // مستقیم ارسال (بدون defer دوباره)
+        if (function_exists('isReportChannelEnabled') && !isReportChannelEnabled($key)) {
+            continue;
+        }
+        $setting = select("setting", "*", null, null, "select");
+        if (!$setting || empty($setting['Channel_Report'])) {
+            continue;
+        }
+        sendmessage($setting['Channel_Report'], $item['text'], null, 'HTML');
+    }
 }
 
 function buildReportChannelKeyboard()
