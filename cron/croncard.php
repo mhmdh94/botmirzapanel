@@ -55,6 +55,8 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     } catch (Exception $e) {
         continue;
     }
+    $GLOBALS['defer_post_payment_reports'] = true;
+    $GLOBALS['deferred_channel_reports'] = [];
     DirectPayment($Payment_report['id_order'],"../images.jpg");
     $pd = function_exists('describePaymentReport') ? describePaymentReport($Payment_report) : null;
     $bal_after = number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0));
@@ -71,5 +73,10 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             'text' => $auto_txt,
             'parse_mode' => "HTML"
         ]);
+    }
+    if (function_exists('flushDeferredChannelReports')) {
+        flushDeferredChannelReports();
+    } else {
+        $GLOBALS['defer_post_payment_reports'] = false;
     }
 }
