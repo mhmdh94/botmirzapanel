@@ -1695,9 +1695,9 @@ function buildBalancePackageUserKeyboard()
         $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
         $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
         $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
-        $label .= formatToman($p['amount']) . ' ت';
+        $label .= formatToman($p['amount']) . 'ت';
         if ($p['discount'] > 0) {
-            $label .= " | 🎁 {$disc}٪ | پرداخت " . formatToman($pay);
+            $label .= " | 🎁 {$disc}٪ | پرداخت " . formatToman($pay) . 'ت';
         }
         $rows[] = [['text' => $label, 'callback_data' => 'balpkg_' . $p['id']]];
     }
@@ -1713,7 +1713,7 @@ function buildBalancePackageAdminKeyboard()
     foreach (getBalancePackages() as $p) {
         $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
         $rows[] = [[
-            'text' => formatToman($p['amount']) . " ت | {$disc}٪ تخفیف",
+            'text' => formatToman($p['amount']) . "ت | {$disc}٪ تخفیف",
             'callback_data' => 'balpkgadm_del_' . $p['id'],
         ]];
     }
