@@ -1693,7 +1693,7 @@ function buildBalancePackageUserKeyboard()
     $rows = [];
     $packages = getBalancePackages();
     if (count($packages) > 0) {
-        $hdr = $textbotlang['users']['Balance']['packages_header'] ?? '📦 پکیج‌های تخفیف‌دار';
+        $hdr = $textbotlang['users']['Balance']['packages_header'] ?? '📦 پکیج‌های تخفیف‌دار (قیمت‌ها به تومان است)';
         $rows[] = [['text' => $hdr, 'callback_data' => 'balpkg_header']];
     }
     foreach ($packages as $p) {
