@@ -3369,6 +3369,15 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
         step('getprice', $from_id);
     }
+} elseif ($datain == "balpkg_header") {
+    // فقط راهنما — کاری نکن
+    if (!empty($callback_query_id)) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => $textbotlang['users']['Balance']['packages_header'] ?? 'پکیج‌های تخفیف‌دار',
+            'show_alert' => false,
+        ]);
+    }
 } elseif ($datain == "balpkg_custom") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');

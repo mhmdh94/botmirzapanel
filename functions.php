@@ -1691,7 +1691,12 @@ function buildBalancePackageUserKeyboard()
 {
     global $textbotlang;
     $rows = [];
-    foreach (getBalancePackages() as $p) {
+    $packages = getBalancePackages();
+    if (count($packages) > 0) {
+        $hdr = $textbotlang['users']['Balance']['packages_header'] ?? '📦 پکیج‌های تخفیف‌دار';
+        $rows[] = [['text' => $hdr, 'callback_data' => 'balpkg_header']];
+    }
+    foreach ($packages as $p) {
         $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
         $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
         $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';

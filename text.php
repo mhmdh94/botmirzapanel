@@ -1661,9 +1661,11 @@ $textbotlang['Admin']['currency']['discount_get'] = "🎁 درصد تخفیف پ
 $textbotlang['Admin']['currency']['discount_saved'] = "✅ درصد تخفیف ذخیره شد: <code>%s٪</code>";
 
 
-$textbotlang['users']['Balance']['choose_package'] = "💰 افزایش موجودی
+$textbotlang['users']['Balance']['choose_package'] = "💰 <b>افزایش موجودی</b>
 
-یک پکیج با تخفیف انتخاب کنید یا مبلغ دلخواه وارد نمایید:";
+📦 پکیج‌های زیر با تخفیف آماده انتخاب هستند.
+روی هر پکیج بزنید یا «مبلغ دلخواه» را انتخاب کنید:";
+$textbotlang['users']['Balance']['packages_header'] = "📦 پکیج‌های تخفیف‌دار";
 $textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه";
 $textbotlang['users']['Balance']['package_selected'] = "🎁 پکیج انتخاب شد
 
