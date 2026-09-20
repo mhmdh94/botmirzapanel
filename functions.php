@@ -1692,21 +1692,22 @@ function buildBalancePackageUserKeyboard()
     global $textbotlang;
     $rows = [];
     $packages = getBalancePackages();
+    // مبلغ دلخواه بالاتر از پکیج‌ها
+    $rows[] = [['text' => $textbotlang['users']['Balance']['custom_amount_btn'] ?? '✍️ مبلغ دلخواه', 'callback_data' => 'balpkg_custom']];
     if (count($packages) > 0) {
         $hdr = $textbotlang['users']['Balance']['packages_header'] ?? '📦 پکیج‌های تخفیف‌دار (قیمت‌ها به تومان است)';
         $rows[] = [['text' => $hdr, 'callback_data' => 'balpkg_header']];
-    }
-    foreach ($packages as $p) {
-        $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
-        $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
-        $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
-        $label .= formatToman($p['amount']) . 'ت';
-        if ($p['discount'] > 0) {
-            $label .= " | 🎁 {$disc}٪ | پرداخت " . formatToman($pay) . 'ت';
+        foreach ($packages as $p) {
+            $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
+            $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
+            $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
+            $label .= formatToman($p['amount']) . 'ت';
+            if ($p['discount'] > 0) {
+                $label .= " | 🎁 {$disc}٪ | پرداخت " . formatToman($pay) . 'ت';
+            }
+            $rows[] = [['text' => $label, 'callback_data' => 'balpkg_' . $p['id']]];
         }
-        $rows[] = [['text' => $label, 'callback_data' => 'balpkg_' . $p['id']]];
     }
-    $rows[] = [['text' => $textbotlang['users']['Balance']['custom_amount_btn'] ?? '✍️ مبلغ دلخواه', 'callback_data' => 'balpkg_custom']];
     $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠', 'callback_data' => 'backuser']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
