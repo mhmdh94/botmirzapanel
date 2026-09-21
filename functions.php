@@ -1695,7 +1695,7 @@ function buildBalancePackageUserKeyboard()
     // صفحه اول: فقط مبلغ دلخواه + ورود به لیست پکیج‌ها
     $rows[] = [['text' => $textbotlang['users']['Balance']['custom_amount_btn'] ?? '✍️ مبلغ دلخواه', 'callback_data' => 'balpkg_custom']];
     if (count($packages) > 0) {
-        $rows[] = [['text' => $textbotlang['users']['Balance']['packages_btn'] ?? '🎁 پکیج‌های تخفیف‌دار', 'callback_data' => 'balpkg_list']];
+        $rows[] = [['text' => $textbotlang['users']['Balance']['packages_btn'] ?? '🎁 پکیج‌های واریزی تخفیف‌دار', 'callback_data' => 'balpkg_list']];
     }
     $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی', 'callback_data' => 'backuser']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);

@@ -1665,13 +1665,13 @@ $textbotlang['users']['Balance']['choose_package'] = "💰 <b>افزایش مو�
 
 یکی از گزینه‌های زیر را انتخاب کنید:
 • مبلغ دلخواه
-• پکیج‌های تخفیف‌دار";
-$textbotlang['users']['Balance']['packages_header'] = "🎁 پکیج‌های تخفیف‌دار";
-$textbotlang['users']['Balance']['packages_list_title'] = "🎁 <b>پکیج‌های تخفیف‌دار</b> (قیمت به تومان)
+• پکیج‌های واریزی تخفیف‌دار";
+$textbotlang['users']['Balance']['packages_header'] = "🎁 پکیج‌های واریزی تخفیف‌دار";
+$textbotlang['users']['Balance']['packages_list_title'] = "🎁 <b>پکیج‌های واریزی تخفیف‌دار</b> (قیمت به تومان)
 
 یک پکیج را انتخاب کنید:";
 $textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه";
-$textbotlang['users']['Balance']['packages_btn'] = "🎁 پکیج‌های تخفیف‌دار";
+$textbotlang['users']['Balance']['packages_btn'] = "🎁 پکیج‌های واریزی تخفیف‌دار";
 $textbotlang['users']['Balance']['back_to_deposit'] = "🔙 بازگشت";
 $textbotlang['users']['Balance']['package_selected'] = "🎁 پکیج انتخاب شد
 
