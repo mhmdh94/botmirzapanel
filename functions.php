@@ -1692,10 +1692,13 @@ function buildBalancePackageUserKeyboard()
     global $textbotlang;
     $rows = [];
     $packages = getBalancePackages();
-    // مبلغ دلخواه بالاتر از پکیج‌ها
-    $rows[] = [['text' => $textbotlang['users']['Balance']['custom_amount_btn'] ?? '✍️ مبلغ دلخواه', 'callback_data' => 'balpkg_custom']];
+    // بخش ۱: مبلغ دلخواه
+    $rows[] = [['text' => $textbotlang['users']['Balance']['custom_amount_btn'] ?? '✍️ مبلغ دلخواه (بدون تخفیف)', 'callback_data' => 'balpkg_custom']];
     if (count($packages) > 0) {
-        $hdr = $textbotlang['users']['Balance']['packages_header'] ?? '📦 پکیج‌های تخفیف‌دار (قیمت‌ها به تومان است)';
+        // جداکننده بصری بین مبلغ دلخواه و پکیج‌ها
+        $sep = $textbotlang['users']['Balance']['packages_sep'] ?? '——————————';
+        $rows[] = [['text' => $sep, 'callback_data' => 'balpkg_header']];
+        $hdr = $textbotlang['users']['Balance']['packages_header'] ?? '🎁 پکیج تخفیف‌دار — قیمت به تومان';
         $rows[] = [['text' => $hdr, 'callback_data' => 'balpkg_header']];
         foreach ($packages as $p) {
             $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
@@ -1708,7 +1711,7 @@ function buildBalancePackageUserKeyboard()
             $rows[] = [['text' => $label, 'callback_data' => 'balpkg_' . $p['id']]];
         }
     }
-    $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠', 'callback_data' => 'backuser']];
+    $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی', 'callback_data' => 'backuser']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
