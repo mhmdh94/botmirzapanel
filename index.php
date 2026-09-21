@@ -3369,14 +3369,36 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
         step('getprice', $from_id);
     }
-} elseif ($datain == "balpkg_header") {
-    // فقط راهنما — کاری نکن
-    if (!empty($callback_query_id)) {
-        telegram('answerCallbackQuery', [
-            'callback_query_id' => $callback_query_id,
-            'text' => $textbotlang['users']['Balance']['packages_header'] ?? 'پکیج‌های تخفیف‌دار',
-            'show_alert' => false,
-        ]);
+} elseif ($datain == "balpkg_list" || $datain == "balpkg_header") {
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
+        return;
+    }
+    $pkgs = function_exists('getBalancePackages') ? getBalancePackages() : [];
+    if (count($pkgs) === 0) {
+        if (!empty($callback_query_id)) {
+            telegram('answerCallbackQuery', [
+                'callback_query_id' => $callback_query_id,
+                'text' => 'پکیجی تعریف نشده است',
+                'show_alert' => true,
+            ]);
+        }
+        return;
+    }
+    $list_text = $textbotlang['users']['Balance']['packages_list_title'] ?? "🎁 پکیج‌های تخفیف‌دار (قیمت به تومان)\n\nیک پکیج را انتخاب کنید:";
+    $list_kb = function_exists('buildBalancePackageListKeyboard') ? buildBalancePackageListKeyboard() : null;
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $list_text, $list_kb);
+    } else {
+        sendmessage($from_id, $list_text, $list_kb, 'HTML');
+    }
+} elseif ($datain == "balpkg_menu") {
+    $menu_text = $textbotlang['users']['Balance']['choose_package'] ?? "💰 افزایش موجودی";
+    $menu_kb = function_exists('buildBalancePackageUserKeyboard') ? buildBalancePackageUserKeyboard() : null;
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $menu_text, $menu_kb);
+    } else {
+        sendmessage($from_id, $menu_text, $menu_kb, 'HTML');
     }
 } elseif ($datain == "balpkg_custom") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
@@ -3389,7 +3411,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     update("user", "Processing_value_one", "0", "id", $from_id);
     sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
     step('getprice', $from_id);
-} elseif (preg_match('/^balpkg_(.+)$/', strval($datain), $m_bp) && $datain != "balpkg_custom") {
+} elseif (preg_match('/^balpkg_(.+)$/', strval($datain), $m_bp) && $datain != "balpkg_custom" && $datain != "balpkg_header" && $datain != "balpkg_list" && $datain != "balpkg_menu") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         return;

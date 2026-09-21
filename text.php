@@ -1663,15 +1663,16 @@ $textbotlang['Admin']['currency']['discount_saved'] = "✅ درصد تخفیف �
 
 $textbotlang['users']['Balance']['choose_package'] = "💰 <b>افزایش موجودی</b>
 
-🔹 <b>مبلغ دلخواه</b>
-هر مبلغی که می‌خواهید را خودتان وارد کنید (بدون تخفیف پکیج).
+یکی از گزینه‌های زیر را انتخاب کنید:
+• مبلغ دلخواه
+• پکیج‌های تخفیف‌دار";
+$textbotlang['users']['Balance']['packages_header'] = "🎁 پکیج‌های تخفیف‌دار";
+$textbotlang['users']['Balance']['packages_list_title'] = "🎁 <b>پکیج‌های تخفیف‌دار</b> (قیمت به تومان)
 
-🔸 <b>پکیج‌های تخفیف‌دار</b>
-یکی از پکیج‌های زیر را انتخاب کنید تا با تخفیف شارژ شود.
-قیمت‌ها به تومان است.";
-$textbotlang['users']['Balance']['packages_header'] = "🎁 پکیج تخفیف‌دار — قیمت به تومان";
-$textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه (بدون تخفیف)";
-$textbotlang['users']['Balance']['packages_sep'] = "——————————";
+یک پکیج را انتخاب کنید:";
+$textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه";
+$textbotlang['users']['Balance']['packages_btn'] = "🎁 پکیج‌های تخفیف‌دار";
+$textbotlang['users']['Balance']['back_to_deposit'] = "🔙 بازگشت";
 $textbotlang['users']['Balance']['package_selected'] = "🎁 پکیج انتخاب شد
 
 📦 اعتبار دریافتی: <b>%s</b> تومان
