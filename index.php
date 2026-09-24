@@ -3492,6 +3492,40 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         sendmessage($from_id, $textbotlang['users']['Balance']['Invalid-receipt'], null, 'HTML');
         return;
     }
+
+    // اگر از قبل رسید waiting دارد، دوباره ثبت نکن
+    try {
+        $st_dup = $pdo->prepare("SELECT id_order, price FROM Payment_report WHERE id_user = ? AND payment_Status = 'waiting' ORDER BY id DESC LIMIT 1");
+        $st_dup->execute([$from_id]);
+        $dup = $st_dup->fetch(PDO::FETCH_ASSOC);
+        if ($dup) {
+            step('home', $from_id);
+            sendmessage(
+                $from_id,
+                "✅ رسید قبلی شما ثبت شده و در انتظار تأیید مدیریت است.\nلطفاً دوباره ارسال نکنید و صبور باشید.\n\nفقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدهید.",
+                $keyboard,
+                'HTML'
+            );
+            return;
+        }
+    } catch (Throwable $e) {
+        // ادامه ثبت عادی
+    }
+
+    // قفل کوتاه برای جلوگیری از race (webhook retry همزمان)
+    $__rcpt_lock = sys_get_temp_dir() . '/mirza_receipt_' . intval($from_id) . '.lock';
+    $__rcpt_fp = @fopen($__rcpt_lock, 'c+');
+    if ($__rcpt_fp) {
+        if (!@flock($__rcpt_fp, LOCK_EX | LOCK_NB)) {
+            step('home', $from_id);
+            sendmessage($from_id, "⏳ رسید شما در حال ثبت است؛ لطفاً چند لحظه صبر کنید و دوباره نفرستید.", $keyboard, 'HTML');
+            return;
+        }
+    }
+
+    // زود step را عوض کن تا retry تلگرام دوباره وارد این شاخه نشود
+    step('home', $from_id);
+
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
     $payment_Status = "waiting";
@@ -3500,27 +3534,54 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     if ($pv_tow == "getconfigafterpay") {
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
     } elseif (strpos($pv_tow, 'extendafterpay|') === 0) {
-        // تمدید پس از پرداخت: extendafterpay|username|code_product
         $invoice = $pv_tow;
     } elseif ($pv_tow == "balpkg" && intval($user['Processing_value_one']) > 0) {
         $invoice = "balpkg|" . intval($user['Processing_value_one']);
     } else {
         $invoice = "0|0";
     }
+
+    // مبلغ باید عددی باشد (گاهی Processing_value به‌اشتباه یوزرنیم می‌ماند)
+    $pay_price_raw = strval($user['Processing_value'] ?? '0');
+    $pay_price = intval(preg_replace('/[^0-9]/', '', $pay_price_raw));
+    if ($pay_price <= 0 && strpos($pv_tow, 'extendafterpay|') === 0) {
+        $parts_e = explode('|', $pv_tow);
+        $code_e = strval($parts_e[2] ?? ($user['Processing_value_one'] ?? ''));
+        if ($code_e !== '') {
+            $prod_e = select("product", "*", "code_product", $code_e, "select");
+            if (is_array($prod_e) && intval($prod_e['price_product'] ?? 0) > 0) {
+                $bal_row_e = select("user", "Balance", "id", $from_id, "select");
+                $bal_e = is_array($bal_row_e) ? intval($bal_row_e['Balance'] ?? 0) : intval($bal_row_e);
+                $full_e = intval($prod_e['price_product']);
+                $pay_price = max(1, $full_e - max(0, $bal_e));
+            }
+        }
+    }
+    if ($pay_price <= 0) {
+        if ($__rcpt_fp) {
+            @flock($__rcpt_fp, LOCK_UN);
+            @fclose($__rcpt_fp);
+            @unlink($__rcpt_lock);
+        }
+        sendmessage(
+            $from_id,
+            "❌ مبلغ پرداخت نامعتبر است.\nلطفاً دوباره از ابتدا تمدید/افزایش موجودی را انجام دهید.",
+            $keyboard,
+            'HTML'
+        );
+        return;
+    }
+
     $stmt = $pdo->prepare("INSERT INTO Payment_report (id_user, id_order, time, price, payment_Status, Payment_Method,invoice) VALUES (?, ?, ?, ?, ?, ?,?)");
     $stmt->bindParam(1, $from_id);
     $stmt->bindParam(2, $randomString);
     $stmt->bindParam(3, $dateacc);
-    $stmt->bindParam(4, $user['Processing_value'], PDO::PARAM_STR);
+    $stmt->bindParam(4, $pay_price, PDO::PARAM_STR);
     $stmt->bindParam(5, $payment_Status);
     $stmt->bindParam(6, $Payment_Method);
     $stmt->bindParam(7, $invoice);
     $stmt->execute();
-    if ($user['Processing_value_tow'] == "getconfigafterpay") {
-        sendmessage($from_id, $textbotlang['users']['Balance']['Send-receip-buy'], $keyboard, 'HTML');
-    } else {
-        sendmessage($from_id, $textbotlang['users']['Balance']['Send-receipt'], $keyboard, 'HTML');
-    }
+
     $Confirm_pay = json_encode([
         'inline_keyboard' => [
             [
@@ -3532,9 +3593,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
             ]
         ]
     ]);
-    $Processing_value = number_format($user['Processing_value']);
-    $user_balance_fmt = number_format(intval($user['Balance']));
-    // توضیح نوع پرداخت برای ادمین (پکیج / خرید / دلخواه)
+    $Processing_value = number_format($pay_price);
     $pay_note = '';
     $pv_tow_note = strval($user['Processing_value_tow'] ?? '');
     if (strpos($pv_tow_note, 'extendafterpay|') === 0) {
@@ -3560,11 +3619,15 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         'caption' => $textsendrasid,
         'parse_mode' => "HTML",
     ];
+    $__admin_ok = 0;
     if (function_exists('notifyAdmins')) {
         $__nr = notifyAdmins('sendphoto', $__adm_photo, $admin_ids);
-        // اگر همه ادمین fail شدند، به کانال گزارش هم بفرست
-        if (intval($__nr['ok'] ?? 0) === 0 && !empty($setting['Channel_Report'])) {
-            telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $setting['Channel_Report']]), 2);
+        $__admin_ok = intval($__nr['ok'] ?? 0);
+        if ($__admin_ok === 0 && !empty($setting['Channel_Report'])) {
+            $ch = telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $setting['Channel_Report']]), 2);
+            if (function_exists('telegramOk') && telegramOk($ch)) {
+                $__admin_ok = 1;
+            }
             telegramRetry('sendmessage', [
                 'chat_id' => $setting['Channel_Report'],
                 'text' => "⚠️ فیش واریزی به ادمین‌ها نرسید — در کانال ثبت شد.\n" . $textsendrasid,
@@ -3574,10 +3637,29 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         }
     } else {
         foreach ($admin_ids as $id_admin) {
-            telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $id_admin]), 2);
+            $r = telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $id_admin]), 2);
+            if (function_exists('telegramOk') && telegramOk($r)) {
+                $__admin_ok++;
+            }
         }
     }
-    step('home', $from_id);
+
+    // پیام کاربر بعد از تلاش ارسال به ادمین
+    if ($user['Processing_value_tow'] == "getconfigafterpay") {
+        sendmessage($from_id, $textbotlang['users']['Balance']['Send-receip-buy'], $keyboard, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['users']['Balance']['Send-receipt'], $keyboard, 'HTML');
+    }
+    if ($__admin_ok === 0) {
+        // فقط لاگ؛ به کاربر پیام اضافه نده که گیج نشود
+        error_log("receipt notify failed user={$from_id} order={$randomString}");
+    }
+
+    if ($__rcpt_fp) {
+        @flock($__rcpt_fp, LOCK_UN);
+        @fclose($__rcpt_fp);
+        @unlink($__rcpt_lock);
+    }
 }
 
 #----------- اطلاعات کاربر از روی رسید پرداخت ------------#
