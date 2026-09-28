@@ -157,6 +157,43 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $week = $periodStats($week_ago);
     $month = $periodStats($month_ago);
 
+    // واریزی‌های تأییدشده از Payment_report
+    $depositStats = function ($from_ts) use ($pdo) {
+        $from_ts = intval($from_ts);
+        $from_a = date('Y/m/d H:i:s', $from_ts);
+        $from_b = date('Y-m-d H:i:s', $from_ts);
+        try {
+            $sql = "SELECT COUNT(*) AS cnt, COALESCE(SUM(
+                        CASE
+                            WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED)
+                            ELSE 0
+                        END
+                    ), 0) AS sm
+                FROM Payment_report
+                WHERE payment_Status = 'paid'
+                AND (
+                    time > :ta
+                    OR time > :tb
+                    OR (UNIX_TIMESTAMP(STR_TO_DATE(time, '%Y/%m/%d %H:%i:%s')) > :u1)
+                    OR (UNIX_TIMESTAMP(STR_TO_DATE(time, '%Y-%m-%d %H:%i:%s')) > :u2)
+                )";
+            $st = $pdo->prepare($sql);
+            $st->execute([
+                ':ta' => $from_a,
+                ':tb' => $from_b,
+                ':u1' => $from_ts,
+                ':u2' => $from_ts,
+            ]);
+            $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+            return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
+        } catch (Exception $e) {
+            return ['cnt' => 0, 'sum' => 0];
+        }
+    };
+    $dep_day = $depositStats($day_ago);
+    $dep_week = $depositStats($week_ago);
+    $dep_month = $depositStats($month_ago);
+
     // مجموع پورسانت‌های پرداخت‌شده (ستون affiliates_balance)
     $aff_paid = 0;
     try {
@@ -207,6 +244,12 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($week['sum']),
         number_format($month['cnt']),
         number_format($month['sum']),
+        number_format($dep_day['cnt']),
+        number_format($dep_day['sum']),
+        number_format($dep_week['cnt']),
+        number_format($dep_week['sum']),
+        number_format($dep_month['cnt']),
+        number_format($dep_month['sum']),
         number_format($aff_paid),
         number_format($aff_joined),
         number_format($invoice_cnt),
