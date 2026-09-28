@@ -111,9 +111,21 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $invoice_cnt = intval($row['cnt'] ?? 0);
     $invoice_sum = intval($row['sm'] ?? 0);
 
-    // بازه‌های زمانی — مقایسه time_sell با unix (مثل ربات اصلی برای یک روز)
-    // اگر time_sell رشته تاریخ باشد، چند فرمت پوشش داده می‌شود
+    // بازه‌های زمانی از sales_ledger (شامل خرید + تمدید + حجم اضافه)
+    // جدول invoice فقط خرید اولیه را دارد و time_sell تمدید آپدیت نمی‌شود
     $periodStats = function ($from_ts) use ($pdo, $status_ok, $not_test) {
+        $from_ts = intval($from_ts);
+        // اولویت: دفتر فروش (تمدید و خرید هر دو ثبت می‌شوند)
+        if (function_exists('salesLedgerSum') && function_exists('ensureSalesLedger')) {
+            try {
+                ensureSalesLedger();
+                $led = salesLedgerSum($from_ts);
+                return ['cnt' => intval($led['cnt'] ?? 0), 'sum' => intval($led['sum'] ?? 0)];
+            } catch (Exception $e) {
+                // fallback به invoice
+            }
+        }
+        // fallback: فاکتورهای موجود (فقط خریدهای اولیه با time_sell)
         try {
             $from_a = date('Y/m/d H:i:s', $from_ts);
             $from_b = date('Y-m-d H:i:s', $from_ts);
@@ -137,15 +149,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
             $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
             return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
         } catch (Exception $e) {
-            // fallback ساده مثل ربات اصلی
-            try {
-                $st = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(SUM(price_product),0) AS sm FROM invoice WHERE time_sell > :ts AND {$status_ok} AND {$not_test}");
-                $st->execute([':ts' => $from_ts]);
-                $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
-                return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
-            } catch (Exception $e2) {
-                return ['cnt' => 0, 'sum' => 0];
-            }
+            return ['cnt' => 0, 'sum' => 0];
         }
     };
 
