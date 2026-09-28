@@ -92,23 +92,34 @@ if ($text == $textbotlang['Admin']['channel']['setting']) {
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     global $pdo;
     $now = time();
-    // بازه تقویمی به وقت تهران: امروز از 00:00 | هفته از شنبه 00:00 | ماه از اول ماه 00:00
+    // بازه تقویمی به وقت تهران
+    // امروز از 00:00 | دیروز | این هفته از شنبه | هفته پیش | این ماه از اول ماه
     try {
         $tz = new DateTimeZone('Asia/Tehran');
         $now_dt = new DateTime('now', $tz);
         $day_start = (clone $now_dt)->setTime(0, 0, 0);
+        $yest_start = (clone $day_start)->modify('-1 day');
         // شنبه = شروع هفته ایرانی؛ format('w'): 0=یکشنبه ... 6=شنبه
         $w = intval($now_dt->format('w'));
         $days_since_sat = ($w + 1) % 7; // شنبه=0 ، یکشنبه=1 ، ... جمعه=6
         $week_start = (clone $now_dt)->setTime(0, 0, 0)->modify('-' . $days_since_sat . ' days');
+        $prev_week_start = (clone $week_start)->modify('-7 days');
         $month_start = (clone $now_dt)->modify('first day of this month')->setTime(0, 0, 0);
-        // salesLedgerSum شرط > دارد؛ یک ثانیه کم می‌کنیم تا از خود 00:00 هم حساب شود
+        // salesLedgerSum شرط > دارد؛ یک ثانیه کم تا از خود 00:00 حساب شود
         $day_ago = $day_start->getTimestamp() - 1;
+        $yest_from = $yest_start->getTimestamp() - 1;
+        $yest_until = $day_start->getTimestamp() - 1; // تا قبل از امروز 00:00
         $week_ago = $week_start->getTimestamp() - 1;
+        $prev_week_from = $prev_week_start->getTimestamp() - 1;
+        $prev_week_until = $week_start->getTimestamp() - 1;
         $month_ago = $month_start->getTimestamp() - 1;
     } catch (Exception $e) {
         $day_ago = $now - 86400;
+        $yest_from = $now - 2 * 86400;
+        $yest_until = $now - 86400;
         $week_ago = $now - 604800;
+        $prev_week_from = $now - 2 * 604800;
+        $prev_week_until = $now - 604800;
         $month_ago = $now - 2592000;
     }
     $status_ok = "(Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn' OR status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')";
@@ -129,13 +140,13 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
 
     // بازه‌های زمانی از sales_ledger (شامل خرید + تمدید + حجم اضافه)
     // جدول invoice فقط خرید اولیه را دارد و time_sell تمدید آپدیت نمی‌شود
-    $periodStats = function ($from_ts) use ($pdo, $status_ok, $not_test) {
+    $periodStats = function ($from_ts, $until_ts = null) use ($pdo, $status_ok, $not_test) {
         $from_ts = intval($from_ts);
         // اولویت: دفتر فروش (تمدید و خرید هر دو ثبت می‌شوند)
         if (function_exists('salesLedgerSum') && function_exists('ensureSalesLedger')) {
             try {
                 ensureSalesLedger();
-                $led = salesLedgerSum($from_ts);
+                $led = salesLedgerSum($from_ts, $until_ts);
                 return ['cnt' => intval($led['cnt'] ?? 0), 'sum' => intval($led['sum'] ?? 0)];
             } catch (Exception $e) {
                 // fallback به invoice
@@ -170,50 +181,83 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     };
 
     $day = $periodStats($day_ago);
+    $yest = $periodStats($yest_from, $yest_until);
     $week = $periodStats($week_ago);
+    $prev_week = $periodStats($prev_week_from, $prev_week_until);
     $month = $periodStats($month_ago);
 
     // واریزی‌های تأییدشده از Payment_report
     // ستون time باید با بک‌تیک باشد (کلمهٔ رزرو MySQL)
-    $depositStats = function ($from_ts) use ($pdo) {
+    $depositStats = function ($from_ts, $until_ts = null) use ($pdo) {
         $from_ts = intval($from_ts);
+        $until_ts = $until_ts === null ? null : intval($until_ts);
         try {
-            $dtf = (new DateTime('@' . $from_ts))->setTimezone(new DateTimeZone('Asia/Tehran'));
+            $tz = new DateTimeZone('Asia/Tehran');
+            $dtf = (new DateTime('@' . $from_ts))->setTimezone($tz);
+            // from_ts در کد ما معمولاً start-1 است؛ برای رشته تاریخ از start واقعی استفاده می‌کنیم
+            $from_real = $from_ts + 1;
+            $dtf = (new DateTime('@' . $from_real))->setTimezone($tz);
             $from_a = $dtf->format('Y/m/d H:i:s');
             $from_b = $dtf->format('Y-m-d H:i:s');
+            $to_a = $to_b = null;
+            if ($until_ts !== null) {
+                // until در ledger معمولاً end inclusive به صورت end-1 روی مرز بعدی؛ برای تاریخ تا خود until
+                $dtt = (new DateTime('@' . max($until_ts, $from_real)))->setTimezone($tz);
+                $to_a = $dtt->format('Y/m/d H:i:s');
+                $to_b = $dtt->format('Y-m-d H:i:s');
+            }
         } catch (Exception $e) {
-            $from_a = date('Y/m/d H:i:s', $from_ts);
-            $from_b = date('Y-m-d H:i:s', $from_ts);
+            $from_a = date('Y/m/d H:i:s', $from_ts + 1);
+            $from_b = date('Y-m-d H:i:s', $from_ts + 1);
+            $to_a = $to_b = null;
+            if ($until_ts !== null) {
+                $to_a = date('Y/m/d H:i:s', $until_ts);
+                $to_b = date('Y-m-d H:i:s', $until_ts);
+            }
         }
         try {
-            $sql = "SELECT COUNT(*) AS cnt,
-                    COALESCE(SUM(
-                        CASE
-                            WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED)
-                            ELSE 0
-                        END
-                    ), 0) AS sm
-                FROM Payment_report
-                WHERE payment_Status = 'paid'
-                AND (
-                    (`time` >= :ta AND `time` REGEXP '^[0-9]{4}/')
-                    OR (`time` >= :tb AND `time` REGEXP '^[0-9]{4}-')
-                    OR (
-                        UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
-                        AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) > :u1
-                    )
-                    OR (
-                        UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
-                        AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) > :u2
-                    )
-                )";
-            $st = $pdo->prepare($sql);
-            $st->execute([
-                ':ta' => $from_a,
-                ':tb' => $from_b,
-                ':u1' => $from_ts,
-                ':u2' => $from_ts,
-            ]);
+            if ($until_ts === null) {
+                $sql = "SELECT COUNT(*) AS cnt,
+                        COALESCE(SUM(CASE WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED) ELSE 0 END), 0) AS sm
+                    FROM Payment_report
+                    WHERE payment_Status = 'paid'
+                    AND (
+                        (`time` >= :ta AND `time` REGEXP '^[0-9]{4}/')
+                        OR (`time` >= :tb AND `time` REGEXP '^[0-9]{4}-')
+                        OR (UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
+                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) > :u1)
+                        OR (UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
+                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) > :u2)
+                    )";
+                $st = $pdo->prepare($sql);
+                $st->execute([':ta' => $from_a, ':tb' => $from_b, ':u1' => $from_ts, ':u2' => $from_ts]);
+            } else {
+                $sql = "SELECT COUNT(*) AS cnt,
+                        COALESCE(SUM(CASE WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED) ELSE 0 END), 0) AS sm
+                    FROM Payment_report
+                    WHERE payment_Status = 'paid'
+                    AND (
+                        (`time` >= :ta AND `time` <= :toa AND `time` REGEXP '^[0-9]{4}/')
+                        OR (`time` >= :tb AND `time` <= :tob AND `time` REGEXP '^[0-9]{4}-')
+                        OR (
+                            UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
+                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) > :u1
+                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) <= :u2
+                        )
+                        OR (
+                            UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
+                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) > :u3
+                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) <= :u4
+                        )
+                    )";
+                $st = $pdo->prepare($sql);
+                $st->execute([
+                    ':ta' => $from_a, ':toa' => $to_a,
+                    ':tb' => $from_b, ':tob' => $to_b,
+                    ':u1' => $from_ts, ':u2' => $until_ts,
+                    ':u3' => $from_ts, ':u4' => $until_ts,
+                ]);
+            }
             $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
             return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
         } catch (Exception $e) {
@@ -222,7 +266,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         }
     };
     $dep_day = $depositStats($day_ago);
+    $dep_yest = $depositStats($yest_from, $yest_until);
     $dep_week = $depositStats($week_ago);
+    $dep_prev_week = $depositStats($prev_week_from, $prev_week_until);
     $dep_month = $depositStats($month_ago);
 
     // مجموع پورسانت‌های پرداخت‌شده (ستون affiliates_balance)
@@ -271,14 +317,22 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($invoice_sum),
         number_format($day['cnt']),
         number_format($day['sum']),
+        number_format($yest['cnt']),
+        number_format($yest['sum']),
         number_format($week['cnt']),
         number_format($week['sum']),
+        number_format($prev_week['cnt']),
+        number_format($prev_week['sum']),
         number_format($month['cnt']),
         number_format($month['sum']),
         number_format($dep_day['cnt']),
         number_format($dep_day['sum']),
+        number_format($dep_yest['cnt']),
+        number_format($dep_yest['sum']),
         number_format($dep_week['cnt']),
         number_format($dep_week['sum']),
+        number_format($dep_prev_week['cnt']),
+        number_format($dep_prev_week['sum']),
         number_format($dep_month['cnt']),
         number_format($dep_month['sum']),
         number_format($aff_paid),

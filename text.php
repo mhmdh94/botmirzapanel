@@ -796,12 +796,16 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 🛒 <b>فروش</b>
 • کل: <code>%s</code> عدد | <code>%s</code> تومان
 • امروز (از ۰:۰۰): <code>%s</code> عدد | <code>%s</code> تومان
+• دیروز: <code>%s</code> عدد | <code>%s</code> تومان
 • این هفته (از شنبه): <code>%s</code> عدد | <code>%s</code> تومان
+• هفته پیش: <code>%s</code> عدد | <code>%s</code> تومان
 • این ماه: <code>%s</code> عدد | <code>%s</code> تومان
 
 💳 <b>واریزی</b>
 • امروز (از ۰:۰۰): <code>%s</code> عدد | <code>%s</code> تومان
+• دیروز: <code>%s</code> عدد | <code>%s</code> تومان
 • این هفته (از شنبه): <code>%s</code> عدد | <code>%s</code> تومان
+• هفته پیش: <code>%s</code> عدد | <code>%s</code> تومان
 • این ماه: <code>%s</code> عدد | <code>%s</code> تومان
 
 🎁 پورسانت پرداخت‌شده: <code>%s</code> تومان
