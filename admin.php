@@ -92,9 +92,25 @@ if ($text == $textbotlang['Admin']['channel']['setting']) {
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     global $pdo;
     $now = time();
-    $day_ago = $now - 86400;
-    $week_ago = $now - 604800;
-    $month_ago = $now - 2592000;
+    // بازه تقویمی به وقت تهران: امروز از 00:00 | هفته از شنبه 00:00 | ماه از اول ماه 00:00
+    try {
+        $tz = new DateTimeZone('Asia/Tehran');
+        $now_dt = new DateTime('now', $tz);
+        $day_start = (clone $now_dt)->setTime(0, 0, 0);
+        // شنبه = شروع هفته ایرانی؛ format('w'): 0=یکشنبه ... 6=شنبه
+        $w = intval($now_dt->format('w'));
+        $days_since_sat = ($w + 1) % 7; // شنبه=0 ، یکشنبه=1 ، ... جمعه=6
+        $week_start = (clone $now_dt)->setTime(0, 0, 0)->modify('-' . $days_since_sat . ' days');
+        $month_start = (clone $now_dt)->modify('first day of this month')->setTime(0, 0, 0);
+        // salesLedgerSum شرط > دارد؛ یک ثانیه کم می‌کنیم تا از خود 00:00 هم حساب شود
+        $day_ago = $day_start->getTimestamp() - 1;
+        $week_ago = $week_start->getTimestamp() - 1;
+        $month_ago = $month_start->getTimestamp() - 1;
+    } catch (Exception $e) {
+        $day_ago = $now - 86400;
+        $week_ago = $now - 604800;
+        $month_ago = $now - 2592000;
+    }
     $status_ok = "(Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn' OR status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')";
     $not_test = "name_product != 'usertest'";
 
@@ -161,8 +177,14 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     // ستون time باید با بک‌تیک باشد (کلمهٔ رزرو MySQL)
     $depositStats = function ($from_ts) use ($pdo) {
         $from_ts = intval($from_ts);
-        $from_a = date('Y/m/d H:i:s', $from_ts);
-        $from_b = date('Y-m-d H:i:s', $from_ts);
+        try {
+            $dtf = (new DateTime('@' . $from_ts))->setTimezone(new DateTimeZone('Asia/Tehran'));
+            $from_a = $dtf->format('Y/m/d H:i:s');
+            $from_b = $dtf->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            $from_a = date('Y/m/d H:i:s', $from_ts);
+            $from_b = date('Y-m-d H:i:s', $from_ts);
+        }
         try {
             $sql = "SELECT COUNT(*) AS cnt,
                     COALESCE(SUM(
