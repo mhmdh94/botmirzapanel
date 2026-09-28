@@ -158,12 +158,14 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $month = $periodStats($month_ago);
 
     // واریزی‌های تأییدشده از Payment_report
+    // ستون time باید با بک‌تیک باشد (کلمهٔ رزرو MySQL)
     $depositStats = function ($from_ts) use ($pdo) {
         $from_ts = intval($from_ts);
         $from_a = date('Y/m/d H:i:s', $from_ts);
         $from_b = date('Y-m-d H:i:s', $from_ts);
         try {
-            $sql = "SELECT COUNT(*) AS cnt, COALESCE(SUM(
+            $sql = "SELECT COUNT(*) AS cnt,
+                    COALESCE(SUM(
                         CASE
                             WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED)
                             ELSE 0
@@ -172,10 +174,16 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
                 FROM Payment_report
                 WHERE payment_Status = 'paid'
                 AND (
-                    time > :ta
-                    OR time > :tb
-                    OR (UNIX_TIMESTAMP(STR_TO_DATE(time, '%Y/%m/%d %H:%i:%s')) > :u1)
-                    OR (UNIX_TIMESTAMP(STR_TO_DATE(time, '%Y-%m-%d %H:%i:%s')) > :u2)
+                    (`time` >= :ta AND `time` REGEXP '^[0-9]{4}/')
+                    OR (`time` >= :tb AND `time` REGEXP '^[0-9]{4}-')
+                    OR (
+                        UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
+                        AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) > :u1
+                    )
+                    OR (
+                        UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
+                        AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) > :u2
+                    )
                 )";
             $st = $pdo->prepare($sql);
             $st->execute([
@@ -187,6 +195,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
             $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
             return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
         } catch (Exception $e) {
+            error_log('depositStats: ' . $e->getMessage());
             return ['cnt' => 0, 'sum' => 0];
         }
     };
