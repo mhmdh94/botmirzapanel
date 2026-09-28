@@ -3494,3 +3494,275 @@ function emptyServicesKeyboard()
 }
 
 
+/**
+ * بازه‌های هفته‌های شمسی‌وار (شنبه تا جمعه) داخل یک ماه میلادی — به وقت تهران
+ * @return array[] each: n, from_ts, to_ts, from_label, to_label
+ */
+function statsMonthWeekRanges($year, $month)
+{
+    $tz = new DateTimeZone('Asia/Tehran');
+    $month = intval($month);
+    $year = intval($year);
+    $start = new DateTime(sprintf('%04d-%02d-01 00:00:00', $year, $month), $tz);
+    $end = (clone $start)->modify('last day of this month')->setTime(23, 59, 59);
+    $w = intval($start->format('w')); // 0=Sun ... 6=Sat
+    $days_since_sat = ($w + 1) % 7;
+    $cursor = (clone $start)->modify('-' . $days_since_sat . ' days')->setTime(0, 0, 0);
+    $weeks = [];
+    $n = 1;
+    while ($cursor->getTimestamp() <= $end->getTimestamp()) {
+        $w_end = (clone $cursor)->modify('+6 days')->setTime(23, 59, 59);
+        $from_ts = max($cursor->getTimestamp(), $start->getTimestamp());
+        $to_ts = min($w_end->getTimestamp(), $end->getTimestamp());
+        if ($from_ts <= $to_ts) {
+            $from_dt = (new DateTime('@' . $from_ts))->setTimezone($tz);
+            $to_dt = (new DateTime('@' . $to_ts))->setTimezone($tz);
+            $weeks[] = [
+                'n' => $n,
+                'from_ts' => $from_ts,
+                'to_ts' => $to_ts,
+                'from_label' => $from_dt->format('Y-m-d'),
+                'to_label' => $to_dt->format('Y-m-d'),
+            ];
+            $n++;
+        }
+        $cursor->modify('+7 days');
+    }
+    return $weeks;
+}
+
+/**
+ * ساخت فایل CSV گزارش ماهانه (فروش + واریزی) با تفکیک هفته — قابل باز شدن در Excel
+ * @param string $which 'current' | 'prev'
+ * @return array{path:string,caption:string}|array{error:string}
+ */
+function buildMonthlyStatsExcel($which = 'current')
+{
+    global $pdo;
+    if (function_exists('ensureSalesLedger')) {
+        ensureSalesLedger();
+    }
+    $tz = new DateTimeZone('Asia/Tehran');
+    $now = new DateTime('now', $tz);
+    if ($which === 'prev') {
+        $now->modify('first day of last month');
+    } else {
+        $now->modify('first day of this month');
+    }
+    $year = intval($now->format('Y'));
+    $month = intval($now->format('m'));
+    $month_start = new DateTime(sprintf('%04d-%02d-01 00:00:00', $year, $month), $tz);
+    $month_end = (clone $month_start)->modify('last day of this month')->setTime(23, 59, 59);
+    $from_ts = $month_start->getTimestamp();
+    $to_ts = $month_end->getTimestamp();
+    $month_label = $month_start->format('Y-m');
+    if (function_exists('jdate')) {
+        $month_label_fa = jdate('Y/m', $from_ts);
+    } else {
+        $month_label_fa = $month_label;
+    }
+
+    $weeks = statsMonthWeekRanges($year, $month);
+
+    // فروش از sales_ledger
+    $sales = [];
+    try {
+        $st = $pdo->prepare("SELECT id_user, username, price, sale_type, id_invoice, created_at FROM sales_ledger WHERE created_at >= ? AND created_at <= ? ORDER BY created_at ASC");
+        $st->execute([$from_ts, $to_ts]);
+        $sales = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $sales = [];
+    }
+
+    // واریزی paid
+    $deps = [];
+    try {
+        $from_a = $month_start->format('Y/m/d H:i:s');
+        $to_a = $month_end->format('Y/m/d H:i:s');
+        $from_b = $month_start->format('Y-m-d H:i:s');
+        $to_b = $month_end->format('Y-m-d H:i:s');
+        $sql = "SELECT id_user, price, Payment_Method, `time`, invoice, id_order
+            FROM Payment_report
+            WHERE payment_Status = 'paid'
+            AND (
+                (`time` >= :fa AND `time` <= :ta AND `time` REGEXP '^[0-9]{4}/')
+                OR (`time` >= :fb AND `time` <= :tb AND `time` REGEXP '^[0-9]{4}-')
+                OR (
+                    UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
+                    AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) BETWEEN :u1 AND :u2
+                )
+                OR (
+                    UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
+                    AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) BETWEEN :u3 AND :u4
+                )
+            )
+            ORDER BY id ASC";
+        $st = $pdo->prepare($sql);
+        $st->execute([
+            ':fa' => $from_a, ':ta' => $to_a,
+            ':fb' => $from_b, ':tb' => $to_b,
+            ':u1' => $from_ts, ':u2' => $to_ts,
+            ':u3' => $from_ts, ':u4' => $to_ts,
+        ]);
+        $deps = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $deps = [];
+    }
+
+    $type_label = function ($t) {
+        $t = strval($t);
+        if ($t === 'buy') return 'خرید';
+        if ($t === 'renew' || $t === 'extend') return 'تمدید';
+        if ($t === 'extra_volume' || $t === 'extra') return 'حجم اضافه';
+        return $t !== '' ? $t : 'سایر';
+    };
+
+    $lines = [];
+    $lines[] = ["گزارش ماهانه فروش و واریزی"];
+    $lines[] = ["ماه", $month_label, $month_label_fa];
+    $lines[] = ["از", $month_start->format('Y-m-d 00:00'), "تا", $month_end->format('Y-m-d 23:59'), "وقت تهران"];
+    $lines[] = [];
+
+    // خلاصه فروش
+    $sale_sum = 0;
+    $sale_cnt = count($sales);
+    foreach ($sales as $r) {
+        $sale_sum += intval($r['price'] ?? 0);
+    }
+    $dep_sum = 0;
+    $dep_cnt = 0;
+    foreach ($deps as $r) {
+        $pr = preg_replace('/[^0-9]/', '', strval($r['price'] ?? ''));
+        if ($pr === '') continue;
+        $dep_cnt++;
+        $dep_sum += intval($pr);
+    }
+    $lines[] = ["خلاصه ماه"];
+    $lines[] = ["تعداد فروش", $sale_cnt, "مبلغ فروش (تومان)", $sale_sum];
+    $lines[] = ["تعداد واریزی", $dep_cnt, "مبلغ واریزی (تومان)", $dep_sum];
+    $lines[] = [];
+
+    // تفکیک هفته‌ای فروش
+    $lines[] = ["تفکیک فروش بر اساس هفته (شنبه تا جمعه)"];
+    $lines[] = ["هفته", "از", "تا", "تعداد", "مبلغ", "خرید", "تمدید", "حجم اضافه"];
+    foreach ($weeks as $w) {
+        $c = $s = 0;
+        $by = ['buy' => 0, 'renew' => 0, 'extra_volume' => 0];
+        foreach ($sales as $r) {
+            $ts = intval($r['created_at'] ?? 0);
+            if ($ts < $w['from_ts'] || $ts > $w['to_ts']) continue;
+            $p = intval($r['price'] ?? 0);
+            $c++;
+            $s += $p;
+            $t = strval($r['sale_type'] ?? 'buy');
+            if ($t === 'extend') $t = 'renew';
+            if ($t === 'extra') $t = 'extra_volume';
+            if (!isset($by[$t])) $by[$t] = 0;
+            $by[$t] += $p;
+        }
+        $lines[] = [
+            'هفته ' . $w['n'],
+            $w['from_label'],
+            $w['to_label'],
+            $c,
+            $s,
+            $by['buy'] ?? 0,
+            $by['renew'] ?? 0,
+            $by['extra_volume'] ?? 0,
+        ];
+    }
+    $lines[] = [];
+
+    // تفکیک هفته‌ای واریزی
+    $lines[] = ["تفکیک واریزی بر اساس هفته"];
+    $lines[] = ["هفته", "از", "تا", "تعداد", "مبلغ"];
+    foreach ($weeks as $w) {
+        $c = $s = 0;
+        foreach ($deps as $r) {
+            $ts = null;
+            $tm = strval($r['time'] ?? '');
+            if (preg_match('/^\d{4}\/\d{2}\/\d{2}/', $tm)) {
+                $ts = strtotime(str_replace('/', '-', $tm));
+            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}/', $tm)) {
+                $ts = strtotime($tm);
+            }
+            if ($ts === false || $ts === null) continue;
+            if ($ts < $w['from_ts'] || $ts > $w['to_ts']) continue;
+            $pr = preg_replace('/[^0-9]/', '', strval($r['price'] ?? ''));
+            if ($pr === '') continue;
+            $c++;
+            $s += intval($pr);
+        }
+        $lines[] = ['هفته ' . $w['n'], $w['from_label'], $w['to_label'], $c, $s];
+    }
+    $lines[] = [];
+
+    // جزئیات فروش
+    $lines[] = ["جزئیات فروش"];
+    $lines[] = ["تاریخ", "نوع", "آیدی کاربر", "یوزرنیم سرویس", "مبلغ", "شناسه فاکتور"];
+    foreach ($sales as $r) {
+        $ts = intval($r['created_at'] ?? 0);
+        $dt = $ts > 0 ? (new DateTime('@' . $ts))->setTimezone($tz)->format('Y-m-d H:i:s') : '';
+        $lines[] = [
+            $dt,
+            $type_label($r['sale_type'] ?? ''),
+            $r['id_user'] ?? '',
+            $r['username'] ?? '',
+            intval($r['price'] ?? 0),
+            $r['id_invoice'] ?? '',
+        ];
+    }
+    $lines[] = [];
+
+    // جزئیات واریزی
+    $lines[] = ["جزئیات واریزی"];
+    $lines[] = ["زمان", "آیدی کاربر", "مبلغ", "روش", "سفارش", "invoice"];
+    foreach ($deps as $r) {
+        $pr = preg_replace('/[^0-9]/', '', strval($r['price'] ?? ''));
+        if ($pr === '') continue;
+        $lines[] = [
+            $r['time'] ?? '',
+            $r['id_user'] ?? '',
+            intval($pr),
+            $r['Payment_Method'] ?? '',
+            $r['id_order'] ?? '',
+            $r['invoice'] ?? '',
+        ];
+    }
+
+    // نوشتن CSV با BOM برای Excel
+    $dir = sys_get_temp_dir();
+    $fname = 'report_' . $month_label . '_' . ($which === 'prev' ? 'prev' : 'cur') . '_' . time() . '.csv';
+    $path = rtrim($dir, '/') . '/' . $fname;
+    $fh = fopen($path, 'w');
+    if (!$fh) {
+        return ['error' => 'ساخت فایل ممکن نشد'];
+    }
+    // UTF-8 BOM
+    fwrite($fh, "\xEF\xBB\xBF");
+    foreach ($lines as $row) {
+        if (!is_array($row)) {
+            $row = [$row];
+        }
+        // تبدیل به رشته و جلوگیری از فرمول اکسل
+        $out = [];
+        foreach ($row as $cell) {
+            $cell = strval($cell);
+            if (isset($cell[0]) && in_array($cell[0], ['=', '+', '-', '@'], true)) {
+                $cell = "'" . $cell;
+            }
+            $out[] = $cell;
+        }
+        fputcsv($fh, $out);
+    }
+    fclose($fh);
+
+    $caption = "📊 گزارش " . ($which === 'prev' ? 'ماه قبل' : 'این ماه') . " ({$month_label_fa})\n";
+    $caption .= "🛒 فروش: " . number_format($sale_cnt) . " عدد | " . number_format($sale_sum) . " تومان\n";
+    $caption .= "💳 واریزی: " . number_format($dep_cnt) . " عدد | " . number_format($dep_sum) . " تومان\n";
+    $caption .= "📁 فایل CSV — در Excel باز کنید";
+
+    return ['path' => $path, 'caption' => $caption, 'month' => $month_label];
+}
+
+

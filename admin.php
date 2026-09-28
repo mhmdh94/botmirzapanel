@@ -288,7 +288,53 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($count_usertest),
         number_format($sumpanel)
     );
-    sendmessage($from_id, $statisticsall, null, 'HTML');
+    $stats_excel_kb = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => '📥 اکسل این ماه', 'callback_data' => 'stats_excel_cur'],
+                ['text' => '📥 اکسل ماه قبل', 'callback_data' => 'stats_excel_prev'],
+            ],
+        ],
+    ]);
+    sendmessage($from_id, $statisticsall, $stats_excel_kb, 'HTML');
+}
+
+#----[ خروجی اکسل آمار ماهانه ]----#
+if ($datain == 'stats_excel_cur' || $datain == 'stats_excel_prev') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    if (function_exists('answerCallbackQuery') || true) {
+        try {
+            telegram('answerCallbackQuery', [
+                'callback_query_id' => $callback_query_id ?? ($update['callback_query']['id'] ?? ''),
+                'text' => '⏳ در حال آماده‌سازی گزارش...',
+                'show_alert' => false,
+            ]);
+        } catch (Throwable $e) {
+        }
+    }
+    $which = ($datain == 'stats_excel_prev') ? 'prev' : 'current';
+    if (!function_exists('buildMonthlyStatsExcel')) {
+        sendmessage($from_id, '❌ تابع ساخت گزارش در دسترس نیست.', null, 'HTML');
+        return;
+    }
+    $res = buildMonthlyStatsExcel($which);
+    if (!empty($res['error'])) {
+        sendmessage($from_id, '❌ ' . $res['error'], null, 'HTML');
+        return;
+    }
+    $path = $res['path'] ?? '';
+    if ($path === '' || !is_file($path)) {
+        sendmessage($from_id, '❌ فایل گزارش ساخته نشد.', null, 'HTML');
+        return;
+    }
+    if (function_exists('sendDocument')) {
+        sendDocument($from_id, $path, $res['caption'] ?? 'گزارش ماهانه');
+    } else {
+        sendmessage($from_id, '❌ امکان ارسال فایل نیست.', null, 'HTML');
+    }
+    @unlink($path);
 }
 
 
