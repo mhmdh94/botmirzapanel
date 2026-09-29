@@ -186,84 +186,76 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $prev_week = $periodStats($prev_week_from, $prev_week_until);
     $month = $periodStats($month_ago);
 
-    // واریزی‌های تأییدشده از Payment_report
-    // ستون time باید با بک‌تیک باشد (کلمهٔ رزرو MySQL)
-    $depositStats = function ($from_ts, $until_ts = null) use ($pdo) {
-        $from_ts = intval($from_ts);
-        $until_ts = $until_ts === null ? null : intval($until_ts);
-        try {
-            $tz = new DateTimeZone('Asia/Tehran');
-            $dtf = (new DateTime('@' . $from_ts))->setTimezone($tz);
-            // from_ts در کد ما معمولاً start-1 است؛ برای رشته تاریخ از start واقعی استفاده می‌کنیم
-            $from_real = $from_ts + 1;
-            $dtf = (new DateTime('@' . $from_real))->setTimezone($tz);
-            $from_a = $dtf->format('Y/m/d H:i:s');
-            $from_b = $dtf->format('Y-m-d H:i:s');
-            $to_a = $to_b = null;
-            if ($until_ts !== null) {
-                // until در ledger معمولاً end inclusive به صورت end-1 روی مرز بعدی؛ برای تاریخ تا خود until
-                $dtt = (new DateTime('@' . max($until_ts, $from_real)))->setTimezone($tz);
-                $to_a = $dtt->format('Y/m/d H:i:s');
-                $to_b = $dtt->format('Y-m-d H:i:s');
-            }
-        } catch (Exception $e) {
-            $from_a = date('Y/m/d H:i:s', $from_ts + 1);
-            $from_b = date('Y-m-d H:i:s', $from_ts + 1);
-            $to_a = $to_b = null;
-            if ($until_ts !== null) {
-                $to_a = date('Y/m/d H:i:s', $until_ts);
-                $to_b = date('Y-m-d H:i:s', $until_ts);
+    // واریزی‌های تأییدشده — پارس تاریخ در PHP به وقت تهران (مقایسه رشته‌ای MySQL باگ مرز نیمه‌شب دارد)
+    $parsePayTime = function ($raw) {
+        $raw = trim(strval($raw));
+        if ($raw === '') {
+            return null;
+        }
+        // یونیکس عددی
+        if (ctype_digit($raw) && strlen($raw) >= 10) {
+            return intval(substr($raw, 0, 10));
+        }
+        // 2026/09/30 12:34:56 یا 2026-09-30 12:34:56
+        if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})[\sT]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/', $raw, $m)) {
+            try {
+                $tz = new DateTimeZone('Asia/Tehran');
+                $sec = isset($m[6]) && $m[6] !== '' ? intval($m[6]) : 0;
+                $dt = new DateTime(sprintf(
+                    '%04d-%02d-%02d %02d:%02d:%02d',
+                    intval($m[1]), intval($m[2]), intval($m[3]),
+                    intval($m[4]), intval($m[5]), $sec
+                ), $tz);
+                return $dt->getTimestamp();
+            } catch (Exception $e) {
+                return null;
             }
         }
-        try {
-            if ($until_ts === null) {
-                $sql = "SELECT COUNT(*) AS cnt,
-                        COALESCE(SUM(CASE WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED) ELSE 0 END), 0) AS sm
-                    FROM Payment_report
-                    WHERE payment_Status = 'paid'
-                    AND (
-                        (`time` >= :ta AND `time` REGEXP '^[0-9]{4}/')
-                        OR (`time` >= :tb AND `time` REGEXP '^[0-9]{4}-')
-                        OR (UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
-                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) > :u1)
-                        OR (UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
-                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) > :u2)
-                    )";
-                $st = $pdo->prepare($sql);
-                $st->execute([':ta' => $from_a, ':tb' => $from_b, ':u1' => $from_ts, ':u2' => $from_ts]);
-            } else {
-                $sql = "SELECT COUNT(*) AS cnt,
-                        COALESCE(SUM(CASE WHEN price REGEXP '^[0-9]+$' THEN CAST(price AS UNSIGNED) ELSE 0 END), 0) AS sm
-                    FROM Payment_report
-                    WHERE payment_Status = 'paid'
-                    AND (
-                        (`time` >= :ta AND `time` <= :toa AND `time` REGEXP '^[0-9]{4}/')
-                        OR (`time` >= :tb AND `time` <= :tob AND `time` REGEXP '^[0-9]{4}-')
-                        OR (
-                            UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
-                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) > :u1
-                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) <= :u2
-                        )
-                        OR (
-                            UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
-                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) > :u3
-                            AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) <= :u4
-                        )
-                    )";
-                $st = $pdo->prepare($sql);
-                $st->execute([
-                    ':ta' => $from_a, ':toa' => $to_a,
-                    ':tb' => $from_b, ':tob' => $to_b,
-                    ':u1' => $from_ts, ':u2' => $until_ts,
-                    ':u3' => $from_ts, ':u4' => $until_ts,
-                ]);
+        return null;
+    };
+
+    // یک‌بار paidهای اخیر را می‌خوانیم و در PHP بر اساس بازه فیلتر می‌کنیم
+    $paid_rows = [];
+    try {
+        // فقط از اول ماه قبل به بعد کافی است (برای هفته پیش / این ماه)
+        $tz = new DateTimeZone('Asia/Tehran');
+        $scan_from = (new DateTime('now', $tz))->modify('first day of last month')->setTime(0, 0, 0);
+        $scan_slash = $scan_from->format('Y/m/d') . ' 00:00:00';
+        $scan_dash = $scan_from->format('Y-m-d') . ' 00:00:00';
+        $st = $pdo->prepare("SELECT price, `time` FROM Payment_report WHERE payment_Status = 'paid' AND (
+            (`time` >= :fs AND `time` REGEXP '^[0-9]{4}/')
+            OR (`time` >= :fd AND `time` REGEXP '^[0-9]{4}-')
+            OR (`time` REGEXP '^[0-9]{10,}')
+        )");
+        $st->execute([':fs' => $scan_slash, ':fd' => $scan_dash]);
+        $paid_rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        error_log('deposit load: ' . $e->getMessage());
+        $paid_rows = [];
+    }
+
+    $depositStats = function ($from_ts, $until_ts = null) use ($paid_rows, $parsePayTime) {
+        // from_ts در آمار = start-1 ؛ until = end_inclusive (معمولاً next_start-1)
+        $start = intval($from_ts) + 1;
+        $end = $until_ts === null ? (time() + 60) : intval($until_ts);
+        $cnt = 0;
+        $sum = 0;
+        foreach ($paid_rows as $row) {
+            $ts = $parsePayTime($row['time'] ?? '');
+            if ($ts === null) {
+                continue;
             }
-            $r = $st->fetch(PDO::FETCH_ASSOC) ?: [];
-            return ['cnt' => intval($r['cnt'] ?? 0), 'sum' => intval($r['sm'] ?? 0)];
-        } catch (Exception $e) {
-            error_log('depositStats: ' . $e->getMessage());
-            return ['cnt' => 0, 'sum' => 0];
+            if ($ts < $start || $ts > $end) {
+                continue;
+            }
+            $pr = preg_replace('/[^0-9]/', '', strval($row['price'] ?? ''));
+            if ($pr === '') {
+                continue;
+            }
+            $cnt++;
+            $sum += intval($pr);
         }
+        return ['cnt' => $cnt, 'sum' => $sum];
     };
     $dep_day = $depositStats($day_ago);
     $dep_yest = $depositStats($yest_from, $yest_until);
