@@ -1167,23 +1167,23 @@ if ($text == ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مس�
     sendmessage($from_id, $msg, $kb, 'HTML');
 }
 #----------- users with balance > 1 toman ------------#
-if ($text == ($textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۱ میلیون')) {
+if ($text == ($textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۵۰۰ هزار')) {
     global $pdo;
     $limit = 80;
     try {
-        $stmt = $pdo->query("SELECT id, username, Balance FROM user WHERE CAST(Balance AS SIGNED) >= 1000000 ORDER BY CAST(Balance AS SIGNED) DESC LIMIT {$limit}");
+        $stmt = $pdo->query("SELECT id, username, Balance FROM user WHERE CAST(Balance AS SIGNED) >= 500000 ORDER BY CAST(Balance AS SIGNED) DESC LIMIT {$limit}");
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
     } catch (Exception $e) {
         $rows = [];
     }
     if (empty($rows)) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['balance_gt1_empty'] ?? 'هیچ کاربری با موجودی بالای ۱٬۰۰۰٬۰۰۰ تومان نیست.', $User_Services, 'HTML');
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['balance_gt1_empty'] ?? 'هیچ کاربری با موجودی بالای ۵۰۰٬۰۰۰ تومان نیست.', $User_Services, 'HTML');
         return;
     }
     $total = count($rows);
     $sum_all = 0;
     try {
-        $stc = $pdo->query("SELECT COUNT(*) AS c, COALESCE(SUM(CAST(Balance AS SIGNED)),0) AS s FROM user WHERE CAST(Balance AS SIGNED) >= 1000000");
+        $stc = $pdo->query("SELECT COUNT(*) AS c, COALESCE(SUM(CAST(Balance AS SIGNED)),0) AS s FROM user WHERE CAST(Balance AS SIGNED) >= 500000");
         $rc = $stc ? $stc->fetch(PDO::FETCH_ASSOC) : null;
         if ($rc) {
             $total = intval($rc['c'] ?? $total);
@@ -1207,7 +1207,7 @@ if ($text == ($textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 �
     $note = ($total > $limit) ? " (نمایش {$limit} نفر با بیشترین موجودی)" : "";
     $body = implode("\n\n", $lines);
     $tpl = $textbotlang['Admin']['ManageUser']['balance_gt1_header']
-        ?? "💰 <b>کاربران با موجودی بالای ۱ میلیون تومان</b>\nتعداد: <b>%s</b> | جمع موجودی: <b>%s</b> تومان%s\n\n%s";
+        ?? "💰 <b>کاربران با موجودی بالای ۵۰۰ هزار تومان</b>\nتعداد: <b>%s</b> | جمع موجودی: <b>%s</b> تومان%s\n\n%s";
     $msg = sprintf($tpl, number_format($total), number_format($sum_all), $note, $body);
     if (strlen($msg) > 3900) {
         $msg = substr($msg, 0, 3900) . "\n…";

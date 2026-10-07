@@ -1007,9 +1007,9 @@ $textbotlang['Admin']['ManageUser']['unblock_all'] = "✅ خارج کردن هم
 $textbotlang['Admin']['ManageUser']['unblock_all_confirm'] = "⚠️ آیا مطمئن هستید همه کاربران مسدود از مسدودی خارج شوند؟";
 $textbotlang['Admin']['ManageUser']['unblock_all_done'] = "✅ تعداد <b>%s</b> کاربر از مسدودی خارج شدند.";
 $textbotlang['Admin']['ManageUser']['blocked_empty'] = "📭 هیچ کاربر مسدودی وجود ندارد.";
-$textbotlang['Admin']['ManageUser']['list_balance_gt1'] = "💰 موجودی بالای ۱ میلیون";
-$textbotlang['Admin']['ManageUser']['balance_gt1_empty'] = "📭 هیچ کاربری با موجودی بالای ۱٬۰۰۰٬۰۰۰ تومان نیست.";
-$textbotlang['Admin']['ManageUser']['balance_gt1_header'] = "💰 <b>کاربران با موجودی بالای ۱ میلیون تومان</b>
+$textbotlang['Admin']['ManageUser']['list_balance_gt1'] = "💰 موجودی بالای ۵۰۰ هزار";
+$textbotlang['Admin']['ManageUser']['balance_gt1_empty'] = "📭 هیچ کاربری با موجودی بالای ۵۰۰٬۰۰۰ تومان نیست.";
+$textbotlang['Admin']['ManageUser']['balance_gt1_header'] = "💰 <b>کاربران با موجودی بالای ۵۰۰ هزار تومان</b>
 تعداد: <b>%s</b> | جمع موجودی: <b>%s</b> تومان%s
 
 %s";
