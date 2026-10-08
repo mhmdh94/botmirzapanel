@@ -3611,6 +3611,35 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
             $pay_note .= "\n" . $caption;
         }
     }
+    // اگر تأیید خودکار کلی روشن است ولی برای این کاربر خاموش شده، زیر رسید به ادمین هشدار بده
+    try {
+        $global_auto = '0';
+        if (function_exists('getPaySettingValue')) {
+            $global_auto = strval(getPaySettingValue('auto_cart_confirm', '0'));
+        } else {
+            $row_ac = select("PaySetting", "ValuePay", "NamePay", "auto_cart_confirm", "select");
+            if (is_array($row_ac)) {
+                $global_auto = strval($row_ac['ValuePay'] ?? '0');
+            } elseif (is_string($row_ac) || is_numeric($row_ac)) {
+                $global_auto = strval($row_ac);
+            }
+        }
+        if (function_exists('ensureUserCartAutoColumn')) {
+            ensureUserCartAutoColumn();
+        }
+        $u_cart = select("user", "cart_auto_off", "id", $from_id, "select");
+        $user_auto_off = 0;
+        if (is_array($u_cart)) {
+            $user_auto_off = intval($u_cart['cart_auto_off'] ?? 0);
+        } elseif ($u_cart !== null && $u_cart !== false) {
+            $user_auto_off = intval($u_cart);
+        }
+        if ($global_auto === '1' && $user_auto_off === 1) {
+            $pay_note .= "\n\n⚠️ <b>تأیید خودکار برای این کاربر غیرفعال است</b>\nباید دستی تأیید یا رد کنید.";
+        }
+    } catch (Throwable $e) {
+        // نادیده
+    }
     $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
     $textsendrasid = sprintf($textbotlang['users']['moeny']['cartresid'], $Processing_value, $from_id, $randomString, $username, $active_svc, $pay_note);
     $__adm_photo = [
