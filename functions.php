@@ -2248,24 +2248,62 @@ function getAutoCartCronCommand($minutes = null)
     return "*/{$m} * * * * curl https://{$host}/cron/croncard.php";
 }
 
-/** حذف هر کرون croncard و در صورت فعال بودن، نصب با فاصله جدید */
-function syncAutoCartCron($enabled)
+/** دامنه این ربات برای تطبیق خطوط crontab */
+function getBotCronHostKey()
 {
     global $domainhosts;
+    $host = trim(strval($domainhosts ?? ''));
+    $host = preg_replace('#^https?://#i', '', $host);
+    $host = rtrim($host, '/');
+    if (strpos($host, '/') !== false) {
+        $host = explode('/', $host, 2)[0];
+    }
+    return strtolower($host);
+}
+
+/**
+ * خط crontab متعلق به همین ربات است؟ (دامنه + نام فایل کرون)
+ */
+function isCronLineForThisBot($line, $patterns = null)
+{
+    $host = getBotCronHostKey();
+    if ($host === '') {
+        return false;
+    }
+    if (strpos(strtolower(strval($line)), $host) === false) {
+        return false;
+    }
+    if ($patterns === null) {
+        $patterns = getBotManagedCronPatterns();
+    }
+    foreach ($patterns as $pat) {
+        if (strpos($line, $pat) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** حذف/نصب کرون croncard فقط برای دامنه همین ربات */
+function syncAutoCartCron($enabled)
+{
+    $enabled = (bool) $enabled;
     if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
         return false;
     }
+    if (getBotCronHostKey() === '') {
+        return false;
+    }
     $existing = @shell_exec('crontab -l 2>/dev/null');
-    if (!is_string($existing)) {
+    if (!is_string($existing) || stripos($existing, 'no crontab') !== false) {
         $existing = '';
     }
-    $lines = preg_split("/\r\n|\n|\r/", $existing);
     $kept = [];
-    foreach ($lines as $line) {
+    foreach (preg_split("/\r\n|\n|\r/", $existing) as $line) {
         if ($line === '' || $line === false) {
             continue;
         }
-        if (strpos($line, 'croncard.php') !== false) {
+        if (isCronLineForThisBot($line, ['croncard.php'])) {
             continue;
         }
         $kept[] = $line;
@@ -2277,22 +2315,35 @@ function syncAutoCartCron($enabled)
     if ($content !== '' && substr($content, -1) !== "\n") {
         $content .= "\n";
     }
-    $tmp = '/tmp/crontab_mirza_autocart.txt';
-    @file_put_contents($tmp, $content);
-    @shell_exec('crontab ' . escapeshellarg($tmp));
+    $tmp = '/tmp/crontab_mirza_autocart_' . getmypid() . '.txt';
+    if (@file_put_contents($tmp, $content) === false) {
+        return false;
+    }
+    if (trim($content) === '') {
+        @shell_exec('crontab -r 2>/dev/null');
+    } else {
+        @shell_exec('crontab ' . escapeshellarg($tmp) . ' 2>/dev/null');
+    }
     @unlink($tmp);
-    return true;
+    $after = @shell_exec('crontab -l 2>/dev/null');
+    if (!is_string($after)) {
+        $after = '';
+    }
+    $has = false;
+    foreach (preg_split("/\r\n|\n|\r/", $after) as $ln) {
+        if (isCronLineForThisBot($ln, ['croncard.php'])) {
+            $has = true;
+            break;
+        }
+    }
+    return $enabled ? $has : !$has;
 }
 
-/**
- * آیا PHP می‌تواند crontab را تغییر دهد؟
- */
 function botCronShellAvailable()
 {
     return function_exists('shell_exec') && is_callable('shell_exec');
 }
 
-/** الگوهای فایل کرون که ربات مدیریت می‌کند */
 function getBotManagedCronPatterns()
 {
     return [
@@ -2315,11 +2366,7 @@ function getSmartCronCommandLine()
 }
 
 /**
- * همگام‌سازی crontab با کرون‌های لازم ربات
- * - همیشه smart_cron
- * - در صورت روشن بودن تأیید خودکار: croncard
- * - کرون‌های قدیمی volume/day/expire/test حذف می‌شوند
- * @return array{ok:bool,message:string,lines:array,installed:array}
+ * همگام‌سازی crontab فقط برای دامنه همین ربات
  */
 function syncBotCrontabs()
 {
@@ -2345,33 +2392,30 @@ function syncBotCrontabs()
             'installed' => [],
         ];
     }
+    if (getBotCronHostKey() === '') {
+        return [
+            'ok' => false,
+            'message' => 'دامنه ربات (domainhosts) خالی است؛ برای جلوگیری از حذف اشتباه کرون‌های دیگر متوقف شد.',
+            'lines' => $wanted,
+            'installed' => [],
+        ];
+    }
 
     $existing = @shell_exec('crontab -l 2>/dev/null');
-    if (!is_string($existing)) {
-        $existing = '';
-    }
-    // بعضی سیستم‌ها وقتی crontab خالی است خطا می‌نویسند
-    if (stripos($existing, 'no crontab') !== false) {
+    if (!is_string($existing) || stripos($existing, 'no crontab') !== false) {
         $existing = '';
     }
 
     $patterns = getBotManagedCronPatterns();
-    $lines = preg_split("/\r\n|\n|\r/", $existing);
     $kept = [];
-    foreach ($lines as $line) {
+    foreach (preg_split("/\r\n|\n|\r/", $existing) as $line) {
         if ($line === '' || $line === false) {
             continue;
         }
-        $drop = false;
-        foreach ($patterns as $pat) {
-            if (strpos($line, $pat) !== false) {
-                $drop = true;
-                break;
-            }
+        if (isCronLineForThisBot($line, $patterns)) {
+            continue;
         }
-        if (!$drop) {
-            $kept[] = $line;
-        }
+        $kept[] = $line;
     }
     foreach ($wanted as $w) {
         $kept[] = $w;
@@ -2398,44 +2442,52 @@ function syncBotCrontabs()
         $after = '';
     }
     $installed = [];
+    $host = getBotCronHostKey();
     foreach ($wanted as $w) {
-        // چک ساده: نام فایل در crontab باشد
         $needle = '';
         if (strpos($w, 'smart_cron.php') !== false) {
             $needle = 'smart_cron.php';
         } elseif (strpos($w, 'croncard.php') !== false) {
             $needle = 'croncard.php';
         }
-        if ($needle !== '' && strpos($after, $needle) !== false) {
-            $installed[] = $w;
+        if ($needle === '') {
+            continue;
+        }
+        foreach (preg_split("/\r\n|\n|\r/", $after) as $ln) {
+            if (strpos($ln, $needle) !== false && stripos($ln, $host) !== false) {
+                $installed[] = $w;
+                break;
+            }
         }
     }
     $ok = (count($installed) === count($wanted));
     return [
         'ok' => $ok,
         'message' => $ok
-            ? 'کرون‌جاب‌ها با موفقیت در crontab نصب/همگام شدند.'
-            : 'دستور crontab اجرا شد ولی همه خطوط تأیید نشدند؛ خروجی crontab را دستی چک کنید.',
+            ? 'کرون‌جاب‌های این ربات (دامنه: ' . $host . ') با موفقیت نصب/همگام شدند.'
+            : 'دستور crontab اجرا شد ولی همه خطوط این دامنه تأیید نشدند.',
         'lines' => $wanted,
         'installed' => $installed,
     ];
 }
 
 /**
- * حذف همه کرون‌های مدیریت‌شده ربات از crontab (سایر خطوط دست‌نخورده می‌مانند)
- * @return array{ok:bool,message:string,removed:array}
+ * حذف کرون‌های فقط همین ربات (بر اساس دامنه) از crontab
  */
 function removeBotCrontabs()
 {
     if (!botCronShellAvailable()) {
-        $patterns = getBotManagedCronPatterns();
-        $hint = [];
-        foreach ($patterns as $p) {
-            $hint[] = $p;
-        }
         return [
             'ok' => false,
-            'message' => 'shell_exec غیرفعال است؛ خطوط مربوط به این فایل‌ها را دستی از crontab حذف کنید: ' . implode(', ', $hint),
+            'message' => 'shell_exec غیرفعال است؛ خطوط دامنه این ربات را دستی از crontab حذف کنید.',
+            'removed' => [],
+        ];
+    }
+    $host = getBotCronHostKey();
+    if ($host === '') {
+        return [
+            'ok' => false,
+            'message' => 'دامنه ربات خالی است؛ حذف انجام نشد تا کرون ربات‌های دیگر آسیب نبیند.',
             'removed' => [],
         ];
     }
@@ -2444,24 +2496,17 @@ function removeBotCrontabs()
         $existing = '';
     }
     $patterns = getBotManagedCronPatterns();
-    $lines = preg_split("/\r\n|\n|\r/", $existing);
     $kept = [];
     $removed = [];
-    foreach ($lines as $line) {
+    foreach (preg_split("/\r\n|\n|\r/", $existing) as $line) {
         if ($line === '' || $line === false) {
             continue;
         }
-        $drop = false;
-        foreach ($patterns as $pat) {
-            if (strpos($line, $pat) !== false) {
-                $drop = true;
-                $removed[] = $line;
-                break;
-            }
+        if (isCronLineForThisBot($line, $patterns)) {
+            $removed[] = $line;
+            continue;
         }
-        if (!$drop) {
-            $kept[] = $line;
-        }
+        $kept[] = $line;
     }
     $content = implode("\n", $kept);
     if ($content !== '' && substr($content, -1) !== "\n") {
@@ -2471,8 +2516,7 @@ function removeBotCrontabs()
     if (@file_put_contents($tmp, $content) === false) {
         return ['ok' => false, 'message' => 'نوشتن فایل موقت ناموفق بود.', 'removed' => []];
     }
-    if ($content === '' || trim($content) === '') {
-        // crontab خالی: حذف کامل
+    if (trim($content) === '') {
         @shell_exec('crontab -r 2>/dev/null');
     } else {
         @shell_exec('crontab ' . escapeshellarg($tmp) . ' 2>/dev/null');
@@ -2482,34 +2526,27 @@ function removeBotCrontabs()
     return [
         'ok' => true,
         'message' => $n > 0
-            ? "تعداد {$n} خط کرون ربات از crontab حذف شد."
-            : 'هیچ خط کرون مربوط به ربات در crontab نبود.',
+            ? "تعداد {$n} خط کرون مربوط به دامنه {$host} حذف شد."
+            : "هیچ خط کرونی برای دامنه {$host} در crontab نبود.",
         'removed' => $removed,
     ];
 }
 
 function isAutomaticCartConfirmEnabled()
 {
-    // منبع اصلی: PaySetting
+    // فقط تنظیم دیتابیس — نه وجود خط در crontab (تا روشن/خاموش از ربات دقیق باشد)
     if (function_exists('getPaySettingValue')) {
         if (function_exists('ensurePaySetting')) {
             ensurePaySetting('auto_cart_confirm', '0');
         }
-        if (getPaySettingValue('auto_cart_confirm', '0') === '1') {
-            return true;
-        }
-        // سازگاری با نصب‌های قدیمی که فقط کرون دارند
-        if (function_exists('shell_exec') && is_callable('shell_exec')) {
-            $existing = @shell_exec('crontab -l 2>/dev/null');
-            if (is_string($existing) && strpos($existing, 'croncard.php') !== false) {
-                return true;
-            }
-        }
-        return false;
+        return getPaySettingValue('auto_cart_confirm', '0') === '1';
     }
-    if (function_exists('shell_exec') && is_callable('shell_exec')) {
-        $existing = @shell_exec('crontab -l 2>/dev/null');
-        return is_string($existing) && strpos($existing, 'croncard.php') !== false;
+    $row = select("PaySetting", "ValuePay", "NamePay", "auto_cart_confirm", "select");
+    if (is_array($row)) {
+        return strval($row['ValuePay'] ?? '0') === '1';
+    }
+    if (is_string($row) || is_numeric($row)) {
+        return strval($row) === '1';
     }
     return false;
 }

@@ -2072,17 +2072,33 @@ if ($datain == "finance_auto_cart_toggle") {
         }
         update("PaySetting", "ValuePay", $new_state ? '1' : '0', "NamePay", "auto_cart_confirm");
     }
+    $cron_msg = '';
     if (function_exists('syncAutoCartCron')) {
-        $ok = syncAutoCartCron($new_state);
-        if (!$ok && $new_state) {
-            $cmd = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : '';
-            sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'] ?? "کرون را دستی اضافه کنید:\n%s", $cmd), null, 'HTML');
+        $cron_ok = syncAutoCartCron($new_state);
+        if ($new_state) {
+            if ($cron_ok) {
+                $cron_msg = "✅ کرون تأیید خودکار در crontab نصب شد.";
+            } else {
+                $cmd = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : '';
+                $cron_msg = "⚠️ نتوانست کرون را خودکار اضافه کند. دستی:\n<code>" . htmlspecialchars(strval($cmd), ENT_QUOTES, 'UTF-8') . "</code>";
+            }
+        } else {
+            if ($cron_ok) {
+                $cron_msg = "✅ کرون تأیید خودکار از crontab حذف شد.";
+            } else {
+                $cron_msg = "⚠️ نتوانست کرون را خودکار حذف کند. دستی با crontab -e خط croncard.php را پاک کنید.";
+            }
         }
-    } elseif ($new_state && !(function_exists('shell_exec') && is_callable('shell_exec'))) {
+    } elseif ($new_state) {
         $cmd = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
-        sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'] ?? $cmd, $cmd), null, 'HTML');
+        $cron_msg = "⚠️ shell_exec غیرفعال است. دستی:\n<code>" . htmlspecialchars(strval($cmd), ENT_QUOTES, 'UTF-8') . "</code>";
+    } else {
+        $cron_msg = "⚠️ shell_exec غیرفعال است. برای حذف، خط croncard.php را دستی از crontab پاک کنید.";
     }
-    $auto_on = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : $new_state;
+    if ($cron_msg !== '') {
+        sendmessage($from_id, $cron_msg, null, 'HTML');
+    }
+    $auto_on = $new_state;
     // رفرش همان صفحه‌ای که کاربر هست (مالی یا زیرمنوی تنظیمات)
     $from_settings = !empty($text_callback) && (
         strpos($text_callback, 'تنظیمات تأیید') !== false
@@ -3179,9 +3195,15 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         }
         if (function_exists('syncAutoCartCron')) {
             $ok = syncAutoCartCron($enable);
-            if (!$ok && $enable) {
+            if ($enable && $ok) {
+                sendmessage($from_id, "✅ تأیید خودکار روشن شد و کرون در crontab نصب شد.", null, 'HTML');
+            } elseif (!$enable && $ok) {
+                sendmessage($from_id, "✅ تأیید خودکار خاموش شد و کرون از crontab حذف شد.", null, 'HTML');
+            } elseif ($enable && !$ok) {
                 $cronCommand = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
                 sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
+            } elseif (!$enable && !$ok) {
+                sendmessage($from_id, "⚠️ تأیید خودکار خاموش شد؛ حذف کرون از crontab ممکن نشد — دستی خط croncard.php را پاک کنید.", null, 'HTML');
             }
         } elseif ($enable && !(function_exists('shell_exec') && is_callable('shell_exec'))) {
             $cronCommand = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
