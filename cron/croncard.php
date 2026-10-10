@@ -10,6 +10,10 @@ require_once '../text.php';
 require '../vendor/autoload.php';
 $ManagePanel = new ManagePanel();
 $setting = select("setting", "*");
+// اگر تأیید خودکار در تنظیمات خاموش است، اصلاً اجرا نشود (حتی اگر خط crontab مانده باشد)
+if (function_exists('isAutomaticCartConfirmEnabled') && !isAutomaticCartConfirmEnabled()) {
+    exit;
+}
 $datatextbotget = select("textbot", "*",null ,null ,"fetchAll");
 $datatxtbot = array();
 foreach ($datatextbotget as $row) {
