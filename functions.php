@@ -2421,6 +2421,73 @@ function syncBotCrontabs()
     ];
 }
 
+/**
+ * حذف همه کرون‌های مدیریت‌شده ربات از crontab (سایر خطوط دست‌نخورده می‌مانند)
+ * @return array{ok:bool,message:string,removed:array}
+ */
+function removeBotCrontabs()
+{
+    if (!botCronShellAvailable()) {
+        $patterns = getBotManagedCronPatterns();
+        $hint = [];
+        foreach ($patterns as $p) {
+            $hint[] = $p;
+        }
+        return [
+            'ok' => false,
+            'message' => 'shell_exec غیرفعال است؛ خطوط مربوط به این فایل‌ها را دستی از crontab حذف کنید: ' . implode(', ', $hint),
+            'removed' => [],
+        ];
+    }
+    $existing = @shell_exec('crontab -l 2>/dev/null');
+    if (!is_string($existing) || stripos($existing, 'no crontab') !== false) {
+        $existing = '';
+    }
+    $patterns = getBotManagedCronPatterns();
+    $lines = preg_split("/\r\n|\n|\r/", $existing);
+    $kept = [];
+    $removed = [];
+    foreach ($lines as $line) {
+        if ($line === '' || $line === false) {
+            continue;
+        }
+        $drop = false;
+        foreach ($patterns as $pat) {
+            if (strpos($line, $pat) !== false) {
+                $drop = true;
+                $removed[] = $line;
+                break;
+            }
+        }
+        if (!$drop) {
+            $kept[] = $line;
+        }
+    }
+    $content = implode("\n", $kept);
+    if ($content !== '' && substr($content, -1) !== "\n") {
+        $content .= "\n";
+    }
+    $tmp = '/tmp/crontab_mirza_bot_rm_' . getmypid() . '.txt';
+    if (@file_put_contents($tmp, $content) === false) {
+        return ['ok' => false, 'message' => 'نوشتن فایل موقت ناموفق بود.', 'removed' => []];
+    }
+    if ($content === '' || trim($content) === '') {
+        // crontab خالی: حذف کامل
+        @shell_exec('crontab -r 2>/dev/null');
+    } else {
+        @shell_exec('crontab ' . escapeshellarg($tmp) . ' 2>/dev/null');
+    }
+    @unlink($tmp);
+    $n = count($removed);
+    return [
+        'ok' => true,
+        'message' => $n > 0
+            ? "تعداد {$n} خط کرون ربات از crontab حذف شد."
+            : 'هیچ خط کرون مربوط به ربات در crontab نبود.',
+        'removed' => $removed,
+    ];
+}
+
 function isAutomaticCartConfirmEnabled()
 {
     // منبع اصلی: PaySetting
@@ -2867,6 +2934,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '7,3,1'), 'callback_data' => 'smartcron_set_time']],
         [['text' => '📋 دستور کرون سیستم', 'callback_data' => 'smartcron_show_cmd']],
         [['text' => '🛠 نصب خودکار کرون در سرور', 'callback_data' => 'smartcron_install_crontab']],
+        [['text' => '🗑 حذف کرون‌های ربات از سرور', 'callback_data' => 'smartcron_remove_crontab']],
     ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }

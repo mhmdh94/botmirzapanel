@@ -3738,6 +3738,47 @@ if ($datain == "smartcron_install_crontab") {
 }
 
 
+if ($datain == "smartcron_remove_crontab") {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    $kb_confirm = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => '✅ بله، حذف شود', 'callback_data' => 'smartcron_remove_crontab_yes'],
+                ['text' => '❌ انصراف', 'callback_data' => 'smartcron_remove_crontab_no'],
+            ],
+        ],
+    ]);
+    sendmessage($from_id, "⚠️ <b>حذف کرون‌های ربات</b>\n\nهمه خطوط مربوط به ربات (smart_cron، croncard و کرون‌های قدیمی) از crontab پاک می‌شوند.\nکرون‌های دیگر سیستم دست نمی‌خورند.\n\nمطمئن هستید؟", $kb_confirm, 'HTML');
+}
+if ($datain == "smartcron_remove_crontab_no") {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    Editmessagetext($from_id, $message_id, "❌ حذف کرون لغو شد.", buildSmartCronAdminKeyboard());
+}
+if ($datain == "smartcron_remove_crontab_yes") {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    $res = function_exists('removeBotCrontabs') ? removeBotCrontabs() : ['ok' => false, 'message' => 'تابع removeBotCrontabs موجود نیست.', 'removed' => []];
+    if (!empty($res['ok'])) {
+        $msg = "✅ <b>حذف انجام شد</b>\n\n" . htmlspecialchars($res['message'] ?? '', ENT_QUOTES, 'UTF-8');
+        if (!empty($res['removed'])) {
+            $msg .= "\n\nخطوط حذف‌شده:";
+            foreach (array_slice($res['removed'], 0, 15) as $ln) {
+                $msg .= "\n<code>" . htmlspecialchars($ln, ENT_QUOTES, 'UTF-8') . "</code>";
+            }
+        }
+        $msg .= "\n\nبرای نصب دوباره از دکمه «نصب خودکار کرون» استفاده کنید.";
+    } else {
+        $msg = "⚠️ <b>حذف خودکار ممکن نشد</b>\n\n" . htmlspecialchars($res['message'] ?? '', ENT_QUOTES, 'UTF-8');
+        $msg .= "\n\nدستی:\n<code>crontab -e</code>\nو خطوط دارای smart_cron.php یا croncard.php را پاک کنید.";
+    }
+    sendmessage($from_id, $msg, buildSmartCronAdminKeyboard(), 'HTML');
+}
+
 if ($datain == "smartcron_set_limit") {
     sendmessage($from_id, "🔢 تعداد فاکتوری که در هر اجرای کرون بررسی می‌شود را بفرستید (عدد بین ۱ تا ۲۰۰، پیش‌فرض ۲۰):", $backadmin, 'HTML');
     step('smartcron_set_limit', $from_id);
