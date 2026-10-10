@@ -1727,6 +1727,7 @@ $textbotlang['Admin']['smartcron']['reset_test_ok'] = "✅ محدودیت اکا
 $textbotlang['Admin']['smartcron']['set_vol'] = "درصدهای اخطار حجم را با کاما بفرستید (مثلاً 90,95,99):";
 $textbotlang['Admin']['smartcron']['set_time'] = "روزهای اخطار زمان را با کاما بفرستید (مثلاً 7,3,1):";
 $textbotlang['Admin']['smartcron']['saved'] = "✅ ذخیره شد.";
+$textbotlang['Admin']['smartcron']['install_crontab_btn'] = "🛠 نصب خودکار کرون در سرور";
 $textbotlang['users']['cron']['warn_time'] = "⏰ از زمان سرویس <code>%s</code> حدود <b>%s</b> روز باقی مانده است.
 
 برای جلوگیری از قطعی سرویس را تمدید کنید.";

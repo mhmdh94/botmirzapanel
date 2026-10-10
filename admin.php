@@ -3710,6 +3710,32 @@ if ($datain == "smartcron_show_cmd") {
     global $domainhosts;
     sendmessage($from_id, sprintf($textbotlang['Admin']['smartcron']['cmd'], $domainhosts), buildSmartCronAdminKeyboard(), 'HTML');
 }
+if ($datain == "smartcron_install_crontab") {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    $res = function_exists('syncBotCrontabs') ? syncBotCrontabs() : ['ok' => false, 'message' => 'تابع syncBotCrontabs موجود نیست.', 'lines' => [], 'installed' => []];
+    $lines_txt = '';
+    if (!empty($res['lines'])) {
+        foreach ($res['lines'] as $ln) {
+            $lines_txt .= "\n<code>" . htmlspecialchars($ln, ENT_QUOTES, 'UTF-8') . "</code>";
+        }
+    }
+    if (!empty($res['ok'])) {
+        $msg = "✅ <b>نصب کرون انجام شد</b>\n\n" . htmlspecialchars($res['message'] ?? '', ENT_QUOTES, 'UTF-8');
+        if ($lines_txt !== '') {
+            $msg .= "\n\n📌 خطوط نصب‌شده:" . $lines_txt;
+        }
+        $msg .= "\n\nبرای اطمینان روی سرور بزنید:\n<code>crontab -l</code>";
+    } else {
+        $msg = "⚠️ <b>نصب خودکار ممکن نشد</b>\n\n" . htmlspecialchars($res['message'] ?? '', ENT_QUOTES, 'UTF-8');
+        if ($lines_txt !== '') {
+            $msg .= "\n\nاین خطوط را دستی در crontab بگذارید:" . $lines_txt;
+            $msg .= "\n\nدستور:\n<code>crontab -e</code>";
+        }
+    }
+    sendmessage($from_id, $msg, buildSmartCronAdminKeyboard(), 'HTML');
+}
 
 
 if ($datain == "smartcron_set_limit") {

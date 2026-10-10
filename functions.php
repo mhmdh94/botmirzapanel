@@ -2284,6 +2284,143 @@ function syncAutoCartCron($enabled)
     return true;
 }
 
+/**
+ * آیا PHP می‌تواند crontab را تغییر دهد؟
+ */
+function botCronShellAvailable()
+{
+    return function_exists('shell_exec') && is_callable('shell_exec');
+}
+
+/** الگوهای فایل کرون که ربات مدیریت می‌کند */
+function getBotManagedCronPatterns()
+{
+    return [
+        'smart_cron.php',
+        'croncard.php',
+        'cronvolume.php',
+        'cronday.php',
+        'removeexpire.php',
+        'configtest.php',
+        'cleanorphan.php',
+        'smartwarn.php',
+    ];
+}
+
+function getSmartCronCommandLine()
+{
+    global $domainhosts;
+    $host = trim(strval($domainhosts ?? ''));
+    return "*/30 * * * * curl -s https://{$host}/cron/smart_cron.php >/dev/null 2>&1";
+}
+
+/**
+ * همگام‌سازی crontab با کرون‌های لازم ربات
+ * - همیشه smart_cron
+ * - در صورت روشن بودن تأیید خودکار: croncard
+ * - کرون‌های قدیمی volume/day/expire/test حذف می‌شوند
+ * @return array{ok:bool,message:string,lines:array,installed:array}
+ */
+function syncBotCrontabs()
+{
+    global $domainhosts;
+    $wanted = [];
+    $wanted[] = getSmartCronCommandLine();
+    $auto_on = false;
+    if (function_exists('getPaySettingValue')) {
+        if (function_exists('ensurePaySetting')) {
+            ensurePaySetting('auto_cart_confirm', '0');
+        }
+        $auto_on = (getPaySettingValue('auto_cart_confirm', '0') === '1');
+    }
+    if ($auto_on && function_exists('getAutoCartCronCommand')) {
+        $wanted[] = getAutoCartCronCommand();
+    }
+
+    if (!botCronShellAvailable()) {
+        return [
+            'ok' => false,
+            'message' => 'shell_exec روی سرور غیرفعال است؛ نمی‌توان از داخل ربات crontab را تغییر داد.',
+            'lines' => $wanted,
+            'installed' => [],
+        ];
+    }
+
+    $existing = @shell_exec('crontab -l 2>/dev/null');
+    if (!is_string($existing)) {
+        $existing = '';
+    }
+    // بعضی سیستم‌ها وقتی crontab خالی است خطا می‌نویسند
+    if (stripos($existing, 'no crontab') !== false) {
+        $existing = '';
+    }
+
+    $patterns = getBotManagedCronPatterns();
+    $lines = preg_split("/\r\n|\n|\r/", $existing);
+    $kept = [];
+    foreach ($lines as $line) {
+        if ($line === '' || $line === false) {
+            continue;
+        }
+        $drop = false;
+        foreach ($patterns as $pat) {
+            if (strpos($line, $pat) !== false) {
+                $drop = true;
+                break;
+            }
+        }
+        if (!$drop) {
+            $kept[] = $line;
+        }
+    }
+    foreach ($wanted as $w) {
+        $kept[] = $w;
+    }
+
+    $content = implode("\n", $kept);
+    if ($content !== '' && substr($content, -1) !== "\n") {
+        $content .= "\n";
+    }
+    $tmp = '/tmp/crontab_mirza_bot_' . getmypid() . '.txt';
+    if (@file_put_contents($tmp, $content) === false) {
+        return [
+            'ok' => false,
+            'message' => 'نوشتن فایل موقت crontab ناموفق بود.',
+            'lines' => $wanted,
+            'installed' => [],
+        ];
+    }
+    @shell_exec('crontab ' . escapeshellarg($tmp) . ' 2>/dev/null');
+    @unlink($tmp);
+
+    $after = @shell_exec('crontab -l 2>/dev/null');
+    if (!is_string($after)) {
+        $after = '';
+    }
+    $installed = [];
+    foreach ($wanted as $w) {
+        // چک ساده: نام فایل در crontab باشد
+        $needle = '';
+        if (strpos($w, 'smart_cron.php') !== false) {
+            $needle = 'smart_cron.php';
+        } elseif (strpos($w, 'croncard.php') !== false) {
+            $needle = 'croncard.php';
+        }
+        if ($needle !== '' && strpos($after, $needle) !== false) {
+            $installed[] = $w;
+        }
+    }
+    $ok = (count($installed) === count($wanted));
+    return [
+        'ok' => $ok,
+        'message' => $ok
+            ? 'کرون‌جاب‌ها با موفقیت در crontab نصب/همگام شدند.'
+            : 'دستور crontab اجرا شد ولی همه خطوط تأیید نشدند؛ خروجی crontab را دستی چک کنید.',
+        'lines' => $wanted,
+        'installed' => $installed,
+    ];
+}
+
 function isAutomaticCartConfirmEnabled()
 {
     // منبع اصلی: PaySetting
@@ -2729,6 +2866,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90,95,99'), 'callback_data' => 'smartcron_set_vol']],
         [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '7,3,1'), 'callback_data' => 'smartcron_set_time']],
         [['text' => '📋 دستور کرون سیستم', 'callback_data' => 'smartcron_show_cmd']],
+        [['text' => '🛠 نصب خودکار کرون در سرور', 'callback_data' => 'smartcron_install_crontab']],
     ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
@@ -3585,24 +3723,14 @@ function buildMonthlyStatsExcel($which = 'current')
             FROM Payment_report
             WHERE payment_Status = 'paid'
             AND (
-                (`time` >= :fa AND `time` <= :ta AND `time` REGEXP '^[0-9]{4}/')
-                OR (`time` >= :fb AND `time` <= :tb AND `time` REGEXP '^[0-9]{4}-')
-                OR (
-                    UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) IS NOT NULL
-                    AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y/%m/%d %H:%i:%s')) BETWEEN :u1 AND :u2
-                )
-                OR (
-                    UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) IS NOT NULL
-                    AND UNIX_TIMESTAMP(STR_TO_DATE(`time`, '%Y-%m-%d %H:%i:%s')) BETWEEN :u3 AND :u4
-                )
+                (`time` >= :fa AND `time` <= :ta AND `time` REGEXP '^[0-9]{4}/[0-9]{2}/')
+                OR (`time` >= :fb AND `time` <= :tb AND `time` REGEXP '^[0-9]{4}-[0-9]{2}-')
             )
             ORDER BY id ASC";
         $st = $pdo->prepare($sql);
         $st->execute([
             ':fa' => $from_a, ':ta' => $to_a,
             ':fb' => $from_b, ':tb' => $to_b,
-            ':u1' => $from_ts, ':u2' => $to_ts,
-            ':u3' => $from_ts, ':u4' => $to_ts,
         ]);
         $deps = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (Exception $e) {
