@@ -2108,7 +2108,6 @@ function sendAdminUserInfo($admin_id, $target_user_id)
         $roll_Status,
         $number_disp,
         $Balance_fmt,
-        $dayListSell,
         $active_svc_cnt,
         number_format(intval($balanceall)),
         number_format(intval($subbuyuser)),
