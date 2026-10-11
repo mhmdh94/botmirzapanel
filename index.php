@@ -3635,7 +3635,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
             $user_auto_off = intval($u_cart);
         }
         if ($global_auto === '1' && $user_auto_off === 1) {
-            $pay_note .= "\n\n⚠️ <b>تأیید خودکار برای این کاربر غیرفعال است</b>\nباید دستی تأیید یا رد کنید.";
+            $pay_note .= "\n\n<blockquote>🔴 <b>تأیید خودکار برای این کاربر غیرفعال است</b>\nباید دستی تأیید یا رد کنید.</blockquote>";
         }
     } catch (Throwable $e) {
         // نادیده
