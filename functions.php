@@ -2094,6 +2094,9 @@ function sendAdminUserInfo($admin_id, $target_user_id)
     if ($number_disp === '' || $number_disp === null) {
         $number_disp = 'none';
     }
+    $active_svc_cnt = function_exists('countUserActiveServices')
+        ? countUserActiveServices($target_user_id)
+        : intval($dayListSell);
     $text_msg = sprintf(
         $textbotlang['Admin']['ManageUser']['infouser'],
         $u['User_Status'] ?? '-',
@@ -2106,6 +2109,7 @@ function sendAdminUserInfo($admin_id, $target_user_id)
         $number_disp,
         $Balance_fmt,
         $dayListSell,
+        $active_svc_cnt,
         number_format(intval($balanceall)),
         number_format(intval($subbuyuser)),
         $u['affiliatescount'] ?? '0',
