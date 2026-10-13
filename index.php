@@ -3792,16 +3792,20 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
     $textaffiliates_info = sprintf($textbotlang['users']['affiliates']['infotext'], $price_Discount, $affiliatespercentage);
     sendmessage($from_id, $textaffiliates_info, $keyboard, 'HTML');
 
+    $invite_link = "https://t.me/{$usernamebot}?start={$my_code}";
+    $share_url = "https://t.me/share/url?url=" . rawurlencode($invite_link);
     $keyboard_share = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang["users"]["affiliates"]["share"], 'url' => "https://t.me/$usernamebot?start=$my_code"],
+                ['text' => $textbotlang["users"]["affiliates"]["share"], 'url' => $share_url],
             ],
         ]
     ]);
     $textaffiliates = ($affiliates['description'] !== null && $affiliates['description'] !== '' && $affiliates['description'] !== 'none')
-        ? "{$affiliates['description']}\n\n🔗 https://t.me/$usernamebot?start=$my_code"
-        : "🔗 https://t.me/$usernamebot?start=$my_code";
+        ? "{$affiliates['description']}
+
+🔗 {$invite_link}"
+        : "🔗 {$invite_link}";
 
     if (!empty($affiliates['id_media']) && $affiliates['id_media'] !== 'none') {
         telegram('sendphoto', [
