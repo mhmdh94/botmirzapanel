@@ -3777,30 +3777,6 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
     }
     $affiliates = select("affiliates", "*", null, null, "select");
     $my_code = $user['ref_code'];
-    $keyboard_share = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang["users"]["affiliates"]["share"], 'url' => "https://t.me/$usernamebot?start=$my_code"],
-            ],
-        ]
-    ]);
-    $textaffiliates = ($affiliates['description'] !== null && $affiliates['description'] !== '' && $affiliates['description'] !== 'none')
-        ? "{$affiliates['description']}\n\n🔗 https://t.me/$usernamebot?start=$my_code"
-        : "🔗 https://t.me/$usernamebot?start=$my_code";
-
-    // Check if badge/image is set before sending photo
-    if (!empty($affiliates['id_media']) && $affiliates['id_media'] !== 'none') {
-        telegram('sendphoto', [
-            'chat_id' => $from_id,
-            'photo' => $affiliates['id_media'],
-            'caption' => $textaffiliates,
-            'parse_mode' => "HTML",
-            'reply_markup' => $keyboard_share
-        ]);
-    } else {
-        // Send as text message if no badge/image is available
-        sendmessage($from_id, $textaffiliates, $keyboard_share, 'HTML');
-    }
     $affiliatescommission = select("affiliates", "*", null, null, "select");
     if ($affiliatescommission['status_commission'] == "oncommission") {
         $affiliatespercentage = $affiliatescommission['affiliatespercentage'] . $textbotlang['users']['Percentage'];
@@ -3812,8 +3788,32 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
     } else {
         $price_Discount = $textbotlang['users']['status']['disabled'];
     }
-    $textaffiliates = sprintf($textbotlang['users']['affiliates']['infotext'], $price_Discount, $affiliatespercentage);
-    sendmessage($from_id, $textaffiliates, $keyboard, 'HTML');
+    // اول متن توضیحات مشارکت، بعد لینک
+    $textaffiliates_info = sprintf($textbotlang['users']['affiliates']['infotext'], $price_Discount, $affiliatespercentage);
+    sendmessage($from_id, $textaffiliates_info, $keyboard, 'HTML');
+
+    $keyboard_share = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang["users"]["affiliates"]["share"], 'url' => "https://t.me/$usernamebot?start=$my_code"],
+            ],
+        ]
+    ]);
+    $textaffiliates = ($affiliates['description'] !== null && $affiliates['description'] !== '' && $affiliates['description'] !== 'none')
+        ? "{$affiliates['description']}\n\n🔗 https://t.me/$usernamebot?start=$my_code"
+        : "🔗 https://t.me/$usernamebot?start=$my_code";
+
+    if (!empty($affiliates['id_media']) && $affiliates['id_media'] !== 'none') {
+        telegram('sendphoto', [
+            'chat_id' => $from_id,
+            'photo' => $affiliates['id_media'],
+            'caption' => $textaffiliates,
+            'parse_mode' => "HTML",
+            'reply_markup' => $keyboard_share
+        ]);
+    } else {
+        sendmessage($from_id, $textaffiliates, $keyboard_share, 'HTML');
+    }
 }
 require_once 'admin.php';
 $connect->close();
