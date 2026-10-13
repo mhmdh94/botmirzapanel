@@ -3779,14 +3779,14 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
     $my_code = $user['ref_code'];
     $affiliatescommission = select("affiliates", "*", null, null, "select");
     if ($affiliatescommission['status_commission'] == "oncommission") {
-        $affiliatespercentage = $affiliatescommission['affiliatespercentage'] . $textbotlang['users']['Percentage'];
+        $affiliatespercentage = number_format(floatval($affiliatescommission['affiliatespercentage'])) . ' درصد';
     } else {
-        $affiliatespercentage = $textbotlang['users']['status']['disabled'];
+        $affiliatespercentage = $textbotlang['users']['status']['disabled'] ?? 'غیرفعال';
     }
     if ($affiliatescommission['Discount'] == "onDiscountaffiliates") {
-        $price_Discount = $affiliatescommission['price_Discount'] . $textbotlang['users']['IRT'];
+        $price_Discount = number_format(intval($affiliatescommission['price_Discount'])) . ' تومان';
     } else {
-        $price_Discount = $textbotlang['users']['status']['disabled'];
+        $price_Discount = $textbotlang['users']['status']['disabled'] ?? 'غیرفعال';
     }
     // اول متن توضیحات مشارکت، بعد لینک
     $textaffiliates_info = sprintf($textbotlang['users']['affiliates']['infotext'], $price_Discount, $affiliatespercentage);
