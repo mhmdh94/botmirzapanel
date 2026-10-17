@@ -235,3 +235,7 @@ if (function_exists('smartCronDebugLog') && smartCronFlag('smart_debug', '0')) {
         . " exp=" . ($do_exp ? 'on' : 'off')
     );
 }
+
+if (function_exists('processResellerVolumeWarnings')) {
+    processResellerVolumeWarnings();
+}

@@ -61,7 +61,16 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     }
     $GLOBALS['defer_post_payment_reports'] = true;
     $GLOBALS['deferred_channel_reports'] = [];
-    DirectPayment($Payment_report['id_order'],"../images.jpg");
+    $GLOBALS['payment_user_notified'] = false;
+    DirectPayment($Payment_report['id_order']);
+    if (function_exists('notifyUserReceiptAccepted')) {
+        notifyUserReceiptAccepted(
+            $Payment_report['id_user'],
+            $Payment_report['id_order'],
+            intval($Payment_report['price'] ?? 0)
+        );
+    }
+
     $pd = function_exists('describePaymentReport') ? describePaymentReport($Payment_report) : null;
     $bal_after = number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0));
     if ($pd) {
