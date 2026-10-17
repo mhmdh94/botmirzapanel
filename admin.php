@@ -1324,7 +1324,209 @@ if ($text == $textbotlang['Admin']['channel']['channelreport']) {
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['shop_section']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $shopkeyboard, 'HTML');
-} elseif ($text == $textbotlang['Admin']['Product']['addproduct']) {
+}
+
+#------------------------- مدیریت محصولات اینلاین (فروشگاه) -------------------------#
+if (isset($text) && $text === '📦 مدیریت محصولات') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    $n = count(function_exists('shopGetAllProducts') ? shopGetAllProducts() : []);
+    sendmessage($from_id, "🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید یا محصول جدید اضافه کنید.", function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
+    return;
+}
+# عنوان ویرایش قدیمی → همان لیست اینلاین
+if (isset($text) && isset($textbotlang['Admin']['Product']['titlebtnedit']) && $text == $textbotlang['Admin']['Product']['titlebtnedit']) {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    $n = count(function_exists('shopGetAllProducts') ? shopGetAllProducts() : []);
+    sendmessage($from_id, "🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید.", function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
+    return;
+}
+
+if (!isset($datain)) {
+    $datain = '';
+}
+
+if (in_array($from_id, $admin_ids) && ($datain === 'shop_list' || $datain === 'shop_noop')) {
+    if ($datain === 'shop_noop') {
+        return;
+    }
+    $n = count(shopGetAllProducts());
+    Editmessagetext($from_id, $message_id, "🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید.", shopProductListKeyboard());
+    return;
+}
+
+if (in_array($from_id, $admin_ids) && $datain === 'shop_add') {
+    $locationproduct = select("marzban_panel", "*", null, null, "count");
+    if ($locationproduct == 0) {
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpaneladmin'], null, 'HTML');
+        return;
+    }
+    sendmessage($from_id, $textbotlang['Admin']['Product']['AddProductStepOne'], $backadmin, 'HTML');
+    step('get_limit', $from_id);
+    return;
+}
+
+if (in_array($from_id, $admin_ids) && preg_match('/^shop_p_(.+)$/', strval($datain), $m_sp)) {
+    $code = $m_sp[1];
+    $p = shopGetProductByCode($code);
+    if (!$p) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'محصول یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    update("user", "Processing_value", strval($p['name_product'] ?? ''), "id", $from_id);
+    update("user", "Processing_value_one", strval($p['Location'] ?? ''), "id", $from_id);
+    update("user", "Processing_value_tow", $code, "id", $from_id);
+    Editmessagetext($from_id, $message_id, shopProductDetailText($p), shopProductDetailKeyboard($code));
+    return;
+}
+
+if (in_array($from_id, $admin_ids) && preg_match('/^shop_ep_(price|vol|time|name|cat|del)_(.+)$/', strval($datain), $m_se)) {
+    $action = $m_se[1];
+    $code = $m_se[2];
+    $p = shopGetProductByCode($code);
+    if (!$p) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'محصول یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    update("user", "Processing_value", strval($p['name_product'] ?? ''), "id", $from_id);
+    update("user", "Processing_value_one", strval($p['Location'] ?? ''), "id", $from_id);
+    update("user", "Processing_value_tow", $code, "id", $from_id);
+
+    if ($action === 'del') {
+        global $pdo;
+        try {
+            $pdo->prepare("DELETE FROM product WHERE code_product = ?")->execute([$code]);
+        } catch (Throwable $e) {
+            error_log('shop del: ' . $e->getMessage());
+        }
+        $n = count(shopGetAllProducts());
+        Editmessagetext($from_id, $message_id, "🗑 محصول حذف شد.\n\n🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>", shopProductListKeyboard());
+        return;
+    }
+
+    $map = [
+        'price' => ['step' => 'shop_change_price', 'msg' => $textbotlang['Admin']['Product']['sendnewprice'] ?? 'قیمت جدید را به تومان بفرستید:'],
+        'vol' => ['step' => 'shop_change_vol', 'msg' => $textbotlang['Admin']['Product']['sendnewvolume'] ?? 'حجم جدید را به گیگ بفرستید:'],
+        'time' => ['step' => 'shop_change_time', 'msg' => $textbotlang['Admin']['Product']['NewTime'] ?? 'زمان جدید را به روز بفرستید:'],
+        'name' => ['step' => 'shop_change_name', 'msg' => $textbotlang['Admin']['Product']['sendnewname'] ?? 'نام جدید محصول را بفرستید:'],
+        'cat' => ['step' => 'shop_change_cat', 'msg' => $textbotlang['Admin']['Product']['Getcategory'] ?? 'دسته را انتخاب کنید:'],
+    ];
+    if (!isset($map[$action])) {
+        return;
+    }
+    step($map[$action]['step'], $from_id);
+    if ($action === 'cat') {
+        sendmessage($from_id, $map[$action]['msg'], function_exists('KeyboardCategory') ? KeyboardCategory() : $backadmin, 'HTML');
+    } else {
+        sendmessage($from_id, $map[$action]['msg'], $backadmin, 'HTML');
+    }
+    return;
+}
+
+# --- step handlers برای ویرایش از لیست اینلاین ---
+$__shop_step = strval($user['step'] ?? '');
+if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_price' && !empty($text) && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) { step('home', $from_id); return; }
+    if (!ctype_digit(preg_replace('/\D/', '', $text)) && !ctype_digit($text)) {
+        sendmessage($from_id, $textbotlang['Admin']['Product']['InvalidPrice'] ?? 'قیمت نامعتبر', $backadmin, 'HTML');
+        return;
+    }
+    $price = intval(preg_replace('/\D/', '', $text));
+    $code = strval($user['Processing_value_tow'] ?? '');
+    $name = strval($user['Processing_value'] ?? '');
+    $loc = strval($user['Processing_value_one'] ?? '');
+    global $pdo;
+    if ($code !== '') {
+        $pdo->prepare("UPDATE product SET price_product = ? WHERE code_product = ?")->execute([$price, $code]);
+    } else {
+        $pdo->prepare("UPDATE product SET price_product = ? WHERE name_product = ? AND Location = ?")->execute([$price, $name, $loc]);
+    }
+    step('home', $from_id);
+    $p = $code !== '' ? shopGetProductByCode($code) : null;
+    $kb = shopProductListKeyboard();
+    sendmessage($from_id, "✅ قیمت به‌روزرسانی شد: <b>" . number_format($price) . "</b> تومان\n\n🏬 <b>مدیریت محصولات</b>", $kb, 'HTML');
+    return;
+}
+if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_vol' && !empty($text) && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) { step('home', $from_id); return; }
+    if (!ctype_digit($text)) {
+        sendmessage($from_id, $textbotlang['Admin']['Product']['Invalidvolume'] ?? 'حجم نامعتبر', $backadmin, 'HTML');
+        return;
+    }
+    $code = strval($user['Processing_value_tow'] ?? '');
+    $name = strval($user['Processing_value'] ?? '');
+    $loc = strval($user['Processing_value_one'] ?? '');
+    global $pdo;
+    if ($code !== '') {
+        $pdo->prepare("UPDATE product SET Volume_constraint = ? WHERE code_product = ?")->execute([$text, $code]);
+    } else {
+        $pdo->prepare("UPDATE product SET Volume_constraint = ? WHERE name_product = ? AND Location = ?")->execute([$text, $name, $loc]);
+    }
+    step('home', $from_id);
+    sendmessage($from_id, "✅ حجم به‌روزرسانی شد: <b>{$text}</b> گیگ\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    return;
+}
+if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_time' && !empty($text) && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) { step('home', $from_id); return; }
+    if (!ctype_digit($text)) {
+        sendmessage($from_id, $textbotlang['Admin']['Product']['InvalidTime'] ?? 'زمان نامعتبر', $backadmin, 'HTML');
+        return;
+    }
+    $code = strval($user['Processing_value_tow'] ?? '');
+    $name = strval($user['Processing_value'] ?? '');
+    $loc = strval($user['Processing_value_one'] ?? '');
+    global $pdo;
+    if ($code !== '') {
+        $pdo->prepare("UPDATE product SET Service_time = ? WHERE code_product = ?")->execute([$text, $code]);
+    } else {
+        $pdo->prepare("UPDATE product SET Service_time = ? WHERE name_product = ? AND Location = ?")->execute([$text, $name, $loc]);
+    }
+    step('home', $from_id);
+    sendmessage($from_id, "✅ زمان به‌روزرسانی شد: <b>{$text}</b> روز\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    return;
+}
+if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_name' && !empty($text) && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) { step('home', $from_id); return; }
+    $code = strval($user['Processing_value_tow'] ?? '');
+    $oldname = strval($user['Processing_value'] ?? '');
+    $loc = strval($user['Processing_value_one'] ?? '');
+    global $pdo;
+    if ($code !== '') {
+        $pdo->prepare("UPDATE product SET name_product = ? WHERE code_product = ?")->execute([$text, $code]);
+    } else {
+        $pdo->prepare("UPDATE product SET name_product = ? WHERE name_product = ? AND Location = ?")->execute([$text, $oldname, $loc]);
+    }
+    step('home', $from_id);
+    sendmessage($from_id, "✅ نام به‌روزرسانی شد: <b>" . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . "</b>\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    return;
+}
+if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_cat' && !empty($text) && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) { step('home', $from_id); return; }
+    $category = select("category", "*", "remark", $text, "select");
+    if ($category == false) {
+        sendmessage($from_id, $textbotlang['Admin']['Product']['invalidcategory'] ?? 'دسته نامعتبر', $backadmin, 'HTML');
+        return;
+    }
+    $code = strval($user['Processing_value_tow'] ?? '');
+    $name = strval($user['Processing_value'] ?? '');
+    $loc = strval($user['Processing_value_one'] ?? '');
+    $cid = $category['id'];
+    global $pdo;
+    if ($code !== '') {
+        $pdo->prepare("UPDATE product SET Category = ? WHERE code_product = ?")->execute([$cid, $code]);
+    } else {
+        $pdo->prepare("UPDATE product SET Category = ? WHERE name_product = ? AND Location = ?")->execute([$cid, $name, $loc]);
+    }
+    step('home', $from_id);
+    sendmessage($from_id, "✅ دسته به‌روزرسانی شد.\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    return;
+}
+
+# بعد از ذخیره محصول جدید → لیست اینلاین
+ elseif ($text == $textbotlang['Admin']['Product']['addproduct']) {
     $locationproduct = select("marzban_panel", "*", null, null, "count");
     if ($locationproduct == 0) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpaneladmin'], null, 'HTML');
@@ -1378,6 +1580,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['shop_section']) {
     }
     update("product", "price_product", $text, "code_product", $user['Processing_value']);
     sendmessage($from_id, $textbotlang['Admin']['Product']['SaveProduct'], $shopkeyboard, 'HTML');
+    if (function_exists('shopProductListKeyboard')) {
+        sendmessage($from_id, "🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -1517,7 +1722,16 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
     $GLOBALS['defer_post_payment_reports'] = true;
     $GLOBALS['deferred_channel_reports'] = [];
+    $GLOBALS['payment_user_notified'] = false;
     DirectPayment($order_id);
+    // فقط اگر DirectPayment پیامی نفرستاده بود
+    if (function_exists('notifyUserReceiptAccepted')) {
+        notifyUserReceiptAccepted(
+            $Payment_report['id_user'],
+            $order_id,
+            intval($Payment_report['price'] ?? 0)
+        );
+    }
     $id_user_pay = $Payment_report['id_user'];
     $keyboard_accept = json_encode([
         'inline_keyboard' => [
@@ -1628,7 +1842,17 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
 } elseif ($user['step'] == "reject-dec") {
     update("Payment_report", "dec_not_confirmed", $text, "id_order", $user['Processing_value_one']);
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Rejected'], $keyboardadmin, 'HTML');
-    sendmessage($user['Processing_value'], sprintf($textbotlang['users']['moeny']['rejectresid'], $text, $user['Processing_value_one']), null, 'HTML');
+    try {
+        $rj_uid = $user['Processing_value'];
+        $rj_order = $user['Processing_value_one'];
+        $rj_msg = sprintf($textbotlang['users']['moeny']['rejectresid'] ?? "❌ رسید پرداخت شما رد شد.\n📝 دلیل: %s\n🛒 کد: %s", $text, $rj_order);
+        sendmessage($rj_uid, $rj_msg, null, 'HTML');
+    } catch (Throwable $e) {
+        error_log('reject notify fail: ' . $e->getMessage());
+        try {
+            sendmessage($user['Processing_value'], "❌ رسید پرداخت شما رد شد.\n🛒 کد: " . $user['Processing_value_one'], null, 'HTML');
+        } catch (Throwable $e2) {}
+    }
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_reject', "❌ <b>رد رسید پرداخت</b>
 
@@ -1659,7 +1883,7 @@ if ($text == $textbotlang['Admin']['Product']['titlebtnremove']) {
     step('home', $from_id);
 }
 #-------------------------#
-if ($text == $textbotlang['Admin']['Product']['titlebtnedit']) {
+if (false && $text == $textbotlang['Admin']['Product']['titlebtnedit']) {
     sendmessage($from_id, $textbotlang['Admin']['Product']['Rmove_location'], $json_list_marzban_panel, 'HTML');
     step('selectlocedite', $from_id);
 } elseif ($user['step'] == "selectlocedite") {
@@ -2413,6 +2637,18 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
     }
+} elseif ($datain == "affpanel_active_users" || preg_match('/^affpanel_active_users_(\d+)$/', strval($datain), $__aff_pg)) {
+    $__page = ($datain === 'affpanel_active_users') ? 0 : intval($__aff_pg[1] ?? 0);
+    if (function_exists('listAffiliatesActiveUsersPanel')) {
+        list($aff_txt, $aff_kb) = listAffiliatesActiveUsersPanel($__page);
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'تابع لیست در دسترس نیست',
+            'show_alert' => true,
+        ]);
+    }
 } elseif ($datain == "affpanel_toggle_system") {
     $aff = select("affiliates", "*", null, null, "select");
     $cur = $aff['affiliatesstatus'] ?? 'offaffiliates';
@@ -2948,7 +3184,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][($setting['copy_cart'] ?? '0')];
     // Feature flags (fork) — default ON for channel force & buy/test/search/aff if missing
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1'] as $_fk => $_fd) {
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0'] as $_fk => $_fd) {
         if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
             $setting[$_fk] = $_fd;
         }
@@ -2997,6 +3233,11 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][strval($setting['status_support'] ?? '1')];
+    if (function_exists('ensureResellerFeatureSetting')) { ensureResellerFeatureSetting(); }
+    $st_reseller = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_reseller_panel'] ?? '0')];
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
@@ -3082,6 +3323,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_support, 'callback_data' => 'editstsuts-status_support-' . strval($setting['status_support'] ?? '1')],
                 ['text' => $textbotlang['Admin']['Status']['status_support'], 'callback_data' => "status_support"],
+            ],
+            [
+                ['text' => $st_reseller, 'callback_data' => 'editstsuts-status_reseller_panel-' . strval($setting['status_reseller_panel'] ?? '0')],
+                ['text' => $textbotlang['Admin']['Status']['status_reseller_panel'] ?? 'Reseller Panel', 'callback_data' => "status_reseller_panel"],
             ],
         ]
     ]);
@@ -3186,6 +3431,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     } elseif ($type == "status_support") {
         $valuenew = ($value == "1") ? "0" : "1";
         update("setting", "status_support", $valuenew);
+    } elseif ($type == "status_reseller_panel") {
+        if (function_exists('ensureResellerFeatureSetting')) { ensureResellerFeatureSetting(); }
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_reseller_panel", $valuenew);
 
     } elseif ($type == "Automatic_confirmation") {
         // سازگاری قدیمی — تنظیم اصلی در بخش مالی است
@@ -3262,7 +3511,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][($setting['copy_cart'] ?? '0')];
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1'] as $_fk => $_fd) {
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0'] as $_fk => $_fd) {
         if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
             $setting[$_fk] = $_fd;
         }
@@ -3311,6 +3560,11 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][strval($setting['status_support'] ?? '1')];
+    if (function_exists('ensureResellerFeatureSetting')) { ensureResellerFeatureSetting(); }
+    $st_reseller = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_reseller_panel'] ?? '0')];
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
@@ -3396,6 +3650,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_support, 'callback_data' => 'editstsuts-status_support-' . strval($setting['status_support'] ?? '1')],
                 ['text' => $textbotlang['Admin']['Status']['status_support'], 'callback_data' => "status_support"],
+            ],
+            [
+                ['text' => $st_reseller, 'callback_data' => 'editstsuts-status_reseller_panel-' . strval($setting['status_reseller_panel'] ?? '0')],
+                ['text' => $textbotlang['Admin']['Status']['status_reseller_panel'] ?? 'Reseller Panel', 'callback_data' => "status_reseller_panel"],
             ],
         ]
     ]);
@@ -3879,4 +4137,567 @@ if (preg_match('/^toggle_cart_auto_(\d+)$/', strval($datain), $m_ca)) {
             'reply_markup' => json_encode(['inline_keyboard' => $old_kb])
         ]);
     }
+}
+
+
+
+/* =====================================================================
+ * Reseller Panel — فقط ادمین | بدون تأثیر روی خرید اشتراک عادی
+ * جداول فقط CREATE IF NOT EXISTS / ADD COLUMN — بدون DROP
+ * ===================================================================== */
+
+if (!isset($datain)) {
+    $datain = '';
+}
+
+/** آیا کاربر ادمین ربات است؟ */
+$__rv_is_admin = (isset($admin_ids) && is_array($admin_ids) && in_array($from_id, $admin_ids));
+
+/** لود ماژول ریسلر */
+$__rv_load = function () {
+    if (function_exists('ensurePanelAdminSchema')) {
+        ensurePanelAdminSchema();
+    }
+    $f = __DIR__ . '/reseller_volume.php';
+    if (is_file($f)) {
+        require_once $f;
+    }
+    $f2 = __DIR__ . '/pasarguard.php';
+    if (is_file($f2)) {
+        require_once $f2;
+    }
+};
+
+// ----- منوی اصلی ادمین (دکمه کیبورد) -----
+$__rv_admin_btn = isset($textbotlang['Admin']['keyboardadmin']['reseller_volume'])
+    ? $textbotlang['Admin']['keyboardadmin']['reseller_volume']
+    : '⚙️ مدیریت پنل نمایندگان';
+
+if ($__rv_is_admin && isset($text) && $text === $__rv_admin_btn) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        sendmessage($from_id, '❌ قابلیت پنل نمایندگان خاموش است.\nاز «قابلیت‌های ربات» آن را روشن کنید.', $keyboardadmin, 'HTML');
+        return;
+    }
+    $__rv_load();
+    $kb = function_exists('resellerVolumeAdminKeyboard')
+        ? resellerVolumeAdminKeyboard()
+        : json_encode(['inline_keyboard' => [
+            [['text' => '📋 تنظیم پلن‌های پنل', 'callback_data' => 'rv_admin_plans']],
+            [['text' => '🖥 تنظیم اطلاعات پنل', 'callback_data' => 'rv_admin_panel']],
+        ]]);
+    sendmessage($from_id, "🛠 <b>مدیریت پنل نمایندگان</b>\n\nتنظیمات پنل و پلن‌های حجم ریسلر.", $kb, 'HTML');
+    return;
+}
+
+// ----- فقط اگر قابلیت روشن و ادمین -----
+if ($__rv_is_admin && function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()) {
+
+    // بازگشت به هاب
+    if ($datain === 'rv_hub_back' || $datain === 'rv_admin_hub') {
+        $__rv_load();
+        $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
+        Editmessagetext($from_id, $message_id, "🛠 <b>مدیریت پنل نمایندگان</b>\n\nتنظیمات پنل و پلن‌های حجم ریسلر.", $kb);
+        return;
+    }
+
+    // لیست پلن‌ها
+    if ($datain === 'rv_admin_plans' || $datain === 'rv_menu_plans') {
+        $__rv_load();
+        $kb = function_exists('resellerVolumePlansKeyboard') ? resellerVolumePlansKeyboard() : null;
+        $plans = function_exists('resellerListPlans') ? resellerListPlans(false) : [];
+        $n = count($plans);
+        Editmessagetext($from_id, $message_id, "📋 <b>پلن‌های حجم ریسلر</b>\nتعداد: <b>{$n}</b>\n\nبرای ویرایش روی یک پلن بزنید.", $kb);
+        return;
+    }
+
+    // اطلاعات پنل
+    if ($datain === 'rv_admin_panel' || $datain === 'rv_menu_panel') {
+        $__rv_load();
+        $panel = function_exists('getResellerPanel') ? getResellerPanel() : null;
+        $url = is_array($panel) ? strval($panel['url_panel'] ?? '') : '';
+        $user = is_array($panel) ? strval($panel['username_panel'] ?? '') : '';
+        $has = ($url !== '' && $user !== '');
+        $info = $has
+            ? "🖥 <b>اطلاعات پنل ریسلر</b>\n\nآدرس: <code>" . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . "</code>\nیوزرنیم: <code>" . htmlspecialchars($user, ENT_QUOTES, 'UTF-8') . "</code>\n\nبرای تغییر، دکمه زیر را بزنید."
+            : "🖥 <b>اطلاعات پنل ریسلر</b>\n\nهنوز تنظیم نشده است.\nدکمه زیر را بزنید و آدرس / یوزر / رمز را وارد کنید.";
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '✏️ تنظیم / ویرایش پنل', 'callback_data' => 'rv_panel_edit']],
+            [['text' => '🔙 بازگشت', 'callback_data' => 'rv_hub_back']],
+        ]]);
+        Editmessagetext($from_id, $message_id, $info, $kb);
+        return;
+    }
+
+    // شروع ویرایش پنل
+    if ($datain === 'rv_panel_edit') {
+        step('rv_panel_url', $from_id);
+        sendmessage($from_id, "آدرس پنل را بفرستید:\nمثال: <code>https://panel.example.com</code>", $backadmin, 'HTML');
+        return;
+    }
+
+    // افزودن پلن
+    if ($datain === 'rv_admin_add') {
+        step('rv_add_volume', $from_id);
+        sendmessage($from_id, "حجم پلن را به <b>گیگابایت</b> بفرستید:\nمثال: <code>500</code>", $backadmin, 'HTML');
+        return;
+    }
+
+    // ویرایش پلن
+    if (preg_match('/^rv_edit_(\d+)$/', strval($datain), $m_ed)) {
+        $__rv_load();
+        $plan = function_exists('resellerGetPlan') ? resellerGetPlan(intval($m_ed[1])) : null;
+        if (!$plan) {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پلن یافت نشد', 'show_alert' => true]);
+            return;
+        }
+        $pid = intval($plan['id']);
+        $gb_raw = intval($plan['volume_gb'] ?? 0);
+        $gb = number_format($gb_raw);
+        $gb_label = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb_raw) : ($gb . ' گیگ');
+        $pr = number_format(intval($plan['price']));
+        $st = intval($plan['status'] ?? 1) === 1 ? 'فعال' : 'غیرفعال';
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '✏️ تغییر قیمت', 'callback_data' => 'rv_setprice_' . $pid], ['text' => '📊 تغییر حجم', 'callback_data' => 'rv_setvol_' . $pid]],
+            [['text' => (intval($plan['status'] ?? 1) === 1 ? '🔴 غیرفعال کردن' : '🟢 فعال کردن'), 'callback_data' => 'rv_toggle_' . $pid]],
+            [['text' => '🗑 حذف پلن', 'callback_data' => 'rv_del_' . $pid]],
+            [['text' => '🔙 بازگشت به لیست', 'callback_data' => 'rv_admin_plans']],
+        ]]);
+        Editmessagetext($from_id, $message_id, "📦 <b>ویرایش پلن</b>\n\n📊 حجم: <b>{$gb_label}</b>\n💵 قیمت: <b>{$pr}</b> تومان\nوضعیت: {$st}", $kb);
+        return;
+    }
+
+    if (preg_match('/^rv_toggle_(\d+)$/', strval($datain), $m_tg)) {
+        global $pdo;
+        $__rv_load();
+        $pid = intval($m_tg[1]);
+        $plan = resellerGetPlan($pid);
+        if ($plan) {
+            $new = intval($plan['status'] ?? 1) === 1 ? 0 : 1;
+            try {
+                $pdo->prepare("UPDATE reseller_volume_plan SET status = ? WHERE id = ?")->execute([$new, $pid]);
+            } catch (Throwable $e) {
+                error_log('rv_toggle: ' . $e->getMessage());
+            }
+        }
+        // refresh edit view
+        $datain = 'rv_edit_' . $pid;
+        $plan = resellerGetPlan($pid);
+        $gb_raw = intval($plan['volume_gb'] ?? 0);
+        $gb = number_format($gb_raw);
+        $gb_label = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb_raw) : ($gb . ' گیگ');
+        $pr = number_format(intval($plan['price'] ?? 0));
+        $st = intval($plan['status'] ?? 1) === 1 ? 'فعال' : 'غیرفعال';
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '✏️ تغییر قیمت', 'callback_data' => 'rv_setprice_' . $pid], ['text' => '📊 تغییر حجم', 'callback_data' => 'rv_setvol_' . $pid]],
+            [['text' => (intval($plan['status'] ?? 1) === 1 ? '🔴 غیرفعال کردن' : '🟢 فعال کردن'), 'callback_data' => 'rv_toggle_' . $pid]],
+            [['text' => '🗑 حذف پلن', 'callback_data' => 'rv_del_' . $pid]],
+            [['text' => '🔙 بازگشت به لیست', 'callback_data' => 'rv_admin_plans']],
+        ]]);
+        Editmessagetext($from_id, $message_id, "📦 <b>ویرایش پلن</b>\n\n📊 حجم: <b>{$gb_label}</b>\n💵 قیمت: <b>{$pr}</b> تومان\nوضعیت: {$st}", $kb);
+        return;
+    }
+
+    if (preg_match('/^rv_del_(\d+)$/', strval($datain), $m_dl)) {
+        global $pdo;
+        $pid = intval($m_dl[1]);
+        try {
+            $pdo->prepare("DELETE FROM reseller_volume_plan WHERE id = ?")->execute([$pid]);
+        } catch (Throwable $e) {
+            error_log('rv_del: ' . $e->getMessage());
+        }
+        $__rv_load();
+        $kb = function_exists('resellerVolumePlansKeyboard') ? resellerVolumePlansKeyboard() : null;
+        Editmessagetext($from_id, $message_id, "🗑 پلن حذف شد.\n\n📋 <b>پلن‌های حجم ریسلر</b>", $kb);
+        return;
+    }
+
+
+    // ----- تنظیمات کرون هشدار حجم ریسلر (داخل منوی Reseller) -----
+    if ($datain === 'rv_cron_settings') {
+        if (function_exists('ensureSmartCronSettings')) {
+            ensureSmartCronSettings();
+        }
+        $on = (function_exists('smartCronFlag') && smartCronFlag('smart_reseller_warn', '0'));
+        $levels = function_exists('getPaySettingValue') ? getPaySettingValue('smart_reseller_vol_levels', '80,90,95') : '80,90,95';
+        $st = $on ? '✅ روشن' : '❌ خاموش';
+        $txt = "⏱ <b>کرون هشدار حجم Reseller Panel</b>\n\n"
+            . "وضعیت: <b>{$st}</b>\n"
+            . "درصدهای هشدار: <code>{$levels}</code>\n\n"
+            . "این کرون همراه «کرون هوشمند» اجرا می‌شود.\n"
+            . "فقط وقتی قابلیت Reseller Panel در «قابلیت‌های ربات» روشن باشد کار می‌کند.\n"
+            . "با رسیدن مصرف ادمین پنل به هر درصد، یک‌بار به کاربر پیام + دکمه خرید حجم ارسال می‌شود.";
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => ($on ? '🔴 خاموش کردن هشدار' : '🟢 روشن کردن هشدار'), 'callback_data' => 'rv_cron_toggle']],
+            [['text' => '⚙️ تنظیم درصدها', 'callback_data' => 'rv_cron_set_levels']],
+            [['text' => '🔙 بازگشت', 'callback_data' => 'rv_hub_back']],
+        ]], JSON_UNESCAPED_UNICODE);
+        Editmessagetext($from_id, $message_id, $txt, $kb);
+        return;
+    }
+
+    if ($datain === 'rv_cron_toggle') {
+        if (function_exists('ensureSmartCronSettings')) {
+            ensureSmartCronSettings();
+        }
+        $cur = (function_exists('smartCronFlag') && smartCronFlag('smart_reseller_warn', '0')) ? '1' : '0';
+        if (function_exists('setPaySettingValue')) {
+            setPaySettingValue('smart_reseller_warn', $cur === '1' ? '0' : '1');
+        }
+        // refresh same screen
+        $datain = 'rv_cron_settings';
+        $on = (function_exists('smartCronFlag') && smartCronFlag('smart_reseller_warn', '0'));
+        $levels = function_exists('getPaySettingValue') ? getPaySettingValue('smart_reseller_vol_levels', '80,90,95') : '80,90,95';
+        $st = $on ? '✅ روشن' : '❌ خاموش';
+        $txt = "⏱ <b>کرون هشدار حجم Reseller Panel</b>\n\nوضعیت: <b>{$st}</b>\nدرصدهای هشدار: <code>{$levels}</code>";
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => ($on ? '🔴 خاموش کردن هشدار' : '🟢 روشن کردن هشدار'), 'callback_data' => 'rv_cron_toggle']],
+            [['text' => '⚙️ تنظیم درصدها', 'callback_data' => 'rv_cron_set_levels']],
+            [['text' => '🔙 بازگشت', 'callback_data' => 'rv_hub_back']],
+        ]], JSON_UNESCAPED_UNICODE);
+        Editmessagetext($from_id, $message_id, $txt, $kb);
+        return;
+    }
+
+    if ($datain === 'rv_cron_set_levels') {
+        step('rv_cron_levels', $from_id);
+        sendmessage($from_id, "درصدهای هشدار را با ویرگول بفرستید.\nمثال: <code>80,90,95</code>\n\nبا رسیدن مصرف به هر درصد (یک‌بار برای هر سطح) پیام ارسال می‌شود.", $backadmin, 'HTML');
+        return;
+    }
+
+    if (preg_match('/^rv_setprice_(\d+)$/', strval($datain), $m_sp)) {
+        step('rv_setprice_' . intval($m_sp[1]), $from_id);
+        sendmessage($from_id, "قیمت جدید را به <b>تومان</b> بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if (preg_match('/^rv_setvol_(\d+)$/', strval($datain), $m_sv)) {
+        step('rv_setvol_' . intval($m_sv[1]), $from_id);
+        sendmessage($from_id, "حجم جدید را به <b>گیگابایت</b> بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+}
+
+// ----- step handlers (متن) — فقط ادمین -----
+$__rv_step = strval($user['step'] ?? '');
+
+if ($__rv_is_admin && $__rv_step === 'rv_panel_url' && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    $url = trim($text);
+    if (!preg_match('#^https?://#i', $url)) {
+        sendmessage($from_id, '❌ آدرس باید با http:// یا https:// شروع شود.', $backadmin, 'HTML');
+        return;
+    }
+    update("user", "Processing_value", $url, "id", $from_id);
+    step('rv_panel_user', $from_id);
+    sendmessage($from_id, "نام کاربری ادمین پنل را بفرستید:", $backadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && $__rv_step === 'rv_panel_user' && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    update("user", "Processing_value_one", trim($text), "id", $from_id);
+    step('rv_panel_pass', $from_id);
+    sendmessage($from_id, "رمز عبور ادمین پنل را بفرستید:", $backadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && $__rv_step === 'rv_panel_pass' && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    $url = strval($user['Processing_value'] ?? '');
+    $uname = strval($user['Processing_value_one'] ?? '');
+    $pass = trim($text);
+    $f = __DIR__ . '/reseller_volume.php';
+    if (is_file($f)) {
+        require_once $f;
+    }
+    if (!function_exists('saveResellerPanelCredentials')) {
+        sendmessage($from_id, '❌ ماژول ریسلر در دسترس نیست.', $keyboardadmin, 'HTML');
+        step('home', $from_id);
+        return;
+    }
+    $res = saveResellerPanelCredentials($url, $uname, $pass);
+    step('home', $from_id);
+    if (empty($res['ok'])) {
+        sendmessage($from_id, '❌ خطا در ذخیره: ' . strval($res['message'] ?? ''), $keyboardadmin, 'HTML');
+        return;
+    }
+    $url_s = strval($res['url'] ?? $url);
+    $f = __DIR__ . '/reseller_volume.php';
+    if (is_file($f)) { require_once $f; }
+    $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
+    sendmessage($from_id, "✅ اطلاعات پنل ریسلر ذخیره شد.\n\n🖥 <code>" . htmlspecialchars($url_s, ENT_QUOTES, 'UTF-8') . "</code>\n👤 <code>" . htmlspecialchars($uname, ENT_QUOTES, 'UTF-8') . "</code>\n\n🛠 <b>مدیریت پنل نمایندگان</b>", $kb ?: $keyboardadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && $__rv_step === 'rv_add_volume' && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    $gb = intval(preg_replace('/\D/', '', $text));
+    if ($gb < 1) {
+        sendmessage($from_id, '❌ حجم نامعتبر است.', $backadmin, 'HTML');
+        return;
+    }
+    update("user", "Processing_value", strval($gb), "id", $from_id);
+    step('rv_add_price', $from_id);
+    $__gb_lbl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb) : ($gb . ' گیگ');
+    sendmessage($from_id, "قیمت این پلن ({$__gb_lbl}) را به <b>تومان</b> بفرستید:", $backadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && $__rv_step === 'rv_add_price' && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    global $pdo;
+    $gb = intval($user['Processing_value'] ?? 0);
+    $price = intval(preg_replace('/\D/', '', $text));
+    if ($gb < 1 || $price < 1) {
+        sendmessage($from_id, '❌ مقادیر نامعتبر.', $backadmin, 'HTML');
+        return;
+    }
+if (function_exists('ensurePanelAdminSchema')) {
+        ensurePanelAdminSchema();
+    }
+    if (function_exists('ensureResellerPlanTables')) {
+        ensureResellerPlanTables();
+    }
+    if (function_exists('resellerInsertPlan')) {
+        $ins = resellerInsertPlan($gb, $price);
+        if (empty($ins['ok'])) {
+            sendmessage($from_id, '❌ خطا در ثبت پلن: ' . strval($ins['message'] ?? ''), $keyboardadmin, 'HTML');
+            step('home', $from_id);
+            return;
+        }
+    } else {
+        global $pdo;
+        try {
+            ensureResellerPlanTables();
+            $st = $pdo->prepare("INSERT INTO reseller_volume_plan (volume_gb, price, status, sort_order, created_at) VALUES (?,?,1,?,?)");
+            $st->execute([$gb, $price, $gb, time()]);
+        } catch (Throwable $e) {
+            sendmessage($from_id, '❌ خطا در ثبت پلن: ' . $e->getMessage(), $keyboardadmin, 'HTML');
+            step('home', $from_id);
+            return;
+        }
+    }
+    step('home', $from_id);
+    $per = intval(round($price / max(1, $gb)));
+    $f = __DIR__ . '/reseller_volume.php';
+    if (is_file($f)) { require_once $f; }
+    $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
+    sendmessage($from_id, "✅ پلن ثبت شد.\n📊 حجم: <b>" . (function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb) : (number_format($gb) . ' گیگ')) . "</b>\n💵 قیمت: <b>" . number_format($price) . "</b> تومان\n📌 هر گیگ: <b>" . number_format($per) . "</b> تومان\n\n🛠 <b>مدیریت پنل نمایندگان</b>", $kb ?: $keyboardadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && preg_match('/^rv_setprice_(\d+)$/', $__rv_step, $m_sp2) && !empty($text) && $datain === '') {
+    global $pdo;
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    $price = intval(preg_replace('/\D/', '', $text));
+    $pid = intval($m_sp2[1]);
+    if ($price < 1) {
+        sendmessage($from_id, '❌ قیمت نامعتبر.', $backadmin, 'HTML');
+        return;
+    }
+    try {
+        $pdo->prepare("UPDATE reseller_volume_plan SET price = ? WHERE id = ?")->execute([$price, $pid]);
+    } catch (Throwable $e) {
+        error_log('rv_setprice: ' . $e->getMessage());
+    }
+    step('home', $from_id);
+    $f = __DIR__ . '/reseller_volume.php';
+    if (is_file($f)) { require_once $f; }
+    $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
+    sendmessage($from_id, '✅ قیمت به‌روزرسانی شد: ' . number_format($price) . ' تومان' . "\n\n🛠 <b>مدیریت پنل نمایندگان</b>", $kb ?: $keyboardadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && preg_match('/^rv_setvol_(\d+)$/', $__rv_step, $m_sv2) && !empty($text) && $datain === '') {
+    global $pdo;
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    $gb = intval(preg_replace('/\D/', '', $text));
+    $pid = intval($m_sv2[1]);
+    if ($gb < 1) {
+        sendmessage($from_id, '❌ حجم نامعتبر.', $backadmin, 'HTML');
+        return;
+    }
+    try {
+        $pdo->prepare("UPDATE reseller_volume_plan SET volume_gb = ?, sort_order = ? WHERE id = ?")->execute([$gb, $gb, $pid]);
+    } catch (Throwable $e) {
+        error_log('rv_setvol: ' . $e->getMessage());
+    }
+    step('home', $from_id);
+    $f = __DIR__ . '/reseller_volume.php';
+    if (is_file($f)) { require_once $f; }
+    $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
+    sendmessage($from_id, '✅ حجم به‌روزرسانی شد: ' . (function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb) : (number_format($gb) . ' گیگ')) . "\n\n🛠 <b>مدیریت پنل نمایندگان</b>", $kb ?: $keyboardadmin, 'HTML');
+    return;
+}
+
+// toggle_panel_admin + set username (از اطلاعات کاربر)
+if ($__rv_is_admin && preg_match('/^toggle_panel_admin_(\d+)$/', strval($datain), $m_tpa)) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        return;
+    }
+    if (function_exists('ensurePanelAdminSchema')) {
+        ensurePanelAdminSchema();
+    }
+    $uid = intval($m_tpa[1]);
+    $u = select("user", "*", "id", $uid, "select");
+    $cur = intval($u['panel_admin_enabled'] ?? 0);
+    update("user", "panel_admin_enabled", $cur ? "0" : "1", "id", $uid);
+    if (function_exists('sendAdminUserInfo')) {
+        // پیام جدید بفرست
+        sendAdminUserInfo($from_id, $uid);
+    }
+    return;
+}
+
+if ($__rv_is_admin && preg_match('/^set_panel_admin_user_(\d+)$/', strval($datain), $m_spa)) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        return;
+    }
+    step('set_panel_admin_user_' . intval($m_spa[1]), $from_id);
+    sendmessage($from_id, "نام کاربری ادمین پنل را بفرستید.\nدر پنل ریسلر چک می‌شود (حداکثر ۳ ادمین).", $backadmin, 'HTML');
+    return;
+}
+
+if ($__rv_is_admin && preg_match('/^pa_rm_(\d+)_(\d+)$/', strval($datain), $m_rm)) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        return;
+    }
+    $uid = intval($m_rm[1]);
+    $idx = intval($m_rm[2]);
+    $list = function_exists('getUserPanelAdminUsernames') ? getUserPanelAdminUsernames($uid) : [];
+    if (isset($list[$idx])) {
+        removeUserPanelAdminUsername($uid, $list[$idx]);
+    }
+    if (function_exists('sendAdminUserInfo')) {
+        sendAdminUserInfo($from_id, $uid);
+    }
+    return;
+}
+
+if ($__rv_is_admin && preg_match('/^set_panel_admin_user_(\d+)$/', $__rv_step, $m_ps) && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        step('home', $from_id);
+        return;
+    }
+    $uid = intval($m_ps[1]);
+    $uname_clean = trim(strval($text));
+    if (!function_exists('addUserPanelAdminUsername')) {
+        sendmessage($from_id, '❌ تابع ثبت ادمین موجود نیست.', $keyboardadmin, 'HTML');
+        step('home', $from_id);
+        return;
+    }
+    $res = addUserPanelAdminUsername($uid, $uname_clean, true);
+    if (empty($res['ok'])) {
+        sendmessage($from_id, '❌ ' . strval($res['message'] ?? 'خطا'), $backadmin, 'HTML');
+        return; // step stays so can retry
+    }
+    step('home', $from_id);
+    $list = $res['list'] ?? getUserPanelAdminUsernames($uid);
+    sendmessage($from_id, "✅ " . strval($res['message'] ?? 'ثبت شد') . "\nادمین‌ها: <code>" . htmlspecialchars(implode(', ', $list), ENT_QUOTES, 'UTF-8') . "</code>", $keyboardadmin, 'HTML');
+    if (function_exists('sendAdminUserInfo')) {
+        sendAdminUserInfo($from_id, $uid);
+    }
+    return;
+}
+
+if ($__rv_is_admin && $datain === 'rv_list_users') {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        return;
+    }
+    $rows = function_exists('listResellerPanelUsers') ? listResellerPanelUsers(50) : [];
+    if (!$rows) {
+        $txt = "👥 <b>کاربران پنل‌دار</b>\n\nهنوز کاربری ثبت نشده.";
+        $kb = json_encode(['inline_keyboard' => [[['text' => '🔙 بازگشت', 'callback_data' => 'rv_hub_back']]]]);
+        Editmessagetext($from_id, $message_id, $txt, $kb);
+        return;
+    }
+    $txt = "👥 <b>کاربران پنل‌دار</b> (" . count($rows) . ")\n\n";
+    $ik = [];
+    foreach ($rows as $r) {
+        $uid = intval($r['id']);
+        $un = strval($r['username'] ?? '');
+        if ($un === '' || $un === 'none') {
+            $un = strval($uid);
+        }
+        $pas = function_exists('parsePanelAdminUsernames') ? parsePanelAdminUsernames($r['panel_admin_username'] ?? '') : [];
+        $pa_s = $pas ? implode(', ', $pas) : '-';
+        $txt .= "• <code>{$uid}</code> @{$un}\n  🛠 {$pa_s}\n";
+        $ik[] = [['text' => "👤 {$un} ({$uid})", 'callback_data' => 'manageuser_' . $uid]];
+    }
+    $ik[] = [['text' => '🔙 بازگشت', 'callback_data' => 'rv_hub_back']];
+    # اگر manageuser callback وجود ندارد از info ساده استفاده کن
+    Editmessagetext($from_id, $message_id, $txt, json_encode(['inline_keyboard' => array_merge(
+        [[['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_list_users']]],
+        [[['text' => '🔙 بازگشت', 'callback_data' => 'rv_hub_back']]]
+    )], JSON_UNESCAPED_UNICODE));
+    return;
+}
+
+
+if ($__rv_is_admin && $__rv_step === 'rv_cron_levels' && !empty($text) && $datain === '') {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '')) {
+        step('home', $from_id);
+        return;
+    }
+    $parts = [];
+    foreach (explode(',', $text) as $p) {
+        $p = intval(trim($p));
+        if ($p >= 1 && $p <= 100) {
+            $parts[] = $p;
+        }
+    }
+    $parts = array_values(array_unique($parts));
+    sort($parts);
+    if (empty($parts)) {
+        sendmessage($from_id, '❌ فرمت نامعتبر. مثال: 80,90,95', $backadmin, 'HTML');
+        return;
+    }
+    $val = implode(',', $parts);
+    if (function_exists('setPaySettingValue')) {
+        setPaySettingValue('smart_reseller_vol_levels', $val);
+    }
+    step('home', $from_id);
+    sendmessage($from_id, '✅ درصدهای هشدار ذخیره شد: <code>' . $val . '</code>', $keyboardadmin, 'HTML');
+    return;
+}
+
+
+
+if ($datain == 'smartcron_toggle_reseller') {
+    if (function_exists('ensureSmartCronSettings')) ensureSmartCronSettings();
+    $cur = (function_exists('smartCronFlag') && smartCronFlag('smart_reseller_warn', '0')) ? '1' : '0';
+    if (function_exists('setPaySettingValue')) setPaySettingValue('smart_reseller_warn', $cur === '1' ? '0' : '1');
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        Editmessagetext($from_id, $message_id, '⚙️ کرون هوشمند', buildSmartCronAdminKeyboard());
+    }
+    return;
+}
+if ($datain == 'smartcron_set_reseller_vol') {
+    step('rv_cron_levels', $from_id);
+    sendmessage($from_id, "درصدهای هشدار حجم Reseller را با ویرگول بفرستید.\nمثال: <code>80,90,95</code>", $backadmin, 'HTML');
+    return;
 }

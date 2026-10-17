@@ -51,6 +51,18 @@ if (!isset($setting['status_usertest']) || $setting['status_usertest'] == '1' ||
     $row1[] = ['text' => $datatextbot['text_usertest']];
 }
 $keyboard_rows = [];
+// Reseller — بالاترین ردیف (فقط پنل‌دار + قابلیت روشن)
+try {
+    if (
+        isset($from_id) && intval($from_id) > 0
+        && function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()
+        && function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id)
+    ) {
+        $keyboard_rows[] = [[
+            'text' => ($textbotlang['users']['reseller_volume']['btn'] ?? 'پنل نمایندگی')
+        ]];
+    }
+} catch (Throwable $e) {}
 if (!empty($row1)) {
     $keyboard_rows[] = $row1;
 }
@@ -131,16 +143,24 @@ $keyboardPanel = json_encode([
     'resize_keyboard' => true
 ]);
 // منوی ادمین گروه‌بندی‌شده: آمار | فروش/مالی | پنل | کاربران | تنظیمات/متن
+$__kb_admin_rows = [
+    [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
+    [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
+    [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']], ['text' => $textbotlang['Admin']['keyboardadmin']['add_panel']]],
+];
+try {
+    if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()) {
+        $__kb_admin_rows[] = [[
+            'text' => (isset($textbotlang['Admin']['keyboardadmin']['reseller_volume']) ? $textbotlang['Admin']['keyboardadmin']['reseller_volume'] : '⚙️ مدیریت پنل نمایندگان')
+        ]];
+    }
+} catch (Throwable $e) {}
+$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]];
+$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]];
+$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']]];
+$__kb_admin_rows[] = [['text' => $textbotlang['users']['backhome']]];
 $keyboardadmin = json_encode([
-    'keyboard' => [
-        [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']], ['text' => $textbotlang['Admin']['keyboardadmin']['add_panel']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']]],
-        [['text' => $textbotlang['users']['backhome']]]
-    ],
+    'keyboard' => $__kb_admin_rows,
     'resize_keyboard' => true
 ]);
 
@@ -245,16 +265,14 @@ $keyboardhelpadmin = json_encode([
 ]);
 $shopkeyboard = json_encode([
     'keyboard' => [
-        [['text' => $textbotlang['Admin']['Product']['addproduct']], ['text' => $textbotlang['Admin']['Product']['titlebtnremove']]],
+        [['text' => '📦 مدیریت محصولات']],
         [['text' => $textbotlang['Admin']['category']['add']], ['text' => $textbotlang['Admin']['category']['remove']]],
-        [['text' => $textbotlang['Admin']['Product']['titlebtnedit']]],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['codes_section']]],
-
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true
-]);
+], JSON_UNESCAPED_UNICODE);
 $confrimrolls = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['users']['rulesaccept']]],

@@ -390,7 +390,8 @@ if (strpos($text, "/start ") !== false) {
         sendmessage($from_id, $textbotlang['users']['affiliates']['affiliateseduser'], null, 'html');
         return;
     }
-    $affiliatesvalue = select("affiliates", "*", null, null, "select")['affiliatesstatus'];
+    $__aff_row = select("affiliates", "*", null, null, "select");
+    $affiliatesvalue = is_array($__aff_row) ? ($__aff_row['affiliatesstatus'] ?? 'offaffiliates') : 'offaffiliates';
     if ($affiliatesvalue == "offaffiliates") {
         sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');
         return;
@@ -2559,6 +2560,19 @@ if ($text == $datatextbot['text_account'] || (isset($setting['show_balance']) &&
     $aff_earn = number_format(function_exists('getAffiliatesEarned') ? getAffiliatesEarned($from_id) : 0);
     $Balanceuser = number_format($user['Balance'], 0);
     $text_account = sprintf($textbotlang['users']['account'], $first_name, $from_id, $Balanceuser, $countorder, $user['affiliatescount'], $aff_earn, $dateacc, $timeacc);
+    try {
+        if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()
+            && function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id)) {
+            $pa_list = function_exists('getUserPanelAdminUsernames') ? getUserPanelAdminUsernames($from_id) : [];
+            $pa_u = $pa_list ? implode(', ', $pa_list) : (function_exists('getUserPanelAdminUsername') ? getUserPanelAdminUsername($from_id) : '');
+            $pa_g = function_exists('getResellerVolumePurchasedGb') ? getResellerVolumePurchasedGb($from_id) : 0;
+            if ($pa_u !== '') {
+                $text_account .= "\n\n🛠 ادمین(های) پنل: <code>" . htmlspecialchars($pa_u, ENT_QUOTES, 'UTF-8') . "</code>";
+                $vol_lbl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($pa_g) : (number_format(intval($pa_g)) . ' گیگ');
+                $text_account .= "\n📊 حجم خریداری‌شده: <b>" . $vol_lbl . "</b>";
+            }
+        }
+    } catch (Throwable $e) {}
     sendmessage($from_id, $text_account, $keyboardPanel, 'HTML');
 }
 
@@ -3154,19 +3168,32 @@ if (isset($datain) && $datain === 'product_header') {
         }
     }
     $affiliatescommission = select("affiliates", "*", null, null, "select");
-    if ($affiliatescommission['status_commission'] == "oncommission" && ($user['affiliates'] !== null || $user['affiliates'] != "0")) {
-        $affiliatescommission = select("affiliates", "*", null, null, "select");
-        $result = ($priceproduct * $affiliatescommission['affiliatespercentage']) / 100;
-        $user_Balance = select("user", "*", "id", $user['affiliates'], "select");
-        if ($user_Balance) {
-            $Balance_prim = $user_Balance['Balance'] + $result;
-            update("user", "Balance", $Balance_prim, "id", $user['affiliates']);
-            if (function_exists('addAffiliatesBalance')) {
-                addAffiliatesBalance($user['affiliates'], $result);
+    if (is_array($affiliatescommission)
+        && (($affiliatescommission['status_commission'] ?? '') == "oncommission")
+        && !empty($user['affiliates'])
+        && strval($user['affiliates']) !== "0"
+        && intval($user['affiliates']) > 0
+        && intval($user['affiliates']) !== intval($from_id)
+    ) {
+        $aff_pct = floatval($affiliatescommission['affiliatespercentage'] ?? 0);
+        $result_int = intval(round((floatval($priceproduct) * $aff_pct) / 100.0));
+        $aff_uid = intval($user['affiliates']);
+        if ($result_int > 0) {
+            $user_Balance = select("user", "*", "id", $aff_uid, "select");
+            if (is_array($user_Balance)) {
+                if (function_exists('atomicAddBalance')) {
+                    atomicAddBalance($aff_uid, $result_int);
+                } else {
+                    $Balance_prim = intval($user_Balance['Balance'] ?? 0) + $result_int;
+                    update("user", "Balance", $Balance_prim, "id", $aff_uid);
+                }
+                if (function_exists('addAffiliatesBalance')) {
+                    addAffiliatesBalance($aff_uid, $result_int);
+                }
+                $result_fmt = number_format($result_int);
+                $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.", $result_fmt);
+                sendmessage($aff_uid, $textadd, null, 'HTML');
             }
-            $result = number_format($result);
-            $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'], $result);
-            sendmessage($user['affiliates'], $textadd, null, 'HTML');
         }
     }
     $link_config = "";
@@ -3535,6 +3562,8 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";
     } elseif (strpos($pv_tow, 'extendafterpay|') === 0) {
         $invoice = $pv_tow;
+    } elseif (strpos($pv_tow, 'reseller_volume|') === 0) {
+        $invoice = $pv_tow;
     } elseif ($pv_tow == "balpkg" && intval($user['Processing_value_one']) > 0) {
         $invoice = "balpkg|" . intval($user['Processing_value_one']);
     } else {
@@ -3599,6 +3628,10 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     if (strpos($pv_tow_note, 'extendafterpay|') === 0) {
         $parts_n = explode('|', $pv_tow_note);
         $pay_note = "\n🔄 نوع: تمدید سرویس <code>" . htmlspecialchars($parts_n[1] ?? '', ENT_QUOTES, 'UTF-8') . "</code>";
+    } elseif (strpos($pv_tow_note, 'reseller_volume|') === 0) {
+        $parts_n = explode('|', $pv_tow_note);
+        $adm_n = htmlspecialchars($parts_n[2] ?? '', ENT_QUOTES, 'UTF-8');
+        $pay_note = "\n📦 نوع: خرید حجم پنل ریسلر" . ($adm_n !== '' ? "\n👤 ادمین: <code>{$adm_n}</code>" : '');
     } elseif (($user['Processing_value_tow'] ?? '') === 'balpkg' && intval($user['Processing_value_one'] ?? 0) > 0) {
         $credit_fmt = number_format(intval($user['Processing_value_one']));
         $pay_note = "🎁 <b>پکیج افزایش موجودی</b>\n💎 اعتبار واریزی: <b>{$credit_fmt}</b> تومان\n💰 مبلغ قابل پرداخت: <b>{$Processing_value}</b> تومان";
@@ -3770,21 +3803,25 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
         sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');
         return;
     }
-    $affiliatesvalue = select("affiliates", "*", null, null, "select")['affiliatesstatus'];
+    $__aff_row = select("affiliates", "*", null, null, "select");
+    $affiliatesvalue = is_array($__aff_row) ? ($__aff_row['affiliatesstatus'] ?? 'offaffiliates') : 'offaffiliates';
     if ($affiliatesvalue == "offaffiliates") {
         sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');
         return;
     }
     $affiliates = select("affiliates", "*", null, null, "select");
+    if (!is_array($affiliates)) {
+        $affiliates = [];
+    }
     $my_code = $user['ref_code'];
     $affiliatescommission = select("affiliates", "*", null, null, "select");
-    if ($affiliatescommission['status_commission'] == "oncommission") {
+    if (is_array($affiliatescommission) && (($affiliatescommission['status_commission'] ?? '') == "oncommission")) {
         $affiliatespercentage = number_format(floatval($affiliatescommission['affiliatespercentage'])) . ' درصد';
     } else {
         $affiliatespercentage = $textbotlang['users']['status']['disabled'] ?? 'غیرفعال';
     }
-    if ($affiliatescommission['Discount'] == "onDiscountaffiliates") {
-        $price_Discount = number_format(intval($affiliatescommission['price_Discount'])) . ' تومان';
+    if (is_array($affiliatescommission) && (($affiliatescommission['Discount'] ?? '') == "onDiscountaffiliates")) {
+        $price_Discount = number_format(intval($affiliatescommission['price_Discount'] ?? 0)) . ' تومان';
     } else {
         $price_Discount = $textbotlang['users']['status']['disabled'] ?? 'غیرفعال';
     }
@@ -3819,5 +3856,233 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
         sendmessage($from_id, $textaffiliates, $keyboard_share, 'HTML');
     }
 }
+
+#----------- Reseller Panel volume purchase (feature-gated, isolated) -----------#
+if (isset($textbotlang['users']['reseller_volume']['btn']) && $text == $textbotlang['users']['reseller_volume']['btn']) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        sendmessage($from_id, '❌ این قابلیت در حال حاضر غیرفعال است.', $keyboard, 'HTML');
+        return;
+    }
+    if (!function_exists('isUserPanelAdmin') || !isUserPanelAdmin($from_id)) {
+        global $admin_ids;
+        if (isset($admin_ids) && is_array($admin_ids) && in_array($from_id, $admin_ids)) {
+            sendmessage($from_id, "برای تنظیمات از دکمه «⚙️ مدیریت Reseller Panel» در منوی ادمین استفاده کنید.", $keyboardadmin ?? $keyboard, 'HTML');
+            return;
+        }
+        sendmessage($from_id, '❌ دسترسی به این بخش ندارید.', $keyboard, 'HTML');
+        return;
+    }
+    if (is_file(__DIR__ . '/reseller_volume.php')) {
+        require_once __DIR__ . '/reseller_volume.php';
+    }
+    $hub = $textbotlang['users']['reseller_volume']['hub_title'] ?? "🛠 <b>Reseller Panel</b>\n\nیک گزینه را انتخاب کنید:";
+    $kb = function_exists('buildResellerUserHubKeyboard') ? buildResellerUserHubKeyboard() : null;
+    sendmessage($from_id, $hub, $kb, 'HTML');
+    return;
+}
+
+if ($datain == 'rv_noop') {
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '', 'show_alert' => false]);
+    return;
+}
+
+if ($datain == 'rv_open_menu') {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'غیرفعال', 'show_alert' => true]);
+        return;
+    }
+    if (!function_exists('isUserPanelAdmin') || !isUserPanelAdmin($from_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'دسترسی ندارید', 'show_alert' => true]);
+        return;
+    }
+    if (is_file(__DIR__ . '/reseller_volume.php')) {
+        require_once __DIR__ . '/reseller_volume.php';
+    }
+    $hub = $textbotlang['users']['reseller_volume']['hub_title'] ?? "🛠 <b>Reseller Panel</b>\n\nیک گزینه را انتخاب کنید:";
+    $kb = function_exists('buildResellerUserHubKeyboard') ? buildResellerUserHubKeyboard() : null;
+    Editmessagetext($from_id, $message_id, $hub, $kb, 'HTML');
+    return;
+}
+
+if ($datain == 'rv_user_buy') {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;
+    if (!function_exists('isUserPanelAdmin') || !isUserPanelAdmin($from_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'دسترسی ندارید', 'show_alert' => true]);
+        return;
+    }
+    if (is_file(__DIR__ . '/reseller_volume.php')) require_once __DIR__ . '/reseller_volume.php';
+    $pa_list = function_exists('getUserPanelAdminUsernames') ? getUserPanelAdminUsernames($from_id) : [];
+    $pa_user = $pa_list ? implode(', ', $pa_list) : '';
+    $bal = number_format(intval($user['Balance'] ?? 0));
+    $plans = function_exists('resellerListPlans') ? resellerListPlans(true) : [];
+    if (empty($plans)) {
+        $msg = sprintf($textbotlang['users']['reseller_volume']['no_plans'] ?? 'پلنی نیست', $pa_user, $bal);
+        $kb = json_encode(['inline_keyboard' => [[['text' => '🔙 بازگشت', 'callback_data' => 'rv_open_menu']]]]);
+        Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
+        return;
+    }
+    $msg = sprintf($textbotlang['users']['reseller_volume']['menu_title'] ?? "خرید حجم\n%s\n%s", $pa_user, $bal);
+    $kb = ['inline_keyboard' => [[['text' => '💵 قیمت', 'callback_data' => 'rv_noop'], ['text' => '📊 حجم', 'callback_data' => 'rv_noop']]]];
+    foreach ($plans as $pl) {
+        $gb = intval($pl['volume_gb'] ?? 0);
+        $pr = intval($pl['price'] ?? 0);
+        $cb = 'rv_plan_' . intval($pl['id']);
+        $kb['inline_keyboard'][] = [
+            ['text' => number_format($pr) . ' تومان', 'callback_data' => $cb],
+            ['text' => (function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb) : (number_format($gb) . ' گیگ')), 'callback_data' => $cb],
+        ];
+    }
+    $kb['inline_keyboard'][] = [['text' => '🔙 بازگشت', 'callback_data' => 'rv_open_menu']];
+    Editmessagetext($from_id, $message_id, $msg, json_encode($kb), 'HTML');
+    return;
+}
+
+if ($datain == 'rv_user_my_panel') {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;
+    if (!function_exists('isUserPanelAdmin') || !isUserPanelAdmin($from_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'دسترسی ندارید', 'show_alert' => true]);
+        return;
+    }
+    if (is_file(__DIR__ . '/reseller_volume.php')) require_once __DIR__ . '/reseller_volume.php';
+    $msg = function_exists('buildResellerMyPanelStatusText')
+        ? buildResellerMyPanelStatusText($from_id)
+        : '❌ خطا';
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [['text' => $textbotlang['users']['reseller_volume']['btn_buy'] ?? '🛒 خرید حجم', 'callback_data' => 'rv_user_buy']],
+            [['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_user_my_panel']],
+            [['text' => '🔙 بازگشت', 'callback_data' => 'rv_open_menu']],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
+    return;
+}
+
+if (preg_match('/^rv_plan_(\d+)$/', strval($datain), $m_rvp)) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;
+    if (is_file(__DIR__ . '/reseller_volume.php')) require_once __DIR__ . '/reseller_volume.php';
+    $plan = function_exists('resellerGetPlan') ? resellerGetPlan(intval($m_rvp[1])) : null;
+    if (!$plan) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پلن یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    $pa_list = function_exists('getUserPanelAdminUsernames') ? getUserPanelAdminUsernames($from_id) : [];
+    $gb = intval($plan['volume_gb']);
+    $pr = intval($plan['price']);
+    $per = $gb > 0 ? intval(round($pr / $gb)) : 0;
+    $pid = intval($plan['id']);
+    if (count($pa_list) > 1) {
+        $__vl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb) : (number_format($gb) . ' گیگ');
+        $msg = "📦 پلن: <b>{$__vl}</b> — <b>" . number_format($pr) . "</b> تومان\n\nکدام ادمین پنل شارژ شود؟";
+        $rows = [];
+        foreach ($pa_list as $i => $pan) {
+            $rows[] = [['text' => '👤 ' . $pan, 'callback_data' => 'rv_confirm_' . $pid . '_' . $i]];
+        }
+        $rows[] = [['text' => $textbotlang['users']['reseller_volume']['btn_cancel'] ?? '❌ انصراف', 'callback_data' => 'rv_cancel']];
+        Editmessagetext($from_id, $message_id, $msg, json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE), 'HTML');
+        return;
+    }
+    $pa_user = $pa_list[0] ?? '';
+    $__vl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($gb) : (number_format($gb) . ' گیگ');
+    $msg = sprintf(
+        $textbotlang['users']['reseller_volume']['confirm'] ?? "تأیید\nادمین: %s\nحجم: %s\nمبلغ: %s تومان\nهر گیگ: %s تومان",
+        $pa_user, $__vl, number_format($pr), number_format($per)
+    );
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => $textbotlang['users']['reseller_volume']['btn_confirm'] ?? '✅ تأیید', 'callback_data' => 'rv_confirm_' . $pid]],
+        [['text' => $textbotlang['users']['reseller_volume']['btn_cancel'] ?? '❌ انصراف', 'callback_data' => 'rv_cancel']],
+    ]]);
+    Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
+    return;
+}
+
+if ($datain == 'rv_cancel') {
+    Editmessagetext($from_id, $message_id, '❌ لغو شد.', null, 'HTML');
+    return;
+}
+
+if (preg_match('/^rv_confirm_(\d+)(?:_(\d+))?$/', strval($datain), $m_rvc)) {
+    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;
+    if (is_file(__DIR__ . '/reseller_volume.php')) require_once __DIR__ . '/reseller_volume.php';
+    if (!function_exists('resellerPurchaseVolume')) {
+        sendmessage($from_id, '❌ خطا در ماژول خرید حجم.', $keyboard, 'HTML');
+        return;
+    }
+    $admin_pick = null;
+    if (isset($m_rvc[2]) && $m_rvc[2] !== '') {
+        $list = function_exists('getUserPanelAdminUsernames') ? getUserPanelAdminUsernames($from_id) : [];
+        $admin_pick = $list[intval($m_rvc[2])] ?? null;
+    }
+    $result = resellerPurchaseVolume($from_id, intval($m_rvc[1]), $admin_pick);
+    if (!is_array($result)) {
+        sendmessage($from_id, '❌ خطا در خرید.', $keyboard, 'HTML');
+        return;
+    }
+    if (!empty($result['need_payment'])) {
+        // کمبود موجودی
+        $plan_id = intval($m_rvc[1]);
+        $shortfall = intval($result['shortfall'] ?? 0);
+        if ($shortfall < 1) {
+            $shortfall = 1;
+        }
+        // اگر واریز/افزایش موجودی در ربات خاموش است → فقط پیام، بدون فاکتور
+        if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+            $price_plan = intval($result['price'] ?? 0);
+            $bal_now = intval($result['balance'] ?? 0);
+            $msg_off = "❌ موجودی کافی نیست و امکان واریز فعلاً غیرفعال است.\n\n"
+                . "💵 مبلغ پلن: <b>" . number_format($price_plan) . "</b> تومان\n"
+                . "💰 موجودی شما: <b>" . number_format($bal_now) . "</b> تومان\n"
+                . "💳 کمبود: <b>" . number_format($shortfall) . "</b> تومان\n\n"
+                . "لطفاً بعداً دوباره تلاش کنید یا با پشتیبانی در تماس باشید.";
+            Editmessagetext($from_id, $message_id, $msg_off, null, 'HTML');
+            return;
+        }
+        $admin_token = ($admin_pick !== null && $admin_pick !== '') ? strval($admin_pick) : '';
+        // invoice: reseller_volume|planId|adminUsername
+        $tow = 'reseller_volume|' . $plan_id . ($admin_token !== '' ? ('|' . $admin_token) : '');
+        update("user", "Processing_value", strval($shortfall), "id", $from_id);
+        update("user", "Processing_value_one", "0", "id", $from_id);
+        update("user", "Processing_value_tow", $tow, "id", $from_id);
+        $price_plan = intval($result['price'] ?? 0);
+        $bal_now = intval($result['balance'] ?? 0);
+        $vol_lbl = '';
+        if (function_exists('resellerGetPlan')) {
+            $pln = resellerGetPlan($plan_id);
+            if ($pln) {
+                $vol_lbl = function_exists('formatResellerVolumeLabel')
+                    ? formatResellerVolumeLabel(intval($pln['volume_gb'] ?? 0))
+                    : (number_format(intval($pln['volume_gb'] ?? 0)) . ' گیگ');
+            }
+        }
+        $admins_txt = $admin_token !== '' ? $admin_token : (
+            function_exists('getUserPanelAdminUsernames')
+                ? implode(', ', getUserPanelAdminUsernames($from_id))
+                : ''
+        );
+        $intro = "📦 <b>خرید حجم پنل — کمبود موجودی</b>\n\n"
+            . ($vol_lbl !== '' ? "📊 حجم: <b>{$vol_lbl}</b>\n" : '')
+            . "💵 مبلغ پلن: <b>" . number_format($price_plan) . "</b> تومان\n"
+            . "💰 موجودی فعلی: <b>" . number_format($bal_now) . "</b> تومان\n"
+            . "💳 مبلغ قابل پرداخت: <b>" . number_format($shortfall) . "</b> تومان\n"
+            . ($admins_txt !== '' ? "👤 ادمین پنل: <code>" . htmlspecialchars($admins_txt, ENT_QUOTES, 'UTF-8') . "</code>\n" : '')
+            . "\nپس از تأیید پرداخت، حجم به‌صورت خودکار اضافه می‌شود.";
+        if (function_exists('presentPaymentMethods')) {
+            presentPaymentMethods($from_id, $intro, intval($message_id ?? 0) ?: null);
+        } else {
+            sendmessage($from_id, $intro . "\n\nلطفاً از منوی اصلی افزایش موجودی را انجام دهید.", $keyboard, 'HTML');
+        }
+        return;
+    }
+    $msg = $result['message'] ?? ($result['ok'] ? '✅ انجام شد' : '❌ خطا');
+    Editmessagetext($from_id, $message_id, $msg, null, 'HTML');
+    if (!empty($result['ok']) && function_exists('sendChannelReport')) {
+        $pa = function_exists('getUserPanelAdminUsername') ? getUserPanelAdminUsername($from_id) : '';
+        sendChannelReport('rpt_reseller_volume', "📦 خرید حجم پنل\n👤 <code>{$from_id}</code>\n🛠 <code>{$pa}</code>\n" . $msg);
+    }
+    return;
+}
+
+
 require_once 'admin.php';
+
 $connect->close();

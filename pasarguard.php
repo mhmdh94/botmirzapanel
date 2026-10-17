@@ -647,3 +647,263 @@ function ensure_default_groups($location) {
         return false;
     }
 }
+
+
+#-----------------------------#
+# ادمین‌های پنل (برای خرید حجم Reseller) — جدا از یوزر VPN
+#-----------------------------#
+
+/**
+ * توکن برای پنل ریسلر مستقل (جدول reseller_panel_cfg — بدون marzban_panel)
+ */
+function token_reseller_standalone($panel_row)
+{
+    global $pdo;
+    if (!is_array($panel_row)) {
+        return ['error' => true];
+    }
+    $token = $panel_row['token'] ?? null;
+    $token_time = intval($panel_row['token_time'] ?? 0);
+    if ($token && $token_time > 0 && (time() - $token_time) < 3000) {
+        return ['access_token' => $token];
+    }
+    $url = rtrim(strval($panel_row['url_panel'] ?? ''), '/') . '/api/admin/token';
+    $data_token = [
+        'username' => $panel_row['username_panel'] ?? '',
+        'password' => $panel_row['password_panel'] ?? '',
+        'grant_type' => 'password',
+    ];
+    $ch = marzban_curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data_token));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/x-www-form-urlencoded',
+        'accept: application/json',
+    ]);
+    $raw = curl_exec($ch);
+    curl_close($ch);
+    $body = json_decode($raw, true);
+    if (!is_array($body) || empty($body['access_token'])) {
+        return is_array($body) ? $body : ['error' => true, 'detail' => 'token failed'];
+    }
+    // کش در جدول اختصاصی
+    try {
+        if (function_exists('ensureResellerPanelTable')) {
+            ensureResellerPanelTable();
+        }
+        $st = $pdo->prepare("UPDATE reseller_panel_cfg SET token = ?, token_time = ? WHERE id = 1");
+        $st->execute([strval($body['access_token']), time()]);
+    } catch (Throwable $e) {
+        error_log('token_reseller cache: ' . $e->getMessage());
+    }
+    return $body;
+}
+
+function _token_for_any_panel($panel_row)
+{
+    if (is_array($panel_row) && !empty($panel_row['is_reseller_cfg'])) {
+        return token_reseller_standalone($panel_row);
+    }
+    if (is_array($panel_row) && !empty($panel_row['id']) && empty($panel_row['is_reseller_cfg'])) {
+        return token_panel(intval($panel_row['id']));
+    }
+    return ['error' => true, 'detail' => 'no panel'];
+}
+
+function getPanelAdmin($username, $panel_row)
+{
+    if (!is_array($panel_row) || empty($panel_row['id'])) {
+        return ['error' => true, 'detail' => 'panel invalid'];
+    }
+    $username = trim(strval($username));
+    if ($username === '') {
+        return ['error' => true, 'detail' => 'username empty'];
+    }
+    $Check_token = _token_for_any_panel($panel_row);
+    if (!is_array($Check_token) || empty($Check_token['access_token'])) {
+        return ['error' => true, 'detail' => 'token failed'];
+    }
+    $base = rtrim(strval($panel_row['url_panel']), '/');
+    $header = [
+        'Accept: application/json',
+        'Authorization: Bearer ' . $Check_token['access_token'],
+    ];
+    $paths = [
+        $base . '/api/admins?username=' . rawurlencode($username) . '&limit=50',
+        $base . '/api/admins/simple?search=' . rawurlencode($username) . '&limit=50',
+    ];
+    foreach ($paths as $url) {
+        $ch = marzban_curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        $output = curl_exec($ch);
+        $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+        curl_close($ch);
+        if ($output === false || $code < 200 || $code >= 300) {
+            continue;
+        }
+        $data = json_decode($output, true);
+        if (!$data) {
+            continue;
+        }
+        $found = _pickPanelAdminFromResponse($data, $username);
+        if ($found !== null) {
+            return $found;
+        }
+    }
+    return ['error' => true, 'detail' => 'admin not found'];
+}
+
+function _pickPanelAdminFromResponse($data, $username)
+{
+    $username_l = strtolower($username);
+    $candidates = [];
+    if (isset($data['username']) && is_string($data['username'])) {
+        $candidates[] = $data;
+    }
+    foreach (['admins', 'items', 'data', 'results'] as $key) {
+        if (isset($data[$key]) && is_array($data[$key])) {
+            foreach ($data[$key] as $row) {
+                if (is_array($row)) {
+                    $candidates[] = $row;
+                }
+            }
+        }
+    }
+    if (is_array($data) && array_keys($data) === range(0, count($data) - 1)) {
+        foreach ($data as $row) {
+            if (is_array($row)) {
+                $candidates[] = $row;
+            }
+        }
+    }
+    foreach ($candidates as $row) {
+        $u = strtolower(strval($row['username'] ?? ''));
+        if ($u !== '' && $u === $username_l) {
+            return $row;
+        }
+    }
+    return null;
+}
+
+/**
+ * جستجوی ادمین در پنل‌های پاسارگارد/مرزبان فعال
+ * @return array{ok:bool,admin?:array,panel?:array,message?:string}
+ */
+function findPanelAdminAcrossPanels($username)
+{
+    global $pdo;
+    $username = trim(strval($username));
+    if ($username === '') {
+        return ['ok' => false, 'message' => 'نام کاربری خالی است.'];
+    }
+    try {
+        $st = $pdo->query("SELECT * FROM marzban_panel WHERE status = 'activepanel' OR status IS NULL OR status = ''");
+        $panels = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        try {
+            $st = $pdo->query("SELECT * FROM marzban_panel");
+            $panels = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e2) {
+            return ['ok' => false, 'message' => 'خطا در خواندن لیست پنل‌ها.'];
+        }
+    }
+    if (empty($panels)) {
+        return ['ok' => false, 'message' => 'هیچ پنلی در ربات ثبت نشده است.'];
+    }
+    $pg_panels = [];
+    foreach ($panels as $p) {
+        $type = strtolower(trim(strval($p['type'] ?? '')));
+        if (in_array($type, ['pasarguard', 'pasar_guard', 'pasarguard_panel', 'marzban', ''], true) || $type === '') {
+            // ترجیح پاسارگارد؛ مرزبان هم API مشابه ادمین دارد
+            $pg_panels[] = $p;
+        }
+    }
+    if (empty($pg_panels)) {
+        $pg_panels = $panels;
+    }
+    $last_err = 'ادمین در پنل پیدا نشد.';
+    foreach ($pg_panels as $p) {
+        $res = getPanelAdmin($username, $p);
+        if (is_array($res) && empty($res['error']) && !empty($res['username'])) {
+            return ['ok' => true, 'admin' => $res, 'panel' => $p];
+        }
+        if (is_array($res) && !empty($res['detail'])) {
+            $last_err = strval($res['detail']);
+        }
+    }
+    return ['ok' => false, 'message' => 'ادمین «' . $username . '» در هیچ پنلی پیدا نشد. نام را دقیق وارد کنید.'];
+}
+
+
+/**
+ * افزودن حجم (گیگ) به ادمین پنل پاسارگارد
+ * @return array{success:bool,message:string,old_limit_gb?:float,new_limit_gb?:float}
+ */
+function addVolumeToPanelAdmin($username, $extra_gb, $panel_row)
+{
+    $username = trim(strval($username));
+    $extra_gb = intval($extra_gb);
+    if ($username === '' || $extra_gb <= 0 || !is_array($panel_row)) {
+        return ['success' => false, 'message' => 'پارامتر نامعتبر'];
+    }
+    $admin = getPanelAdmin($username, $panel_row);
+    if (!is_array($admin) || !empty($admin['error']) || empty($admin['username'])) {
+        return ['success' => false, 'message' => 'ادمین «' . $username . '» در پنل پیدا نشد.'];
+    }
+    $current_limit = $admin['data_limit'] ?? 0;
+    if ($current_limit === null) {
+        $current_limit = 0;
+    }
+    // نامحدود (بعضی پنل‌ها 0 یا null = unlimited)
+    // حجم را روی مقدار فعلی اضافه می‌کنیم
+    $extra_bytes = $extra_gb * 1024 * 1024 * 1024;
+    $new_limit = intval($current_limit) + intval($extra_bytes);
+
+    $Check_token = _token_for_any_panel($panel_row);
+    if (!is_array($Check_token) || empty($Check_token['access_token'])) {
+        return ['success' => false, 'message' => 'خطا در دریافت توکن پنل'];
+    }
+    $base = rtrim(strval($panel_row['url_panel']), '/');
+    $paths = [
+        $base . '/api/admin/by-username/' . rawurlencode($username),
+        $base . '/api/admin/' . rawurlencode($username),
+    ];
+    $payload = json_encode(['data_limit' => $new_limit]);
+    $header = [
+        'Accept: application/json',
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $Check_token['access_token'],
+    ];
+    $ok = false;
+    $last_detail = '';
+    foreach ($paths as $url) {
+        $ch = marzban_curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        $output = curl_exec($ch);
+        $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+        curl_close($ch);
+        if ($code >= 200 && $code < 300) {
+            $ok = true;
+            break;
+        }
+        $last_detail = is_string($output) ? substr($output, 0, 200) : '';
+    }
+    if (!$ok) {
+        return ['success' => false, 'message' => 'خطا در افزودن حجم به پنل: ' . $last_detail];
+    }
+    return [
+        'success' => true,
+        'message' => "✅ {$extra_gb} گیگ به ادمین «{$username}» اضافه شد.",
+        'old_limit_gb' => round(intval($current_limit) / (1024 ** 3), 2),
+        'new_limit_gb' => round($new_limit / (1024 ** 3), 2),
+    ];
+}

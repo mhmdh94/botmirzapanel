@@ -133,7 +133,7 @@ $textbotlang['users']['status']['error_onhold'] = "⚠️ هنوز به سروی
 $textbotlang['users']['status']['error2'] = "⚠️ مراحل ناقص ماند.
 از منوی اصلی دوباره شروع کنید.";
 $textbotlang['users']['status']['usernotfound'] = "⚠️ این سرویس روی سرور یافت نشد.
-اگر تمدید کرده‌اید چند لحظه صبر کنید یا با پشتیبانی در ارتباط باشید.";
+در صورت عدم تمدید سرویس بعد از 7 روز از سرور پاک می‌شود. لطفاً اشتراک جدید تهیه کنید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗 دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
 $textbotlang['users']['status']['backlist'] = "🏠 لیست سرویس‌ها";
@@ -182,7 +182,7 @@ $textbotlang['users']['buy']['createservicetest'] = "✅ <b>اکانت تست س
 ⏳ مدت: %s ساعت
 📊 حجم: %s مگابایت
 
-📎 برای استفاده از سرویس، لینک زیر را داخل برنامه اضافه کنید:
+📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:
 <code>%s</code>
 <code>%s</code>";
 $textbotlang['users']['buy']['createservicewg'] = "✅ <b>اکانت تست ساخته شد</b>
@@ -229,7 +229,7 @@ $textbotlang['users']['buy']['createservice'] = "✅ <b>سرویس فعال شد
 📆 مدت: %s روز
 📊 حجم: %s گیگ
 
-📎 برای استفاده از سرویس، لینک زیر را داخل برنامه اضافه کنید:
+📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:
 <code>%s</code>
 <code>%s</code>";
 $textbotlang['users']['buy']['selectService'] = "🛒 <b>انتخاب محصول</b>
@@ -551,6 +551,11 @@ $textbotlang['users']['moeny']['Charged.'] = "✅ <b>شارژ انجام شد</b
 🧾 کد پیگیری: <code>%s</code>
 
 از پرداخت شما متشکریم.";
+$textbotlang['users']['moeny']['receipt_accepted'] = "✅ <b>رسید پرداخت شما تأیید شد</b>
+
+💰 مبلغ: <b>%s</b> تومان
+🛒 کد پیگیری: <code>%s</code>";
+
 $textbotlang['users']['moeny']['acceptedcart'] = "✅ پرداخت تأیید شد";
 $textbotlang['users']['moeny']['rejectresid'] = "❌ <b>پرداخت رد شد</b>
 
@@ -1786,3 +1791,34 @@ $textbotlang['Admin']['changetext']['msg_buy_disabled'] = "متن: خرید سر
 $textbotlang['Admin']['changetext']['msg_deposit_closed'] = "متن: واریز بسته";
 $textbotlang['Admin']['changetext']['msg_extend_disabled'] = "متن: تمدید بسته";
 $textbotlang['Admin']['changetext']['msg_support_disabled'] = "متن: پشتیبانی بسته";
+
+$textbotlang['users']['reseller_volume']['btn'] = "پنل نمایندگی";
+$textbotlang['users']['reseller_volume']['btn_buy'] = "🛒 خرید حجم";
+$textbotlang['users']['reseller_volume']['btn_my_panel'] = "🖥 پنل من";
+$textbotlang['users']['reseller_volume']['hub_title'] = "🛠 <b>پنل نمایندگی</b>\n\nیک گزینه را انتخاب کنید:";
+$textbotlang['users']['reseller_volume']['menu_title'] = "📦 <b>خرید حجم پنل</b>
+
+👤 ادمین(های) پنل: <code>%s</code>
+💰 موجودی: <b>%s</b> تومان
+
+یک پلن را انتخاب کنید:";
+$textbotlang['users']['reseller_volume']['no_plans'] = "❌ در حال حاضر پلنی تعریف نشده است.
+👤 ادمین: <code>%s</code>
+💰 موجودی: <b>%s</b> تومان";
+$textbotlang['users']['reseller_volume']['confirm'] = "📦 <b>تأیید خرید حجم پنل</b>
+
+👤 ادمین(های) پنل: <code>%s</code>
+📊 حجم: <b>%s</b>
+💵 قیمت: <b>%s</b> تومان
+📌 هر گیگ: <b>%s</b> تومان
+
+آیا تأیید می‌کنید؟";
+$textbotlang['users']['reseller_volume']['btn_confirm'] = "✅ تأیید و پرداخت";
+$textbotlang['users']['reseller_volume']['btn_cancel'] = "❌ انصراف";
+$textbotlang['Admin']['keyboardadmin']['reseller_volume'] = "⚙️ مدیریت پنل نمایندگان";
+$textbotlang['Admin']['Status']['status_reseller_panel'] = "پنل نمایندگان (حجم پنل)";
+$textbotlang['Admin']['ManageUser']['panel_admin_on'] = "🛠 پنل‌دار: فعال ✅";
+$textbotlang['Admin']['ManageUser']['panel_admin_off'] = "🛠 پنل‌دار: غیرفعال ❌";
+$textbotlang['Admin']['ManageUser']['panel_admin_setuser'] = "👤 تنظیم نام ادمین پنل";
+$textbotlang['Admin']['reseller_volume']['btn_plans'] = "📋 تنظیم پلن‌های پنل";
+$textbotlang['Admin']['reseller_volume']['btn_panel'] = "🖥 تنظیم اطلاعات پنل";

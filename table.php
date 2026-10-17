@@ -635,3 +635,4 @@ try {
     file_put_contents('error_log',$e->getMessage());
 }
 $connect->query("ALTER TABLE `user` CHANGE `Processing_value` `Processing_value` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;");
+if (function_exists('ensurePanelAdminSchema')) { ensurePanelAdminSchema(); }
