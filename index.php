@@ -1187,6 +1187,10 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
                 'text' => $textbotlang['users']['status']['linksub'],
                 'callback_data' => "subscriptionurl_"
             ),
+            'qrcode' => array(
+                'text' => '📷 دریافت QR Code',
+                'callback_data' => "qrcode_"
+            ),
             'config' => array(
                 'text' => $textbotlang['users']['status']['config'],
                 'callback_data' => "config_"
@@ -1222,6 +1226,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         if ($marzban_list_get['type'] == "mikrotik") {
             unset($keyboarddate['Extra_volume']);
             unset($keyboarddate['linksub']);
+            unset($keyboarddate['qrcode']);
             unset($keyboarddate['config']);
             unset($keyboarddate['extend']);
             unset($keyboarddate['changelink']);
@@ -1243,7 +1248,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         // حجم اضافه | فعال/غیرفعال
         // بازگشت وجه
         // بازگشت به لیست
-        $order_keys = ['linksub', 'config', 'extend', 'changelink', 'Extra_volume', 'togglestatus', 'removeservice'];
+        $order_keys = ['linksub', 'qrcode', 'config', 'extend', 'changelink', 'Extra_volume', 'togglestatus', 'removeservice'];
         $keyboardsetting = ['inline_keyboard' => []];
         $tempArray = [];
         foreach ($order_keys as $okey) {
@@ -1270,6 +1275,59 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     }
     Editmessagetext($from_id, $message_id, $textinfo, $keyboardsetting);
 }
+
+if (preg_match('/qrcode_(\w+)/', $datain, $dataget)) {
+    $username = $dataget[1];
+    $nameloc = select("invoice", "*", "username", $username, "select");
+    if ($nameloc == false || !is_array($nameloc)) {
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? 'سرویس یافت نشد.', $keyboard, 'HTML');
+        return;
+    }
+    // فقط سرویس خود کاربر
+    if (strval($nameloc['id_user'] ?? '') !== strval($from_id) && !(isset($admin_ids) && in_array($from_id, $admin_ids))) {
+        sendmessage($from_id, '❌ دسترسی ندارید.', $keyboard, 'HTML');
+        return;
+    }
+    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
+    if (!is_array($DataUserOut) || ($DataUserOut['status'] ?? '') === 'Unsuccessful') {
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا در دریافت اطلاعات سرویس.', $keyboard, 'HTML');
+        return;
+    }
+    $subscriptionurl = strval($DataUserOut['subscription_url'] ?? '');
+    if ($subscriptionurl === '' && !empty($DataUserOut['links'][0])) {
+        $subscriptionurl = strval($DataUserOut['links'][0]);
+    }
+    if ($subscriptionurl === '') {
+        sendmessage($from_id, '❌ لینک اشتراک در دسترس نیست.', $keyboard, 'HTML');
+        return;
+    }
+    try {
+        $randomString = bin2hex(random_bytes(2));
+        $urlimage = sys_get_temp_dir() . "/qr_{$from_id}_{$randomString}.png";
+        $writer = new PngWriter();
+        $qrCode = QrCode::create($subscriptionurl)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low)
+            ->setSize(400)
+            ->setMargin(0)
+            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
+        $result = $writer->write($qrCode, null, null);
+        $result->saveToFile($urlimage);
+        $caption = "📷 QR Code سرویس <code>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</code>\n\n<code>" . htmlspecialchars($subscriptionurl, ENT_QUOTES, 'UTF-8') . "</code>";
+        telegram('sendphoto', [
+            'chat_id' => $from_id,
+            'photo' => new CURLFile($urlimage),
+            'caption' => mb_substr($caption, 0, 1024),
+            'parse_mode' => "HTML",
+        ]);
+        @unlink($urlimage);
+    } catch (Throwable $e) {
+        error_log('qrcode_ service: ' . $e->getMessage());
+        sendmessage($from_id, "❌ خطا در ساخت QR Code.\n<code>" . htmlspecialchars($subscriptionurl, ENT_QUOTES, 'UTF-8') . "</code>", $keyboard, 'HTML');
+    }
+    return;
+}
+
 if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
