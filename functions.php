@@ -4420,6 +4420,73 @@ function buildMonthlyStatsExcel($which = 'current')
 
 /* ===================== Reseller Panel (isolated, default OFF) ===================== */
 
+
+/**
+ * ستون‌های قابلیت‌های ربات (setting) را اگر نبود بسازد — امن برای نصب جدید و آپدیت
+ */
+function ensureFeatureSettingsColumns()
+{
+    global $pdo, $connect;
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    $cols = [
+        'force_channel' => '1',
+        'show_balance' => '0',
+        'status_usertest' => '1',
+        'status_buy' => '1',
+        'status_search_service' => '1',
+        'status_affiliates_btn' => '1',
+        'status_tariff_list' => '1',
+        'status_extra_volume' => '1',
+        'status_deposit' => '1',
+        'status_support' => '1',
+        'status_extend' => '1',
+        'status_reseller_panel' => '0',
+        'copy_cart' => '0',
+        'status_verify' => '0',
+        'statuscategory' => '1',
+    ];
+    try {
+        foreach ($cols as $col => $default) {
+            $exists = false;
+            try {
+                if (isset($pdo) && $pdo instanceof PDO) {
+                    $st = $pdo->query("SHOW COLUMNS FROM setting LIKE " . $pdo->quote($col));
+                    $exists = ($st && $st->fetch()) ? true : false;
+                } elseif (isset($connect)) {
+                    $r = @$connect->query("SHOW COLUMNS FROM setting LIKE '" . $connect->real_escape_string($col) . "'");
+                    $exists = ($r && $r->num_rows > 0);
+                }
+            } catch (Throwable $e) {
+                $exists = false;
+            }
+            if ($exists) {
+                continue;
+            }
+            $def = strval($default);
+            $sql = "ALTER TABLE setting ADD COLUMN `{$col}` VARCHAR(20) NOT NULL DEFAULT '{$def}'";
+            try {
+                if (isset($pdo) && $pdo instanceof PDO) {
+                    $pdo->exec($sql);
+                } elseif (isset($connect)) {
+                    $connect->query($sql);
+                } elseif (function_exists('addFieldToTable')) {
+                    addFieldToTable('setting', $col, $default, 'VARCHAR(20)');
+                }
+            } catch (Throwable $e) {
+                // ignore
+            }
+        }
+        $done = true;
+        return true;
+    } catch (Throwable $e) {
+        error_log('ensureFeatureSettingsColumns: ' . $e->getMessage());
+        return false;
+    }
+}
+
 function ensureResellerFeatureSetting()
 {
     global $pdo;

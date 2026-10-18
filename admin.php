@@ -3177,6 +3177,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['setedinbound'], $__kb_after_inb, 'HTML');
     step("home", $from_id);
 } elseif ($text == $textbotlang['Admin']['keyboardadmin']['seetingstatus']) {
+    if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColumns(); }
     if ($setting['Bot_Status'] == "✅  ربات روشن است") {
         update("setting", "Bot_Status", "1");
     } elseif ($setting['Bot_Status'] == "❌ ربات خاموش است") {
@@ -3415,6 +3416,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     ]);
     sendmessage($from_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status, 'HTML');
 } elseif (preg_match('/^editstsuts-(.*)-(.*)/', $datain, $dataget)) {
+    if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColumns(); }
     $type = $dataget[1];
     $value = $dataget[2];
     if ($type == "statusbot") {
