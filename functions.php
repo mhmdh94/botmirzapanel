@@ -4507,8 +4507,11 @@ function adminPanelsListKeyboard()
             ]];
         }
     }
-    $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_pan_list']];
-    $text = "🖥 <b>مدیریت پنل‌ها</b>\nتعداد: <b>{$n}</b>\n\nروی پنل بزنید تا تنظیمات باز شود.";
+    $kb['inline_keyboard'][] = [
+        ['text' => '➕ افزودن پنل', 'callback_data' => 'adm_pan_add'],
+        ['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_pan_list'],
+    ];
+    $text = "🖥 <b>مدیریت پنل‌ها</b>\nتعداد: <b>{$n}</b>\n\nروی پنل بزنید تا تنظیمات باز شود.\nبرای پنل جدید «افزودن پنل» را بزنید.";
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 

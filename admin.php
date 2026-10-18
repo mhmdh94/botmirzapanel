@@ -612,6 +612,10 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     } elseif ($userdata['type'] == "mikrotik") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['mikrotik'], null, 'HTML');
     }
+    if (function_exists('adminPanelsListKeyboard')) {
+        list($__tx, $__kb) = adminPanelsListKeyboard();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['send_message']) {
@@ -4188,6 +4192,19 @@ if ($datain == "adm_noop") {
         list($tx, $kb) = adminPanelsListKeyboard();
         Editmessagetext($from_id, $message_id, $tx, $kb);
     }
+} elseif ($datain == "adm_pan_add") {
+    global $typepanel, $textbotlang;
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => $callback_query_id,
+        'text' => '',
+        'show_alert' => false,
+    ]);
+    sendmessage(
+        $from_id,
+        $textbotlang['Admin']['managepanel']['selecttypepanel'] ?? 'نوع پنل را انتخاب کنید:',
+        $typepanel,
+        'HTML'
+    );
 } elseif (preg_match('/^adm_pan_(\d+)$/', strval($datain), $m_ap)) {
     $panel = function_exists('adminPanelGetById') ? adminPanelGetById($m_ap[1]) : null;
     if ($panel) {
