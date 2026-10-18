@@ -4264,8 +4264,12 @@ if ($datain == "adm_noop") {
         $result = function_exists('adminPanelTestConnectionText')
             ? adminPanelTestConnectionText($panel)
             : '❌ تابع تست موجود نیست';
-        list($tx, $kb) = adminPanelDetailKeyboard($panel, $result);
-        Editmessagetext($from_id, $message_id, $tx, $kb);
+        // کارت پنل بدون نتیجه؛ نتیجه در پیام جدا
+        if (function_exists('adminPanelDetailKeyboard')) {
+            list($tx, $kb) = adminPanelDetailKeyboard($panel, '');
+            Editmessagetext($from_id, $message_id, $tx, $kb);
+        }
+        sendmessage($from_id, $result, null, 'HTML');
     } else {
         telegram('answerCallbackQuery', [
             'callback_query_id' => $callback_query_id,
@@ -4285,8 +4289,11 @@ if ($datain == "adm_noop") {
         $result = function_exists('adminPanelGroupsText')
             ? adminPanelGroupsText($panel)
             : '❌ تابع گروه موجود نیست';
-        list($tx, $kb) = adminPanelDetailKeyboard($panel, $result);
-        Editmessagetext($from_id, $message_id, $tx, $kb);
+        if (function_exists('adminPanelDetailKeyboard')) {
+            list($tx, $kb) = adminPanelDetailKeyboard($panel, '');
+            Editmessagetext($from_id, $message_id, $tx, $kb);
+        }
+        sendmessage($from_id, $result, null, 'HTML');
     } else {
         telegram('answerCallbackQuery', [
             'callback_query_id' => $callback_query_id,
