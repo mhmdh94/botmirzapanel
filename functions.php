@@ -5269,7 +5269,7 @@ function shopGetAllProducts()
 {
     global $pdo;
     try {
-        $st = $pdo->query("SELECT * FROM product WHERE (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY id ASC");
+        $st = $pdo->query("SELECT * FROM product WHERE (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC");
         return $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
     } catch (Throwable $e) {
         return [];
@@ -5281,7 +5281,7 @@ function shopGetProductsByLocation($location)
     global $pdo;
     $location = strval($location);
     try {
-        $st = $pdo->prepare("SELECT * FROM product WHERE Location = ? AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY id ASC");
+        $st = $pdo->prepare("SELECT * FROM product WHERE Location = ? AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC");
         $st->execute([$location]);
         return $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
     } catch (Throwable $e) {
@@ -5408,7 +5408,7 @@ function shopProductListKeyboard($location = null)
     if ($location === '(بدون موقعیت)') {
         try {
             global $pdo;
-            $st = $pdo->query("SELECT * FROM product WHERE (Location IS NULL OR Location = '') AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY id ASC");
+            $st = $pdo->query("SELECT * FROM product WHERE (Location IS NULL OR Location = '') AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC");
             $products = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
         } catch (Throwable $e) {
             $products = [];

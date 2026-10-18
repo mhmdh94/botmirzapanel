@@ -741,6 +741,7 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
     if ($categoryid !== null && $categoryid !== '') {
         $query .= " AND category = :category ";
     }
+    $query .= " ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC ";
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':location', $location, PDO::PARAM_STR);
     if ($categoryid !== null && $categoryid !== '') {

@@ -1422,7 +1422,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (isset($user['Processing_value_tow']) && preg_match('/^[0-9]{9,}$/', strval($user['Processing_value_tow']))) {
         update("user", "Processing_value_tow", "0", "id", $from_id);
     }
-    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all')");
+    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC");
     $stmt->bindValue(':Location', $nameloc['Service_location']);
     $stmt->execute();
     $productextend = ['inline_keyboard' => []];
