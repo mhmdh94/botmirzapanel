@@ -1360,8 +1360,7 @@ if (isset($text) && $text === '📦 مدیریت محصولات') {
     if (!in_array($from_id, $admin_ids)) {
         return;
     }
-    $n = count(function_exists('shopGetAllProducts') ? shopGetAllProducts() : []);
-    sendmessage($from_id, "🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید یا محصول جدید اضافه کنید.", function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
+    sendmessage($from_id, function_exists('shopProductListTitle') ? shopProductListTitle() : "🏬 مدیریت محصولات", function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
     return;
 }
 # عنوان ویرایش قدیمی → همان لیست اینلاین
@@ -1369,8 +1368,7 @@ if (isset($text) && isset($textbotlang['Admin']['Product']['titlebtnedit']) && $
     if (!in_array($from_id, $admin_ids)) {
         return;
     }
-    $n = count(function_exists('shopGetAllProducts') ? shopGetAllProducts() : []);
-    sendmessage($from_id, "🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید.", function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
+    sendmessage($from_id, function_exists('shopProductListTitle') ? shopProductListTitle() : "🏬 مدیریت محصولات", function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
     return;
 }
 
@@ -1382,8 +1380,19 @@ if (in_array($from_id, $admin_ids) && ($datain === 'shop_list' || $datain === 's
     if ($datain === 'shop_noop') {
         return;
     }
-    $n = count(shopGetAllProducts());
-    Editmessagetext($from_id, $message_id, "🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید.", shopProductListKeyboard());
+    Editmessagetext($from_id, $message_id, shopProductListTitle(), shopProductListKeyboard());
+    return;
+}
+
+if (in_array($from_id, $admin_ids) && preg_match('/^shop_loc_([a-f0-9]{12})$/', strval($datain), $m_loc)) {
+    $loc = shopResolveLocationKey($m_loc[1]);
+    if ($loc === null) {
+        Editmessagetext($from_id, $message_id, "❌ موقعیت یافت نشد.
+
+" . shopProductListTitle(), shopProductListKeyboard());
+        return;
+    }
+    Editmessagetext($from_id, $message_id, shopProductListTitle($loc), shopProductListKeyboard($loc));
     return;
 }
 
@@ -1431,8 +1440,13 @@ if (in_array($from_id, $admin_ids) && preg_match('/^shop_ep_(price|vol|time|name
         } catch (Throwable $e) {
             error_log('shop del: ' . $e->getMessage());
         }
-        $n = count(shopGetAllProducts());
-        Editmessagetext($from_id, $message_id, "🗑 محصول حذف شد.\n\n🏬 <b>مدیریت محصولات</b>\nتعداد: <b>{$n}</b>", shopProductListKeyboard());
+        $del_loc = strval($p['Location'] ?? '');
+        if ($del_loc === '') {
+            $del_loc = '(بدون موقعیت)';
+        }
+        Editmessagetext($from_id, $message_id, "🗑 محصول حذف شد.
+
+" . shopProductListTitle($del_loc), shopProductListKeyboard($del_loc));
         return;
     }
 
@@ -1476,7 +1490,9 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_price' && !e
     step('home', $from_id);
     $p = $code !== '' ? shopGetProductByCode($code) : null;
     $kb = shopProductListKeyboard();
-    sendmessage($from_id, "✅ قیمت به‌روزرسانی شد: <b>" . number_format($price) . "</b> تومان\n\n🏬 <b>مدیریت محصولات</b>", $kb, 'HTML');
+    sendmessage($from_id, "✅ قیمت به‌روزرسانی شد: <b>" . number_format($price) . "</b> تومان
+
+" . shopProductListTitle($loc !== '' ? $loc : null), shopProductListKeyboard($loc !== '' ? $loc : null), 'HTML');
     return;
 }
 if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_vol' && !empty($text) && empty($datain)) {
@@ -1495,7 +1511,9 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_vol' && !emp
         $pdo->prepare("UPDATE product SET Volume_constraint = ? WHERE name_product = ? AND Location = ?")->execute([$text, $name, $loc]);
     }
     step('home', $from_id);
-    sendmessage($from_id, "✅ حجم به‌روزرسانی شد: <b>{$text}</b> گیگ\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    sendmessage($from_id, "✅ حجم به‌روزرسانی شد: <b>{$text}</b> گیگ
+
+" . shopProductListTitle($loc !== '' ? $loc : null), shopProductListKeyboard($loc !== '' ? $loc : null), 'HTML');
     return;
 }
 if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_time' && !empty($text) && empty($datain)) {
@@ -1514,7 +1532,9 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_time' && !em
         $pdo->prepare("UPDATE product SET Service_time = ? WHERE name_product = ? AND Location = ?")->execute([$text, $name, $loc]);
     }
     step('home', $from_id);
-    sendmessage($from_id, "✅ زمان به‌روزرسانی شد: <b>{$text}</b> روز\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    sendmessage($from_id, "✅ زمان به‌روزرسانی شد: <b>{$text}</b> روز
+
+" . shopProductListTitle($loc !== '' ? $loc : null), shopProductListKeyboard($loc !== '' ? $loc : null), 'HTML');
     return;
 }
 if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_name' && !empty($text) && empty($datain)) {
@@ -1550,7 +1570,9 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_cat' && !emp
         $pdo->prepare("UPDATE product SET Category = ? WHERE name_product = ? AND Location = ?")->execute([$cid, $name, $loc]);
     }
     step('home', $from_id);
-    sendmessage($from_id, "✅ دسته به‌روزرسانی شد.\n\n🏬 <b>مدیریت محصولات</b>", shopProductListKeyboard(), 'HTML');
+    sendmessage($from_id, "✅ دسته به‌روزرسانی شد.
+
+" . shopProductListTitle(), shopProductListKeyboard(), 'HTML');
     return;
 }
 

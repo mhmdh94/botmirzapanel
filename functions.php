@@ -5276,6 +5276,84 @@ function shopGetAllProducts()
     }
 }
 
+function shopGetProductsByLocation($location)
+{
+    global $pdo;
+    $location = strval($location);
+    try {
+        $st = $pdo->prepare("SELECT * FROM product WHERE Location = ? AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY id ASC");
+        $st->execute([$location]);
+        return $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * موقعیت‌های محصول: از خود product + پنل‌های ثبت‌شده
+ * @return array list of ['name'=>string,'count'=>int]
+ */
+function shopGetProductLocations()
+{
+    global $pdo;
+    $map = [];
+    try {
+        $st = $pdo->query("SELECT Location AS loc, COUNT(*) AS cnt FROM product WHERE (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') GROUP BY Location ORDER BY Location ASC");
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        foreach ($rows as $r) {
+            $loc = strval($r['loc'] ?? '');
+            if ($loc === '') {
+                $loc = '(بدون موقعیت)';
+            }
+            $map[$loc] = intval($r['cnt'] ?? 0);
+        }
+    } catch (Throwable $e) {
+    }
+    // پنل‌هایی که هنوز محصول ندارند هم در لیست باشند
+    try {
+        $st = $pdo->query("SELECT name_panel FROM marzban_panel ORDER BY id ASC");
+        $panels = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        foreach ($panels as $p) {
+            $n = strval($p['name_panel'] ?? '');
+            if ($n !== '' && !isset($map[$n])) {
+                $map[$n] = 0;
+            }
+        }
+    } catch (Throwable $e) {
+    }
+    $out = [];
+    foreach ($map as $name => $cnt) {
+        $out[] = ['name' => $name, 'count' => $cnt];
+    }
+    return $out;
+}
+
+function shopLocationKey($location)
+{
+    return substr(md5(strval($location)), 0, 12);
+}
+
+function shopResolveLocationKey($key)
+{
+    $key = strval($key);
+    foreach (shopGetProductLocations() as $item) {
+        if (shopLocationKey($item['name']) === $key) {
+            return $item['name'];
+        }
+    }
+    // fallback: جستجو در همه محصولات
+    foreach (shopGetAllProducts() as $p) {
+        $loc = strval($p['Location'] ?? '');
+        if ($loc === '') {
+            $loc = '(بدون موقعیت)';
+        }
+        if (shopLocationKey($loc) === $key) {
+            return $loc;
+        }
+    }
+    return null;
+}
+
 function shopGetProductByCode($code)
 {
     global $pdo;
@@ -5293,13 +5371,54 @@ function shopGetProductByCode($code)
     }
 }
 
-function shopProductListKeyboard()
+/**
+ * اگر $location خالی باشد: لیست موقعیت‌ها
+ * اگر مقدار داشته باشد: محصولات همان موقعیت
+ */
+function shopProductListKeyboard($location = null)
 {
-    global $textbotlang;
-    $products = shopGetAllProducts();
     $kb = ['inline_keyboard' => []];
+
+    if ($location === null || $location === '') {
+        $locs = shopGetProductLocations();
+        if (!$locs) {
+            $kb['inline_keyboard'][] = [['text' => 'هنوز محصول یا پنلی ثبت نشده', 'callback_data' => 'shop_noop']];
+        } else {
+            foreach ($locs as $item) {
+                $name = strval($item['name']);
+                $cnt = intval($item['count']);
+                $label = $name;
+                if (mb_strlen($label) > 30) {
+                    $label = mb_substr($label, 0, 28) . '…';
+                }
+                $key = shopLocationKey($name);
+                $kb['inline_keyboard'][] = [[
+                    'text' => "📍 {$label} ({$cnt})",
+                    'callback_data' => 'shop_loc_' . $key,
+                ]];
+            }
+        }
+        $kb['inline_keyboard'][] = [['text' => '➕ افزودن محصول جدید', 'callback_data' => 'shop_add']];
+        $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی لیست', 'callback_data' => 'shop_list']];
+        return json_encode($kb, JSON_UNESCAPED_UNICODE);
+    }
+
+    // محصولات یک موقعیت
+    $loc_query = ($location === '(بدون موقعیت)') ? '' : $location;
+    if ($location === '(بدون موقعیت)') {
+        try {
+            global $pdo;
+            $st = $pdo->query("SELECT * FROM product WHERE (Location IS NULL OR Location = '') AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest') ORDER BY id ASC");
+            $products = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+            $products = [];
+        }
+    } else {
+        $products = shopGetProductsByLocation($location);
+    }
+
     if (!$products) {
-        $kb['inline_keyboard'][] = [['text' => 'هنوز محصولی ثبت نشده', 'callback_data' => 'shop_noop']];
+        $kb['inline_keyboard'][] = [['text' => 'محصولی در این موقعیت نیست', 'callback_data' => 'shop_noop']];
     } else {
         $kb['inline_keyboard'][] = [
             ['text' => '💵 قیمت', 'callback_data' => 'shop_noop'],
@@ -5315,9 +5434,6 @@ function shopProductListKeyboard()
                 $name = mb_substr($name, 0, 26) . '…';
             }
             $price = number_format(intval($p['price_product'] ?? 0));
-            $vol = strval($p['Volume_constraint'] ?? '-');
-            $time = strval($p['Service_time'] ?? '-');
-            # قیمت | نام (حجم/روز در callback جزئیات)
             $kb['inline_keyboard'][] = [
                 ['text' => $price . ' ت', 'callback_data' => 'shop_p_' . $code],
                 ['text' => $name, 'callback_data' => 'shop_p_' . $code],
@@ -5325,8 +5441,32 @@ function shopProductListKeyboard()
         }
     }
     $kb['inline_keyboard'][] = [['text' => '➕ افزودن محصول جدید', 'callback_data' => 'shop_add']];
-    $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی لیست', 'callback_data' => 'shop_list']];
+    $kb['inline_keyboard'][] = [['text' => '🔙 همه موقعیت‌ها', 'callback_data' => 'shop_list']];
     return json_encode($kb, JSON_UNESCAPED_UNICODE);
+}
+
+function shopProductListTitle($location = null)
+{
+    if ($location === null || $location === '') {
+        $locs = shopGetProductLocations();
+        $n = count($locs);
+        $total = count(shopGetAllProducts());
+        return "🏬 <b>مدیریت محصولات</b>\nموقعیت‌ها: <b>{$n}</b> | کل محصولات: <b>{$total}</b>\n\nروی یک موقعیت بزنید تا محصولات همان پنل را ببینید.";
+    }
+    $safe = htmlspecialchars(strval($location), ENT_QUOTES, 'UTF-8');
+    if ($location === '(بدون موقعیت)') {
+        $products = [];
+        try {
+            global $pdo;
+            $st = $pdo->query("SELECT * FROM product WHERE (Location IS NULL OR Location = '') AND (name_product IS NOT NULL AND name_product != '' AND name_product != 'usertest')");
+            $products = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Throwable $e) {
+        }
+    } else {
+        $products = shopGetProductsByLocation($location);
+    }
+    $n = count($products);
+    return "🏬 <b>مدیریت محصولات</b>\n📍 موقعیت: <code>{$safe}</code>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید.";
 }
 
 function shopProductDetailKeyboard($code)
