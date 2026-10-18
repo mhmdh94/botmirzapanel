@@ -2493,11 +2493,17 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel']) {
     step('GetNameNew', $from_id);
 } elseif ($user['step'] == "GetNameNew") {
     $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    outtypepanel($typepanel['type'], $textbotlang['Admin']['managepanel']['ChangedNmaePanel']);
     update("marzban_panel", "name_panel", $text, "name_panel", $user['Processing_value']);
     update("invoice", "Service_location", $text, "Service_location", $user['Processing_value']);
     update("product", "Location", $text, "Location", $user['Processing_value']);
     update("user", "Processing_value", $text, "id", $from_id);
+    $typepanel = select("marzban_panel", "*", "name_panel", $text, "select");
+    if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedNmaePanel'] ?? '✅ نام به‌روز شد');
+        sendmessage($from_id, $tx, $kb, 'HTML');
+    } else {
+        outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedNmaePanel']);
+    }
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['editurl']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['geturlnew'], $backadmin, 'HTML');
@@ -2507,25 +2513,40 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel']) {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['Invalid-domain'], $backadmin, 'HTML');
         return;
     }
-    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    outtypepanel($typepanel['type'], $textbotlang['Admin']['managepanel']['ChangedurlPanel']);
     update("marzban_panel", "url_panel", $text, "name_panel", $user['Processing_value']);
+    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedurlPanel'] ?? '✅ آدرس به‌روز شد');
+        sendmessage($from_id, $tx, $kb, 'HTML');
+    } else {
+        outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedurlPanel']);
+    }
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['editusername']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['getusernamenew'], $backadmin, 'HTML');
     step('GetusernameNew', $from_id);
 } elseif ($user['step'] == "GetusernameNew") {
-    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    outtypepanel($typepanel['type'], $textbotlang['Admin']['managepanel']['ChangedusernamePanel']);
     update("marzban_panel", "username_panel", $text, "name_panel", $user['Processing_value']);
+    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedusernamePanel'] ?? '✅ یوزرنیم به‌روز شد');
+        sendmessage($from_id, $tx, $kb, 'HTML');
+    } else {
+        outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedusernamePanel']);
+    }
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['editpassword']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['getpasswordnew'], $backadmin, 'HTML');
     step('GetpaawordNew', $from_id);
 } elseif ($user['step'] == "GetpaawordNew") {
-    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-    outtypepanel($typepanel['type'], $textbotlang['Admin']['managepanel']['ChangedpasswordPanel']);
     update("marzban_panel", "password_panel", $text, "name_panel", $user['Processing_value']);
+    $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedpasswordPanel'] ?? '✅ پسورد به‌روز شد');
+        sendmessage($from_id, $tx, $kb, 'HTML');
+    } else {
+        outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedpasswordPanel']);
+    }
     step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['editinound'] || $text == $textbotlang['Admin']['managepanel']['setgroup']) {
     if ($text == $textbotlang['Admin']['managepanel']['setgroup']) {
@@ -4232,21 +4253,46 @@ if ($datain == "adm_noop") {
         Editmessagetext($from_id, $message_id, "✅ پنل حذف شد.\n\n" . $tx, $kb);
     }
 } elseif (preg_match('/^adm_pan_act_connect_(\d+)$/', strval($datain), $m)) {
-    $panel = adminPanelGetById($m[1]);
+    $panel = function_exists('adminPanelGetById') ? adminPanelGetById($m[1]) : null;
     if ($panel) {
         update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'در حال تست…', 'show_alert' => false]);
-        // اجرای همان منطق دکمه تست اتصال با نام پنل
-        $user['Processing_value'] = $panel['name_panel'];
-        sendmessage($from_id, "⏳ تست اتصال پنل <code>" . htmlspecialchars($panel['name_panel'], ENT_QUOTES, 'UTF-8') . "</code>…\nاز منوی کامل یا دکمه تست اتصال پاسخ را ببینید.\n\nبرای تست کامل از «منوی کامل تنظیمات» → تست اتصال استفاده کنید.", $backadmin, 'HTML');
-        outtypepanel($panel['type'] ?? '', "پنل انتخاب شد. روی «تست اتصال» بزنید:");
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'در حال تست اتصال…',
+            'show_alert' => false,
+        ]);
+        $result = function_exists('adminPanelTestConnectionText')
+            ? adminPanelTestConnectionText($panel)
+            : '❌ تابع تست موجود نیست';
+        list($tx, $kb) = adminPanelDetailKeyboard($panel, $result);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'پنل یافت نشد',
+            'show_alert' => true,
+        ]);
     }
 } elseif (preg_match('/^adm_pan_act_groups_(\d+)$/', strval($datain), $m)) {
-    $panel = adminPanelGetById($m[1]);
+    $panel = function_exists('adminPanelGetById') ? adminPanelGetById($m[1]) : null;
     if ($panel) {
         update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
-        $user['Processing_value'] = $panel['name_panel'];
-        outtypepanel($panel['type'] ?? '', "برای مشاهده گروه‌ها از دکمه «گروه‌های پنل» استفاده کنید:");
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'در حال دریافت گروه…',
+            'show_alert' => false,
+        ]);
+        $result = function_exists('adminPanelGroupsText')
+            ? adminPanelGroupsText($panel)
+            : '❌ تابع گروه موجود نیست';
+        list($tx, $kb) = adminPanelDetailKeyboard($panel, $result);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'پنل یافت نشد',
+            'show_alert' => true,
+        ]);
     }
 } elseif ($datain == "adm_cat_list") {
     list($tx, $kb) = adminCategoriesListKeyboard();

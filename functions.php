@@ -4529,7 +4529,7 @@ function adminPanelGetById($id)
     }
 }
 
-function adminPanelDetailKeyboard($panel)
+function adminPanelDetailKeyboard($panel, $extra_msg = '')
 {
     $id = intval($panel['id'] ?? 0);
     $name = htmlspecialchars(strval($panel['name_panel'] ?? ''), ENT_QUOTES, 'UTF-8');
@@ -4537,11 +4537,22 @@ function adminPanelDetailKeyboard($panel)
     $url = htmlspecialchars(strval($panel['url_panel'] ?? ''), ENT_QUOTES, 'UTF-8');
     $status = strval($panel['status'] ?? '');
     $st_lbl = ($status === 'disablepanel' || $status === 'inactive') ? '🔴 غیرفعال' : '🟢 فعال';
-    $text = "🖥 <b>پنل:</b> <code>{$name}</code>\n"
-        . "نوع: <b>{$type}</b>\n"
-        . "وضعیت: {$st_lbl}\n"
-        . "آدرس: <code>{$url}</code>\n\n"
-        . "یک گزینه را انتخاب کنید:";
+    $text = "🖥 <b>پنل:</b> <code>{$name}</code>
+"
+        . "نوع: <b>{$type}</b>
+"
+        . "وضعیت: {$st_lbl}
+"
+        . "آدرس: <code>{$url}</code>";
+    if ($extra_msg !== '') {
+        $text .= "
+
+" . $extra_msg;
+    } else {
+        $text .= "
+
+یک گزینه را انتخاب کنید:";
+    }
     $kb = ['inline_keyboard' => [
         [
             ['text' => '🔗 تست اتصال', 'callback_data' => 'adm_pan_act_connect_' . $id],
@@ -4549,14 +4560,11 @@ function adminPanelDetailKeyboard($panel)
         ],
         [
             ['text' => '✏️ نام', 'callback_data' => 'adm_pan_act_name_' . $id],
-            ['text' => '🔗 آدرس', 'callback_data' => 'adm_pan_act_url_' . $id],
+            ['text' => '🌐 آدرس', 'callback_data' => 'adm_pan_act_url_' . $id],
         ],
         [
             ['text' => '👤 یوزرنیم', 'callback_data' => 'adm_pan_act_user_' . $id],
             ['text' => '🔑 پسورد', 'callback_data' => 'adm_pan_act_pass_' . $id],
-        ],
-        [
-            ['text' => '📋 منوی کامل تنظیمات', 'callback_data' => 'adm_pan_act_full_' . $id],
         ],
         [
             ['text' => '🗑 حذف پنل', 'callback_data' => 'adm_pan_act_delask_' . $id],
@@ -4566,6 +4574,112 @@ function adminPanelDetailKeyboard($panel)
         ],
     ]];
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+/** نتیجه تست اتصال پنل — متن HTML */
+function adminPanelTestConnectionText($panel)
+{
+    if (!is_array($panel) || empty($panel['name_panel'])) {
+        return "❌ پنل نامعتبر است.";
+    }
+    $name = $panel['name_panel'];
+    $type = strval($panel['type'] ?? '');
+    $lines = ["🔗 <b>نتیجه تست اتصال</b>
+پنل: <code>" . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . "</code>"];
+
+    try {
+        if ($type === 'marzban' || $type === 'pasarguard') {
+            $t0 = microtime(true);
+            $Check_token = function_exists('token_panel') ? token_panel($panel['id']) : null;
+            $ms_token = (int) round((microtime(true) - $t0) * 1000);
+            if (is_array($Check_token) && isset($Check_token['access_token'])) {
+                $t1 = microtime(true);
+                $System_Stats = function_exists('Get_System_Stats') ? Get_System_Stats($name) : null;
+                $ms_stats = (int) round((microtime(true) - $t1) * 1000);
+                $active = is_array($System_Stats) ? ($System_Stats['users_active'] ?? $System_Stats['active_users'] ?? '-') : '-';
+                $total = is_array($System_Stats) ? ($System_Stats['total_user'] ?? $System_Stats['total_users'] ?? '-') : '-';
+                $ver = is_array($System_Stats) ? ($System_Stats['version'] ?? '-') : '-';
+                $g_count = 0;
+                try {
+                    $g_resp = function_exists('get_groups') ? get_groups($name) : null;
+                    $g_list = function_exists('_extract_groups_array') ? _extract_groups_array($g_resp) : [];
+                    $g_count = is_array($g_list) ? count($g_list) : 0;
+                } catch (Throwable $e) {}
+                $lines[] = "✅ <b>اتصال موفق</b>";
+                $lines[] = "نسخه: <code>{$ver}</code>";
+                $lines[] = "کاربران: <b>{$active}</b> فعال از <b>{$total}</b>";
+                $lines[] = "گروه‌ها: <b>{$g_count}</b>";
+                $lines[] = "⏱ توکن {$ms_token}ms · آمار {$ms_stats}ms";
+            } elseif (is_array($Check_token) && (($Check_token['detail'] ?? '') == 'Incorrect username or password' || stripos(strval($Check_token['detail'] ?? ''), 'password') !== false)) {
+                $lines[] = "❌ یوزرنیم یا پسورد اشتباه است.";
+            } else {
+                $err = is_array($Check_token) ? json_encode($Check_token, JSON_UNESCAPED_UNICODE) : 'بدون پاسخ';
+                $lines[] = "❌ اتصال ناموفق
+<code>" . htmlspecialchars(substr(strval($err), 0, 400), ENT_QUOTES, 'UTF-8') . "</code>";
+            }
+        } elseif ($type === 'x-ui_single') {
+            $r = function_exists('login') ? login($panel['id'], false) : null;
+            if (is_array($r) && !empty($r['success'])) {
+                $lines[] = "✅ اتصال به x-ui موفق بود.";
+            } else {
+                $lines[] = "❌ اتصال x-ui ناموفق.";
+            }
+        } else {
+            // تلاش عمومی با token_panel اگر باشد
+            if (function_exists('token_panel')) {
+                $Check_token = token_panel($panel['id']);
+                if (is_array($Check_token) && (isset($Check_token['access_token']) || !empty($Check_token['success']))) {
+                    $lines[] = "✅ اتصال برقرار شد.";
+                } else {
+                    $lines[] = "❌ اتصال ناموفق برای نوع <code>{$type}</code>.";
+                }
+            } else {
+                $lines[] = "⚠️ تست خودکار برای نوع <code>{$type}</code> پشتیبانی نشده؛ تنظیمات را دستی چک کنید.";
+            }
+        }
+    } catch (Throwable $e) {
+        $lines[] = "❌ خطا: <code>" . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . "</code>";
+    }
+    return implode("
+", $lines);
+}
+
+/** لیست گروه‌های پنل — متن HTML */
+function adminPanelGroupsText($panel)
+{
+    if (!is_array($panel) || empty($panel['name_panel'])) {
+        return "❌ پنل نامعتبر است.";
+    }
+    $name = $panel['name_panel'];
+    $type = strval($panel['type'] ?? '');
+    if (!in_array($type, ['marzban', 'pasarguard'], true)) {
+        return "📂 گروه‌ها فقط برای پاسارگارد/مرزبان در دسترس است.";
+    }
+    try {
+        $g_resp = function_exists('get_groups') ? get_groups($name) : null;
+        $g_list = function_exists('_extract_groups_array') ? _extract_groups_array($g_resp) : (is_array($g_resp) ? $g_resp : []);
+        if (!is_array($g_list) || count($g_list) === 0) {
+            return "❌ گروهی از پنل خوانده نشد.
+آدرس و یوزر/پسورد را چک کنید.";
+        }
+        $lines = ["📂 <b>گروه‌های پنل</b> <code>" . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . "</code>
+"];
+        foreach ($g_list as $g) {
+            if (!is_array($g)) {
+                continue;
+            }
+            $gid = $g['id'] ?? $g['group_id'] ?? '?';
+            $gn = htmlspecialchars(strval($g['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $dis = (!empty($g['is_disabled']) || !empty($g['disabled'])) ? ' (غیرفعال)' : '';
+            $lines[] = "• <code>{$gid}</code> — {$gn}{$dis}";
+        }
+        $lines[] = "
+✅ ساخت کاربر با این گروه‌ها انجام می‌شود.";
+        return implode("
+", $lines);
+    } catch (Throwable $e) {
+        return "❌ خطا در خواندن گروه: <code>" . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . "</code>";
+    }
 }
 
 function adminCategoriesListKeyboard()
