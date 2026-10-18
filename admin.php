@@ -1134,6 +1134,21 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_services']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $User_Services, 'HTML');
 }
 
+# رسیدهای تایید نشده (waiting)
+if ($text == ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده')) {
+    sendmessage($from_id, "⏳ در حال بررسی رسیدهای در انتظار تأیید…", null, 'HTML');
+    $res = function_exists('resendWaitingPaymentReceipts')
+        ? resendWaitingPaymentReceipts($from_id, 40)
+        : ['ok' => false, 'count' => 0, 'msg' => 'تابع موجود نیست'];
+    $msg = $res['msg'] ?? '';
+    if (intval($res['count'] ?? 0) === 0 && !empty($res['ok'])) {
+        $msg = $msg !== '' ? $msg : 'هیچ رسید در انتظار تأییدی نیست.';
+    }
+    sendmessage($from_id, $msg, $User_Services, 'HTML');
+}
+
+
+
 #----------- list blocked users ------------#
 if ($text == ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها')) {
     global $pdo;

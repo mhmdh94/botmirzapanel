@@ -251,6 +251,7 @@ $User_Services = json_encode([
         [['text' => $textbotlang['Admin']['ManageUser']['removeorderbtn']], ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll']]],
         [['text' => $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها']],
         [['text' => $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۵۰۰ هزار']],
+        [['text' => $textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده']],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

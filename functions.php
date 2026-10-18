@@ -1592,6 +1592,93 @@ function getBalancePackagePayAmount($amount, $discount)
 
 /** مبلغ اعتبار نهایی که باید به کیف پول اضافه شود */
 
+
+/**
+ * ارسال مجدد رسیدهای payment_Status=waiting برای ادمین
+ * @return array{ok:bool,count:int,msg:string}
+ */
+function resendWaitingPaymentReceipts($admin_id, $limit = 40)
+{
+    global $pdo, $textbotlang, $username;
+    $admin_id = intval($admin_id);
+    $limit = max(1, min(80, intval($limit)));
+    if ($admin_id <= 0) {
+        return ['ok' => false, 'count' => 0, 'msg' => 'ادمین نامعتبر'];
+    }
+    try {
+        $st = $pdo->prepare("SELECT * FROM Payment_report WHERE payment_Status = 'waiting' ORDER BY id ASC LIMIT " . intval($limit));
+        $st->execute();
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        return ['ok' => false, 'count' => 0, 'msg' => 'خطا در خواندن دیتابیس: ' . $e->getMessage()];
+    }
+    if (!$rows) {
+        return ['ok' => true, 'count' => 0, 'msg' => 'هیچ رسید در انتظار تأییدی نیست.'];
+    }
+    $sent = 0;
+    foreach ($rows as $pr) {
+        if (!is_array($pr)) {
+            continue;
+        }
+        $order = strval($pr['id_order'] ?? '');
+        $uid = intval($pr['id_user'] ?? 0);
+        $price = intval($pr['price'] ?? 0);
+        $price_fmt = number_format($price);
+        $method = strval($pr['Payment_Method'] ?? 'cart to cart');
+        $time = strval($pr['time'] ?? '-');
+        $invoice = strval($pr['invoice'] ?? '');
+        $u = select("user", "*", "id", $uid, "select");
+        $uname = '';
+        if (is_array($u) && !empty($u['username'])) {
+            $uname = '@' . $u['username'];
+        }
+        $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($uid) : 0;
+        $desc = function_exists('describePaymentReport') ? describePaymentReport($pr) : null;
+        $type_line = is_array($desc) ? strval($desc['type_label'] ?? 'پرداخت') : 'پرداخت';
+        $method_lbl = is_array($desc) ? strval($desc['method_label'] ?? $method) : $method;
+        $credit_fmt = is_array($desc) ? strval($desc['credit_fmt'] ?? $price_fmt) : $price_fmt;
+
+        $text = "🧾 <b>رسید در انتظار تأیید</b> (ارسال مجدد)\n\n"
+            . "💰 مبلغ رسید: <b>{$price_fmt}</b> تومان\n"
+            . "💎 اعتبار: <b>{$credit_fmt}</b> تومان\n"
+            . "👤 کاربر: <a href=\"tg://user?id={$uid}\">{$uid}</a>"
+            . ($uname !== '' ? " ({$uname})" : '') . "\n"
+            . "📦 سرویس فعال: <b>{$active_svc}</b>\n"
+            . "🔖 کد: <code>{$order}</code>\n"
+            . "💳 روش: {$method_lbl}\n"
+            . "🕐 زمان: <code>{$time}</code>\n"
+            . "📌 {$type_line}";
+
+        $kb = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => ($textbotlang['users']['Balance']['Confirmpaying'] ?? '✅ تأیید'), 'callback_data' => "Confirm_pay_{$order}"],
+                    ['text' => ($textbotlang['users']['Balance']['reject_pay'] ?? '❌ رد'), 'callback_data' => "reject_pay_{$order}"],
+                ],
+                [
+                    ['text' => '👤 اطلاعات کاربر', 'callback_data' => "userinfo_pay_{$uid}"],
+                ],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+
+        try {
+            sendmessage($admin_id, $text, $kb, 'HTML');
+            $sent++;
+            // کمی فاصله برای جلوگیری از flood تلگرام
+            if ($sent % 5 === 0) {
+                usleep(300000);
+            }
+        } catch (Throwable $e) {
+            error_log('resendWaitingPaymentReceipts: ' . $e->getMessage());
+        }
+    }
+    return [
+        'ok' => true,
+        'count' => $sent,
+        'msg' => "✅ تعداد <b>{$sent}</b> رسید در انتظار تأیید دوباره ارسال شد.",
+    ];
+}
+
 function describePaymentReport($Payment_report)
 {
     $method_raw = strval($Payment_report['Payment_Method'] ?? 'cart to cart');
