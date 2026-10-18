@@ -17,6 +17,11 @@ require_once 'jdf.php';
 require_once 'text.php';
 require_once 'keyboard.php';
 require_once 'functions.php';
+if (function_exists('ensureBotRuntimeSchema')) {
+    ensureBotRuntimeSchema();
+} elseif (function_exists('ensureFeatureSettingsColumns')) {
+    ensureFeatureSettingsColumns();
+}
 require_once 'panels.php';
 require_once 'vendor/autoload.php';
 

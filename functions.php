@@ -4422,7 +4422,8 @@ function buildMonthlyStatsExcel($which = 'current')
 
 
 /**
- * ستون‌های قابلیت‌های ربات (setting) را اگر نبود بسازد — امن برای نصب جدید و آپدیت
+ * همه ستون‌های setting که ربات استفاده می‌کند — اگر نبود ساخته می‌شود
+ * برای نصب جدید و آپدیت؛ جلوی Fatal error ستون گم‌شده را می‌گیرد
  */
 function ensureFeatureSettingsColumns()
 {
@@ -4431,7 +4432,26 @@ function ensureFeatureSettingsColumns()
     if ($done) {
         return true;
     }
+    // col => default
     $cols = [
+        // هسته قدیمی
+        'Bot_Status' => '1',
+        'roll_Status' => '1',
+        'get_number' => '0',
+        'iran_number' => '0',
+        'help_Status' => '0',
+        'NotUser' => '0',
+        'limit_usertest_all' => '1',
+        'time_usertest' => '1',
+        'val_usertest' => '100',
+        'namecustome' => '0',
+        'removedayc' => '1',
+        'Extra_volume' => '0',
+        'Channel_Report' => '0',
+        'copy_cart' => '0',
+        'status_verify' => '0',
+        'statuscategory' => '1',
+        // قابلیت‌های فورک
         'force_channel' => '1',
         'show_balance' => '0',
         'status_usertest' => '1',
@@ -4444,19 +4464,16 @@ function ensureFeatureSettingsColumns()
         'status_support' => '1',
         'status_extend' => '1',
         'status_reseller_panel' => '0',
-        'copy_cart' => '0',
-        'status_verify' => '0',
-        'statuscategory' => '1',
     ];
     try {
         foreach ($cols as $col => $default) {
             $exists = false;
             try {
                 if (isset($pdo) && $pdo instanceof PDO) {
-                    $st = $pdo->query("SHOW COLUMNS FROM setting LIKE " . $pdo->quote($col));
+                    $st = $pdo->query("SHOW COLUMNS FROM `setting` LIKE " . $pdo->quote($col));
                     $exists = ($st && $st->fetch()) ? true : false;
-                } elseif (isset($connect)) {
-                    $r = @$connect->query("SHOW COLUMNS FROM setting LIKE '" . $connect->real_escape_string($col) . "'");
+                } elseif (isset($connect) && $connect) {
+                    $r = @$connect->query("SHOW COLUMNS FROM `setting` LIKE '" . $connect->real_escape_string($col) . "'");
                     $exists = ($r && $r->num_rows > 0);
                 }
             } catch (Throwable $e) {
@@ -4465,18 +4482,16 @@ function ensureFeatureSettingsColumns()
             if ($exists) {
                 continue;
             }
-            $def = strval($default);
-            $sql = "ALTER TABLE setting ADD COLUMN `{$col}` VARCHAR(20) NOT NULL DEFAULT '{$def}'";
+            $def = str_replace("'", "\\'", strval($default));
+            $sql = "ALTER TABLE `setting` ADD COLUMN `{$col}` VARCHAR(50) NOT NULL DEFAULT '{$def}'";
             try {
                 if (isset($pdo) && $pdo instanceof PDO) {
                     $pdo->exec($sql);
-                } elseif (isset($connect)) {
-                    $connect->query($sql);
-                } elseif (function_exists('addFieldToTable')) {
-                    addFieldToTable('setting', $col, $default, 'VARCHAR(20)');
+                } elseif (isset($connect) && $connect) {
+                    @$connect->query($sql);
                 }
             } catch (Throwable $e) {
-                // ignore
+                error_log('ensureFeature col ' . $col . ': ' . $e->getMessage());
             }
         }
         $done = true;
@@ -4486,6 +4501,41 @@ function ensureFeatureSettingsColumns()
         return false;
     }
 }
+
+/**
+ * اسکیمای ضروری ربات در هر درخواست (یک‌بار در هر process)
+ */
+function ensureBotRuntimeSchema()
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    if (function_exists('ensureFeatureSettingsColumns')) {
+        ensureFeatureSettingsColumns();
+    }
+    if (function_exists('ensurePanelAdminSchema')) {
+        try { ensurePanelAdminSchema(); } catch (Throwable $e) {}
+    }
+    // cart_auto_off
+    global $pdo;
+    try {
+        if (isset($pdo) && $pdo instanceof PDO) {
+            $chk = $pdo->query("SHOW COLUMNS FROM `user` LIKE 'cart_auto_off'");
+            if (!$chk || !$chk->fetch()) {
+                $pdo->exec("ALTER TABLE `user` ADD COLUMN `cart_auto_off` TINYINT NOT NULL DEFAULT 0");
+            }
+        }
+    } catch (Throwable $e) {}
+    // جداول کمکی
+    foreach (['ensureWalletLog', 'ensureSalesLedger', 'ensureSmartCronStateTable', 'ensureResellerPlanTables', 'ensureResellerWarnStateTable', 'ensureResellerFeatureSetting', 'ensureSmartCronSettings'] as $fn) {
+        if (function_exists($fn)) {
+            try { $fn(); } catch (Throwable $e) {}
+        }
+    }
+    $done = true;
+}
+
 
 function ensureResellerFeatureSetting()
 {
