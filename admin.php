@@ -5017,7 +5017,7 @@ if ($__rv_is_admin && preg_match('/^set_panel_admin_user_(\d+)$/', strval($datai
         return;
     }
     step('set_panel_admin_user_' . intval($m_spa[1]), $from_id);
-    sendmessage($from_id, "نام کاربری ادمین پنل را بفرستید.\nدر پنل ریسلر چک می‌شود (حداکثر ۳ ادمین).", $backadmin, 'HTML');
+    sendmessage($from_id, "نام کاربری ادمین پنل را بفرستید.\nدر پنل ریسلر چک می‌شود (حداکثر " . (defined('PANEL_ADMIN_MAX_PER_USER') ? PANEL_ADMIN_MAX_PER_USER : 5) . " ادمین).", $backadmin, 'HTML');
     return;
 }
 

@@ -2523,7 +2523,7 @@ function sendAdminUserInfo($admin_id, $target_user_id)
             }
             if (count($pa_list) < 3) {
                 $keyboardmanage['inline_keyboard'][] = [[
-                    'text' => '➕ افزودن ادمین پنل' . (count($pa_list) ? ' (' . count($pa_list) . '/3)' : ''),
+                    'text' => '➕ افزودن ادمین پنل' . (count($pa_list) ? ' (' . count($pa_list) . '/' . PANEL_ADMIN_MAX_PER_USER . ')' : ''),
                     'callback_data' => 'set_panel_admin_user_' . $uid
                 ]];
             }
@@ -5759,6 +5759,10 @@ function formatResellerVolumeLabel($gb, $with_unit = true)
     return $with_unit ? ($s . ' گیگ') : $s;
 }
 
+if (!defined('PANEL_ADMIN_MAX_PER_USER')) {
+    define('PANEL_ADMIN_MAX_PER_USER', 5);
+}
+
 function parsePanelAdminUsernames($raw)
 {
     $out = [];
@@ -5770,7 +5774,7 @@ function parsePanelAdminUsernames($raw)
         if (!in_array($p, $out, true)) {
             $out[] = $p;
         }
-        if (count($out) >= 3) {
+        if (count($out) >= PANEL_ADMIN_MAX_PER_USER) {
             break;
         }
     }
@@ -5780,10 +5784,10 @@ function parsePanelAdminUsernames($raw)
 function formatPanelAdminUsernames(array $list)
 {
     $list = array_values(array_unique(array_filter(array_map('trim', $list))));
-    return implode(',', array_slice($list, 0, 3));
+    return implode(',', array_slice($list, 0, PANEL_ADMIN_MAX_PER_USER));
 }
 
-/** همه نام‌های ادمین پنل کاربر (حداکثر ۳) */
+/** همه نام‌های ادمین پنل کاربر */
 function getUserPanelAdminUsernames($user_id)
 {
     try {
@@ -5806,7 +5810,7 @@ function getUserPanelAdminUsername($user_id)
     return $list[0] ?? '';
 }
 
-/** افزودن ادمین با بررسی پنل — حداکثر ۳ */
+/** افزودن ادمین با بررسی پنل */
 function addUserPanelAdminUsername($user_id, $username, $verify_panel = true)
 {
     $user_id = intval($user_id);
@@ -5845,8 +5849,8 @@ function addUserPanelAdminUsername($user_id, $username, $verify_panel = true)
     if (in_array($username, $list, true)) {
         return ['ok' => true, 'message' => 'قبلاً ثبت شده بود.', 'list' => $list];
     }
-    if (count($list) >= 3) {
-        return ['ok' => false, 'message' => 'حداکثر ۳ ادمین پنل برای هر کاربر مجاز است. ابتدا یکی را حذف کنید.'];
+    if (count($list) >= PANEL_ADMIN_MAX_PER_USER) {
+        return ['ok' => false, 'message' => 'حداکثر ' . PANEL_ADMIN_MAX_PER_USER . ' ادمین پنل برای هر کاربر مجاز است. ابتدا یکی را حذف کنید.'];
     }
     $list[] = $username;
     update("user", "panel_admin_username", formatPanelAdminUsernames($list), "id", $user_id);
