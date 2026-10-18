@@ -266,7 +266,7 @@ $keyboardhelpadmin = json_encode([
 $shopkeyboard = json_encode([
     'keyboard' => [
         [['text' => '📦 مدیریت محصولات']],
-        [['text' => $textbotlang['Admin']['category']['add']], ['text' => $textbotlang['Admin']['category']['remove']]],
+        [['text' => '📁 مدیریت دسته‌بندی']],
         [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['codes_section']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]

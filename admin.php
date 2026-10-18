@@ -44,11 +44,17 @@ if ($text == $textbotlang['Admin']['Addedadmin']) {
     step('addadmin', $from_id);
 }
 if ($user['step'] == "addadmin") {
-    sendmessage($from_id, $textbotlang['Admin']['manageadmin']['addadminset'], $keyboardadmin, 'HTML');
-    step('home', $from_id);
     $stmt = $pdo->prepare("INSERT INTO admin (id_admin) VALUES (?)");
     $stmt->bindParam(1, $text);
     $stmt->execute();
+    sendmessage($from_id, $textbotlang['Admin']['manageadmin']['addadminset'] ?? '✅ ادمین اضافه شد', null, 'HTML');
+    if (function_exists('adminAdminsListKeyboard')) {
+        list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['manageadmin']['addadminset'], $keyboardadmin, 'HTML');
+    }
+    step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['Removeedadmin']) {
     sendmessage($from_id, $textbotlang['Admin']['manageadmin']['getid'], $backadmin, 'HTML');
@@ -80,10 +86,14 @@ if ($text == $textbotlang['Admin']['getlimitusertest']['setlimitallbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['limitall'], $backadmin, 'HTML');
     step('limit_usertest_allusers', $from_id);
 } elseif ($user['step'] == "limit_usertest_allusers") {
-    sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['setlimitall'], $keyboard_usertest, 'HTML');
-    step('home', $from_id);
     update("setting", "limit_usertest_all", $text);
     update("user", "limit_usertest", $text);
+    sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['setlimitall'] ?? '✅ ثبت شد', null, 'HTML');
+    if (function_exists('adminUsertestPanel')) {
+        list($__tx, $__kb) = adminUsertestPanel();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
+    step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['channel']['setting']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $channelkeyboard, 'HTML');
@@ -1587,8 +1597,13 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_cat' && !emp
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['admin_section']) {
-    $kb_admin_sec = function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel;
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $kb_admin_sec, 'HTML');
+    if (function_exists('adminAdminsListKeyboard')) {
+        list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    } else {
+        $kb_admin_sec = function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel;
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $kb_admin_sec, 'HTML');
+    }
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {
@@ -1656,7 +1671,12 @@ if ($datain == "bot_update_yes") {
 
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['test_account_settings']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard_usertest, 'HTML');
+    if (function_exists('adminUsertestPanel')) {
+        list($__tx, $__kb) = adminUsertestPanel();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard_usertest, 'HTML');
+    }
 }
 
 if ($text == $textbotlang['Admin']['Usertest']['reset_all_limits']) {
@@ -1666,7 +1686,11 @@ if ($text == $textbotlang['Admin']['Usertest']['reset_all_limits']) {
         $lim = 0;
     }
     update("user", "limit_usertest", strval($lim));
-    sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'], $lim), $keyboard_usertest, 'HTML');
+    sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'], $lim), null, 'HTML');
+    if (function_exists('adminUsertestPanel')) {
+        list($__tx, $__kb) = adminUsertestPanel();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
 }
 
 #-------------------------#
@@ -1996,7 +2020,11 @@ if ($text == $textbotlang['Admin']['Usertest']['settimeusertest']) {
         return;
     }
     update("setting", "time_usertest", $text);
-    sendmessage($from_id, $textbotlang['Admin']['Usertest']['TimeUpdated'], $keyboard_usertest, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Usertest']['TimeUpdated'], null, 'HTML');
+    if (function_exists('adminUsertestPanel')) {
+        list($__tx, $__kb) = adminUsertestPanel();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -2009,7 +2037,11 @@ if ($text == $textbotlang['Admin']['Usertest']['setvolumeusertest']) {
         return;
     }
     update("setting", "val_usertest", $text);
-    sendmessage($from_id, $textbotlang['Admin']['Usertest']['VolumeUpdated'], $keyboard_usertest, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Usertest']['VolumeUpdated'], null, 'HTML');
+    if (function_exists('adminUsertestPanel')) {
+        list($__tx, $__kb) = adminUsertestPanel();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -2440,10 +2472,19 @@ if ($text == $textbotlang['users']['moeny']['mr_payment_merchant_settings']) {
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel']) {
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['getloc'], $json_list_marzban_panel, 'HTML');
-    step('GetLocationEdit', $from_id);
+    if (function_exists('adminPanelsListKeyboard')) {
+        list($__tx, $__kb) = adminPanelsListKeyboard();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['getloc'], $json_list_marzban_panel, 'HTML');
+        step('GetLocationEdit', $from_id);
+    }
 } elseif ($user['step'] == "GetLocationEdit") {
     $listpanel = select("marzban_panel", "*", "name_panel", $text, "select");
+    if (!is_array($listpanel) || empty($listpanel['name_panel'])) {
+        sendmessage($from_id, "❌ پنل یافت نشد. از لیست اینلاین انتخاب کنید.", $backadmin, 'HTML');
+        return;
+    }
     update("user", "Processing_value", $text, "id", $from_id);
     outtypepanel($listpanel['type'], $textbotlang['users']['selectoption']);
     step('home', $from_id);
@@ -3695,24 +3736,40 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     update("user", "verify", "0", "id", $iduser);
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['unverifyed'], $keyboardadmin, 'HTML');
     step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['category']['add']) {
-    sendmessage($from_id, $textbotlang['Admin']['category']['getname'], $backadmin, 'HTML');
-    step("getremarkcategory", $from_id);
+} elseif ($text == '📁 مدیریت دسته‌بندی' || $text == $textbotlang['Admin']['category']['add'] || $text == $textbotlang['Admin']['category']['remove']) {
+    if (function_exists('adminCategoriesListKeyboard')) {
+        list($__tx, $__kb) = adminCategoriesListKeyboard();
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['category']['getname'], $backadmin, 'HTML');
+        step("getremarkcategory", $from_id);
+    }
 } elseif ($user['step'] == "getremarkcategory") {
-    sendmessage($from_id, $textbotlang['Admin']['category']['addedcategry'], $shopkeyboard, 'HTML');
-    step("home", $from_id);
     $stmt = $pdo->prepare("INSERT INTO category (remark) VALUES (?)");
     $stmt->bindParam(1, $text);
     $stmt->execute();
-} elseif ($text == $textbotlang['Admin']['category']['remove']) {
-    sendmessage($from_id, $textbotlang['Admin']['category']['getcatgory'], KeyboardCategory(), 'HTML');
-    step("removecategory", $from_id);
-} elseif ($user['step'] == "removecategory") {
-    sendmessage($from_id, $textbotlang['Admin']['category']['removedcategory'], $shopkeyboard, 'HTML');
+    if (function_exists('adminCategoriesListKeyboard')) {
+        list($__tx, $__kb) = adminCategoriesListKeyboard();
+        sendmessage($from_id, ($textbotlang['Admin']['category']['addedcategry'] ?? '✅') . "
+
+" . $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['category']['addedcategry'], $shopkeyboard, 'HTML');
+    }
     step("home", $from_id);
+} elseif ($user['step'] == "removecategory") {
     $stmt = $pdo->prepare("DELETE FROM category WHERE remark = :remark ");
     $stmt->bindParam(':remark', $text);
     $stmt->execute();
+    if (function_exists('adminCategoriesListKeyboard')) {
+        list($__tx, $__kb) = adminCategoriesListKeyboard();
+        sendmessage($from_id, ($textbotlang['Admin']['category']['removedcategory'] ?? '✅') . "
+
+" . $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['category']['removedcategory'], $shopkeyboard, 'HTML');
+    }
+    step("home", $from_id);
 } elseif ($text == $textbotlang['Admin']['ManageUser']['searchorder']) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ViewOrder'], $backadmin, 'HTML');
     step("getidfororder", $from_id);
@@ -4101,6 +4158,152 @@ if ($text == ($textbotlang['Admin']['keyboardadmin']['codes_section'] ?? '🎟 �
 }
 
 # --- پنل اینلاین کد تخفیف / هدیه ---
+
+# ——— اینلاین: پنل‌ها / دسته / ادمین / اکانت تست ———
+if ($datain == "adm_noop") {
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '', 'show_alert' => false]);
+} elseif ($datain == "adm_pan_list") {
+    if (function_exists('adminPanelsListKeyboard')) {
+        list($tx, $kb) = adminPanelsListKeyboard();
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    }
+} elseif (preg_match('/^adm_pan_(\d+)$/', strval($datain), $m_ap)) {
+    $panel = function_exists('adminPanelGetById') ? adminPanelGetById($m_ap[1]) : null;
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        list($tx, $kb) = adminPanelDetailKeyboard($panel);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    } else {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پنل یافت نشد', 'show_alert' => true]);
+    }
+} elseif (preg_match('/^adm_pan_act_full_(\d+)$/', strval($datain), $m_af)) {
+    $panel = adminPanelGetById($m_af[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        outtypepanel($panel['type'] ?? '', $textbotlang['users']['selectoption'] ?? 'انتخاب کنید:');
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'منوی کامل باز شد', 'show_alert' => false]);
+    }
+} elseif (preg_match('/^adm_pan_act_name_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['GetNameNew'] ?? 'نام جدید را بفرستید:', $backadmin, 'HTML');
+        step('GetNameNew', $from_id);
+    }
+} elseif (preg_match('/^adm_pan_act_url_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['geturlnew'] ?? 'آدرس جدید را بفرستید:', $backadmin, 'HTML');
+        step('GeturlNew', $from_id);
+    }
+} elseif (preg_match('/^adm_pan_act_user_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['getusernamenew'] ?? 'یوزرنیم جدید:', $backadmin, 'HTML');
+        step('GetusernameNew', $from_id);
+    }
+} elseif (preg_match('/^adm_pan_act_pass_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['getpasswordnew'] ?? $textbotlang['Admin']['managepanel']['getpassword'] ?? 'پسورد جدید:', $backadmin, 'HTML');
+        step('GetpaawordNew', $from_id);
+    }
+} elseif (preg_match('/^adm_pan_act_delask_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        $id = intval($m[1]);
+        $nm = htmlspecialchars($panel['name_panel'] ?? '', ENT_QUOTES, 'UTF-8');
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_pan_act_del_' . $id]],
+            [['text' => '❌ انصراف', 'callback_data' => 'adm_pan_' . $id]],
+        ]], JSON_UNESCAPED_UNICODE);
+        Editmessagetext($from_id, $message_id, "⚠️ پنل <code>{$nm}</code> حذف شود؟", $kb);
+    }
+} elseif (preg_match('/^adm_pan_act_del_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        try {
+            $pdo->prepare("DELETE FROM marzban_panel WHERE id = ?")->execute([intval($m[1])]);
+        } catch (Throwable $e) {}
+        list($tx, $kb) = adminPanelsListKeyboard();
+        Editmessagetext($from_id, $message_id, "✅ پنل حذف شد.\n\n" . $tx, $kb);
+    }
+} elseif (preg_match('/^adm_pan_act_connect_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'در حال تست…', 'show_alert' => false]);
+        // اجرای همان منطق دکمه تست اتصال با نام پنل
+        $user['Processing_value'] = $panel['name_panel'];
+        sendmessage($from_id, "⏳ تست اتصال پنل <code>" . htmlspecialchars($panel['name_panel'], ENT_QUOTES, 'UTF-8') . "</code>…\nاز منوی کامل یا دکمه تست اتصال پاسخ را ببینید.\n\nبرای تست کامل از «منوی کامل تنظیمات» → تست اتصال استفاده کنید.", $backadmin, 'HTML');
+        outtypepanel($panel['type'] ?? '', "پنل انتخاب شد. روی «تست اتصال» بزنید:");
+    }
+} elseif (preg_match('/^adm_pan_act_groups_(\d+)$/', strval($datain), $m)) {
+    $panel = adminPanelGetById($m[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        $user['Processing_value'] = $panel['name_panel'];
+        outtypepanel($panel['type'] ?? '', "برای مشاهده گروه‌ها از دکمه «گروه‌های پنل» استفاده کنید:");
+    }
+} elseif ($datain == "adm_cat_list") {
+    list($tx, $kb) = adminCategoriesListKeyboard();
+    Editmessagetext($from_id, $message_id, $tx, $kb);
+} elseif ($datain == "adm_cat_add") {
+    sendmessage($from_id, $textbotlang['Admin']['category']['getname'] ?? 'نام دسته را بفرستید:', $backadmin, 'HTML');
+    step("getremarkcategory", $from_id);
+} elseif (preg_match('/^adm_cat_del_(\d+)$/', strval($datain), $m)) {
+    try {
+        $pdo->prepare("DELETE FROM category WHERE id = ?")->execute([intval($m[1])]);
+    } catch (Throwable $e) {}
+    list($tx, $kb) = adminCategoriesListKeyboard();
+    Editmessagetext($from_id, $message_id, "✅ دسته حذف شد.\n\n" . $tx, $kb);
+} elseif ($datain == "adm_adm_list") {
+    if (function_exists('isMainBotAdmin') && !isMainBotAdmin($from_id)) {
+        // همه ادمین‌ها می‌توانند لیست را ببینند اما حذف فقط غیر اصلی
+    }
+    list($tx, $kb) = adminAdminsListKeyboard($from_id);
+    Editmessagetext($from_id, $message_id, $tx, $kb);
+} elseif ($datain == "adm_adm_add") {
+    sendmessage($from_id, $textbotlang['Admin']['manageadmin']['getid'] ?? 'آیدی عددی ادمین را بفرستید:', $backadmin, 'HTML');
+    step('addadmin', $from_id);
+} elseif (preg_match('/^adm_adm_del_(\d+)$/', strval($datain), $m)) {
+    $del_id = strval($m[1]);
+    global $adminnumber;
+    if (strval($adminnumber) === $del_id) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'ادمین اصلی قابل حذف نیست', 'show_alert' => true]);
+    } else {
+        try {
+            $pdo->prepare("DELETE FROM admin WHERE id_admin = ?")->execute([$del_id]);
+        } catch (Throwable $e) {}
+        list($tx, $kb) = adminAdminsListKeyboard($from_id);
+        Editmessagetext($from_id, $message_id, "✅ ادمین حذف شد.\n\n" . $tx, $kb);
+    }
+} elseif ($datain == "adm_ut_panel") {
+    list($tx, $kb) = adminUsertestPanel();
+    Editmessagetext($from_id, $message_id, $tx, $kb);
+} elseif ($datain == "adm_ut_time") {
+    sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['sendtimeusertest'] ?? 'زمان تست (ساعت) را بفرستید: فعلی %s', $setting['time_usertest'] ?? ''), $backadmin, 'HTML');
+    step('updatetime', $from_id);
+} elseif ($datain == "adm_ut_vol") {
+    sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['sendvoluemusertest'] ?? 'حجم تست (گیگ) را بفرستید: فعلی %s', $setting['val_usertest'] ?? ''), $backadmin, 'HTML');
+    step('val_usertest', $from_id);
+} elseif ($datain == "adm_ut_limit") {
+    sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['limitall'] ?? 'سقف تعداد تست برای همه کاربران را بفرستید:', $backadmin, 'HTML');
+    step('limit_usertest_allusers', $from_id);
+} elseif ($datain == "adm_ut_reset") {
+    $settingrow = select("setting", "*", null, null, "select");
+    $lim = intval($settingrow['limit_usertest_all'] ?? 1);
+    if ($lim < 0) $lim = 0;
+    update("user", "limit_usertest", strval($lim));
+    $msg = sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'] ?? '✅ سقف تست همه کاربران به %s ریست شد', $lim);
+    list($tx, $kb) = adminUsertestPanel();
+    Editmessagetext($from_id, $message_id, $msg . "\n\n" . $tx, $kb);
+}
+
+
 if ($datain == "codes_noop") {
     telegram('answerCallbackQuery', [
         'callback_query_id' => $callback_query_id,

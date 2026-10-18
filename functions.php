@@ -4471,6 +4471,212 @@ function isResellerFeatureEnabled()
 /**
  * مدیریت کد تخفیف (DiscountSell) و کد هدیه (Discount) — پنل اینلاین
  */
+
+/**
+ * ——— پنل‌های مدیریتی اینلاین (ادمین) ———
+ */
+
+function adminPanelsListKeyboard()
+{
+    global $pdo;
+    $rows = [];
+    try {
+        $st = $pdo->query("SELECT id, name_panel, type, status, url_panel FROM marzban_panel ORDER BY id ASC");
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        $rows = [];
+    }
+    $kb = ['inline_keyboard' => []];
+    $n = count($rows);
+    if (!$rows) {
+        $kb['inline_keyboard'][] = [['text' => 'هنوز پنلی ثبت نشده', 'callback_data' => 'adm_noop']];
+    } else {
+        foreach ($rows as $p) {
+            $id = intval($p['id'] ?? 0);
+            $name = strval($p['name_panel'] ?? '-');
+            if (mb_strlen($name) > 24) {
+                $name = mb_substr($name, 0, 22) . '…';
+            }
+            $type = strval($p['type'] ?? '');
+            $st = strval($p['status'] ?? '');
+            $icon = ($st === 'activepanel' || $st === 'active' || $st === '') ? '🟢' : '🔴';
+            $type_lbl = $type !== '' ? $type : 'panel';
+            $kb['inline_keyboard'][] = [[
+                'text' => "{$icon} {$name} ({$type_lbl})",
+                'callback_data' => 'adm_pan_' . $id,
+            ]];
+        }
+    }
+    $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_pan_list']];
+    $text = "🖥 <b>مدیریت پنل‌ها</b>\nتعداد: <b>{$n}</b>\n\nروی پنل بزنید تا تنظیمات باز شود.";
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+function adminPanelGetById($id)
+{
+    global $pdo;
+    $id = intval($id);
+    if ($id <= 0) {
+        return null;
+    }
+    try {
+        $st = $pdo->prepare("SELECT * FROM marzban_panel WHERE id = ? LIMIT 1");
+        $st->execute([$id]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        return $r ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function adminPanelDetailKeyboard($panel)
+{
+    $id = intval($panel['id'] ?? 0);
+    $name = htmlspecialchars(strval($panel['name_panel'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $type = htmlspecialchars(strval($panel['type'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $url = htmlspecialchars(strval($panel['url_panel'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $status = strval($panel['status'] ?? '');
+    $st_lbl = ($status === 'disablepanel' || $status === 'inactive') ? '🔴 غیرفعال' : '🟢 فعال';
+    $text = "🖥 <b>پنل:</b> <code>{$name}</code>\n"
+        . "نوع: <b>{$type}</b>\n"
+        . "وضعیت: {$st_lbl}\n"
+        . "آدرس: <code>{$url}</code>\n\n"
+        . "یک گزینه را انتخاب کنید:";
+    $kb = ['inline_keyboard' => [
+        [
+            ['text' => '🔗 تست اتصال', 'callback_data' => 'adm_pan_act_connect_' . $id],
+            ['text' => '📂 گروه‌ها', 'callback_data' => 'adm_pan_act_groups_' . $id],
+        ],
+        [
+            ['text' => '✏️ نام', 'callback_data' => 'adm_pan_act_name_' . $id],
+            ['text' => '🔗 آدرس', 'callback_data' => 'adm_pan_act_url_' . $id],
+        ],
+        [
+            ['text' => '👤 یوزرنیم', 'callback_data' => 'adm_pan_act_user_' . $id],
+            ['text' => '🔑 پسورد', 'callback_data' => 'adm_pan_act_pass_' . $id],
+        ],
+        [
+            ['text' => '📋 منوی کامل تنظیمات', 'callback_data' => 'adm_pan_act_full_' . $id],
+        ],
+        [
+            ['text' => '🗑 حذف پنل', 'callback_data' => 'adm_pan_act_delask_' . $id],
+        ],
+        [
+            ['text' => '🔙 لیست پنل‌ها', 'callback_data' => 'adm_pan_list'],
+        ],
+    ]];
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+function adminCategoriesListKeyboard()
+{
+    global $pdo;
+    $rows = [];
+    try {
+        $st = $pdo->query("SELECT * FROM category ORDER BY id ASC");
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        $rows = [];
+    }
+    $kb = ['inline_keyboard' => []];
+    $n = count($rows);
+    if (!$rows) {
+        $kb['inline_keyboard'][] = [['text' => 'هنوز دسته‌ای نیست', 'callback_data' => 'adm_noop']];
+    } else {
+        foreach ($rows as $c) {
+            $id = intval($c['id'] ?? 0);
+            $remark = strval($c['remark'] ?? '-');
+            if (mb_strlen($remark) > 30) {
+                $remark = mb_substr($remark, 0, 28) . '…';
+            }
+            $kb['inline_keyboard'][] = [
+                ['text' => '🗑', 'callback_data' => 'adm_cat_del_' . $id],
+                ['text' => $remark, 'callback_data' => 'adm_noop'],
+            ];
+        }
+    }
+    $kb['inline_keyboard'][] = [['text' => '➕ افزودن دسته', 'callback_data' => 'adm_cat_add']];
+    $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_cat_list']];
+    $text = "📁 <b>مدیریت دسته‌بندی محصولات</b>\nتعداد: <b>{$n}</b>\n\n🗑 = حذف دسته";
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+function adminAdminsListKeyboard($viewer_id)
+{
+    global $pdo, $adminnumber;
+    $ids = [];
+    try {
+        $st = $pdo->query("SELECT id_admin FROM admin ORDER BY id_admin ASC");
+        while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+            $ids[] = strval($r['id_admin']);
+        }
+    } catch (Throwable $e) {}
+    if ($adminnumber && !in_array(strval($adminnumber), $ids, true)) {
+        array_unshift($ids, strval($adminnumber));
+        $ids = array_values(array_unique($ids));
+    }
+    $kb = ['inline_keyboard' => []];
+    $n = count($ids);
+    if (!$ids) {
+        $kb['inline_keyboard'][] = [['text' => 'ادمینی ثبت نشده', 'callback_data' => 'adm_noop']];
+    } else {
+        foreach ($ids as $aid) {
+            $is_main = (strval($adminnumber) === strval($aid));
+            $label = $is_main ? "⭐ {$aid} (اصلی)" : $aid;
+            $row = [['text' => $label, 'callback_data' => 'adm_noop']];
+            if (!$is_main) {
+                $row[] = ['text' => '🗑', 'callback_data' => 'adm_adm_del_' . $aid];
+            }
+            $kb['inline_keyboard'][] = $row;
+        }
+    }
+    $kb['inline_keyboard'][] = [['text' => '➕ افزودن ادمین', 'callback_data' => 'adm_adm_add']];
+    $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_adm_list']];
+    $text = "👮 <b>مدیریت ادمین‌ها</b>\nتعداد: <b>{$n}</b>\n\nادمین اصلی قابل حذف نیست.";
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+function adminUsertestPanel()
+{
+    global $pdo;
+    $time = '-';
+    $vol = '-';
+    $lim = '-';
+    try {
+        $st = $pdo->query("SELECT time_usertest, val_usertest, limit_usertest_all FROM setting LIMIT 1");
+        $row = $st ? $st->fetch(PDO::FETCH_ASSOC) : null;
+        if ($row) {
+            $time = strval($row['time_usertest'] ?? '-');
+            $vol = strval($row['val_usertest'] ?? '-');
+            $lim = strval($row['limit_usertest_all'] ?? '-');
+        }
+    } catch (Throwable $e) {}
+    $text = "🧪 <b>تنظیمات اکانت تست</b>\n\n"
+        . "⏱ زمان: <b>{$time}</b> ساعت\n"
+        . "📊 حجم: <b>{$vol}</b> گیگ\n"
+        . "🔢 سقف تست برای هر کاربر: <b>{$lim}</b>\n\n"
+        . "برای تغییر، گزینه را بزنید:";
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => "⏱ زمان ({$time}س)", 'callback_data' => 'adm_ut_time'],
+                ['text' => "📊 حجم ({$vol}گ)", 'callback_data' => 'adm_ut_vol'],
+            ],
+            [
+                ['text' => "🔢 سقف همه ({$lim})", 'callback_data' => 'adm_ut_limit'],
+            ],
+            [
+                ['text' => '♻️ ریست سقف تست همه کاربران', 'callback_data' => 'adm_ut_reset'],
+            ],
+            [
+                ['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_ut_panel'],
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    return [$text, $kb];
+}
+
+
 function codesAdminHubText()
 {
     global $pdo;
