@@ -985,12 +985,16 @@ function DirectPayment($order_id)
                 }
             }
         }
+        $__svc_kb = null;
         if (($marzban_list_get['type'] ?? '') == "wgdashboard") {
-            $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $dataoutput['username'], $get_invoice['name_product'], $marzban_list_get['name_panel'], $get_invoice['Service_time'], $get_invoice['Volume']);
+            $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $dataoutput['username'], $get_invoice['name_product']);
+            $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
         } elseif (($marzban_list_get['type'] ?? '') == "mikrotik") {
-            $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_buy'], $dataoutput['username'], $dataoutput['subscription_url'] ?? '', $get_invoice['name_product'], $marzban_list_get['name_panel'], $get_invoice['Service_time'], $get_invoice['Volume']);
+            $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_buy'], $dataoutput['username'], $dataoutput['subscription_url'] ?? '', $get_invoice['name_product']);
+            $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
         } else {
-            $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $dataoutput['username'], $get_invoice['name_product'], $marzban_list_get['name_panel'], $get_invoice['Service_time'], $get_invoice['Volume'], $config, $output_config_link);
+            $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $dataoutput['username'], $get_invoice['name_product'], $config, $output_config_link);
+            $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
         }
         if ($output_config_link === '' && $config === '' && ($marzban_list_get['type'] ?? '') !== 'mikrotik') {
             $textcreatuser .= "\n\n⚠️ لینک اشتراک از پنل دریافت نشد. از «سرویس‌های من» وضعیت را بررسی کنید یا با پشتیبانی در تماس باشید.";
@@ -1000,7 +1004,7 @@ function DirectPayment($order_id)
         $__sent_cfg = false;
         try {
             if (($marzban_list_get['type'] ?? '') == "mikrotik") {
-                sendmessage($uid_buyer, $textcreatuser, null, 'HTML');
+                sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
                 if (isset($keyboard)) {
                     sendmessage($uid_buyer, $textbotlang['users']['selectoption'] ?? 'منوی اصلی', $keyboard, 'HTML');
                 }
@@ -1024,12 +1028,16 @@ function DirectPayment($order_id)
                             ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
                         $result = $writer->write($qrCode, null, null);
                         $result->saveToFile($urlimage);
-                        $photo_res = telegram('sendphoto', [
+                        $photo_payload = [
                             'chat_id' => $uid_buyer,
                             'photo' => new CURLFile($urlimage),
                             'caption' => mb_substr($textcreatuser, 0, 1024),
                             'parse_mode' => "HTML",
-                        ]);
+                        ];
+                        if (!empty($__svc_kb)) {
+                            $photo_payload['reply_markup'] = $__svc_kb;
+                        }
+                        $photo_res = telegram('sendphoto', $photo_payload);
                         @unlink($urlimage);
                         if (is_array($photo_res) && !empty($photo_res['ok'])) {
                             $__sent_cfg = true;
@@ -1050,14 +1058,14 @@ function DirectPayment($order_id)
                     }
                 }
                 if (!$__sent_cfg) {
-                    sendmessage($uid_buyer, $textcreatuser, null, 'HTML');
+                    sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
                     $__sent_cfg = true;
                 }
             }
         } catch (Throwable $e_send) {
             error_log('DirectPayment send config: ' . $e_send->getMessage());
             try {
-                sendmessage($uid_buyer, $textcreatuser, null, 'HTML');
+                sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
                 $__sent_cfg = true;
             } catch (Throwable $e2) {
                 error_log('DirectPayment sendmessage fallback failed: ' . $e2->getMessage());
@@ -1709,6 +1717,28 @@ function countUserActiveServices($user_id)
  * لیست روش‌های پرداخت فعال (کارت / کریپتو)
  * @return array [['id'=>'cart_to_offline','label'=>...], ...]
  */
+
+/**
+ * کیبورد اطلاعات سرویس: زمان و حجم (بدون دکمه‌های اضافه)
+ */
+function serviceInfoKeyboard($time_label, $volume_label)
+{
+    $time_label = strval($time_label);
+    $volume_label = strval($volume_label);
+    return json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => $time_label, 'callback_data' => 'svc_info_noop'],
+                ['text' => '⏳ زمان اشتراک', 'callback_data' => 'svc_info_noop'],
+            ],
+            [
+                ['text' => $volume_label, 'callback_data' => 'svc_info_noop'],
+                ['text' => '🌐 حجم سرویس', 'callback_data' => 'svc_info_noop'],
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+}
+
 function getActivePaymentMethods()
 {
     global $textbotlang;
@@ -1834,8 +1864,11 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
     if ($method_id === 'cart_to_offline') {
         $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
         $PaySetting = is_array($PaySetting) ? ($PaySetting['ValuePay'] ?? '') : '';
-        $Processing_value = number_format(intval($user['Processing_value'] ?? 0));
-        $textcart = sprintf($textbotlang['users']['moeny']['carttext'], $Processing_value, $PaySetting);
+        $amount_toman = intval($user['Processing_value'] ?? 0);
+        $amount_rial = $amount_toman * 10;
+        $Processing_value = number_format($amount_toman);
+        $Processing_rial = number_format($amount_rial);
+        $textcart = sprintf($textbotlang['users']['moeny']['carttext'], $Processing_value, $Processing_rial, $PaySetting);
         $ctx = function_exists('buildPaymentAmountContextNote') ? buildPaymentAmountContextNote($user) : '';
         if ($ctx !== '') {
             $textcart = $ctx . $textcart;
@@ -1847,7 +1880,7 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
                 "inline_keyboard" => [
                     [
                         ['text' => $textbotlang['users']['moeny']['copy_card_number'], 'copy_text' => ['text' => $card_number]],
-                        ['text' => $textbotlang['users']['moeny']['copy_price'], 'copy_text' => ['text' => strval($user['Processing_value'])]],
+                        ['text' => $textbotlang['users']['moeny']['copy_price'], 'copy_text' => ['text' => strval($amount_rial)]],
                     ],
                     [
                         ['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت به منوی اصلی', 'callback_data' => 'backuser'],

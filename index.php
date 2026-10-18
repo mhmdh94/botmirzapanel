@@ -2397,11 +2397,14 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     }
     $Shoppinginfo = null; // دکمه آموزش استفاده حذف شد
     if ($marzban_list_get['type'] == "wgdashboard") {
-        $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewg'], $username_ac, $marzban_list_get['name_panel'], $setting['time_usertest'], $setting['val_usertest']);
+        $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewg'], $username_ac);
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
     } elseif ($marzban_list_get['type'] == "mikrotik") {
-        $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_test'], $username_ac, $dataoutput['subscription_url'], $marzban_list_get['name_panel'], $setting['time_usertest'], $setting['val_usertest']);
+        $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_test'], $username_ac, $dataoutput['subscription_url']);
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
     } else {
-        $textcreatuser = sprintf($textbotlang['users']['buy']['createservicetest'], $username_ac, $marzban_list_get['name_panel'], $setting['time_usertest'], $setting['val_usertest'], $output_config_link, $text_config);
+        $textcreatuser = sprintf($textbotlang['users']['buy']['createservicetest'], $username_ac, $output_config_link, $text_config);
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
     }
     if ($marzban_list_get['sublink'] == "onsublink" && $marzban_list_get['type'] != "mikrotik") {
         $urlimage = "$from_id$randomString.png";
@@ -3213,11 +3216,14 @@ if (isset($datain) && $datain === 'product_header') {
     }
     $Shoppinginfo = null; // دکمه آموزش استفاده حذف شد
     if ($marzban_list_get['type'] == "wgdashboard") {
-        $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $username_ac, $info_product['name_product'], $marzban_list_get['name_panel'], $info_product['Service_time'], $info_product['Volume_constraint']);
+        $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $username_ac, $info_product['name_product']);
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($info_product['Service_time'] ?? 0) . ' روز', intval($info_product['Volume_constraint'] ?? 0) . ' گیگابایت') : null;
     } elseif ($marzban_list_get['type'] == "mikrotik") {
-        $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_buy'], $username_ac, $dataoutput['subscription_url'], $info_product['name_product'], $marzban_list_get['name_panel'], $info_product['Service_time'], $info_product['Volume_constraint']);
+        $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_buy'], $username_ac, $dataoutput['subscription_url'], $info_product['name_product']);
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($info_product['Service_time'] ?? 0) . ' روز', intval($info_product['Volume_constraint'] ?? 0) . ' گیگابایت') : null;
     } else {
-        $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $username_ac, $info_product['name_product'], $marzban_list_get['name_panel'], $info_product['Service_time'], $info_product['Volume_constraint'], $text_config, $link_config);
+        $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $username_ac, $info_product['name_product'], $text_config, $link_config);
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($info_product['Service_time'] ?? 0) . ' روز', intval($info_product['Volume_constraint'] ?? 0) . ' گیگابایت') : null;
     }
     if ($marzban_list_get['type'] == "mikrotik") {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
@@ -3503,7 +3509,10 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
         step('home', $from_id);
         return;
     }
-    if ($datain == "cart_to_offline" || $datain == "iranpay") {
+    if ($datain == "svc_info_noop") {
+    return;
+}
+if ($datain == "cart_to_offline" || $datain == "iranpay") {
         if (function_exists('executePaymentMethod')) {
             executePaymentMethod($from_id, $datain, $message_id);
         }

@@ -178,9 +178,6 @@ $textbotlang['users']['buy']['errorInCreate'] = "⚠️ <b>خطا در ساخت 
 $textbotlang['users']['buy']['createservicetest'] = "✅ <b>اکانت تست ساخته شد</b>
 
 👤 نام کاربری: <code>%s</code>
-📍 لوکیشن: %s
-⏳ مدت: %s ساعت
-📊 حجم: %s مگابایت
 
 📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:
 <code>%s</code>
@@ -188,27 +185,18 @@ $textbotlang['users']['buy']['createservicetest'] = "✅ <b>اکانت تست س
 $textbotlang['users']['buy']['createservicewg'] = "✅ <b>اکانت تست ساخته شد</b>
 
 👤 نام کاربری: <code>%s</code>
-📍 لوکیشن: %s
-⏳ مدت: %s ساعت
-📊 حجم: %s مگابایت
 
 📚 راهنمای اتصال را از دکمه زیر ببینید.";
 $textbotlang['users']['buy']['createservice_mikrotik_test'] = "✅ <b>اکانت تست ساخته شد</b>
 
 👤 نام کاربری: <code>%s</code>
 🔑 رمز: <code>%s</code>
-📍 لوکیشن: %s
-⏳ مدت: %s ساعت
-📊 حجم: %s مگابایت
 
 📚 راهنمای اتصال را از دکمه زیر ببینید.";
 $textbotlang['users']['buy']['createservicewgbuy'] = "✅ <b>سرویس فعال شد</b>
 
 👤 نام کاربری: <code>%s</code>
 📦 محصول: %s
-📍 لوکیشن: %s
-📆 مدت: %s روز
-📊 حجم: %s گیگ
 
 📚 راهنمای اتصال را از دکمه زیر ببینید.";
 $textbotlang['users']['buy']['createservice_mikrotik_buy'] = "✅ <b>سرویس فعال شد</b>
@@ -216,18 +204,12 @@ $textbotlang['users']['buy']['createservice_mikrotik_buy'] = "✅ <b>سرویس 
 👤 نام کاربری: <code>%s</code>
 🔑 رمز: <code>%s</code>
 📦 محصول: %s
-📍 لوکیشن: %s
-📆 مدت: %s روز
-📊 حجم: %s گیگ
 
 📚 راهنمای اتصال را از دکمه زیر ببینید.";
 $textbotlang['users']['buy']['createservice'] = "✅ <b>سرویس فعال شد</b>
 
 👤 نام کاربری: <code>%s</code>
 📦 محصول: %s
-📍 لوکیشن: %s
-📆 مدت: %s روز
-📊 حجم: %s گیگ
 
 📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:
 <code>%s</code>
@@ -487,9 +469,7 @@ $textbotlang['users']['moeny']['nowpayments_create_link_error'] = "⭕️ خطا
 نام کاربری کاربر : @%s";
 $textbotlang['users']['moeny']['carttext'] = "💳 <b>واریز کارت‌به‌کارت</b>
 
-💰 مبلغ: <b>%s</b> تومان
-
-⚠️ مبلغ به <b>تومان</b> است. لطفاً قبل از واریز دقت کنید.
+💰 مبلغ: <b>%s</b> تومان (%s ریال)
 
 🔢 شماره کارت:
 <code>%s</code>
