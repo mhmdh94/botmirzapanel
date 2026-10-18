@@ -2104,7 +2104,16 @@ if ($text == $textbotlang['Admin']['Discount']['titlebtn']) {
         return;
     }
     update("Discount", "price", $text, "code", $user['Processing_value']);
-    sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], $keyboardadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], null, 'HTML');
+    if (function_exists('codesGiftListKeyboard')) {
+        list($__tx, $__kb) = codesGiftListKeyboard(0);
+        sendmessage($from_id, "🎁 <b>کد هدیه ثبت شد</b>
+
+" . $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], $keyboardadmin, 'HTML');
+    }
+
     step('home', $from_id);
 }
 #-------------------------#
@@ -2603,7 +2612,15 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
     step('getusefirst', $from_id);
 } elseif ($user['step'] == "getusefirst") {
     update("DiscountSell", "usefirst", $text, "codeDiscount", $user['Processing_value']);
-    sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], $keyboardadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], null, 'HTML');
+    if (function_exists('codesDiscountListKeyboard')) {
+        list($__tx, $__kb) = codesDiscountListKeyboard(0);
+        sendmessage($from_id, "🏷 <b>کد تخفیف ثبت شد</b>
+
+" . $__tx, $__kb, 'HTML');
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], $keyboardadmin, 'HTML');
+    }
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['Discountsell']['remove']) {
@@ -4076,12 +4093,112 @@ if ($datain == "smartcron_set_limit") {
 
 
 if ($text == ($textbotlang['Admin']['keyboardadmin']['codes_section'] ?? '🎟 کد تخفیف و هدیه')) {
-    $kb = json_encode(['keyboard' => [
-        [['text' => $textbotlang['Admin']['Discountsell']['create']], ['text' => $textbotlang['Admin']['Discountsell']['remove']]],
-        [['text' => $textbotlang['Admin']['Discount']['titlebtn']], ['text' => $textbotlang['Admin']['Discount']['titlebtnremove']]],
-        [['text' => $textbotlang['Admin']['Back-Adminment']]]
-    ], 'resize_keyboard' => true]);
-    sendmessage($from_id, "🎟 مدیریت کد تخفیف و کد هدیه را انتخاب کنید:", $kb, 'HTML');
+    if (function_exists('codesAdminHubText')) {
+        sendmessage($from_id, codesAdminHubText(), codesAdminHubKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, "🎟 مدیریت کد تخفیف و هدیه", null, 'HTML');
+    }
+}
+
+# --- پنل اینلاین کد تخفیف / هدیه ---
+if ($datain == "codes_noop") {
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => $callback_query_id,
+        'text' => '',
+        'show_alert' => false,
+    ]);
+} elseif ($datain == "codes_hub") {
+    if (function_exists('codesAdminHubText')) {
+        Editmessagetext($from_id, $message_id, codesAdminHubText(), codesAdminHubKeyboard());
+    }
+} elseif ($datain == "codes_disc_list" || preg_match('/^codes_disc_list_(\d+)$/', strval($datain), $m_cdl)) {
+    $pg = ($datain === 'codes_disc_list') ? 0 : intval($m_cdl[1] ?? 0);
+    if (function_exists('codesDiscountListKeyboard')) {
+        list($tx, $kb) = codesDiscountListKeyboard($pg);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    }
+} elseif ($datain == "codes_gift_list" || preg_match('/^codes_gift_list_(\d+)$/', strval($datain), $m_cgl)) {
+    $pg = ($datain === 'codes_gift_list') ? 0 : intval($m_cgl[1] ?? 0);
+    if (function_exists('codesGiftListKeyboard')) {
+        list($tx, $kb) = codesGiftListKeyboard($pg);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    }
+} elseif (strpos(strval($datain), 'codes_disc_v_') === 0) {
+    $tok = substr(strval($datain), strlen('codes_disc_v_'));
+    $row = function_exists('codesResolveDiscountCode') ? codesResolveDiscountCode($tok) : null;
+    if ($row && function_exists('codesDiscountDetail')) {
+        list($tx, $kb) = codesDiscountDetail($row);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'کد یافت نشد',
+            'show_alert' => true,
+        ]);
+    }
+} elseif (strpos(strval($datain), 'codes_gift_v_') === 0) {
+    $tok = substr(strval($datain), strlen('codes_gift_v_'));
+    $row = function_exists('codesResolveGiftCode') ? codesResolveGiftCode($tok) : null;
+    if ($row && function_exists('codesGiftDetail')) {
+        list($tx, $kb) = codesGiftDetail($row);
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'کد یافت نشد',
+            'show_alert' => true,
+        ]);
+    }
+} elseif (strpos(strval($datain), 'codes_disc_del_') === 0) {
+    $tok = substr(strval($datain), strlen('codes_disc_del_'));
+    $row = function_exists('codesResolveDiscountCode') ? codesResolveDiscountCode($tok) : null;
+    if ($row) {
+        $code = strval($row['codeDiscount'] ?? '');
+        try {
+            $stmt = $pdo->prepare("DELETE FROM DiscountSell WHERE codeDiscount = ?");
+            $stmt->execute([$code]);
+        } catch (Throwable $e) {}
+        if (function_exists('codesDiscountListKeyboard')) {
+            list($tx, $kb) = codesDiscountListKeyboard(0);
+            Editmessagetext($from_id, $message_id, "✅ کد تخفیف حذف شد.
+
+" . $tx, $kb);
+        }
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'کد یافت نشد',
+            'show_alert' => true,
+        ]);
+    }
+} elseif (strpos(strval($datain), 'codes_gift_del_') === 0) {
+    $tok = substr(strval($datain), strlen('codes_gift_del_'));
+    $row = function_exists('codesResolveGiftCode') ? codesResolveGiftCode($tok) : null;
+    if ($row) {
+        $code = strval($row['code'] ?? '');
+        try {
+            $stmt = $pdo->prepare("DELETE FROM Discount WHERE code = ?");
+            $stmt->execute([$code]);
+        } catch (Throwable $e) {}
+        if (function_exists('codesGiftListKeyboard')) {
+            list($tx, $kb) = codesGiftListKeyboard(0);
+            Editmessagetext($from_id, $message_id, "✅ کد هدیه حذف شد.
+
+" . $tx, $kb);
+        }
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'کد یافت نشد',
+            'show_alert' => true,
+        ]);
+    }
+} elseif ($datain == "codes_disc_add") {
+    sendmessage($from_id, $textbotlang['Admin']['Discountsell']['GetCode'] ?? 'کد تخفیف را ارسال کنید:', $backadmin, 'HTML');
+    step('get_codesell', $from_id);
+} elseif ($datain == "codes_gift_add") {
+    sendmessage($from_id, $textbotlang['Admin']['Discount']['GetCode'] ?? 'کد هدیه را ارسال کنید:', $backadmin, 'HTML');
+    step('get_code', $from_id);
 }
 
 

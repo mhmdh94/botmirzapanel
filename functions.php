@@ -4467,6 +4467,277 @@ function isResellerFeatureEnabled()
 /**
  * مدیریت محصولات فروشگاه (ادمین) — لیست اینلاین؛ بدون تأثیر روی خرید کاربر
  */
+
+/**
+ * مدیریت کد تخفیف (DiscountSell) و کد هدیه (Discount) — پنل اینلاین
+ */
+function codesAdminHubText()
+{
+    global $pdo;
+    $n_disc = 0;
+    $n_gift = 0;
+    try {
+        $n_disc = intval($pdo->query("SELECT COUNT(*) FROM DiscountSell")->fetchColumn());
+    } catch (Throwable $e) {}
+    try {
+        $n_gift = intval($pdo->query("SELECT COUNT(*) FROM Discount")->fetchColumn());
+    } catch (Throwable $e) {}
+    return "🎟 <b>مدیریت کد تخفیف و هدیه</b>\n\n"
+        . "🏷 کد تخفیف خرید: <b>{$n_disc}</b> عدد\n"
+        . "🎁 کد هدیه (شارژ کیف): <b>{$n_gift}</b> عدد\n\n"
+        . "یک بخش را انتخاب کنید:";
+}
+
+function codesAdminHubKeyboard()
+{
+    return json_encode([
+        'inline_keyboard' => [
+            [
+                ['text' => '🏷 کدهای تخفیف', 'callback_data' => 'codes_disc_list'],
+                ['text' => '🎁 کدهای هدیه', 'callback_data' => 'codes_gift_list'],
+            ],
+            [
+                ['text' => '🔄 بروزرسانی', 'callback_data' => 'codes_hub'],
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+}
+
+function codesDiscountListKeyboard($page = 0)
+{
+    global $pdo;
+    $page = max(0, intval($page));
+    $per = 12;
+    $offset = $page * $per;
+    $rows = [];
+    $total = 0;
+    try {
+        $total = intval($pdo->query("SELECT COUNT(*) FROM DiscountSell")->fetchColumn());
+        $st = $pdo->query(
+            "SELECT * FROM DiscountSell ORDER BY codeDiscount ASC LIMIT " . intval($per) . " OFFSET " . intval($offset)
+        );
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        $rows = [];
+    }
+    $pages = max(1, (int)ceil(max(1, $total) / $per));
+    if ($page >= $pages) {
+        $page = $pages - 1;
+    }
+    $kb = ['inline_keyboard' => []];
+    if (!$rows) {
+        $kb['inline_keyboard'][] = [['text' => 'هنوز کد تخفیفی ثبت نشده', 'callback_data' => 'codes_noop']];
+    } else {
+        $kb['inline_keyboard'][] = [
+            ['text' => 'استفاده/سقف', 'callback_data' => 'codes_noop'],
+            ['text' => 'درصد', 'callback_data' => 'codes_noop'],
+            ['text' => 'کد', 'callback_data' => 'codes_noop'],
+        ];
+        foreach ($rows as $r) {
+            $code = strval($r['codeDiscount'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+            $price = strval($r['price'] ?? '0');
+            $used = strval($r['usedDiscount'] ?? '0');
+            $lim = strval($r['limitDiscount'] ?? '0');
+            $cb = 'codes_disc_v_' . substr(md5($code), 0, 10);
+            // store map via Processing not needed — use base64url short in callback max 64 bytes
+            $safe = rawurlencode($code);
+            if (strlen('codes_disc_v_' . $safe) > 60) {
+                $safe = substr(md5($code), 0, 12);
+            }
+            $label_code = mb_strlen($code) > 16 ? (mb_substr($code, 0, 14) . '…') : $code;
+            $kb['inline_keyboard'][] = [
+                ['text' => "{$used}/{$lim}", 'callback_data' => 'codes_disc_v_' . $safe],
+                ['text' => $price . '%', 'callback_data' => 'codes_disc_v_' . $safe],
+                ['text' => $label_code, 'callback_data' => 'codes_disc_v_' . $safe],
+            ];
+        }
+    }
+    $nav = [];
+    if ($page > 0) {
+        $nav[] = ['text' => '◀️', 'callback_data' => 'codes_disc_list_' . ($page - 1)];
+    }
+    if ($page < $pages - 1 && $total > $per) {
+        $nav[] = ['text' => '▶️', 'callback_data' => 'codes_disc_list_' . ($page + 1)];
+    }
+    if ($nav) {
+        $kb['inline_keyboard'][] = $nav;
+    }
+    $kb['inline_keyboard'][] = [['text' => '➕ افزودن کد تخفیف', 'callback_data' => 'codes_disc_add']];
+    $kb['inline_keyboard'][] = [
+        ['text' => '🔙 بازگشت', 'callback_data' => 'codes_hub'],
+        ['text' => '🔄 بروزرسانی', 'callback_data' => 'codes_disc_list'],
+    ];
+    $text = "🏷 <b>کدهای تخفیف خرید</b>\n"
+        . "تعداد: <b>{$total}</b>\n"
+        . "صفحه " . ($page + 1) . ( $total > $per ? " از {$pages}" : "" ) . "\n\n"
+        . "روی یک کد بزنید تا جزئیات و حذف را ببینید.";
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+function codesGiftListKeyboard($page = 0)
+{
+    global $pdo;
+    $page = max(0, intval($page));
+    $per = 12;
+    $offset = $page * $per;
+    $rows = [];
+    $total = 0;
+    try {
+        $total = intval($pdo->query("SELECT COUNT(*) FROM Discount")->fetchColumn());
+        $st = $pdo->query(
+            "SELECT * FROM Discount ORDER BY code ASC LIMIT " . intval($per) . " OFFSET " . intval($offset)
+        );
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable $e) {
+        $rows = [];
+    }
+    $pages = max(1, (int)ceil(max(1, $total) / $per));
+    $kb = ['inline_keyboard' => []];
+    if (!$rows) {
+        $kb['inline_keyboard'][] = [['text' => 'هنوز کد هدیه‌ای ثبت نشده', 'callback_data' => 'codes_noop']];
+    } else {
+        $kb['inline_keyboard'][] = [
+            ['text' => 'مبلغ (تومان)', 'callback_data' => 'codes_noop'],
+            ['text' => 'کد', 'callback_data' => 'codes_noop'],
+        ];
+        foreach ($rows as $r) {
+            $code = strval($r['code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+            $price = number_format(intval($r['price'] ?? 0));
+            $safe = rawurlencode($code);
+            if (strlen('codes_gift_v_' . $safe) > 60) {
+                $safe = substr(md5($code), 0, 12);
+            }
+            $label_code = mb_strlen($code) > 18 ? (mb_substr($code, 0, 16) . '…') : $code;
+            $kb['inline_keyboard'][] = [
+                ['text' => $price, 'callback_data' => 'codes_gift_v_' . $safe],
+                ['text' => $label_code, 'callback_data' => 'codes_gift_v_' . $safe],
+            ];
+        }
+    }
+    $nav = [];
+    if ($page > 0) {
+        $nav[] = ['text' => '◀️', 'callback_data' => 'codes_gift_list_' . ($page - 1)];
+    }
+    if ($page < $pages - 1 && $total > $per) {
+        $nav[] = ['text' => '▶️', 'callback_data' => 'codes_gift_list_' . ($page + 1)];
+    }
+    if ($nav) {
+        $kb['inline_keyboard'][] = $nav;
+    }
+    $kb['inline_keyboard'][] = [['text' => '➕ افزودن کد هدیه', 'callback_data' => 'codes_gift_add']];
+    $kb['inline_keyboard'][] = [
+        ['text' => '🔙 بازگشت', 'callback_data' => 'codes_hub'],
+        ['text' => '🔄 بروزرسانی', 'callback_data' => 'codes_gift_list'],
+    ];
+    $text = "🎁 <b>کدهای هدیه (شارژ کیف)</b>\n"
+        . "تعداد: <b>{$total}</b>\n"
+        . "صفحه " . ($page + 1) . ($total > $per ? " از {$pages}" : "") . "\n\n"
+        . "روی یک کد بزنید تا جزئیات و حذف را ببینید.";
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+function codesResolveDiscountCode($token)
+{
+    global $pdo;
+    $token = strval($token);
+    $decoded = rawurldecode($token);
+    try {
+        $st = $pdo->prepare("SELECT * FROM DiscountSell WHERE codeDiscount = ? LIMIT 1");
+        $st->execute([$decoded]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            return $row;
+        }
+        // fallback md5 short
+        $st = $pdo->query("SELECT * FROM DiscountSell");
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $c = strval($r['codeDiscount'] ?? '');
+            if (substr(md5($c), 0, 12) === $token || substr(md5($c), 0, 10) === $token) {
+                return $r;
+            }
+        }
+    } catch (Throwable $e) {}
+    return null;
+}
+
+function codesResolveGiftCode($token)
+{
+    global $pdo;
+    $token = strval($token);
+    $decoded = rawurldecode($token);
+    try {
+        $st = $pdo->prepare("SELECT * FROM Discount WHERE code = ? LIMIT 1");
+        $st->execute([$decoded]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            return $row;
+        }
+        $st = $pdo->query("SELECT * FROM Discount");
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $c = strval($r['code'] ?? '');
+            if (substr(md5($c), 0, 12) === $token || substr(md5($c), 0, 10) === $token) {
+                return $r;
+            }
+        }
+    } catch (Throwable $e) {}
+    return null;
+}
+
+function codesDiscountDetail($row)
+{
+    $code = htmlspecialchars(strval($row['codeDiscount'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $price = strval($row['price'] ?? '0');
+    $used = strval($row['usedDiscount'] ?? '0');
+    $lim = strval($row['limitDiscount'] ?? '0');
+    $first = strval($row['usefirst'] ?? '0');
+    $first_lbl = ($first === '1') ? 'فقط خرید اول' : 'همه خریدها';
+    $text = "🏷 <b>جزئیات کد تخفیف</b>\n\n"
+        . "کد: <code>{$code}</code>\n"
+        . "درصد: <b>{$price}٪</b>\n"
+        . "استفاده: <b>{$used}</b> از <b>{$lim}</b>\n"
+        . "نوع: {$first_lbl}";
+    $raw = strval($row['codeDiscount'] ?? '');
+    $safe = rawurlencode($raw);
+    if (strlen('codes_disc_del_' . $safe) > 60) {
+        $safe = substr(md5($raw), 0, 12);
+    }
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [['text' => '🗑 حذف این کد', 'callback_data' => 'codes_disc_del_' . $safe]],
+            [['text' => '🔙 لیست کدهای تخفیف', 'callback_data' => 'codes_disc_list']],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    return [$text, $kb];
+}
+
+function codesGiftDetail($row)
+{
+    $code = htmlspecialchars(strval($row['code'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $price = number_format(intval($row['price'] ?? 0));
+    $text = "🎁 <b>جزئیات کد هدیه</b>\n\n"
+        . "کد: <code>{$code}</code>\n"
+        . "مبلغ شارژ: <b>{$price}</b> تومان";
+    $raw = strval($row['code'] ?? '');
+    $safe = rawurlencode($raw);
+    if (strlen('codes_gift_del_' . $safe) > 60) {
+        $safe = substr(md5($raw), 0, 12);
+    }
+    $kb = json_encode([
+        'inline_keyboard' => [
+            [['text' => '🗑 حذف این کد', 'callback_data' => 'codes_gift_del_' . $safe]],
+            [['text' => '🔙 لیست کدهای هدیه', 'callback_data' => 'codes_gift_list']],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    return [$text, $kb];
+}
+
+
 function shopGetAllProducts()
 {
     global $pdo;
