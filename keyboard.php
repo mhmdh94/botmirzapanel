@@ -256,7 +256,8 @@ $User_Services = json_encode([
     ],
     'resize_keyboard' => true
 ]);
-$keyboardhelpadmin = json_encode([
+$keyboardhelpadmin = json_encode([ // Help removed
+
     'keyboard' => [
         [['text' => $textbotlang['Admin']['Help']['addhelp']], ['text' => $textbotlang['Admin']['Help']['removehelpbtn']]],
         [['text' => $textbotlang['Admin']['Help']['edithelp']]],
@@ -351,7 +352,7 @@ if ($table_exists) {
     ];
     $json_list_marzban_panel = json_encode($list_marzban_panel);
 }
-$sql = "SHOW TABLES LIKE 'help'";
+$sql = "SHOW TABLES LIKE 'help_disabled_removed'";
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
 $result = $stmt->fetchAll();

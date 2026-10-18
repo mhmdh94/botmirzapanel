@@ -1130,6 +1130,20 @@ elseif ($text == $textbotlang['Admin']['changetext']['ruletext']) {
     step('home', $from_id);
 }
 //_________________________________________________
+
+# ——— بخش آموزش/Help حذف شده ———
+if (isset($textbotlang['Admin']['Help']['addhelp']) && (
+    $text == ($textbotlang['Admin']['Help']['addhelp'] ?? '') ||
+    $text == ($textbotlang['Admin']['Help']['removehelpbtn'] ?? '') ||
+    $text == ($textbotlang['Admin']['Help']['edithelp'] ?? '') ||
+    $text == ($textbotlang['Admin']['Help']['change']['name'] ?? '') ||
+    $text == ($textbotlang['Admin']['Help']['change']['dec'] ?? '') ||
+    $text == ($textbotlang['Admin']['Help']['change']['editmedia'] ?? '')
+)) {
+    sendmessage($from_id, "این بخش حذف شده است.", $keyboardadmin, 'HTML');
+    return;
+}
+
 if ($text == $textbotlang['Admin']['keyboardadmin']['user_services']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $User_Services, 'HTML');
 }
@@ -2465,14 +2479,14 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
         $value = ($status == "oncard") ? "offcard" : "oncard";
         update("PaySetting", "ValuePay", $value, "NamePay", "Cartstatus");
     } elseif ($methodpay == "nowpayment") {
-        $value = ($status == "onnowpayment") ? "offnowpayment" : "onnowpayment";
-        update("PaySetting", "ValuePay", $value, "NamePay", "nowpaymentstatus");
+        // حذف شده
+        $value = $status;
     } elseif ($methodpay == "iranpay") {
         $value = ($status == "ondigi") ? "offdigi" : "ondigi";
         update("PaySetting", "ValuePay", $value, "NamePay", "digistatus");
     } elseif ($methodpay == "aqayepardakht") {
-        $value = ($status == "onaqayepardakht") ? "offaqayepardakht" : "onaqayepardakht";
-        update("PaySetting", "ValuePay", $value, "NamePay", "statusaqayepardakht");
+        // حذف شده
+        $value = $status;
     }
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
     Editmessagetext($from_id, $message_id, $textbotlang['users']['moeny']['settingpay'] ?? '💳 تنظیمات مالی', $keyboardmoeny);
@@ -2489,7 +2503,7 @@ if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
     step('home', $from_id);
 }
 if ($datain == "SettingnowPayment") {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $NowPaymentsManage, 'HTML');
+    sendmessage($from_id, 'این درگاه حذف شده است. فقط کارت به کارت و کریپتو فعال است.', isset($keyboardmoeny)?$keyboardmoeny:$keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['users']['moeny']['nowpayment_api']) {
     $PaySetting = select("PaySetting", "ValuePay", "NamePay", "apinowpayment", "select")['ValuePay'];
@@ -2501,7 +2515,7 @@ if ($text == $textbotlang['users']['moeny']['nowpayment_api']) {
     step('home', $from_id);
 }
 if ($datain == "Settingaqayepardakht") {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $aqayepardakht, 'HTML');
+    sendmessage($from_id, 'این درگاه حذف شده است. فقط کارت به کارت و کریپتو فعال است.', isset($keyboardmoeny)?$keyboardmoeny:$keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['users']['moeny']['mr_payment_merchant_settings']) {
     $PaySetting = select("PaySetting", "ValuePay", "NamePay", "merchant_id_aqayepardakht", "select");

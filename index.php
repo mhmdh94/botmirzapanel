@@ -2445,22 +2445,12 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
 }
 #-----------help------------#
 if ($text == $datatextbot['text_help'] || $datain == "helpbtn" || $text == "/help") {
-    if ($setting['help_Status'] == "0") {
-        sendmessage($from_id, $textbotlang['users']['help']['disablehelp'], null, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $json_list_help, 'HTML');
-    step('sendhelp', $from_id);
+    sendmessage($from_id, "این بخش غیرفعال است.", $keyboard, 'HTML');
+    return;
 } elseif ($user['step'] == "sendhelp") {
-    $helpdata = select("help", "*", "name_os", $text, "select");
-    if (strlen($helpdata['Media_os']) != 0) {
-        if ($helpdata['type_Media_os'] == "video") {
-            sendvideo($from_id, $helpdata['Media_os'], $helpdata['Description_os']);
-        } elseif ($helpdata['type_Media_os'] == "photo")
-            sendphoto($from_id, $helpdata['Media_os'], $helpdata['Description_os']);
-    } else {
-        sendmessage($from_id, $helpdata['Description_os'], $json_list_help, 'HTML');
-    }
+    step('home', $from_id);
+    sendmessage($from_id, "این بخش غیرفعال است.", $keyboard, 'HTML');
+    return;
 }
 
 #-----------support------------#
