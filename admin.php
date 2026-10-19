@@ -1671,19 +1671,112 @@ if ($text == ($textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پش�
     if (!in_array($from_id, $admin_ids)) {
         return;
     }
-    sendmessage($from_id, "⏳ در حال تهیه بک‌آپ دیتابیس... لطفاً صبر کنید.", $setting_panel, 'HTML');
-    if (!function_exists('runManualDatabaseBackupAndSend')) {
-        sendmessage($from_id, "❌ تابع بک‌آپ در دسترس نیست.", $setting_panel, 'HTML');
-        return;
+    if (function_exists('ensureDatabaseBackupSettings')) {
+        ensureDatabaseBackupSettings();
     }
-    $bres = runManualDatabaseBackupAndSend($from_id);
-    if (!empty($bres['ok'])) {
-        sendmessage($from_id, $bres['message'] ?? '✅ انجام شد.', $setting_panel, 'HTML');
-    } else {
-        sendmessage($from_id, "❌ " . strval($bres['message'] ?? 'خطا در بک‌آپ'), $setting_panel, 'HTML');
-    }
+    $txt = function_exists('backupSettingsText') ? backupSettingsText() : '💾 پشتیبان‌گیری';
+    $kb = function_exists('buildBackupSettingsKeyboard') ? buildBackupSettingsKeyboard() : null;
+    sendmessage($from_id, $txt, $kb, 'HTML');
     return;
 }
+
+if ($datain === 'backup_back') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    Editmessagetext($from_id, $message_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید.', json_encode(['inline_keyboard' => []]));
+    sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید.', $setting_panel, 'HTML');
+    return;
+}
+
+if ($datain === 'backup_now') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    Editmessagetext($from_id, $message_id, "⏳ در حال تهیه بک‌آپ...", json_encode(['inline_keyboard' => []]));
+    $bres = function_exists('runDatabaseBackupAndSend')
+        ? runDatabaseBackupAndSend($from_id, true)
+        : (function_exists('runManualDatabaseBackupAndSend') ? runManualDatabaseBackupAndSend($from_id) : ['ok' => false, 'message' => 'تابع موجود نیست']);
+    $msg = !empty($bres['ok']) ? ($bres['message'] ?? '✅ انجام شد') : ('❌ ' . strval($bres['message'] ?? 'خطا'));
+    sendmessage($from_id, $msg, function_exists('buildBackupSettingsKeyboard') ? buildBackupSettingsKeyboard() : $setting_panel, 'HTML');
+    return;
+}
+
+if ($datain === 'backup_tog_admin') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    ensureDatabaseBackupSettings();
+    $cur = getPaySettingValue('backup_send_admin', '0') === '1';
+    update('PaySetting', 'ValuePay', $cur ? '0' : '1', 'NamePay', 'backup_send_admin');
+    Editmessagetext($from_id, $message_id, backupSettingsText(), buildBackupSettingsKeyboard());
+    return;
+}
+
+if ($datain === 'backup_tog_channel') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    ensureDatabaseBackupSettings();
+    $cur = getPaySettingValue('backup_send_channel', '0') === '1';
+    update('PaySetting', 'ValuePay', $cur ? '0' : '1', 'NamePay', 'backup_send_channel');
+    Editmessagetext($from_id, $message_id, backupSettingsText(), buildBackupSettingsKeyboard());
+    return;
+}
+
+if ($datain === 'backup_tog_cron') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    ensureDatabaseBackupSettings();
+    $cur = getPaySettingValue('backup_cron_enabled', '0') === '1';
+    $new = $cur ? '0' : '1';
+    update('PaySetting', 'ValuePay', $new, 'NamePay', 'backup_cron_enabled');
+    $cron_msg = '';
+    if (function_exists('syncBackupCron')) {
+        $sr = syncBackupCron($new === '1');
+        $cron_msg = "\n\n" . strval($sr['message'] ?? '');
+    }
+    Editmessagetext($from_id, $message_id, backupSettingsText() . $cron_msg, buildBackupSettingsKeyboard());
+    return;
+}
+
+if ($datain === 'backup_set_hours') {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    step('backup_set_hours', $from_id);
+    sendmessage($from_id, "تعداد ساعت بین هر بک‌آپ خودکار را بفرستید (۱ تا ۱۶۸).\nمثال: <code>24</code> = هر روز", $backadmin, 'HTML');
+    return;
+}
+
+if (($user['step'] ?? '') === 'backup_set_hours' && !empty($text) && empty($datain)) {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '') || $text === ($textbotlang['users']['backhome'] ?? '')) {
+        step('home', $from_id);
+        sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'انتخاب کنید', $setting_panel, 'HTML');
+        return;
+    }
+    $h = intval(preg_replace('/\D/', '', $text));
+    if ($h < 1 || $h > 168) {
+        sendmessage($from_id, "❌ عدد بین ۱ تا ۱۶۸ وارد کنید.", $backadmin, 'HTML');
+        return;
+    }
+    ensureDatabaseBackupSettings();
+    update('PaySetting', 'ValuePay', strval($h), 'NamePay', 'backup_cron_hours');
+    step('home', $from_id);
+    $extra = '';
+    if (getPaySettingValue('backup_cron_enabled', '0') === '1' && function_exists('syncBackupCron')) {
+        $sr = syncBackupCron(true);
+        $extra = "\n" . strval($sr['message'] ?? '');
+    }
+    sendmessage($from_id, "✅ فاصله بک‌آپ: هر {$h} ساعت." . $extra, $setting_panel, 'HTML');
+    sendmessage($from_id, backupSettingsText(), buildBackupSettingsKeyboard(), 'HTML');
+    return;
+}
+
 
 #----------------[ آپدیت ربات از گیتهاب ]------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_update']) {

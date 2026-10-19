@@ -156,7 +156,7 @@ try {
     }
 } catch (Throwable $e) {}
 $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]];
-$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]];
+$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['settings']]];
 $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']]];
 $__kb_admin_rows[] = [['text' => $textbotlang['users']['backhome']]];
 $keyboardadmin = json_encode([
@@ -218,7 +218,7 @@ $setting_panel = json_encode([
         [['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['settingscron']], ['text' => $textbotlang['Admin']['keyboardadmin']['test_account_settings']]],
         [['text' => $textbotlang['Admin']['channel']['channelreport']], ['text' => $textbotlang['Admin']['channel']['setting']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['affiliate_settings']]],
+        [['text' => $textbotlang['Admin']['keyboardadmin']['affiliate_settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['bot_update']], ['text' => ($textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری')]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],

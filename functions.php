@@ -2817,6 +2817,7 @@ function getBotManagedCronPatterns()
         'configtest.php',
         'cleanorphan.php',
         'smartwarn.php',
+        'backup_cron.php',
     ];
 }
 
@@ -2844,6 +2845,12 @@ function syncBotCrontabs()
     }
     if ($auto_on && function_exists('getAutoCartCronCommand')) {
         $wanted[] = getAutoCartCronCommand();
+    }
+    if (function_exists('getPaySettingValue') && function_exists('ensureDatabaseBackupSettings')) {
+        ensureDatabaseBackupSettings();
+        if (getPaySettingValue('backup_cron_enabled', '0') === '1' && function_exists('getBackupCronCommandLine')) {
+            $wanted[] = getBackupCronCommandLine();
+        }
     }
 
     if (!botCronShellAvailable()) {
@@ -2911,6 +2918,8 @@ function syncBotCrontabs()
             $needle = 'smart_cron.php';
         } elseif (strpos($w, 'croncard.php') !== false) {
             $needle = 'croncard.php';
+        } elseif (strpos($w, 'backup_cron.php') !== false) {
+            $needle = 'backup_cron.php';
         }
         if ($needle === '') {
             continue;
@@ -3397,74 +3406,271 @@ function createDatabaseBackupFile()
 /**
  * بک‌آپ می‌گیرد و برای ادمین + کانال گزارش (در صورت تنظیم) می‌فرستد
  */
-function runManualDatabaseBackupAndSend($admin_chat_id)
+function ensureDatabaseBackupSettings()
 {
-    global $dbname, $setting, $admin_ids, $textbotlang;
-    $admin_chat_id = intval($admin_chat_id);
+    ensurePaySetting('backup_send_admin', '0');
+    ensurePaySetting('backup_send_channel', '0');
+    ensurePaySetting('backup_cron_enabled', '0');
+    ensurePaySetting('backup_cron_hours', '24');
+}
+
+function getBackupCronHours()
+{
+    ensureDatabaseBackupSettings();
+    $h = intval(getPaySettingValue('backup_cron_hours', '24'));
+    if ($h < 1) {
+        $h = 1;
+    }
+    if ($h > 168) {
+        $h = 168;
+    }
+    return $h;
+}
+
+function getBackupCronCommandLine()
+{
+    global $domainhosts;
+    $host = trim(strval($domainhosts ?? ''), '/');
+    $host = preg_replace('#^https?://#i', '', $host);
+    $h = getBackupCronHours();
+    if ($h >= 24 && $h % 24 === 0) {
+        $days = max(1, intval($h / 24));
+        if ($days === 1) {
+            $sched = '0 3 * * *';
+        } else {
+            $sched = '0 3 */' . $days . ' * *';
+        }
+    } elseif ($h >= 1) {
+        $sched = '0 */' . $h . ' * * *';
+    } else {
+        $sched = '0 3 * * *';
+    }
+    return "{$sched} curl -s https://{$host}/cron/backup_cron.php >/dev/null 2>&1";
+}
+
+/**
+ * نصب/حذف کرون بک‌آپ فقط برای همین دامنه
+ */
+function syncBackupCron($enabled)
+{
+    $enabled = (bool) $enabled;
+    if (!botCronShellAvailable()) {
+        return ['ok' => false, 'message' => 'shell_exec روی سرور غیرفعال است.'];
+    }
+    if (getBotCronHostKey() === '') {
+        return ['ok' => false, 'message' => 'دامنه ربات خالی است.'];
+    }
+    $existing = @shell_exec('crontab -l 2>/dev/null');
+    if (!is_string($existing) || stripos($existing, 'no crontab') !== false) {
+        $existing = '';
+    }
+    $kept = [];
+    foreach (preg_split("/\r\n|\n|\r/", $existing) as $line) {
+        if ($line === '' || $line === false) {
+            continue;
+        }
+        if (isCronLineForThisBot($line, ['backup_cron.php'])) {
+            continue;
+        }
+        $kept[] = $line;
+    }
+    if ($enabled) {
+        $kept[] = getBackupCronCommandLine();
+    }
+    $content = implode("\n", $kept);
+    if ($content !== '' && substr($content, -1) !== "\n") {
+        $content .= "\n";
+    }
+    $tmp = '/tmp/crontab_mirza_backup_' . getmypid() . '.txt';
+    if (@file_put_contents($tmp, $content) === false) {
+        return ['ok' => false, 'message' => 'نوشتن فایل موقت crontab ناموفق بود.'];
+    }
+    if (trim($content) === '') {
+        @shell_exec('crontab -r 2>/dev/null');
+    } else {
+        @shell_exec('crontab ' . escapeshellarg($tmp) . ' 2>/dev/null');
+    }
+    @unlink($tmp);
+    $after = @shell_exec('crontab -l 2>/dev/null');
+    $host = getBotCronHostKey();
+    $found = false;
+    if (is_string($after)) {
+        foreach (preg_split("/\r\n|\n|\r/", $after) as $ln) {
+            if (strpos($ln, 'backup_cron.php') !== false && stripos($ln, $host) !== false) {
+                $found = true;
+                break;
+            }
+        }
+    }
+    if ($enabled) {
+        return [
+            'ok' => $found,
+            'message' => $found
+                ? ('✅ کرون بک‌آپ نصب شد (هر ' . getBackupCronHours() . ' ساعت).')
+                : '⚠️ کرون نوشته شد ولی در crontab تأیید نشد.',
+        ];
+    }
+    return [
+        'ok' => !$found,
+        'message' => !$found ? '✅ کرون بک‌آپ از crontab حذف شد.' : '⚠️ حذف کرون کامل تأیید نشد؛ دستی چک کنید.',
+    ];
+}
+
+function buildBackupSettingsKeyboard()
+{
+    ensureDatabaseBackupSettings();
+    $on = '✅';
+    $off = '❌';
+    $to_admin = getPaySettingValue('backup_send_admin', '0') === '1';
+    $to_ch = getPaySettingValue('backup_send_channel', '0') === '1';
+    $cron_on = getPaySettingValue('backup_cron_enabled', '0') === '1';
+    $hours = getBackupCronHours();
+    return json_encode([
+        'inline_keyboard' => [
+            [['text' => '📥 بک‌آپ الان', 'callback_data' => 'backup_now']],
+            [
+                ['text' => ($to_admin ? $on : $off) . ' ارسال به ربات (ادمین)', 'callback_data' => 'backup_tog_admin'],
+                ['text' => ($to_ch ? $on : $off) . ' ارسال به کانال گزارش', 'callback_data' => 'backup_tog_channel'],
+            ],
+            [['text' => ($cron_on ? $on : $off) . ' بک‌آپ خودکار (کرون)', 'callback_data' => 'backup_tog_cron']],
+            [['text' => '⏱ فاصله: هر ' . $hours . ' ساعت', 'callback_data' => 'backup_set_hours']],
+            [['text' => '🔙 بازگشت', 'callback_data' => 'backup_back']],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+}
+
+function backupSettingsText()
+{
+    ensureDatabaseBackupSettings();
+    $to_admin = getPaySettingValue('backup_send_admin', '0') === '1';
+    $to_ch = getPaySettingValue('backup_send_channel', '0') === '1';
+    $cron_on = getPaySettingValue('backup_cron_enabled', '0') === '1';
+    $hours = getBackupCronHours();
+    $txt = "💾 <b>پشتیبان‌گیری دیتابیس</b>\n\n";
+    $txt .= "از این بخش می‌توانید بک‌آپ بگیرید و مقصد ارسال و کرون خودکار را تنظیم کنید.\n\n";
+    $txt .= "🤖 ارسال به ربات: <b>" . ($to_admin ? 'روشن' : 'خاموش') . "</b>\n";
+    $txt .= "📢 ارسال به کانال گزارش: <b>" . ($to_ch ? 'روشن' : 'خاموش') . "</b>\n";
+    $txt .= "⏰ بک‌آپ خودکار: <b>" . ($cron_on ? 'روشن' : 'خاموش') . "</b>\n";
+    $txt .= "⏱ فاصله: <b>هر {$hours} ساعت</b>\n\n";
+    $txt .= "• دکمه «بک‌آپ الان» همیشه فایل را برای شما می‌فرستد.\n";
+    $txt .= "• اگر «ارسال به کانال گزارش» روشن باشد، همان فایل به کانال هم می‌رود.\n";
+    $txt .= "• کرون خودکار فقط وقتی مقصدی روشن باشد مفید است.";
+    return $txt;
+}
+
+/**
+ * @param int|null $admin_chat_id اگر ست شود (دستی)، همیشه به این چت هم ارسال می‌شود
+ * @param bool $force_admin_chat برای بک‌آپ دستی
+ */
+function runDatabaseBackupAndSend($admin_chat_id = null, $force_admin_chat = false)
+{
+    global $dbname, $setting, $adminnumber, $admin_ids;
+
+    ensureDatabaseBackupSettings();
+    $to_admin_setting = getPaySettingValue('backup_send_admin', '0') === '1';
+    $to_channel = getPaySettingValue('backup_send_channel', '0') === '1';
+
     $res = createDatabaseBackupFile();
     if (empty($res['ok']) || empty($res['path'])) {
         return ['ok' => false, 'message' => $res['message'] ?? 'بک‌آپ ناموفق بود.'];
     }
     $path = $res['path'];
-    $size = intval($res['size'] ?? filesize($path));
+    $size = intval($res['size'] ?? @filesize($path));
     $size_h = $size >= 1048576
         ? (round($size / 1048576, 2) . ' MB')
         : (round($size / 1024, 1) . ' KB');
-    $caption = "💾 <b>بک‌آپ دیتابیس</b>\n"
-        . "🗄 <code>" . htmlspecialchars(strval($dbname ?? ''), ENT_QUOTES, 'UTF-8') . "</code>\n"
-        . "📦 حجم: <b>{$size_h}</b>\n"
+    $caption_plain = "💾 بک‌آپ دیتابیس\n"
+        . "🗄 " . strval($dbname ?? '') . "\n"
+        . "📦 حجم: {$size_h}\n"
         . "🕐 " . date('Y-m-d H:i:s');
+
     $sent_admin = false;
     $sent_channel = false;
-    try {
-        if (function_exists('sendDocument')) {
-            sendDocument($admin_chat_id, $path, strip_tags(str_replace(['<b>', '</b>', '<code>', '</code>'], '', $caption)));
-            $sent_admin = true;
-        } else {
-            telegram('sendDocument', [
-                'chat_id' => $admin_chat_id,
-                'document' => new CURLFile($path),
-                'caption' => mb_substr(strip_tags($caption), 0, 900),
-            ]);
-            $sent_admin = true;
-        }
-    } catch (Throwable $e) {
-        error_log('backup send admin: ' . $e->getMessage());
+    $targets_admin = [];
+
+    if ($force_admin_chat && $admin_chat_id) {
+        $targets_admin[] = intval($admin_chat_id);
     }
-    // کانال گزارش
-    try {
-        $ch = '';
-        if (is_array($setting ?? null) && !empty($setting['Channel_Report'])) {
-            $ch = strval($setting['Channel_Report']);
-        } else {
-            $st = select('setting', '*', null, null, 'select');
-            if (is_array($st) && !empty($st['Channel_Report']) && strval($st['Channel_Report']) !== '0') {
-                $ch = strval($st['Channel_Report']);
+    if ($to_admin_setting) {
+        $main = intval($adminnumber ?? 0);
+        if ($main > 0) {
+            $targets_admin[] = $main;
+        }
+        if (!empty($admin_ids) && is_array($admin_ids)) {
+            foreach ($admin_ids as $aid) {
+                $targets_admin[] = intval($aid);
             }
         }
-        if ($ch !== '' && $ch !== '0' && $ch !== '-') {
-            telegram('sendDocument', [
-                'chat_id' => $ch,
-                'document' => new CURLFile($path),
-                'caption' => mb_substr(strip_tags($caption), 0, 900),
-            ]);
-            $sent_channel = true;
-        }
-    } catch (Throwable $e) {
-        error_log('backup send channel: ' . $e->getMessage());
     }
+    $targets_admin = array_values(array_unique(array_filter($targets_admin)));
+
+    foreach ($targets_admin as $cid) {
+        try {
+            if (function_exists('sendDocument')) {
+                sendDocument($cid, $path, $caption_plain);
+            } else {
+                telegram('sendDocument', [
+                    'chat_id' => $cid,
+                    'document' => new CURLFile($path),
+                    'caption' => mb_substr($caption_plain, 0, 900),
+                ]);
+            }
+            $sent_admin = true;
+        } catch (Throwable $e) {
+            error_log('backup send admin ' . $cid . ': ' . $e->getMessage());
+        }
+    }
+
+    if ($to_channel) {
+        try {
+            $ch = '';
+            if (is_array($setting ?? null) && !empty($setting['Channel_Report']) && strval($setting['Channel_Report']) !== '0' && strval($setting['Channel_Report']) !== '-') {
+                $ch = strval($setting['Channel_Report']);
+            } else {
+                $st = select('setting', '*', null, null, 'select');
+                if (is_array($st) && !empty($st['Channel_Report']) && strval($st['Channel_Report']) !== '0' && strval($st['Channel_Report']) !== '-') {
+                    $ch = strval($st['Channel_Report']);
+                }
+            }
+            if ($ch !== '') {
+                telegram('sendDocument', [
+                    'chat_id' => $ch,
+                    'document' => new CURLFile($path),
+                    'caption' => mb_substr($caption_plain, 0, 900),
+                ]);
+                $sent_channel = true;
+            }
+        } catch (Throwable $e) {
+            error_log('backup send channel: ' . $e->getMessage());
+        }
+    }
+
     @unlink($path);
-    if (!$sent_admin) {
-        return ['ok' => false, 'message' => 'فایل ساخته شد ولی ارسال به ربات ناموفق بود (محدودیت حجم تلگرام یا خطا).'];
+
+    if (!$sent_admin && !$sent_channel) {
+        return [
+            'ok' => false,
+            'message' => 'فایل ساخته شد ولی به هیچ مقصدی ارسال نشد. مقصد ارسال را روشن کنید یا دوباره دستی بگیرید.',
+        ];
     }
     $msg = "✅ بک‌آپ ارسال شد.\n📦 حجم: {$size_h}";
+    if ($sent_admin) {
+        $msg .= "\n🤖 به ربات (ادمین) ارسال شد.";
+    }
     if ($sent_channel) {
-        $msg .= "\n📢 به کانال گزارش هم ارسال شد.";
-    } else {
-        $msg .= "\nℹ️ کانال گزارش تنظیم نشده یا ارسال نشد.";
+        $msg .= "\n📢 به کانال گزارش ارسال شد.";
+    } elseif ($to_channel) {
+        $msg .= "\n⚠️ کانال گزارش تنظیم نشده یا ارسال نشد.";
     }
     return ['ok' => true, 'message' => $msg, 'size' => $size];
 }
+
+/** سازگاری با نام قبلی */
+function runManualDatabaseBackupAndSend($admin_chat_id)
+{
+    return runDatabaseBackupAndSend($admin_chat_id, true);
+}
+
 
 function sendChannelReport($key, $text)
 {
