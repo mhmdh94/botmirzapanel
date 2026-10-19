@@ -4078,7 +4078,6 @@ if ($datain == 'rv_user_my_panel') {
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_user_my_panel'],
             ],
             [
-                ['text' => '📊 گزارش مصرف', 'callback_data' => 'rv_user_usage'],
                 ['text' => '🔐 تغییر رمز', 'callback_data' => 'rv_user_pass'],
             ],
             [['text' => '🔙 بازگشت', 'callback_data' => 'rv_open_menu']],
@@ -4213,9 +4212,10 @@ if (preg_match('/^rv_confirm_(\d+)(?:_(\d+))?$/', strval($datain), $m_rvc)) {
 }
 
 
-/* ---- Reseller: گزارش مصرف / تغییر رمز ---- */
 
-if ($datain == 'rv_user_usage' || $datain == 'rv_user_pass') {
+/* ---- Reseller: تغییر رمز ---- */
+
+if ($datain == 'rv_user_pass') {
     if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;
     if (!function_exists('isUserPanelAdmin') || !isUserPanelAdmin($from_id)) {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'دسترسی ندارید', 'show_alert' => true]);
@@ -4227,63 +4227,23 @@ if ($datain == 'rv_user_usage' || $datain == 'rv_user_pass') {
         Editmessagetext($from_id, $message_id, '❌ ادمین پنلی برای شما ثبت نشده است.', null, 'HTML');
         return;
     }
-    $action = ($datain == 'rv_user_usage') ? 'usage' : 'pass';
     if (count($list) === 1) {
-        // مستقیم
-        if ($action === 'usage') {
-            $msg = function_exists('buildResellerUsageReportText')
-                ? buildResellerUsageReportText($from_id, $list[0])
-                : '❌ خطا';
-            $kb = json_encode([
-                'inline_keyboard' => [
-                    [['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_usage_sel_0']],
-                    [['text' => '🔙 بازگشت', 'callback_data' => 'rv_open_menu']],
-                ],
-            ], JSON_UNESCAPED_UNICODE);
-            Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
-        } else {
-            $rules = function_exists('resellerPasswordRulesText') ? resellerPasswordRulesText() : 'رمز جدید را ارسال کنید.';
-            $msg = "👤 پنل: <code>" . htmlspecialchars($list[0], ENT_QUOTES, 'UTF-8') . "</code>\n\n" . $rules;
-            $kb = function_exists('buildResellerPassOptionsKeyboard') ? buildResellerPassOptionsKeyboard(0) : null;
-            step('rv_wait_newpass', $from_id);
-            update("user", "Processing_value", '0|' . $list[0], "id", $from_id);
-            Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
-        }
+        $rules = function_exists('resellerPasswordRulesText') ? resellerPasswordRulesText() : 'رمز جدید را ارسال کنید.';
+        $msg = "👤 پنل: <code>" . htmlspecialchars($list[0], ENT_QUOTES, 'UTF-8') . "</code>\n\n" . $rules;
+        $kb = function_exists('buildResellerPassOptionsKeyboard') ? buildResellerPassOptionsKeyboard(0) : null;
+        step('rv_wait_newpass', $from_id);
+        update("user", "Processing_value", '0|' . $list[0], "id", $from_id);
+        Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
         return;
     }
-    $title = ($action === 'usage')
-        ? "📊 گزارش مصرف کدام پنل را می‌خواهید؟"
-        : "🔐 رمز کدام پنل را می‌خواهید تغییر دهید؟";
+    $title = "🔐 رمز کدام پنل را می‌خواهید تغییر دهید؟";
     $kb = function_exists('buildResellerAdminPickKeyboard')
-        ? buildResellerAdminPickKeyboard($from_id, $action)
+        ? buildResellerAdminPickKeyboard($from_id, 'pass')
         : null;
     Editmessagetext($from_id, $message_id, $title, $kb, 'HTML');
     return;
 }
 
-if (preg_match('/^rv_usage_sel_(\d+)$/', strval($datain), $m_us)) {
-    if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;
-    if (!function_exists('isUserPanelAdmin') || !isUserPanelAdmin($from_id)) return;
-    if (is_file(__DIR__ . '/reseller_volume.php')) require_once __DIR__ . '/reseller_volume.php';
-    $list = function_exists('getUserPanelAdminUsernames') ? getUserPanelAdminUsernames($from_id) : [];
-    $i = intval($m_us[1]);
-    $pa = $list[$i] ?? null;
-    if (!$pa) {
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پنل یافت نشد', 'show_alert' => true]);
-        return;
-    }
-    $msg = function_exists('buildResellerUsageReportText')
-        ? buildResellerUsageReportText($from_id, $pa)
-        : '❌ خطا';
-    $kb = json_encode([
-        'inline_keyboard' => [
-            [['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_usage_sel_' . $i]],
-            [['text' => '🔙 بازگشت', 'callback_data' => 'rv_user_usage']],
-        ],
-    ], JSON_UNESCAPED_UNICODE);
-    Editmessagetext($from_id, $message_id, $msg, $kb, 'HTML');
-    return;
-}
 
 if (preg_match('/^rv_pass_sel_(\d+)$/', strval($datain), $m_ps)) {
     if (!function_exists('isResellerFeatureEnabled') || !isResellerFeatureEnabled()) return;

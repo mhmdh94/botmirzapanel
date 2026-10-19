@@ -6539,9 +6539,6 @@ function processResellerVolumeWarnings()
                 }
                 $used = intval($admin['used_traffic'] ?? 0);
                 $limit = intval($admin['data_limit'] ?? 0);
-                if (function_exists('recordResellerUsageSnap')) {
-                    recordResellerUsageSnap($pa, $used, $limit);
-                }
                 if ($limit <= 0) {
                     continue;
                 }
