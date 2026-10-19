@@ -687,12 +687,12 @@ if ($text == "/status") {
     $total_pages = ceil($total_items / $items_per_page);
     if ($page > 1) {
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => $textbotlang['users']['page']['previous'], 'callback_data' => 'prevpage_' . ($page - 1)]
+            ['text' => $textbotlang['users']['page']['previous'], 'callback_data' => 'previous_page']
         ];
     }
     if ($page < $total_pages) {
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'nextpage_' . ($page + 1)]
+            ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'next_page']
         ];
     }
     $keyboardlists['inline_keyboard'][] = [
