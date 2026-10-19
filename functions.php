@@ -2521,7 +2521,7 @@ function sendAdminUserInfo($admin_id, $target_user_id)
                     'callback_data' => 'pa_rm_' . $uid . '_' . $idx
                 ]];
             }
-            if (count($pa_list) < 3) {
+            if (count($pa_list) < (defined('PANEL_ADMIN_MAX_PER_USER') ? PANEL_ADMIN_MAX_PER_USER : 5)) {
                 $keyboardmanage['inline_keyboard'][] = [[
                     'text' => '➕ افزودن ادمین پنل' . (count($pa_list) ? ' (' . count($pa_list) . '/' . PANEL_ADMIN_MAX_PER_USER . ')' : ''),
                     'callback_data' => 'set_panel_admin_user_' . $uid
@@ -3309,6 +3309,162 @@ function notifyUserBlocked($user_id, $username = '-', $reason = '', $source = 'a
     }
 }
 
+
+
+/**
+ * ساخت بک‌آپ SQL از دیتابیس همین ربات (فقط DB فعلی از config)
+ * @return array{ok:bool,path?:string,message?:string,size?:int}
+ */
+function createDatabaseBackupFile()
+{
+    global $dbname, $usernamedb, $passworddb, $pdo;
+    $db = strval($dbname ?? '');
+    $user = strval($usernamedb ?? '');
+    $pass = strval($passworddb ?? '');
+    if ($db === '' || $user === '') {
+        return ['ok' => false, 'message' => 'اطلاعات دیتابیس در config ناقص است.'];
+    }
+    $dir = sys_get_temp_dir();
+    $fname = 'backup_' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $db) . '_' . date('Ymd_His') . '.sql';
+    $path = rtrim($dir, '/') . '/' . $fname;
+
+    // 1) تلاش با mysqldump
+    $mysqldump = trim(strval(@shell_exec('command -v mysqldump 2>/dev/null') ?: ''));
+    if ($mysqldump !== '') {
+        $cmd = escapeshellcmd($mysqldump)
+            . ' --single-transaction --quick --skip-lock-tables --default-character-set=utf8mb4'
+            . ' -u ' . escapeshellarg($user);
+        if ($pass !== '') {
+            $cmd .= ' -p' . escapeshellarg($pass);
+        }
+        $cmd .= ' ' . escapeshellarg($db) . ' > ' . escapeshellarg($path) . ' 2>/tmp/mirza_mysqldump_err.txt';
+        @exec($cmd, $out, $code);
+        if ($code === 0 && is_file($path) && filesize($path) > 50) {
+            return ['ok' => true, 'path' => $path, 'size' => filesize($path)];
+        }
+        @unlink($path);
+    }
+
+    // 2) بک‌آپ خالص PHP از جداول همین دیتابیس
+    try {
+        if (!isset($pdo) || !($pdo instanceof PDO)) {
+            return ['ok' => false, 'message' => 'اتصال PDO در دسترس نیست.'];
+        }
+        $fh = fopen($path, 'w');
+        if (!$fh) {
+            return ['ok' => false, 'message' => 'ساخت فایل موقت ناموفق بود.'];
+        }
+        fwrite($fh, "-- Mirza bot DB backup\n-- Database: {$db}\n-- Date: " . date('Y-m-d H:i:s') . "\n\n");
+        fwrite($fh, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+        $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($tables as $table) {
+            $table = strval($table);
+            $create = $pdo->query('SHOW CREATE TABLE `' . str_replace('`', '``', $table) . '`')->fetch(PDO::FETCH_NUM);
+            if ($create && isset($create[1])) {
+                fwrite($fh, "DROP TABLE IF EXISTS `{$table}`;\n");
+                fwrite($fh, $create[1] . ";\n\n");
+            }
+            $rows = $pdo->query('SELECT * FROM `' . str_replace('`', '``', $table) . '`');
+            while ($row = $rows->fetch(PDO::FETCH_ASSOC)) {
+                $cols = array_map(function ($c) {
+                    return '`' . str_replace('`', '``', $c) . '`';
+                }, array_keys($row));
+                $vals = [];
+                foreach ($row as $v) {
+                    if ($v === null) {
+                        $vals[] = 'NULL';
+                    } else {
+                        $vals[] = $pdo->quote(strval($v));
+                    }
+                }
+                fwrite($fh, 'INSERT INTO `' . $table . '` (' . implode(',', $cols) . ') VALUES (' . implode(',', $vals) . ");\n");
+            }
+            fwrite($fh, "\n");
+        }
+        fwrite($fh, "SET FOREIGN_KEY_CHECKS=1;\n");
+        fclose($fh);
+        if (!is_file($path) || filesize($path) < 20) {
+            @unlink($path);
+            return ['ok' => false, 'message' => 'فایل بک‌آپ خالی است.'];
+        }
+        return ['ok' => true, 'path' => $path, 'size' => filesize($path)];
+    } catch (Throwable $e) {
+        @unlink($path);
+        return ['ok' => false, 'message' => 'خطا: ' . $e->getMessage()];
+    }
+}
+
+/**
+ * بک‌آپ می‌گیرد و برای ادمین + کانال گزارش (در صورت تنظیم) می‌فرستد
+ */
+function runManualDatabaseBackupAndSend($admin_chat_id)
+{
+    global $dbname, $setting, $admin_ids, $textbotlang;
+    $admin_chat_id = intval($admin_chat_id);
+    $res = createDatabaseBackupFile();
+    if (empty($res['ok']) || empty($res['path'])) {
+        return ['ok' => false, 'message' => $res['message'] ?? 'بک‌آپ ناموفق بود.'];
+    }
+    $path = $res['path'];
+    $size = intval($res['size'] ?? filesize($path));
+    $size_h = $size >= 1048576
+        ? (round($size / 1048576, 2) . ' MB')
+        : (round($size / 1024, 1) . ' KB');
+    $caption = "💾 <b>بک‌آپ دیتابیس</b>\n"
+        . "🗄 <code>" . htmlspecialchars(strval($dbname ?? ''), ENT_QUOTES, 'UTF-8') . "</code>\n"
+        . "📦 حجم: <b>{$size_h}</b>\n"
+        . "🕐 " . date('Y-m-d H:i:s');
+    $sent_admin = false;
+    $sent_channel = false;
+    try {
+        if (function_exists('sendDocument')) {
+            sendDocument($admin_chat_id, $path, strip_tags(str_replace(['<b>', '</b>', '<code>', '</code>'], '', $caption)));
+            $sent_admin = true;
+        } else {
+            telegram('sendDocument', [
+                'chat_id' => $admin_chat_id,
+                'document' => new CURLFile($path),
+                'caption' => mb_substr(strip_tags($caption), 0, 900),
+            ]);
+            $sent_admin = true;
+        }
+    } catch (Throwable $e) {
+        error_log('backup send admin: ' . $e->getMessage());
+    }
+    // کانال گزارش
+    try {
+        $ch = '';
+        if (is_array($setting ?? null) && !empty($setting['Channel_Report'])) {
+            $ch = strval($setting['Channel_Report']);
+        } else {
+            $st = select('setting', '*', null, null, 'select');
+            if (is_array($st) && !empty($st['Channel_Report']) && strval($st['Channel_Report']) !== '0') {
+                $ch = strval($st['Channel_Report']);
+            }
+        }
+        if ($ch !== '' && $ch !== '0' && $ch !== '-') {
+            telegram('sendDocument', [
+                'chat_id' => $ch,
+                'document' => new CURLFile($path),
+                'caption' => mb_substr(strip_tags($caption), 0, 900),
+            ]);
+            $sent_channel = true;
+        }
+    } catch (Throwable $e) {
+        error_log('backup send channel: ' . $e->getMessage());
+    }
+    @unlink($path);
+    if (!$sent_admin) {
+        return ['ok' => false, 'message' => 'فایل ساخته شد ولی ارسال به ربات ناموفق بود (محدودیت حجم تلگرام یا خطا).'];
+    }
+    $msg = "✅ بک‌آپ ارسال شد.\n📦 حجم: {$size_h}";
+    if ($sent_channel) {
+        $msg .= "\n📢 به کانال گزارش هم ارسال شد.";
+    } else {
+        $msg .= "\nℹ️ کانال گزارش تنظیم نشده یا ارسال نشد.";
+    }
+    return ['ok' => true, 'message' => $msg, 'size' => $size];
+}
 
 function sendChannelReport($key, $text)
 {

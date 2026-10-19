@@ -1319,6 +1319,7 @@ $textbotlang['Admin']['keyboardadmin']['tutorial_section'] = "📚 بخش آمو
 $textbotlang['Admin']['keyboardadmin']['settings'] = "⚙️ تنظیمات";
 
 $textbotlang['Admin']['keyboardadmin']['bot_update'] = "🔄 آپدیت ربات";
+$textbotlang['Admin']['keyboardadmin']['db_backup'] = "💾 پشتیبان‌گیری";
 $textbotlang['Admin']['bot_update']['confirm'] = "⚠️ آپدیت ربات از گیتهاب فورک
 
 با تأیید، آخرین فایل‌های کد از گیتهاب دانلود و جایگزین می‌شوند.

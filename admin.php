@@ -1665,6 +1665,26 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $setting_panel, 'HTML');
 }
 
+
+#----------------[ پشتیبان‌گیری دیتابیس ]------------------#
+if ($text == ($textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری')) {
+    if (!in_array($from_id, $admin_ids)) {
+        return;
+    }
+    sendmessage($from_id, "⏳ در حال تهیه بک‌آپ دیتابیس... لطفاً صبر کنید.", $setting_panel, 'HTML');
+    if (!function_exists('runManualDatabaseBackupAndSend')) {
+        sendmessage($from_id, "❌ تابع بک‌آپ در دسترس نیست.", $setting_panel, 'HTML');
+        return;
+    }
+    $bres = runManualDatabaseBackupAndSend($from_id);
+    if (!empty($bres['ok'])) {
+        sendmessage($from_id, $bres['message'] ?? '✅ انجام شد.', $setting_panel, 'HTML');
+    } else {
+        sendmessage($from_id, "❌ " . strval($bres['message'] ?? 'خطا در بک‌آپ'), $setting_panel, 'HTML');
+    }
+    return;
+}
+
 #----------------[ آپدیت ربات از گیتهاب ]------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_update']) {
     if (!in_array($from_id, $admin_ids)) {
