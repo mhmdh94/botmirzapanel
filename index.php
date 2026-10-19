@@ -1162,20 +1162,25 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $timeDiff = $DataUserOut['expire'] - time();
     $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
-    if (!in_array($status, ['active', "on_hold"])) {
+    if ($status === 'disabled') {
+        // سرویس غیرفعال: فقط فعال‌سازی، بازگشت وجه، حذف
+        $__kb_dis = [
+            [['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username]],
+            [['text' => $textbotlang['users']['removeconfig']['btnremoveuser'], 'callback_data' => 'removeserviceuserco-' . $username]],
+            [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]],
+        ];
+        $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
+        $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
+    } elseif (!in_array($status, ['active', 'on_hold'], true)) {
+        // منقضی / محدود و ... : تمدید و گزینه‌های مرتبط
         $__kb_dis = [];
-        // تمدید
         if (!isset($setting['status_extend']) || $setting['status_extend'] == '1' || $setting['status_extend'] === 1) {
             $__kb_dis[] = [['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username]];
         }
-        // حجم اضافه | فعال‌سازی
-        $__row_tog = [];
         if (!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1) {
-            $__row_tog[] = ['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username];
+            $__kb_dis[] = [['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username]];
         }
-        $__row_tog[] = ['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username];
-        $__kb_dis[] = $__row_tog;
-        // حذف
+        $__kb_dis[] = [['text' => $textbotlang['users']['removeconfig']['btnremoveuser'], 'callback_data' => 'removeserviceuserco-' . $username]];
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]];
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
