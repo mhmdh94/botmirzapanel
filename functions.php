@@ -2737,6 +2737,31 @@ function getBotCronPathKey()
 }
 
 /**
+ * آیا مسیر ربات به‌صورت دقیق (با مرز مسیر) داخل خط کرون هست؟
+ * جلوی قاطی شدن example.com/bot با example.com/bot2 را می‌گیرد.
+ */
+function cronLineContainsBotPath($line, $path_key)
+{
+    $line = strtolower(strval($line));
+    $path_key = strtolower(trim(strval($path_key)));
+    if ($path_key === '') {
+        return false;
+    }
+    $pos = 0;
+    $len = strlen($path_key);
+    while (($i = strpos($line, $path_key, $pos)) !== false) {
+        $end = $i + $len;
+        $next = ($end < strlen($line)) ? $line[$end] : '';
+        // بعد از path باید پایان / ? فاصله یا نقل‌قول باشد — نه ادامه نام پوشه
+        if ($next === '' || $next === '/' || $next === '?' || $next === ' ' || $next === "\t" || $next === '"' || $next === "'") {
+            return true;
+        }
+        $pos = $i + 1;
+    }
+    return false;
+}
+
+/**
  * خط crontab متعلق به همین ربات است؟
  * حتماً مسیر کامل (دامنه/پوشه) + نام فایل کرون باید یکی باشد.
  * فقط hostname کافی نیست — روی سرور چندرباته کرون بقیه پاک نمی‌شود.
@@ -2744,12 +2769,7 @@ function getBotCronPathKey()
 function isCronLineForThisBot($line, $patterns = null)
 {
     $path_key = function_exists('getBotCronPathKey') ? getBotCronPathKey() : '';
-    if ($path_key === '') {
-        return false;
-    }
-    $low = strtolower(strval($line));
-    // الزام: مسیر کامل همین ربات داخل خط باشد
-    if (strpos($low, $path_key) === false) {
+    if ($path_key === '' || !cronLineContainsBotPath($line, $path_key)) {
         return false;
     }
     if ($patterns === null) {
@@ -3454,7 +3474,7 @@ function getBotDomainPathForCron()
     return $host;
 }
 
-/** آیا این خط کرون، بک‌آپ همین ربات است؟ (فقط مسیر کامل دامنه+پوشه) */
+/** آیا این خط کرون، بک‌آپ همین ربات است؟ (فقط مسیر کامل دامنه+پوشه با مرز دقیق) */
 function isBackupCronLineForThisBot($line)
 {
     $line = strval($line);
@@ -3470,8 +3490,10 @@ function isBackupCronLineForThisBot($line)
     if ($full === '') {
         return false;
     }
-    // فقط مسیر کامل — نه hostnamealone (جلوگیری از پاک شدن کرون ربات دیگر)
-    return strpos(strtolower($line), $full) !== false;
+    if (function_exists('cronLineContainsBotPath')) {
+        return cronLineContainsBotPath($line, $full);
+    }
+    return strpos(strtolower($line), strtolower($full)) !== false;
 }
 
 function getBackupCronCommandLine()
