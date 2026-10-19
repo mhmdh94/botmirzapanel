@@ -146,15 +146,19 @@ $keyboardPanel = json_encode([
 $__kb_admin_rows = [
     [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
     [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
-    [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']]],
 ];
 try {
     if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()) {
-        $__kb_admin_rows[] = [[
-            'text' => (isset($textbotlang['Admin']['keyboardadmin']['reseller_volume']) ? $textbotlang['Admin']['keyboardadmin']['reseller_volume'] : '⚙️ مدیریت پنل نمایندگان')
-        ]];
+        $__kb_admin_rows[] = [
+            ['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']],
+            ['text' => (isset($textbotlang['Admin']['keyboardadmin']['reseller_volume']) ? $textbotlang['Admin']['keyboardadmin']['reseller_volume'] : '⚙️ مدیریت پنل نمایندگان')],
+        ];
+    } else {
+        $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']]];
     }
-} catch (Throwable $e) {}
+} catch (Throwable $e) {
+    $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['manage_panel']]];
+}
 $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]];
 $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']]];
 $__kb_admin_rows[] = [['text' => $textbotlang['users']['backhome']]];
@@ -264,10 +268,8 @@ $keyboardhelpadmin = json_encode([ // Help removed
 ]);
 $shopkeyboard = json_encode([
     'keyboard' => [
-        [['text' => '📦 مدیریت محصولات']],
-        [['text' => '📁 مدیریت دسته‌بندی']],
-        [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['codes_section']]],
+        [['text' => '📦 مدیریت محصولات'], ['text' => '📁 مدیریت دسته‌بندی']],
+        [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']], ['text' => $textbotlang['Admin']['keyboardadmin']['codes_section']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

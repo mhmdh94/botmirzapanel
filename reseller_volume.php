@@ -256,8 +256,10 @@ function buildResellerUserHubKeyboard()
     global $textbotlang;
     return json_encode([
         'inline_keyboard' => [
-            [['text' => $textbotlang['users']['reseller_volume']['btn_buy'] ?? '🛒 خرید حجم', 'callback_data' => 'rv_user_buy']],
-            [['text' => $textbotlang['users']['reseller_volume']['btn_my_panel'] ?? '🖥 پنل من', 'callback_data' => 'rv_user_my_panel']],
+            [
+                ['text' => $textbotlang['users']['reseller_volume']['btn_buy'] ?? '🛒 خرید حجم', 'callback_data' => 'rv_user_buy'],
+                ['text' => $textbotlang['users']['reseller_volume']['btn_my_panel'] ?? '🖥 پنل من', 'callback_data' => 'rv_user_my_panel'],
+            ],
             [['text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی', 'callback_data' => 'backuser']],
         ],
     ], JSON_UNESCAPED_UNICODE);
