@@ -2724,15 +2724,32 @@ function getBotCronHostKey()
 }
 
 /**
- * خط crontab متعلق به همین ربات است؟ (دامنه + نام فایل کرون)
+ * مسیر یکتای این ربات برای تطبیق crontab (دامنه + پوشه، بدون پروتکل)
+ * مثال: example.com/vipvpnbot  — تا ربات‌های هم‌دامنه با هم قاطی نشوند
+ */
+function getBotCronPathKey()
+{
+    global $domainhosts;
+    $path = trim(strval($domainhosts ?? ''));
+    $path = preg_replace('#^https?://#i', '', $path);
+    $path = rtrim($path, '/');
+    return strtolower($path);
+}
+
+/**
+ * خط crontab متعلق به همین ربات است؟
+ * حتماً مسیر کامل (دامنه/پوشه) + نام فایل کرون باید یکی باشد.
+ * فقط hostname کافی نیست — روی سرور چندرباته کرون بقیه پاک نمی‌شود.
  */
 function isCronLineForThisBot($line, $patterns = null)
 {
-    $host = getBotCronHostKey();
-    if ($host === '') {
+    $path_key = function_exists('getBotCronPathKey') ? getBotCronPathKey() : '';
+    if ($path_key === '') {
         return false;
     }
-    if (strpos(strtolower(strval($line)), $host) === false) {
+    $low = strtolower(strval($line));
+    // الزام: مسیر کامل همین ربات داخل خط باشد
+    if (strpos($low, $path_key) === false) {
         return false;
     }
     if ($patterns === null) {
@@ -2753,7 +2770,7 @@ function syncAutoCartCron($enabled)
     if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
         return false;
     }
-    if (getBotCronHostKey() === '') {
+    if ((function_exists('getBotCronPathKey') ? getBotCronPathKey() : getBotCronHostKey()) === '') {
         return false;
     }
     $existing = @shell_exec('crontab -l 2>/dev/null');
@@ -2861,7 +2878,8 @@ function syncBotCrontabs()
             'installed' => [],
         ];
     }
-    if (getBotCronHostKey() === '') {
+    $path_key = function_exists('getBotCronPathKey') ? getBotCronPathKey() : getBotCronHostKey();
+    if ($path_key === '') {
         return [
             'ok' => false,
             'message' => 'دامنه ربات (domainhosts) خالی است؛ برای جلوگیری از حذف اشتباه کرون‌های دیگر متوقف شد.',
@@ -3436,23 +3454,24 @@ function getBotDomainPathForCron()
     return $host;
 }
 
-/** آیا این خط کرون، بک‌آپ همین ربات است؟ */
+/** آیا این خط کرون، بک‌آپ همین ربات است؟ (فقط مسیر کامل دامنه+پوشه) */
 function isBackupCronLineForThisBot($line)
 {
     $line = strval($line);
     if (strpos($line, 'backup_cron.php') === false) {
         return false;
     }
-    $full = strtolower(getBotDomainPathForCron());
-    $host = strtolower(getBotCronHostKey());
-    $low = strtolower($line);
-    if ($full !== '' && strpos($low, $full) !== false) {
-        return true;
+    $full = '';
+    if (function_exists('getBotCronPathKey')) {
+        $full = getBotCronPathKey();
+    } elseif (function_exists('getBotDomainPathForCron')) {
+        $full = strtolower(getBotDomainPathForCron());
     }
-    if ($host !== '' && strpos($low, $host) !== false) {
-        return true;
+    if ($full === '') {
+        return false;
     }
-    return false;
+    // فقط مسیر کامل — نه hostnamealone (جلوگیری از پاک شدن کرون ربات دیگر)
+    return strpos(strtolower($line), $full) !== false;
 }
 
 function getBackupCronCommandLine()
@@ -3494,7 +3513,7 @@ function syncBackupCron($enabled)
             'user' => $who,
         ];
     }
-    $path = getBotDomainPathForCron();
+    $path = function_exists('getBotCronPathKey') ? getBotCronPathKey() : getBotDomainPathForCron();
     if ($path === '') {
         return [
             'ok' => false,
