@@ -1163,11 +1163,12 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
     if ($status === 'disabled') {
-        // سرویس غیرفعال: فقط فعال‌سازی، بازگشت وجه، حذف
+        // سرویس غیرفعال: فعال‌سازی، بازگشت وجه، حذف، لیست سرویس‌ها
         $__kb_dis = [
             [['text' => $textbotlang['users']['togglestatus']['enable_btn'], 'callback_data' => 'toggleserv_' . $username]],
             [['text' => $textbotlang['users']['removeconfig']['btnremoveuser'], 'callback_data' => 'removeserviceuserco-' . $username]],
             [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]],
+            [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']],
         ];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
         $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
