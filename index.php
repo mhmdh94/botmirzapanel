@@ -1189,10 +1189,6 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     } else {
         // ترتیب دکمه‌ها: لینک/کانفیگ | تمدید/تغییر لینک | غیرفعال/حجم اضافه | بازگشت وجه | بازگشت لیست
         $keyboarddate = array(
-            'linksub' => array(
-                'text' => $textbotlang['users']['status']['linksub'],
-                'callback_data' => "subscriptionurl_"
-            ),
             'qrcode' => array(
                 'text' => '📷 دریافت QR Code',
                 'callback_data' => "qrcode_"
@@ -1248,14 +1244,21 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         if ($nameloc['name_product'] == "usertest") {
             unset($keyboarddate['removeservice']);
         }
-        // چیدمان ثابت دکمه‌ها (۲ ستونه، مرتب)
-        // اتصال | کانفیگ
-        // تمدید | تغییر لینک
-        // حجم اضافه | فعال/غیرفعال
-        // بازگشت وجه
-        // بازگشت به لیست
-        $order_keys = ['linksub', 'qrcode', 'config', 'extend', 'changelink', 'Extra_volume', 'togglestatus', 'removeservice'];
+        // چیدمان: QR تنهایی | بعد ۲ستونه
+        // کانفیگ | تمدید
+        // تغییر لینک | غیرفعال/فعال
+        // حجم اضافه | بازگشت وجه
+        // لیست سرویس‌ها
         $keyboardsetting = ['inline_keyboard' => []];
+        if (isset($keyboarddate['qrcode'])) {
+            $q = $keyboarddate['qrcode'];
+            $keyboardsetting['inline_keyboard'][] = [[
+                'text' => $q['text'],
+                'callback_data' => $q['callback_data'] . $username,
+            ]];
+        }
+        // جای غیرفعال و حجم اضافه عوض شده نسبت به قبل
+        $order_keys = ['config', 'extend', 'changelink', 'togglestatus', 'Extra_volume', 'removeservice'];
         $tempArray = [];
         foreach ($order_keys as $okey) {
             if (!isset($keyboarddate[$okey])) {
@@ -1319,7 +1322,9 @@ if (preg_match('/qrcode_(\w+)/', $datain, $dataget)) {
             ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
         $result = $writer->write($qrCode, null, null);
         $result->saveToFile($urlimage);
-        $caption = "📷 QR Code سرویس <code>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</code>\n\n<code>" . htmlspecialchars($subscriptionurl, ENT_QUOTES, 'UTF-8') . "</code>";
+        $caption = "📷 QR Code سرویس <code>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</code>\n\n"
+            . "📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:\n"
+            . "<code>" . htmlspecialchars($subscriptionurl, ENT_QUOTES, 'UTF-8') . "</code>";
         telegram('sendphoto', [
             'chat_id' => $from_id,
             'photo' => new CURLFile($urlimage),
