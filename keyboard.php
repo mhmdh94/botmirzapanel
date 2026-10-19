@@ -156,8 +156,7 @@ try {
     }
 } catch (Throwable $e) {}
 $__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['user_search']], ['text' => $textbotlang['Admin']['keyboardadmin']['user_services']], ['text' => $textbotlang['Admin']['keyboardadmin']['send_message']]];
-$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['settings']]];
-$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']]];
+$__kb_admin_rows[] = [['text' => $textbotlang['Admin']['keyboardadmin']['settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['admin_section']]];
 $__kb_admin_rows[] = [['text' => $textbotlang['users']['backhome']]];
 $keyboardadmin = json_encode([
     'keyboard' => $__kb_admin_rows,

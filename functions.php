@@ -3427,11 +3427,37 @@ function getBackupCronHours()
     return $h;
 }
 
-function getBackupCronCommandLine()
+function getBotDomainPathForCron()
 {
     global $domainhosts;
-    $host = trim(strval($domainhosts ?? ''), '/');
+    $host = trim(strval($domainhosts ?? ''));
     $host = preg_replace('#^https?://#i', '', $host);
+    $host = rtrim($host, '/');
+    return $host;
+}
+
+/** آیا این خط کرون، بک‌آپ همین ربات است؟ */
+function isBackupCronLineForThisBot($line)
+{
+    $line = strval($line);
+    if (strpos($line, 'backup_cron.php') === false) {
+        return false;
+    }
+    $full = strtolower(getBotDomainPathForCron());
+    $host = strtolower(getBotCronHostKey());
+    $low = strtolower($line);
+    if ($full !== '' && strpos($low, $full) !== false) {
+        return true;
+    }
+    if ($host !== '' && strpos($low, $host) !== false) {
+        return true;
+    }
+    return false;
+}
+
+function getBackupCronCommandLine()
+{
+    $host = getBotDomainPathForCron();
     $h = getBackupCronHours();
     if ($h >= 24 && $h % 24 === 0) {
         $days = max(1, intval($h / 24));
@@ -3445,74 +3471,138 @@ function getBackupCronCommandLine()
     } else {
         $sched = '0 3 * * *';
     }
+    // مثل بقیه کرون‌های ربات — با path کامل دامنه
     return "{$sched} curl -s https://{$host}/cron/backup_cron.php >/dev/null 2>&1";
 }
 
 /**
- * نصب/حذف کرون بک‌آپ فقط برای همین دامنه
+ * نصب/حذف کرون بک‌آپ فقط برای همین ربات (دامنه + backup_cron.php)
+ * توجه: crontab کاربر اجرای PHP (معمولاً www-data) است نه لزوماً root
  */
 function syncBackupCron($enabled)
 {
     $enabled = (bool) $enabled;
+    $who = '';
+    if (botCronShellAvailable()) {
+        $who = trim(strval(@shell_exec('whoami 2>/dev/null') ?: ''));
+    }
     if (!botCronShellAvailable()) {
-        return ['ok' => false, 'message' => 'shell_exec روی سرور غیرفعال است.'];
+        return [
+            'ok' => false,
+            'message' => '❌ shell_exec روی سرور غیرفعال است؛ نمی‌توان crontab را از ربات تغییر داد.',
+            'line' => '',
+            'user' => $who,
+        ];
     }
-    if (getBotCronHostKey() === '') {
-        return ['ok' => false, 'message' => 'دامنه ربات خالی است.'];
+    $path = getBotDomainPathForCron();
+    if ($path === '') {
+        return [
+            'ok' => false,
+            'message' => '❌ دامنه ربات (domainhosts در config) خالی است.',
+            'line' => '',
+            'user' => $who,
+        ];
     }
+
     $existing = @shell_exec('crontab -l 2>/dev/null');
     if (!is_string($existing) || stripos($existing, 'no crontab') !== false) {
         $existing = '';
     }
+
     $kept = [];
     foreach (preg_split("/\r\n|\n|\r/", $existing) as $line) {
         if ($line === '' || $line === false) {
             continue;
         }
-        if (isCronLineForThisBot($line, ['backup_cron.php'])) {
+        // فقط خط backup همین ربات را بردار
+        if (isBackupCronLineForThisBot($line)) {
             continue;
         }
         $kept[] = $line;
     }
+
+    $new_line = '';
     if ($enabled) {
-        $kept[] = getBackupCronCommandLine();
+        $new_line = getBackupCronCommandLine();
+        $kept[] = $new_line;
     }
+
     $content = implode("\n", $kept);
     if ($content !== '' && substr($content, -1) !== "\n") {
         $content .= "\n";
     }
-    $tmp = '/tmp/crontab_mirza_backup_' . getmypid() . '.txt';
+
+    $tmp = '/tmp/crontab_mirza_backup_' . getmypid() . '_' . time() . '.txt';
     if (@file_put_contents($tmp, $content) === false) {
-        return ['ok' => false, 'message' => 'نوشتن فایل موقت crontab ناموفق بود.'];
+        return [
+            'ok' => false,
+            'message' => '❌ نوشتن فایل موقت crontab ناموفق بود.',
+            'line' => $new_line,
+            'user' => $who,
+        ];
     }
+
+    // اعمال crontab
+    $out = [];
+    $code = 0;
     if (trim($content) === '') {
-        @shell_exec('crontab -r 2>/dev/null');
+        @exec('crontab -r 2>/tmp/mirza_cron_err.txt', $out, $code);
     } else {
-        @shell_exec('crontab ' . escapeshellarg($tmp) . ' 2>/dev/null');
+        @exec('crontab ' . escapeshellarg($tmp) . ' 2>/tmp/mirza_cron_err.txt', $out, $code);
     }
     @unlink($tmp);
+
     $after = @shell_exec('crontab -l 2>/dev/null');
-    $host = getBotCronHostKey();
+    if (!is_string($after)) {
+        $after = '';
+    }
     $found = false;
-    if (is_string($after)) {
-        foreach (preg_split("/\r\n|\n|\r/", $after) as $ln) {
-            if (strpos($ln, 'backup_cron.php') !== false && stripos($ln, $host) !== false) {
-                $found = true;
-                break;
-            }
+    $found_line = '';
+    foreach (preg_split("/\r\n|\n|\r/", $after) as $ln) {
+        if (isBackupCronLineForThisBot($ln)) {
+            $found = true;
+            $found_line = $ln;
+            break;
         }
     }
+
+    $user_hint = $who !== '' ? "\n👤 کاربر crontab: <code>{$who}</code>\n(اگر با root چک می‌کنید: <code>crontab -u {$who} -l | grep backup_cron</code>)" : '';
+
     if ($enabled) {
+        if ($found) {
+            return [
+                'ok' => true,
+                'message' => '✅ کرون بک‌آپ نصب شد (هر ' . getBackupCronHours() . " ساعت).\n<code>" . htmlspecialchars($found_line, ENT_QUOTES, 'UTF-8') . '</code>' . $user_hint,
+                'line' => $found_line,
+                'user' => $who,
+            ];
+        }
+        $err = @file_get_contents('/tmp/mirza_cron_err.txt');
         return [
-            'ok' => $found,
-            'message' => $found
-                ? ('✅ کرون بک‌آپ نصب شد (هر ' . getBackupCronHours() . ' ساعت).')
-                : '⚠️ کرون نوشته شد ولی در crontab تأیید نشد.',
+            'ok' => false,
+            'message' => '❌ کرون در crontab تأیید نشد.'
+                . ($err ? ("\n" . htmlspecialchars(trim($err), ENT_QUOTES, 'UTF-8')) : '')
+                . $user_hint
+                . "\nخط موردنظر:\n<code>" . htmlspecialchars($new_line, ENT_QUOTES, 'UTF-8') . '</code>',
+            'line' => $new_line,
+            'user' => $who,
+        ];
+    }
+
+    // disable
+    if (!$found) {
+        return [
+            'ok' => true,
+            'message' => '✅ کرون بک‌آپ این ربات از crontab حذف شد.' . $user_hint,
+            'line' => '',
+            'user' => $who,
         ];
     }
     return [
-        'ok' => !$found,
-        'message' => !$found ? '✅ کرون بک‌آپ از crontab حذف شد.' : '⚠️ حذف کرون کامل تأیید نشد؛ دستی چک کنید.',
+        'ok' => false,
+        'message' => '⚠️ حذف کامل تأیید نشد؛ هنوز خطی با backup_cron برای این دامنه هست.' . $user_hint,
+        'line' => $found_line,
+        'user' => $who,
     ];
 }
 
