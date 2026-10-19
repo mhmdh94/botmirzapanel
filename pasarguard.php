@@ -907,3 +907,69 @@ function addVolumeToPanelAdmin($username, $extra_gb, $panel_row)
         'new_limit_gb' => round($new_limit / (1024 ** 3), 2),
     ];
 }
+
+
+/**
+ * تغییر رمز ادمین پنل (Reseller) — فقط password، حجم دست نمی‌خورد
+ */
+function changePanelAdminPassword($username, $new_password, $panel_row)
+{
+    $username = trim(strval($username));
+    $new_password = strval($new_password);
+    if ($username === '' || $new_password === '' || !is_array($panel_row)) {
+        return ['success' => false, 'message' => 'پارامتر نامعتبر'];
+    }
+    if (function_exists('validateResellerPanelPassword')) {
+        $v = validateResellerPanelPassword($new_password);
+        if (empty($v['ok'])) {
+            return ['success' => false, 'message' => $v['message'] ?? 'رمز عبور نامعتبر است.'];
+        }
+    } elseif (strlen($new_password) < 8) {
+        return ['success' => false, 'message' => 'رمز باید حداقل ۸ کاراکتر باشد.'];
+    }
+    $admin = getPanelAdmin($username, $panel_row);
+    if (!is_array($admin) || !empty($admin['error']) || empty($admin['username'])) {
+        return ['success' => false, 'message' => 'ادمین «' . $username . '» در پنل پیدا نشد.'];
+    }
+    $Check_token = _token_for_any_panel($panel_row);
+    if (!is_array($Check_token) || empty($Check_token['access_token'])) {
+        return ['success' => false, 'message' => 'خطا در دریافت توکن پنل'];
+    }
+    $base = rtrim(strval($panel_row['url_panel']), '/');
+    $paths = [
+        $base . '/api/admin/by-username/' . rawurlencode($username),
+        $base . '/api/admin/' . rawurlencode($username),
+    ];
+    $payload = json_encode(['password' => $new_password]);
+    $header = [
+        'Accept: application/json',
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $Check_token['access_token'],
+    ];
+    $ok = false;
+    $last_detail = '';
+    foreach ($paths as $url) {
+        $ch = marzban_curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        $output = curl_exec($ch);
+        $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+        curl_close($ch);
+        if ($code >= 200 && $code < 300) {
+            $ok = true;
+            break;
+        }
+        $last_detail = is_string($output) ? substr($output, 0, 200) : '';
+    }
+    if (!$ok) {
+        return ['success' => false, 'message' => 'خطا در تغییر رمز پنل: ' . $last_detail];
+    }
+    return [
+        'success' => true,
+        'message' => '✅ رمز ورود ادمین «' . $username . '» با موفقیت تغییر کرد.',
+    ];
+}
+

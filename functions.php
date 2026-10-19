@@ -6539,6 +6539,9 @@ function processResellerVolumeWarnings()
                 }
                 $used = intval($admin['used_traffic'] ?? 0);
                 $limit = intval($admin['data_limit'] ?? 0);
+                if (function_exists('recordResellerUsageSnap')) {
+                    recordResellerUsageSnap($pa, $used, $limit);
+                }
                 if ($limit <= 0) {
                     continue;
                 }
@@ -6626,6 +6629,7 @@ function processResellerVolumeWarnings()
                     . "📊 مصرف: <b>{$pct}٪</b> (آستانه {$notify_level}٪)\n"
                     . "📉 استفاده‌شده: <b>{$u_lbl}</b> از <b>{$l_lbl}</b>\n"
                     . "➕ باقی‌مانده: <b>{$r_lbl}</b>\n\n"
+                    . "⚠️ در صورت اتمام حجم، یوزرهای فعال این پنل نیز غیرفعال می‌شوند.\n"
                     . "در صورت نیاز از دکمه زیر حجم بخرید.";
                 $kb = json_encode([
                     'inline_keyboard' => [
