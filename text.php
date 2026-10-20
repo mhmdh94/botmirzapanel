@@ -55,10 +55,7 @@ $textbotlang['users']['spam']['btn_support'] = "📨 ارسال پیام به پ
 $textbotlang['users']['online'] = "آنلاین";
 $textbotlang['users']['offline'] = "آفلاین";
 $textbotlang['users']['unlimited'] = "نامحدود";
-$textbotlang['users']['start'] = "سلام، خوش آمدید.
-
-از منوی پایین می‌توانید سرویس بخرید، سرویس‌ها را مدیریت کنید یا موجودی را افزایش دهید.
-در صورت نیاز، از پشتیبانی پیام بفرستید.";
+$textbotlang['users']['start'] = "سلام خوش آمدید";
 $textbotlang['users']['sendmessagesupport'] = "🎟 ارسال پیام به پشتیبانی";
 
 

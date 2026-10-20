@@ -496,6 +496,18 @@ try {
     }
     else{
         $connect->query("INSERT IGNORE INTO textbot (id_text,text) VALUES ('text_start','{$textbotlang['users']['start']}')");
+
+// یک‌بار: اگر متن استارت هنوز متن پیش‌فرض قدیمی است، کوتاه شود
+try {
+    $__old_start = "سلام، خوش آمدید.";
+    $__st = $pdo->prepare("SELECT text FROM textbot WHERE id_text = 'text_start' LIMIT 1");
+    $__st->execute();
+    $__cur = $__st->fetchColumn();
+    if (is_string($__cur) && strpos($__cur, $__old_start) === 0 && strpos($__cur, 'از منوی پایین') !== false) {
+        $pdo->prepare("UPDATE textbot SET text = ? WHERE id_text = 'text_start'")->execute([$textbotlang['users']['start']]);
+    }
+} catch (Throwable $e) {}
+
         $connect->query("INSERT IGNORE INTO textbot (id_text,text) VALUES ('text_usertest','{$textbotlang['users']['usertest']['usertestbtn']}')");
         $connect->query("INSERT IGNORE INTO textbot (id_text,text) VALUES ('text_Purchased_services','{$textbotlang['Admin']['Status']['title']}')");
         $connect->query("INSERT IGNORE INTO textbot (id_text,text) VALUES ('text_support','{$textbotlang['users']['support']['title']}')");
