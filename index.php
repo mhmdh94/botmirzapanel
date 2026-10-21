@@ -1222,15 +1222,20 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
         $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
     } elseif (!in_array($status, ['active', 'on_hold'], true)) {
-        // منقضی / محدود و ... : تمدید و گزینه‌های مرتبط
+        // منقضی (زمان) / محدود (حجم) و ...
+        // بازگشت وجه فقط برای active و disabled
+        // خرید حجم اضافه فقط وقتی حجم تمام شده (limited)
         $__kb_dis = [];
         if (!isset($setting['status_extend']) || $setting['status_extend'] == '1' || $setting['status_extend'] === 1) {
             $__kb_dis[] = [['text' => $textbotlang['users']['extend']['title'], 'callback_data' => 'extend_' . $username]];
         }
-        if (!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1) {
-            $__kb_dis[] = [['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username]];
+        if ($status === 'limited') {
+            if (!isset($setting['status_extra_volume']) || $setting['status_extra_volume'] == '1' || $setting['status_extra_volume'] === 1) {
+                if (!isset($marzban_list_get['type']) || $marzban_list_get['type'] != 'mikrotik') {
+                    $__kb_dis[] = [['text' => $textbotlang['users']['Extra_volume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username]];
+                }
+            }
         }
-        $__kb_dis[] = [['text' => $textbotlang['users']['removeconfig']['btnremoveuser'], 'callback_data' => 'removeserviceuserco-' . $username]];
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['RemoveSerivecbtn'], 'callback_data' => 'removebyuser-' . $username]];
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
@@ -2001,6 +2006,18 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
 
     $username = $dataget[1];
+    // فقط وقتی حجم سرویس تمام شده (limited)
+    $__inv_ev = select("invoice", "*", "username", $username, "select");
+    if (!$__inv_ev || !is_array($__inv_ev) || strval($__inv_ev['id_user'] ?? '') !== strval($from_id)) {
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا', $keyboard, 'HTML');
+        return;
+    }
+    $__du_ev = $ManagePanel->DataUser($__inv_ev['Service_location'], $username);
+    $__st_ev = is_array($__du_ev) ? strval($__du_ev['status'] ?? '') : '';
+    if (!in_array($__st_ev, ['active', 'limited', 'on_hold'], true)) {
+        sendmessage($from_id, '❌ در این وضعیت امکان خرید حجم اضافه نیست.', $keyboard, 'HTML');
+        return;
+    }
     update("user", "Processing_value", $username, "id", $from_id);
     $textextra = " .";
     sendmessage($from_id, sprintf($textbotlang['users']['Extra_volume']['VolumeValue'], $setting['Extra_volume']), $backuser, 'HTML');
@@ -2192,10 +2209,24 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
 } elseif (preg_match('/removeserviceuserco-(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
+    // بازگشت وجه فقط برای وضعیت فعال یا غیرفعال
+    $__inv_rf = select("invoice", "*", "username", $username, "select");
+    if (!$__inv_rf || !is_array($__inv_rf) || strval($__inv_rf['id_user'] ?? '') !== strval($from_id)) {
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا', $keyboard, 'HTML');
+        return;
+    }
+    $__du_rf = $ManagePanel->DataUser($__inv_rf['Service_location'], $username);
+    $__st_rf = is_array($__du_rf) ? strval($__du_rf['status'] ?? '') : '';
+    if (!in_array($__st_rf, ['active', 'disabled', 'on_hold'], true)) {
+        sendmessage($from_id, '❌ درخواست بازگشت وجه فقط برای سرویس فعال یا غیرفعال امکان‌پذیر است.', $keyboard, 'HTML');
+        return;
+    }
+
     $nameloc = select("invoice", "*", "username", $username, "select");
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $username);
-    if (isset($DataUserOut['status']) && in_array($DataUserOut['status'], ["expired", "limited", "disabled"])) {
+    // expired/limited قبلاً در گارد بالا رد شده‌اند؛ disabled مجاز است
+    if (isset($DataUserOut['status']) && in_array($DataUserOut['status'], ["expired", "limited"], true)) {
         sendmessage($from_id, $textbotlang['users']['status']['notusername'], null, 'html');
         return;
     }
