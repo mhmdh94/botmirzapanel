@@ -2605,6 +2605,42 @@ if ($text == $datatextbot['text_help'] || $datain == "helpbtn" || $text == "/hel
     return;
 }
 
+
+#-----------reseller panel request------------#
+if (
+    (isset($textbotlang['users']['reseller_request']['btn']) && $text == $textbotlang['users']['reseller_request']['btn'])
+    || $datain == 'reseller_request_info'
+) {
+    if (function_exists('isResellerRequestEnabled') && !isResellerRequestEnabled()) {
+        sendmessage($from_id, '❌ این بخش فعلاً غیرفعال است.', $keyboard, 'HTML');
+        return;
+    }
+    if (function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id)) {
+        sendmessage($from_id, '✅ شما هم‌اکنون به پنل نمایندگی دسترسی دارید.', $keyboard, 'HTML');
+        return;
+    }
+    $info = $textbotlang['users']['reseller_request']['info']
+        ?? "📋 <b>درخواست پنل نمایندگی</b>\n\nدر صورت داشتن بیش از ۱۰۰ کاربر فعال ماهانه می‌توانید درخواست دهید.";
+    $kb_req = json_encode([
+        'inline_keyboard' => [
+            [[
+                'text' => $textbotlang['users']['reseller_request']['btn_support'] ?? '📨 ارسال پیام به پشتیبانی',
+                'callback_data' => 'support',
+            ]],
+            [[
+                'text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی',
+                'callback_data' => 'backuser',
+            ]],
+        ],
+    ]);
+    if (!empty($datain) && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $info, $kb_req);
+    } else {
+        sendmessage($from_id, $info, $kb_req, 'HTML');
+    }
+    return;
+}
+
 #-----------support------------#
 if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "support") {
     if (function_exists('isSupportEnabled') && !isSupportEnabled()) {
@@ -2620,6 +2656,7 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
         $textbotlang['users']['backhome'] ?? null,
         $textbotlang['users']['backmenu'] ?? null,
         $textbotlang['users']['back'] ?? null,
+        $textbotlang['users']['reseller_request']['btn'] ?? null,
         $datatextbot['text_support'] ?? null,
         $datatextbot['text_sell'] ?? null,
         $datatextbot['text_Purchased_services'] ?? null,

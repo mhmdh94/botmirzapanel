@@ -5021,6 +5021,7 @@ function ensureFeatureSettingsColumns()
         'status_support' => '1',
         'status_extend' => '1',
         'status_reseller_panel' => '0',
+        'status_reseller_request' => '0',
     ];
     try {
         foreach ($cols as $col => $default) {
@@ -5136,6 +5137,32 @@ function isResellerFeatureEnabled()
     $cached = false;
     return false;
 }
+
+function isResellerRequestEnabled()
+{
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    try {
+        global $pdo;
+        if (!isset($pdo) || !($pdo instanceof PDO)) {
+            $cached = false;
+            return false;
+        }
+        if (function_exists('ensureFeatureSettingsColumns')) {
+            ensureFeatureSettingsColumns();
+        }
+        $st = $pdo->query("SELECT status_reseller_request FROM setting LIMIT 1");
+        $row = $st ? $st->fetch(PDO::FETCH_ASSOC) : false;
+        $cached = (is_array($row) && strval($row['status_reseller_request'] ?? '0') === '1');
+        return $cached;
+    } catch (Throwable $e) {
+        $cached = false;
+        return false;
+    }
+}
+
 
 
 /**

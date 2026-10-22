@@ -1796,6 +1796,18 @@ $textbotlang['users']['reseller_volume']['btn_confirm'] = "✅ تأیید و پ�
 $textbotlang['users']['reseller_volume']['btn_cancel'] = "❌ انصراف";
 $textbotlang['Admin']['keyboardadmin']['reseller_volume'] = "⚙️ مدیریت پنل نمایندگان";
 $textbotlang['Admin']['Status']['status_reseller_panel'] = "پنل نمایندگان (حجم پنل)";
+
+$textbotlang['users']['reseller_request']['btn'] = "درخواست پنل نمایندگی";
+$textbotlang['users']['reseller_request']['info'] = "📋 <b>درخواست پنل نمایندگی</b>
+
+در صورتی که ماهانه بیش از <b>۱۰۰ کاربر فعال</b> دارید، می‌توانید درخواست پنل نمایندگی ثبت کنید.
+
+با دریافت پنل نمایندگی، امکان راه‌اندازی ربات فروشگاهی و اتصال آن به پنل فراهم می‌شود تا فروش خود را حرفه‌ای‌تر مدیریت کنید و کنترل بهتری روی کاربران داشته باشید.
+
+برای ثبت درخواست، از دکمه زیر پیام خود را برای پشتیبانی ارسال کنید.";
+$textbotlang['users']['reseller_request']['btn_support'] = "📨 ارسال پیام به پشتیبانی";
+$textbotlang['Admin']['Status']['status_reseller_request'] = "درخواست پنل نمایندگی";
+
 $textbotlang['Admin']['ManageUser']['panel_admin_on'] = "🛠 پنل‌دار: فعال ✅";
 $textbotlang['Admin']['ManageUser']['panel_admin_off'] = "🛠 پنل‌دار: غیرفعال ❌";
 $textbotlang['Admin']['ManageUser']['panel_admin_setuser'] = "👤 تنظیم نام ادمین پنل";

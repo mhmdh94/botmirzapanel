@@ -120,6 +120,18 @@ if ($aff_on) {
 if (!empty($row_sup)) {
     $keyboard_rows[] = $row_sup;
 }
+// درخواست پنل نمایندگی — فقط اگر قابلیت روشن باشد و کاربر پنل‌دار نباشد
+try {
+    if (
+        isset($from_id) && intval($from_id) > 0
+        && function_exists('isResellerRequestEnabled') && isResellerRequestEnabled()
+        && !(function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id))
+    ) {
+        $keyboard_rows[] = [[
+            'text' => ($textbotlang['users']['reseller_request']['btn'] ?? 'درخواست پنل نمایندگی')
+        ]];
+    }
+} catch (Throwable $e) {}
 
 $keyboard = [
     'keyboard' => $keyboard_rows,

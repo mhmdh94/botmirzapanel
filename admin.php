@@ -3432,7 +3432,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][($setting['copy_cart'] ?? '0')];
     // Feature flags (fork) — default ON for channel force & buy/test/search/aff if missing
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0'] as $_fk => $_fd) {
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0', 'status_reseller_request' => '0'] as $_fk => $_fd) {
         if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
             $setting[$_fk] = $_fd;
         }
@@ -3486,6 +3486,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][strval($setting['status_reseller_panel'] ?? '0')];
+    $st_reseller_req = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_reseller_request'] ?? '0')];
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
@@ -3575,6 +3579,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_reseller, 'callback_data' => 'editstsuts-status_reseller_panel-' . strval($setting['status_reseller_panel'] ?? '0')],
                 ['text' => $textbotlang['Admin']['Status']['status_reseller_panel'] ?? 'Reseller Panel', 'callback_data' => "status_reseller_panel"],
+            ],
+            [
+                ['text' => $st_reseller_req, 'callback_data' => 'editstsuts-status_reseller_request-' . strval($setting['status_reseller_request'] ?? '0')],
+                ['text' => $textbotlang['Admin']['Status']['status_reseller_request'] ?? 'درخواست پنل نمایندگی', 'callback_data' => "status_reseller_request"],
             ],
         ]
     ]);
@@ -3684,6 +3692,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         if (function_exists('ensureResellerFeatureSetting')) { ensureResellerFeatureSetting(); }
         $valuenew = ($value == "1") ? "0" : "1";
         update("setting", "status_reseller_panel", $valuenew);
+    } elseif ($type == "status_reseller_request") {
+        if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColumns(); }
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_reseller_request", $valuenew);
 
     } elseif ($type == "Automatic_confirmation") {
         // سازگاری قدیمی — تنظیم اصلی در بخش مالی است
@@ -3760,7 +3772,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][($setting['copy_cart'] ?? '0')];
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0'] as $_fk => $_fd) {
+    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0', 'status_reseller_request' => '0'] as $_fk => $_fd) {
         if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
             $setting[$_fk] = $_fd;
         }
@@ -3814,6 +3826,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         '1' => $textbotlang['Admin']['Status']['statuson'],
         '0' => $textbotlang['Admin']['Status']['statusoff']
     ][strval($setting['status_reseller_panel'] ?? '0')];
+    $st_reseller_req = [
+        '1' => $textbotlang['Admin']['Status']['statuson'],
+        '0' => $textbotlang['Admin']['Status']['statusoff']
+    ][strval($setting['status_reseller_request'] ?? '0')];
     $Bot_Status = json_encode([
         'inline_keyboard' => [
             [
@@ -3903,6 +3919,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_reseller, 'callback_data' => 'editstsuts-status_reseller_panel-' . strval($setting['status_reseller_panel'] ?? '0')],
                 ['text' => $textbotlang['Admin']['Status']['status_reseller_panel'] ?? 'Reseller Panel', 'callback_data' => "status_reseller_panel"],
+            ],
+            [
+                ['text' => $st_reseller_req, 'callback_data' => 'editstsuts-status_reseller_request-' . strval($setting['status_reseller_request'] ?? '0')],
+                ['text' => $textbotlang['Admin']['Status']['status_reseller_request'] ?? 'درخواست پنل نمایندگی', 'callback_data' => "status_reseller_request"],
             ],
         ]
     ]);
