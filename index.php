@@ -574,6 +574,17 @@ if ($setting['Bot_Status'] == "0" && !in_array($from_id, $admin_ids)) {
 if (function_exists('cleanupExpiredUnpaidInvoices') && intval($from_id) != 0) {
     cleanupExpiredUnpaidInvoices($from_id);
 }
+#-----------cancel receipt wait on any other action------------#
+// منتظر عکس رسید: هر دکمه/متن/کالبک دیگر → کنسل انتظار (بدون خطای رسید نامعتبر)
+if (isset($user['step']) && in_array(strval($user['step']), ['cart_to_cart_user', 'crypto_receipt_user'], true)) {
+    $__has_photo = !empty($photo);
+    $__has_text = isset($text) && is_string($text) && trim($text) !== '';
+    $__has_cb = isset($datain) && is_string($datain) && $datain !== '';
+    if (!$__has_photo && ($__has_text || $__has_cb)) {
+        step('home', $from_id);
+        $user['step'] = 'home';
+    }
+}
 #-----------/start------------#
 if ($text == "/start") {
     if (function_exists('ensureBotCommands')) {
@@ -3706,6 +3717,16 @@ if ($datain == "cart_to_offline" || $datain == "iranpay") {
 
 } elseif ($user['step'] == "cart_to_cart_user" || $user['step'] == "crypto_receipt_user") {
     if (!$photo) {
+        // متن/دکمه: فقط مرحله را کنسل کن (handler منو قبلاً اجرا شده) — خطای رسید نده
+        if (isset($text) && is_string($text) && trim($text) !== '') {
+            step('home', $from_id);
+            return;
+        }
+        if (isset($datain) && is_string($datain) && $datain !== '') {
+            step('home', $from_id);
+            return;
+        }
+        // PDF/فایل خالی و بدون عکس
         sendmessage($from_id, $textbotlang['users']['Balance']['Invalid-receipt'], null, 'HTML');
         return;
     }
