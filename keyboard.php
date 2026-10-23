@@ -228,8 +228,7 @@ $keyboard_usertest = json_encode([
 // تنظیمات: قابلیت‌ها | کرون/تست | کانال‌ها | مشارکت | آپدیت
 $setting_panel = json_encode([
     'keyboard' => [
-        [['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['settingscron']]],
+        [['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus']], ['text' => $textbotlang['Admin']['keyboardadmin']['settingscron']]],
         [['text' => $textbotlang['Admin']['channel']['channelreport']], ['text' => $textbotlang['Admin']['channel']['setting']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['affiliate_settings']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings']]],
         [['text' => $textbotlang['Admin']['keyboardadmin']['bot_update']], ['text' => ($textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری')]],
