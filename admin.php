@@ -115,6 +115,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         $week_start = (clone $now_dt)->setTime(0, 0, 0)->modify('-' . $days_since_sat . ' days');
         $prev_week_start = (clone $week_start)->modify('-7 days');
         $month_start = (clone $now_dt)->modify('first day of this month')->setTime(0, 0, 0);
+        $prev_month_start = (clone $now_dt)->modify('first day of last month')->setTime(0, 0, 0);
         // salesLedgerSum شرط > دارد؛ یک ثانیه کم تا از خود 00:00 حساب شود
         $day_ago = $day_start->getTimestamp() - 1;
         $yest_from = $yest_start->getTimestamp() - 1;
@@ -123,6 +124,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         $prev_week_from = $prev_week_start->getTimestamp() - 1;
         $prev_week_until = $week_start->getTimestamp() - 1;
         $month_ago = $month_start->getTimestamp() - 1;
+        $prev_month_from = $prev_month_start->getTimestamp() - 1;
+        $prev_month_until = $month_start->getTimestamp() - 1;
     } catch (Exception $e) {
         $day_ago = $now - 86400;
         $yest_from = $now - 2 * 86400;
@@ -131,6 +134,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         $prev_week_from = $now - 2 * 604800;
         $prev_week_until = $now - 604800;
         $month_ago = $now - 2592000;
+        $prev_month_from = $now - 60 * 86400;
+        $prev_month_until = $month_ago;
     }
     $status_ok = "(Status = 'active' OR Status = 'end_of_time' OR Status = 'end_of_volume' OR Status = 'sendedwarn' OR status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')";
     $not_test = "name_product != 'usertest'";
@@ -195,6 +200,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $week = $periodStats($week_ago);
     $prev_week = $periodStats($prev_week_from, $prev_week_until);
     $month = $periodStats($month_ago);
+    $prev_month = $periodStats($prev_month_from, $prev_month_until);
 
     // واریزی‌های تأییدشده — پارس تاریخ در PHP به وقت تهران (مقایسه رشته‌ای MySQL باگ مرز نیمه‌شب دارد)
     $parsePayTime = function ($raw) {
@@ -272,6 +278,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $dep_week = $depositStats($week_ago);
     $dep_prev_week = $depositStats($prev_week_from, $prev_week_until);
     $dep_month = $depositStats($month_ago);
+    $dep_prev_month = $depositStats($prev_month_from, $prev_month_until);
 
     // مجموع پورسانت‌های پرداخت‌شده (ستون affiliates_balance)
     $aff_paid = 0;
@@ -325,6 +332,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($prev_week['sum']),
         number_format($month['cnt']),
         number_format($month['sum']),
+        number_format($prev_month['cnt']),
+        number_format($prev_month['sum']),
         number_format($invoice_cnt),
         number_format($invoice_sum),
         number_format($dep_day['cnt']),
@@ -337,6 +346,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($dep_prev_week['sum']),
         number_format($dep_month['cnt']),
         number_format($dep_month['sum']),
+        number_format($dep_prev_month['cnt']),
+        number_format($dep_prev_month['sum']),
         number_format($aff_paid),
         number_format($aff_joined),
         number_format($invoice_cnt),
