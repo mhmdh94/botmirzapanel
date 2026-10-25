@@ -194,10 +194,15 @@ function Editmessagetext($chat_id, $message_id, $text, $keyboard, $parse_mode = 
 }
 function deletemessage($chat_id, $message_id)
 {
-    return telegram('deletemessage', [
+    if (empty($chat_id) || empty($message_id)) {
+        return false;
+    }
+    // خطای «message can't be deleted for everyone» عادی است (پیام قدیمی/بدون دسترسی)
+    $res = telegram('deleteMessage', [
         'chat_id' => $chat_id,
         'message_id' => $message_id,
     ]);
+    return $res;
 }
 function sendDocument($chat_id, $documentPath, $caption)
 {

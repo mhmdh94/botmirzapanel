@@ -1177,14 +1177,24 @@ if ($user['step'] == "getusernameinfo") {
 if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
-    $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
-    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
-    if (isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") {
-        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'], $keyboard, 'html');
-        update("invoice", "Status", "disabledn", "id_invoice", $nameloc['id_invoice']);
+    if (!$nameloc || !is_array($nameloc)) {
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? '❌ سرویس یافت نشد.', $keyboard, 'HTML');
         return;
     }
-    if ($DataUserOut['status'] == "Unsuccessful") {
+    $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
+    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
+    if (!is_array($DataUserOut)) {
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? '❌ خطا در دریافت اطلاعات سرویس.', $keyboard, 'HTML');
+        return;
+    }
+    if (isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") {
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'], $keyboard, 'html');
+        if (!empty($nameloc['id_invoice'])) {
+            update("invoice", "Status", "disabledn", "id_invoice", $nameloc['id_invoice']);
+        }
+        return;
+    }
+    if (($DataUserOut['status'] ?? '') == "Unsuccessful") {
         sendmessage($from_id, $textbotlang['users']['status']['error'], $keyboard, 'html');
         return;
     }
@@ -1541,13 +1551,17 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
+    if (!$nameloc || !is_array($nameloc)) {
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? '❌ سرویس یافت نشد.', $keyboard, 'HTML');
+        return;
+    }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
-    if ($DataUserOut['status'] == "Unsuccessful") {
+    if (!is_array($DataUserOut) || ($DataUserOut['status'] ?? '') == "Unsuccessful") {
         sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
         return;
     }
-    if ($DataUserOut['status'] == "on_hold") {
+    if (($DataUserOut['status'] ?? '') == "on_hold") {
         sendmessage($from_id, $textbotlang['users']['status']['error_onhold'], null, 'html');
         return;
     }
