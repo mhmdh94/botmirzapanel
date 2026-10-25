@@ -1,31 +1,100 @@
 <?php
+/**
+ * لاگ خطا در فایل error_log کنار ربات + error_log سیستم
+ */
+function botErrorLog($message, array $ctx = [])
+{
+    $line = '[' . date('Y-m-d H:i:s') . ' Asia/Tehran] ' . strval($message);
+    if (!empty($ctx)) {
+        $safe = $ctx;
+        // توکن را لاگ نکن
+        unset($safe['token'], $safe['APIKEY']);
+        $line .= ' | ' . json_encode($safe, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+    $line .= "\n";
+    @error_log(rtrim($line));
+    $paths = [];
+    if (defined('__DIR__')) {
+        $paths[] = __DIR__ . '/error_log';
+        $paths[] = dirname(__DIR__) . '/error_log';
+    }
+    $paths[] = (isset($_SERVER['DOCUMENT_ROOT']) ? rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/error_log' : null);
+    foreach ($paths as $p) {
+        if (!$p) {
+            continue;
+        }
+        $dir = dirname($p);
+        if (is_dir($dir) && is_writable($dir)) {
+            @file_put_contents($p, $line, FILE_APPEND | LOCK_EX);
+            break;
+        }
+        if (file_exists($p) && is_writable($p)) {
+            @file_put_contents($p, $line, FILE_APPEND | LOCK_EX);
+            break;
+        }
+    }
+}
+
 function telegram($method, $datas = [])
 {
     global $APIKEY;
+    $method = strval($method);
     $url = "https://api.telegram.org/bot" . $APIKEY . "/" . $method;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 4);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $datas);
+    $t0 = microtime(true);
     $raw = curl_exec($ch);
     $cerr = curl_error($ch);
+    $errno = curl_errno($ch);
+    $http = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
     curl_close($ch);
+    $ms = (int) round((microtime(true) - $t0) * 1000);
+
+    $chat = '';
+    if (is_array($datas)) {
+        if (isset($datas['chat_id'])) {
+            $chat = strval($datas['chat_id']);
+        }
+    }
+
     if ($cerr) {
-        // SSL / timeoutهای شبکه را لاگ نکن (تکراری و بی‌فایده)
-        $c = strtolower($cerr);
-        if (strpos($c, 'ssl') === false && strpos($c, 'timeout') === false && strpos($c, 'timed out') === false) {
-            error_log($cerr);
+        // همه خطاهای شبکه (timeout/ssl/resolve/...) ثبت شوند
+        if (function_exists('botErrorLog')) {
+            botErrorLog('NET telegram failed', [
+                'method' => $method,
+                'chat_id' => $chat,
+                'curl_errno' => $errno,
+                'curl_error' => $cerr,
+                'http' => $http,
+                'ms' => $ms,
+            ]);
+        } else {
+            error_log("NET telegram {$method}: [{$errno}] {$cerr}");
         }
         return false;
     }
+
     $res = json_decode($raw, true);
     if (!is_array($res)) {
+        if (function_exists('botErrorLog')) {
+            botErrorLog('NET telegram invalid JSON', [
+                'method' => $method,
+                'chat_id' => $chat,
+                'http' => $http,
+                'ms' => $ms,
+                'raw_len' => is_string($raw) ? strlen($raw) : 0,
+                'raw_head' => is_string($raw) ? substr($raw, 0, 200) : '',
+            ]);
+        }
         return false;
     }
+
     if (empty($res['ok'])) {
         $desc = isset($res['description']) ? (string) $res['description'] : '';
         $ignore = [
@@ -39,8 +108,11 @@ function telegram($method, $datas = [])
             'have no rights to send a message',
             'need administrator rights',
             'Forbidden: bot was blocked',
-            'bot can\'t initiate conversation',
+            "bot can't initiate conversation",
             'GROUP_DEACTIVATED',
+            "message can't be deleted for everyone",
+            'message to delete not found',
+            'message to edit not found',
         ];
         $skip_log = false;
         foreach ($ignore as $needle) {
@@ -50,16 +122,23 @@ function telegram($method, $datas = [])
             }
         }
         if (!$skip_log) {
-            error_log(json_encode($res, JSON_UNESCAPED_UNICODE));
+            if (function_exists('botErrorLog')) {
+                botErrorLog('API telegram error', [
+                    'method' => $method,
+                    'chat_id' => $chat,
+                    'error_code' => $res['error_code'] ?? null,
+                    'description' => $desc,
+                    'http' => $http,
+                    'ms' => $ms,
+                ]);
+            } else {
+                error_log(json_encode($res, JSON_UNESCAPED_UNICODE));
+            }
         }
     }
     return $res;
 }
 
-/**
- * ارسال به تلگرام با تلاش مجدد برای خطاهای موقت شبکه/سرور
- * @return array|false
- */
 function telegramRetry($method, $datas = [], $maxAttempts = 2)
 {
     // حداکثر ۲ تلاش — بدون sleep چندثانیه‌ای (جلوگیری از فریز PHP-FPM)
@@ -214,7 +293,34 @@ function sendDocument($chat_id, $documentPath, $caption)
 }
 #-----------------------------#
 $update = json_decode(file_get_contents("php://input"), true);
+
+// ثبت خطای Fatal که باعث می‌شود ربات جواب ندهد
+if (!defined('BOT_SHUTDOWN_LOG')) {
+    define('BOT_SHUTDOWN_LOG', true);
+    register_shutdown_function(function () {
+        $e = error_get_last();
+        if (!$e) {
+            return;
+        }
+        $fatal = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+        if (!in_array($e['type'], $fatal, true)) {
+            return;
+        }
+        $msg = 'FATAL ' . $e['message'] . ' in ' . ($e['file'] ?? '') . ':' . ($e['line'] ?? 0);
+        if (function_exists('botErrorLog')) {
+            botErrorLog($msg, [
+                'from_id' => $GLOBALS['from_id'] ?? null,
+                'text' => isset($GLOBALS['text']) ? substr(strval($GLOBALS['text']), 0, 80) : null,
+                'datain' => isset($GLOBALS['datain']) ? substr(strval($GLOBALS['datain']), 0, 80) : null,
+            ]);
+        } else {
+            @error_log($msg);
+        }
+    });
+}
+
 $from_id = $update['message']['from']['id'] ?? $update['callback_query']['from']['id'] ?? 0;
+$GLOBALS['from_id'] = $from_id;
 $Chat_type = $update["message"]["chat"]["type"] ?? $update['callback_query']['message']['chat']['type'] ?? '';
 $text = $update["message"]["text"] ?? '';
 # نرمال‌سازی دستورات منوی تلگرام: /new@MyBot → /new
