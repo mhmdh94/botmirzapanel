@@ -1139,17 +1139,25 @@ function DirectPayment($order_id)
                     );
                     sendmessage($aff_uid, $textadd, null, 'HTML');
                     if (function_exists('sendChannelReport')) {
+                        $__buy_amt = number_format(intval(round($base_price)));
+                        $__pct_l = rtrim(rtrim(number_format($aff_pct, 2, '.', ''), '0'), '.');
                         sendChannelReport(
-                            'rpt_buy',
-                            "🎁 <b>پورسانت مشارکت</b>
+                            'rpt_affiliate_buy',
+                            "🤝 <b>پورسانت خرید (مشارکت در فروش)</b>
 "
                             . "👤 معرف: <code>{$aff_uid}</code>
 "
                             . "🛒 خریدار: <code>" . intval($Balance_id['id'] ?? 0) . "</code>
 "
-                            . "💰 مبلغ پورسانت: <b>{$result_fmt}</b> تومان
+                            . "📦 مبلغ خرید: <b>{$__buy_amt}</b> تومان
 "
-                            . "🔑 سرویس: <code>" . htmlspecialchars(strval($get_invoice['username'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code>"
+                            . "📊 درصد: <b>{$__pct_l}٪</b>
+"
+                            . "💰 پورسانت واریزی: <b>{$result_fmt}</b> تومان
+"
+                            . "🔑 سرویس: <code>" . htmlspecialchars(strval($get_invoice['username'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code>
+"
+                            . "📌 نوع: خرید سرویس (نه هدیه استارت)"
                         );
                     }
                 }
@@ -3235,6 +3243,7 @@ function reportChannelTypes()
         'rpt_test' => '🧪 اکانت تست',
         'rpt_discount' => '🏷 کد تخفیف',
         'rpt_gift' => '🎁 کد هدیه',
+        'rpt_affiliate_buy' => '🤝 پورسانت خرید (مشارکت)',
         'rpt_cart_accept' => '✅ تأیید رسید (ادمین)',
         'rpt_cart_auto' => '🤖 تأیید خودکار رسید',
         'rpt_reject' => '❌ رد رسید',
