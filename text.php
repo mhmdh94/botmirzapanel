@@ -637,6 +637,7 @@ $textbotlang['users']['affiliates']['priceDiscount'] = "🎁 مبلغ هدیه �
 $textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ هدیه دعوت ذخیره شد.";
 $textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش است.";
 $textbotlang['users']['affiliates']['affiliateseduser'] = "❌ قبلاً با لینک دعوت یک کاربر ثبت شده‌اید و نمی‌توانید لینک دیگری را استفاده کنید.";
+$textbotlang['users']['affiliates']['already_member'] = "❌ شما از قبل عضو ربات هستید و امکان ثبت از طریق لینک دعوت وجود ندارد.";
 $textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ <b>%s</b> تومان از طرف دعوت‌کننده (<code>%s</code>) به موجودی شما اضافه شد.";
 $textbotlang['users']['affiliates']['porsantuser'] = "🎁 <b>پورسانت واریز شد</b>
 

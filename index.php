@@ -41,6 +41,8 @@ if (!checktelegramip())
     die("Unauthorized access");
 #-------------Variable----------#
 $users_ids = select("user", "id", null, null, "FETCH_COLUMN");
+// قبل از INSERT: آیا این کاربر از قبل عضو ربات بوده؟
+$__user_existed_before = (intval($from_id) != 0 && is_array($users_ids) && in_array($from_id, $users_ids));
 $setting = select("setting", "*");
 $admin_ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
 if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
@@ -391,8 +393,19 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
     return;
 }
 if (strpos($text, "/start ") !== false) {
-    if ($user['affiliates'] != 0) {
-        sendmessage($from_id, $textbotlang['users']['affiliates']['affiliateseduser'], null, 'html');
+    // لینک مشارکت فقط برای اولین ورود (کاربر جدید) — عضو قبلی زیرمجموعه نمی‌شود
+    if (!empty($__user_existed_before)) {
+        if (intval($user['affiliates'] ?? 0) != 0) {
+            sendmessage($from_id, $textbotlang['users']['affiliates']['affiliateseduser'], $keyboard, 'HTML');
+        } else {
+            $msg_al = $textbotlang['users']['affiliates']['already_member']
+                ?? "❌ شما از قبل عضو ربات هستید و امکان ثبت از طریق لینک دعوت وجود ندارد.";
+            sendmessage($from_id, $msg_al, $keyboard, 'HTML');
+        }
+        return;
+    }
+    if (intval($user['affiliates'] ?? 0) != 0) {
+        sendmessage($from_id, $textbotlang['users']['affiliates']['affiliateseduser'], $keyboard, 'HTML');
         return;
     }
     $__aff_row = select("affiliates", "*", null, null, "select");
