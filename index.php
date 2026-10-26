@@ -414,24 +414,22 @@ if (strpos($text, "/start ") !== false) {
         sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');
         return;
     }
-    $token = str_replace("/start ", "", $text);
+    $token = trim(str_replace("/start ", "", $text));
+    $affiliatesid = 0;
     $refRow = select("user", "id", "ref_code", $token, "select");
-    if ($refRow !== false) {
-        $affiliatesid = $refRow['id'];                 // modern link found
+    if ($refRow !== false && isset($refRow['id'])) {
+        $affiliatesid = intval($refRow['id']); // لینک مدرن ref_code
+    } elseif ($token !== '' && ctype_digit(strval($token))) {
+        $affiliatesid = intval($token); // لینک قدیمی عددی
     }
-    /*  2️⃣  fall back to legacy numeric ID  */ elseif (ctype_digit($token)) {
-        $affiliatesid = (int) $token;                   // old link
-    }
-    /*  3️⃣  invalid token → pretend there is no referrer       */ else {
-        $affiliatesid = 0;                             // will fail the in_array() test below
-    }
-    if (ctype_digit($affiliatesid)) {
-        if (!in_array($affiliatesid, $users_ids)) {
-            sendmessage($from_id, $textbotlang['users']['affiliates']['affiliatesyou'], null, 'html');
+    // فقط شناسه معتبر > 0 (ctype_digit روی int کار نمی‌کند)
+    if ($affiliatesid > 0) {
+        if (!in_array($affiliatesid, $users_ids) && !in_array(strval($affiliatesid), array_map('strval', (array)$users_ids))) {
+            sendmessage($from_id, $textbotlang['users']['affiliates']['affiliatesyou'], $keyboard, 'HTML');
             return;
         }
-        if ($affiliatesid == $from_id) {
-            sendmessage($from_id, $textbotlang['users']['affiliates']['invalidaffiliates'], null, 'html');
+        if (intval($affiliatesid) === intval($from_id)) {
+            sendmessage($from_id, $textbotlang['users']['affiliates']['invalidaffiliates'], $keyboard, 'HTML');
             return;
         }
         $inviterData = select("user", "affiliates", "id", $affiliatesid, "select");
