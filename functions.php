@@ -1157,7 +1157,6 @@ function DirectPayment($order_id)
 "
                             . "🔑 سرویس: <code>" . htmlspecialchars(strval($get_invoice['username'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code>
 "
-                            . "📌 نوع: خرید سرویس (نه هدیه استارت)"
                         );
                     }
                 }

@@ -3433,7 +3433,6 @@ if (isset($datain) && $datain === 'product_header') {
 "
                         . "🔑 سرویس: <code>{$__svc}</code>
 "
-                        . "📌 نوع: خرید سرویس (نه هدیه استارت)"
                     );
                 }
             }
