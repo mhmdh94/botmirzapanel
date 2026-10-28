@@ -865,6 +865,92 @@ function notifyUserReceiptAccepted($user_id, $order_id, $price = 0, $extra = '')
     }
 }
 
+
+/**
+ * ارسال کانفیگ سرویس به کاربر با چند تلاش (شبکه تلگرام)
+ * اول QR در صورت امکان، وگرنه متن؛ فقط وقتی API ok باشد موفق حساب می‌شود.
+ * @return bool
+ */
+function deliverServiceConfigToUser($uid, $textHtml, $replyMarkup = null, $qrPayload = null)
+{
+    $uid = intval($uid);
+    if ($uid <= 0) {
+        return false;
+    }
+    $textHtml = strval($textHtml);
+    $sendText = function () use ($uid, $textHtml, $replyMarkup) {
+        $payload = [
+            'chat_id' => $uid,
+            'text' => $textHtml,
+            'parse_mode' => 'HTML',
+            'disable_web_page_preview' => true,
+        ];
+        if (!empty($replyMarkup)) {
+            $payload['reply_markup'] = $replyMarkup;
+        }
+        if (function_exists('telegramRetry')) {
+            return telegramRetry('sendMessage', $payload, 3);
+        }
+        return telegram('sendMessage', $payload);
+    };
+
+    $qrPayload = is_string($qrPayload) ? trim($qrPayload) : '';
+    if ($qrPayload !== '' && class_exists('Endroid\\QrCode\\Writer\\PngWriter')) {
+        $urlimage = sys_get_temp_dir() . '/mirza_cfg_' . $uid . '_' . mt_rand(10000, 99999) . '.png';
+        try {
+            $writer = new PngWriter();
+            $qrCode = QrCode::create($qrPayload)
+                ->setEncoding(new Encoding('UTF-8'))
+                ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low)
+                ->setSize(400)
+                ->setMargin(0)
+                ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
+            $result = $writer->write($qrCode, null, null);
+            $result->saveToFile($urlimage);
+            $photo_payload = [
+                'chat_id' => $uid,
+                'photo' => new CURLFile($urlimage),
+                'caption' => mb_substr($textHtml, 0, 1024),
+                'parse_mode' => 'HTML',
+            ];
+            if (!empty($replyMarkup)) {
+                $photo_payload['reply_markup'] = $replyMarkup;
+            }
+            $photo_res = function_exists('telegramRetry')
+                ? telegramRetry('sendPhoto', $photo_payload, 3)
+                : telegram('sendPhoto', $photo_payload);
+            @unlink($urlimage);
+            if (function_exists('telegramOk') ? telegramOk($photo_res) : (is_array($photo_res) && !empty($photo_res['ok']))) {
+                return true;
+            }
+            if (function_exists('botErrorLog')) {
+                botErrorLog('config QR send failed, fallback text', [
+                    'uid' => $uid,
+                    'desc' => is_array($photo_res) ? ($photo_res['description'] ?? '') : 'false',
+                ]);
+            }
+        } catch (Throwable $e) {
+            @unlink($urlimage);
+            error_log('deliverServiceConfigToUser QR: ' . $e->getMessage());
+        }
+    }
+
+    // چند تلاش متنی با فاصله کوتاه
+    for ($i = 0; $i < 3; $i++) {
+        $res = $sendText();
+        if (function_exists('telegramOk') ? telegramOk($res) : (is_array($res) && !empty($res['ok']))) {
+            return true;
+        }
+        if ($i < 2) {
+            @usleep(350000);
+        }
+    }
+    if (function_exists('botErrorLog')) {
+        botErrorLog('config text send failed after retries', ['uid' => $uid]);
+    }
+    return false;
+}
+
 function DirectPayment($order_id)
 {
     global $pdo, $ManagePanel, $textbotlang, $keyboard, $from_id, $message_id, $callback_query_id;
@@ -1000,75 +1086,45 @@ function DirectPayment($order_id)
             $textcreatuser .= "\n\n⚠️ لینک اشتراک از پنل دریافت نشد. از «سرویس‌های من» وضعیت را بررسی کنید یا با پشتیبانی در تماس باشید.";
         }
 
-        // ارسال کانفیگ به کاربر — همیشه با fallback متنی
+        // ارسال کانفیگ به کاربر با retry شبکه (QR یا متن)
         $__sent_cfg = false;
-        try {
-            if (($marzban_list_get['type'] ?? '') == "mikrotik") {
-                sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
-                if (isset($keyboard)) {
-                    sendmessage($uid_buyer, $textbotlang['users']['selectoption'] ?? 'منوی اصلی', $keyboard, 'HTML');
-                }
-                $__sent_cfg = true;
-            } else {
-                $qr_payload = '';
-                if (($marzban_list_get['configManual'] ?? '') == "onconfig" && $configqr !== '') {
-                    $qr_payload = $configqr;
-                } elseif (($marzban_list_get['sublink'] ?? '') == "onsublink" && $output_config_link !== '') {
-                    $qr_payload = $output_config_link;
-                }
-                if ($qr_payload !== '' && class_exists('Endroid\\QrCode\\Writer\\PngWriter')) {
-                    $urlimage = sys_get_temp_dir() . "/mirza_cfg_{$uid_buyer}_{$randomString}.png";
-                    try {
-                        $writer = new PngWriter();
-                        $qrCode = QrCode::create($qr_payload)
-                            ->setEncoding(new Encoding('UTF-8'))
-                            ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low)
-                            ->setSize(400)
-                            ->setMargin(0)
-                            ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
-                        $result = $writer->write($qrCode, null, null);
-                        $result->saveToFile($urlimage);
-                        $photo_payload = [
-                            'chat_id' => $uid_buyer,
-                            'photo' => new CURLFile($urlimage),
-                            'caption' => mb_substr($textcreatuser, 0, 1024),
-                            'parse_mode' => "HTML",
-                        ];
-                        if (!empty($__svc_kb)) {
-                            $photo_payload['reply_markup'] = $__svc_kb;
-                        }
-                        $photo_res = telegram('sendphoto', $photo_payload);
-                        @unlink($urlimage);
-                        if (is_array($photo_res) && !empty($photo_res['ok'])) {
-                            $__sent_cfg = true;
-                        }
-                        if (($marzban_list_get['type'] ?? '') == "wgdashboard" && $output_config_link !== '') {
-                            $urldocs = sys_get_temp_dir() . "/wg_{$get_invoice['id_invoice']}.conf";
-                            file_put_contents($urldocs, $output_config_link);
-                            if (function_exists('sendDocument')) {
-                                sendDocument($uid_buyer, $urldocs, $textbotlang['users']['buy']['configwg'] ?? 'config');
-                            }
-                            @unlink($urldocs);
-                        }
-                    } catch (Throwable $e_qr) {
-                        error_log('DirectPayment QR: ' . $e_qr->getMessage());
-                        if (isset($urlimage)) {
-                            @unlink($urlimage);
-                        }
-                    }
-                }
-                if (!$__sent_cfg) {
-                    sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
-                    $__sent_cfg = true;
-                }
+        $qr_payload = '';
+        if (($marzban_list_get['type'] ?? '') == "mikrotik") {
+            $__sent_cfg = function_exists('deliverServiceConfigToUser')
+                ? deliverServiceConfigToUser($uid_buyer, $textcreatuser, $__svc_kb ?? null, null)
+                : false;
+            if (!$__sent_cfg) {
+                $r = function_exists('telegramRetry')
+                    ? telegramRetry('sendMessage', ['chat_id' => $uid_buyer, 'text' => $textcreatuser, 'parse_mode' => 'HTML'], 3)
+                    : sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
+                $__sent_cfg = function_exists('telegramOk') ? telegramOk($r) : (is_array($r) && !empty($r['ok']));
             }
-        } catch (Throwable $e_send) {
-            error_log('DirectPayment send config: ' . $e_send->getMessage());
-            try {
-                sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
-                $__sent_cfg = true;
-            } catch (Throwable $e2) {
-                error_log('DirectPayment sendmessage fallback failed: ' . $e2->getMessage());
+            if ($__sent_cfg && isset($keyboard)) {
+                sendmessage($uid_buyer, $textbotlang['users']['selectoption'] ?? 'منوی اصلی', $keyboard, 'HTML');
+            }
+        } else {
+            if (($marzban_list_get['configManual'] ?? '') == "onconfig" && !empty($configqr)) {
+                $qr_payload = $configqr;
+            } elseif (($marzban_list_get['sublink'] ?? '') == "onsublink" && $output_config_link !== '') {
+                $qr_payload = $output_config_link;
+            }
+            if (function_exists('deliverServiceConfigToUser')) {
+                $__sent_cfg = deliverServiceConfigToUser($uid_buyer, $textcreatuser, $__svc_kb ?? null, $qr_payload !== '' ? $qr_payload : null);
+            } else {
+                $r = sendmessage($uid_buyer, $textcreatuser, $__svc_kb ?? null, 'HTML');
+                $__sent_cfg = function_exists('telegramOk') ? telegramOk($r) : true;
+            }
+            if (($marzban_list_get['type'] ?? '') == "wgdashboard" && $output_config_link !== '' && $__sent_cfg) {
+                try {
+                    $urldocs = sys_get_temp_dir() . "/wg_{$get_invoice['id_invoice']}.conf";
+                    file_put_contents($urldocs, $output_config_link);
+                    if (function_exists('sendDocument')) {
+                        sendDocument($uid_buyer, $urldocs, $textbotlang['users']['buy']['configwg'] ?? 'config');
+                    }
+                    @unlink($urldocs);
+                } catch (Throwable $e_wg) {
+                    error_log('DirectPayment wg doc: ' . $e_wg->getMessage());
+                }
             }
         }
         if ($__sent_cfg) {
@@ -1076,10 +1132,34 @@ function DirectPayment($order_id)
         }
         if (!$__sent_cfg) {
             error_log("DirectPayment: config NOT sent to user {$uid_buyer} order={$order_id}");
+            // یک تلاش تأخیری آخر (بعد از قطع کوتاه شبکه)
+            @usleep(500000);
+            if (function_exists('deliverServiceConfigToUser')) {
+                $__sent_cfg = deliverServiceConfigToUser(
+                    $uid_buyer,
+                    $textcreatuser . "\n\n⚠️ ارسال قبلی ناموفق بود؛ لینک اشتراک:",
+                    $__svc_kb ?? null,
+                    $qr_payload !== '' ? $qr_payload : ($output_config_link !== '' ? $output_config_link : null)
+                );
+            }
+            if ($__sent_cfg) {
+                $GLOBALS['payment_user_notified'] = true;
+            }
+        }
+        if (!$__sent_cfg) {
             try {
                 foreach ($admin_ids as $admin) {
-                    sendmessage($admin, "⚠️ سرویس ساخته شد ولی پیام به کاربر <code>{$uid_buyer}</code> ارسال نشد.\n🔑 <code>{$username_ac}</code>\n🛒 {$order_id}", null, 'HTML');
+                    sendmessage($admin, "⚠️ سرویس ساخته شد ولی پیام/QR به کاربر <code>{$uid_buyer}</code> ارسال نشد (خطای شبکه تلگرام).\n🔑 <code>{$username_ac}</code>\n🛒 {$order_id}\nاز «سرویس‌های من» لینک قابل مشاهده است.", null, 'HTML');
                 }
+            } catch (Throwable $e) {
+            }
+            try {
+                // حداقل به کاربر بگو سرویس ساخته شده حتی اگر جزئیات نرفت
+                telegramRetry('sendMessage', [
+                    'chat_id' => $uid_buyer,
+                    'text' => "✅ پرداخت تأیید و سرویس <code>{$username_ac}</code> ساخته شد.\nاگر لینک را دریافت نکردید از «سرویس‌های من» باز کنید یا با پشتیبانی در تماس باشید.",
+                    'parse_mode' => 'HTML',
+                ], 3);
             } catch (Throwable $e) {
             }
         }

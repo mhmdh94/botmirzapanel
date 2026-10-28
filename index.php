@@ -3484,21 +3484,38 @@ if (isset($datain) && $datain === 'product_header') {
                 ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
             $result = $writer->write($qrCode, null, null);
             $result->saveToFile($urlimage);
-            telegram('sendphoto', [
-                'chat_id' => $from_id,
-                'photo' => new CURLFile($urlimage),
-                'reply_markup' => $Shoppinginfo,
-                'caption' => $textcreatuser,
-                'parse_mode' => "HTML",
-            ]);
+            $__photo_ok = false;
+            if (function_exists('deliverServiceConfigToUser') && !empty($output_config_link)) {
+                $__photo_ok = deliverServiceConfigToUser($from_id, $textcreatuser, $Shoppinginfo, $output_config_link);
+            } else {
+                $__pr = function_exists('telegramRetry')
+                    ? telegramRetry('sendPhoto', [
+                        'chat_id' => $from_id,
+                        'photo' => new CURLFile($urlimage),
+                        'reply_markup' => $Shoppinginfo,
+                        'caption' => $textcreatuser,
+                        'parse_mode' => "HTML",
+                    ], 3)
+                    : telegram('sendphoto', [
+                        'chat_id' => $from_id,
+                        'photo' => new CURLFile($urlimage),
+                        'reply_markup' => $Shoppinginfo,
+                        'caption' => $textcreatuser,
+                        'parse_mode' => "HTML",
+                    ]);
+                $__photo_ok = function_exists('telegramOk') ? telegramOk($__pr) : (is_array($__pr) && !empty($__pr['ok']));
+                if (!$__photo_ok) {
+                    sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
+                }
+            }
+            @unlink($urlimage);
             if ($marzban_list_get['type'] == "wgdashboard") {
                 $urldocs = "{$marzban_list_get['inboundid']}_{$randomString}.conf";
                 file_put_contents($urldocs, $output_config_link);
                 sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
-                unlink($urlimage);
+                @unlink($urldocs);
             }
             sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
-            unlink($urlimage);
         } elseif ($marzban_list_get['config'] == "onconfig") {
             if (count($dataoutput['configs']) == 1) {
                 $urlimage = "$from_id$randomString.png";
