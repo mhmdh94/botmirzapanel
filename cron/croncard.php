@@ -71,12 +71,47 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         );
     }
 
+    // موجودی واقعی بعد از DirectPayment
+    $u_after = select("user", "*", "id", $Balance_id['id'], "select");
+    $bal_after = number_format(intval(is_array($u_after) ? ($u_after['Balance'] ?? 0) : 0));
     $pd = function_exists('describePaymentReport') ? describePaymentReport($Payment_report) : null;
-    $bal_after = number_format(intval(select('user','Balance','id',$Balance_id['id'],'select')['Balance'] ?? 0));
-    if ($pd) {
-        $auto_txt = sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', $pd['method_label'], $pd['type_label'], $pd['pay_fmt'], $pd['credit_fmt'], $bal_after, $Payment_report['id_order']);
+    // قالب autocart: id, @user, method, type, پرداخت, موجودی‌بعد, سفارش — بدون credit_fmt
+    // قالب autocart_pkg: ... پرداخت, اعتبار, موجودی‌بعد, سفارش
+    if (is_array($pd) && !empty($pd['is_package'])) {
+        $tpl = $textbotlang['Admin']['Report']['autocart_pkg'] ?? $textbotlang['Admin']['Report']['autocart'];
+        $auto_txt = sprintf(
+            $tpl,
+            $Balance_id['id'],
+            $Balance_id['username'] ?? '-',
+            $pd['method_label'],
+            $pd['type_label'],
+            $pd['pay_fmt'],
+            $pd['credit_fmt'],
+            $bal_after,
+            $Payment_report['id_order']
+        );
+    } elseif (is_array($pd)) {
+        $auto_txt = sprintf(
+            $textbotlang['Admin']['Report']['autocart'],
+            $Balance_id['id'],
+            $Balance_id['username'] ?? '-',
+            $pd['method_label'],
+            $pd['type_label'],
+            $pd['pay_fmt'],
+            $bal_after,
+            $Payment_report['id_order']
+        );
     } else {
-        $auto_txt = sprintf($textbotlang['Admin']['Report']['autocart'], $Balance_id['id'], $Balance_id['username'] ?? '-', '💳 کارت‌به‌کارت', 'افزایش موجودی', number_format(intval($Payment_report['price'])), number_format(intval($Payment_report['price'])), $bal_after, $Payment_report['id_order']);
+        $auto_txt = sprintf(
+            $textbotlang['Admin']['Report']['autocart'],
+            $Balance_id['id'],
+            $Balance_id['username'] ?? '-',
+            '💳 کارت‌به‌کارت',
+            'افزایش موجودی',
+            number_format(intval($Payment_report['price'] ?? 0)),
+            $bal_after,
+            $Payment_report['id_order']
+        );
     }
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_cart_auto', $auto_txt);
