@@ -202,6 +202,54 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
     $month = $periodStats($month_ago);
     $prev_month = $periodStats($prev_month_from, $prev_month_until);
 
+    // رکورد بیشترین فروش روزانه در ماه جاری (به وقت تهران)
+    $best_day_cnt = 0;
+    $best_day_sum = 0;
+    $best_day_label = '—';
+    try {
+        if (function_exists('ensureSalesLedger')) {
+            ensureSalesLedger();
+        }
+        global $pdo;
+        $st_bd = $pdo->prepare("SELECT created_at, price FROM sales_ledger WHERE created_at > ? AND created_at <= ?");
+        $st_bd->execute([intval($month_ago), time() + 10]);
+        $by_day = [];
+        $tz_bd = new DateTimeZone('Asia/Tehran');
+        while ($row_bd = $st_bd->fetch(PDO::FETCH_ASSOC)) {
+            $ts_bd = intval($row_bd['created_at'] ?? 0);
+            if ($ts_bd <= 0) {
+                continue;
+            }
+            $dt_bd = (new DateTime('@' . $ts_bd))->setTimezone($tz_bd);
+            $key_bd = $dt_bd->format('Y-m-d');
+            if (!isset($by_day[$key_bd])) {
+                $by_day[$key_bd] = ['cnt' => 0, 'sum' => 0];
+            }
+            $by_day[$key_bd]['cnt']++;
+            $by_day[$key_bd]['sum'] += intval($row_bd['price'] ?? 0);
+        }
+        foreach ($by_day as $d_key => $d_val) {
+            if (intval($d_val['sum']) > $best_day_sum
+                || (intval($d_val['sum']) === $best_day_sum && intval($d_val['cnt']) > $best_day_cnt)
+            ) {
+                $best_day_sum = intval($d_val['sum']);
+                $best_day_cnt = intval($d_val['cnt']);
+                $best_day_label = $d_key;
+            }
+        }
+        if ($best_day_label !== '—') {
+            try {
+                $ts_lab = (new DateTime($best_day_label . ' 12:00:00', $tz_bd))->getTimestamp();
+                $best_day_label = function_exists('jdate') ? jdate('Y/m/d', $ts_lab) : $best_day_label;
+            } catch (Exception $e_lab) {
+            }
+        }
+    } catch (Exception $e_bd) {
+        $best_day_cnt = 0;
+        $best_day_sum = 0;
+        $best_day_label = '—';
+    }
+
     // واریزی‌های تأییدشده — پارس تاریخ در PHP به وقت تهران (مقایسه رشته‌ای MySQL باگ مرز نیمه‌شب دارد)
     $parsePayTime = function ($raw) {
         $raw = trim(strval($raw));
@@ -332,6 +380,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($prev_week['sum']),
         number_format($month['cnt']),
         number_format($month['sum']),
+        number_format($best_day_cnt),
+        number_format($best_day_sum),
+        $best_day_label,
         number_format($prev_month['cnt']),
         number_format($prev_month['sum']),
         number_format($invoice_cnt),

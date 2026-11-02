@@ -782,6 +782,8 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 • این هفته: <code>%s</code> عدد | <code>%s</code> تومان
 • هفته پیش: <code>%s</code> عدد | <code>%s</code> تومان
 • این ماه: <code>%s</code> عدد | <code>%s</code> تومان
+• رکورد روزانه این ماه: <code>%s</code> عدد | <code>%s</code> تومان
+  └ تاریخ: <code>%s</code>
 • ماه پیش: <code>%s</code> عدد | <code>%s</code> تومان
 • کل: <code>%s</code> عدد | <code>%s</code> تومان
 
