@@ -745,6 +745,15 @@ function createUserWithRetry($panel_name, $username_ac, array $datac, $is_test =
             || stripos($msg_l, 'failed to connect') !== false
             || stripos($msg_l, 'empty reply') !== false
             || stripos($msg, 'خطا در ارتباط') !== false
+            || stripos($msg, 'ارتباط با پنل برقرار نشد') !== false
+            || stripos($msg, 'پنل در دسترس نیست') !== false
+            || stripos($msg, 'قطع شبکه') !== false
+            || stripos($msg, 'قطعی موقت') !== false
+            || (stripos($msg_l, 'no_group') !== false && (
+                stripos($msg, 'ارتباط') !== false
+                || stripos($msg, 'در دسترس نیست') !== false
+                || stripos($msg, 'قطع') !== false
+            ))
         );
 
         // فقط تکراری بودن یوزرنیم

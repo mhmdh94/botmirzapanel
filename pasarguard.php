@@ -12,6 +12,80 @@ function marzban_curl_init()
     return $ch;
 }
 #-----------------------------#
+
+/**
+ * آخرین خطای خواندن گروه/اتصال پنل (برای پیام واضح‌تر به ادمین)
+ */
+function panel_set_last_error($code, $message = '')
+{
+    $GLOBALS['panel_api_last_error'] = [
+        'code' => strval($code),
+        'message' => strval($message),
+        'time' => time(),
+    ];
+}
+
+function panel_get_last_error()
+{
+    return is_array($GLOBALS['panel_api_last_error'] ?? null) ? $GLOBALS['panel_api_last_error'] : null;
+}
+
+/**
+ * تشخیص علت نداشتن group_ids و متن فارسی مناسب
+ */
+function diagnose_panel_group_failure($location)
+{
+    $location = strval($location);
+    $panel = select("marzban_panel", "*", "name_panel", $location, "select");
+    if (!$panel || !is_array($panel)) {
+        return 'پنل «' . $location . '» در ربات یافت نشد. از مدیریت پنل‌ها تنظیمات را چک کنید.';
+    }
+    // رفرش توکن برای تشخیص اتصال
+    update("marzban_panel", "datelogin", null, "name_panel", $location);
+    $tok = token_panel($panel['id']);
+    if (!is_array($tok) || empty($tok['access_token'])) {
+        $err = '';
+        if (is_array($tok)) {
+            $err = strval($tok['errror'] ?? $tok['error'] ?? $tok['detail'] ?? $tok['msg'] ?? '');
+        }
+        $err_l = mb_strtolower($err, 'UTF-8');
+        if ($err !== '' && (
+            strpos($err_l, 'timed out') !== false
+            || strpos($err_l, 'timeout') !== false
+            || strpos($err_l, 'could not resolve') !== false
+            || strpos($err_l, 'failed to connect') !== false
+            || strpos($err_l, 'connection') !== false
+            || strpos($err_l, 'curl') !== false
+            || strpos($err_l, 'ssl') !== false
+            || strpos($err_l, 'network') !== false
+        )) {
+            return 'ارتباط با پنل برقرار نشد (قطع شبکه/DNS یا خاموش بودن سرور پنل). پنل را از نظر دسترسی و روشن بودن چک کنید.'
+                . ($err !== '' ? "\nجزئیات: " . $err : '');
+        }
+        if ($err !== '' && (
+            stripos($err, 'password') !== false
+            || stripos($err, 'Incorrect') !== false
+            || stripos($err, '401') !== false
+            || stripos($err, 'Unauthorized') !== false
+        )) {
+            return 'ورود به پنل ناموفق بود (نام کاربری یا رمز اشتباه). تنظیمات پنل در ربات را بررسی کنید.';
+        }
+        return 'پنل در دسترس نیست یا پاسخ معتبری نداد. احتمالاً پنل قطع است یا آدرس/پورت اشتباه است.'
+            . ($err !== '' ? "\nجزئیات: " . $err : '');
+    }
+    $resp = get_groups($location);
+    $list = function_exists('_extract_groups_array') ? _extract_groups_array($resp) : [];
+    if (!is_array($list) || count($list) === 0) {
+        $last = panel_get_last_error();
+        $code = is_array($last) ? strval($last['code'] ?? '') : '';
+        if (in_array($code, ['token_failed', 'connection', 'http_error', 'empty_response'], true)) {
+            return 'پنل وصل شد ولی خواندن گروه‌ها ناموفق بود (قطعی موقت یا خطای API). چند دقیقه بعد دوباره تلاش کنید یا وضعیت پنل را چک کنید.';
+        }
+        return 'پنل در دسترس است ولی هیچ گروهی برای ادمین تعریف نشده. در پاسارگارد حداقل یک گروه برای این ادمین بسازید.';
+    }
+    return 'گروه پنل قابل استفاده نبود. تنظیمات inbound/گروه پنل را در ربات و پاسارگارد بررسی کنید.';
+}
+
 function token_panel($code_panel){
     $panel = select("marzban_panel","*","id",$code_panel,"select");
     if($panel['datelogin'] != null){
@@ -141,11 +215,14 @@ function adduser($username,$expire,$data_limit,$location,$is_test = false)
         $data['group_ids'] = array_map('intval', array_values($group_ids));
     } else {
         error_log("marzban adduser: no group_ids for panel={$location}");
-        // بدون گروه کاربر نساز — پاسخ ساختگی شبیه خطای API برای caller
+        $diag = function_exists('diagnose_panel_group_failure')
+            ? diagnose_panel_group_failure($location)
+            : 'خواندن گروه از پنل ناموفق بود. اتصال پنل و تعریف گروه را بررسی کنید.';
         return json_encode([
-            'detail' => 'هیچ گروهی از پنل خوانده نشد. در پاسارگارد حداقل یک گروه برای ادمین تعریف کنید.',
+            'detail' => $diag,
             'msg' => 'no_group_ids',
             'username' => null,
+            'status' => 'Unsuccessful',
         ], JSON_UNESCAPED_UNICODE);
     }
 
@@ -472,11 +549,18 @@ function create_group($location, $group_name, $inbound_tags = null) {
 function get_groups($location) {
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $location, "select");
     if (!$marzban_list_get || !is_array($marzban_list_get)) {
+        if (function_exists('panel_set_last_error')) {
+            panel_set_last_error('panel_missing', 'panel row not found');
+        }
         return null;
     }
     $Check_token = token_panel($marzban_list_get['id']);
     if (!is_array($Check_token) || empty($Check_token['access_token'])) {
         error_log("get_groups: token failed for {$location}: " . json_encode($Check_token));
+        if (function_exists('panel_set_last_error')) {
+            $te = is_array($Check_token) ? strval($Check_token['errror'] ?? $Check_token['error'] ?? $Check_token['detail'] ?? '') : '';
+            panel_set_last_error('token_failed', $te !== '' ? $te : 'no access_token');
+        }
         return null;
     }
     $base = rtrim(strval($marzban_list_get['url_panel']), '/');
@@ -502,6 +586,9 @@ function get_groups($location) {
         $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
         curl_close($ch);
         if ($output === false || $code === 0) {
+            if (function_exists('panel_set_last_error')) {
+                panel_set_last_error('connection', 'curl failed or http 0');
+            }
             continue;
         }
         // اگر 401 بود توکن را تازه کن و یک‌بار دیگر همین URL
@@ -538,6 +625,12 @@ function get_groups($location) {
         }
     }
     error_log("get_groups: no groups for panel={$location}");
+    if (function_exists('panel_set_last_error')) {
+        $prev = panel_get_last_error();
+        if (!$prev || ($prev['code'] ?? '') === '') {
+            panel_set_last_error('empty_groups', 'no groups in response');
+        }
+    }
     return null;
 }
 
