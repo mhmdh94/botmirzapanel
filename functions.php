@@ -975,16 +975,53 @@ function DirectPayment($order_id)
         $stmt->execute();
         $get_invoice = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$get_invoice || !is_array($get_invoice)) {
-            // فاکتور unpaid پیدا نشد — فقط شارژ کیف (جلوگیری از fatal)
-            error_log("DirectPayment getconfigafterpay: invoice not found for " . ($steppay[1] ?? ''));
+            // فاکتور unpaid پیدا نشد — فقط شارژ کیف + اطلاع به کاربر و ادمین
+            $uname_try = strval($steppay[1] ?? '-');
+            error_log("DirectPayment getconfigafterpay: invoice not found for " . $uname_try);
             $uid = intval($Payment_report['id_user']);
             $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
             $Balance_id = select("user", "*", "id", $uid, "select");
-            $bal_now = intval($Balance_id['Balance'] ?? 0) + $credit_amount;
-            update("user", "Balance", $bal_now, "id", $uid);
+            $bal_before = intval(is_array($Balance_id) ? ($Balance_id['Balance'] ?? 0) : 0);
+            if (function_exists('atomicAddBalance')) {
+                $bal_now = atomicAddBalance($uid, $credit_amount);
+                if ($bal_now === false) {
+                    $bal_now = $bal_before + $credit_amount;
+                    update("user", "Balance", $bal_now, "id", $uid);
+                }
+            } else {
+                $bal_now = $bal_before + $credit_amount;
+                update("user", "Balance", $bal_now, "id", $uid);
+            }
+            if (function_exists('logWalletTx')) {
+                logWalletTx($uid, 'deposit', $credit_amount, intval($bal_now), 'واریز پس از خرید (فاکتور unpaid یافت نشد): ' . $uname_try);
+            }
             update("Payment_report", "payment_Status", "paid", "id_order", $order_id);
-            sendmessage($uid, "💰 مبلغ " . number_format($credit_amount) . " تومان به کیف پول واریز شد.\nسرویس به‌صورت خودکار ساخته نشد؛ از پشتیبانی پیگیری کنید.\n🛒 " . $order_id, null, 'HTML');
+            $credit_fmt = number_format($credit_amount);
+            $user_msg = "✅ مبلغ <b>{$credit_fmt}</b> تومان به کیف پول شما اضافه شد.\n"
+                . "سرویس به‌صورت خودکار ساخته نشد.\n"
+                . "چند لحظه دیگر دوباره از منوی خرید اقدام کنید؛ مبلغ از موجودی کم می‌شود.\n"
+                . "🧾 <code>{$order_id}</code>";
+            sendmessage($uid, $user_msg, null, 'HTML');
             $GLOBALS['payment_user_notified'] = true;
+            $uname_tg = is_array($Balance_id) ? strval($Balance_id['username'] ?? '-') : '-';
+            $admin_msg = "⚠️ <b>خرید پس از پرداخت — ساخت خودکار ناموفق</b>\n"
+                . "🆔 کاربر: <code>{$uid}</code>\n"
+                . "👤 @{$uname_tg}\n"
+                . "🔑 یوزرنیم درخواستی: <code>" . htmlspecialchars($uname_try, ENT_QUOTES, 'UTF-8') . "</code>\n"
+                . "💰 مبلغ واریز به کیف: <b>{$credit_fmt}</b> تومان\n"
+                . "🧾 سفارش: <code>{$order_id}</code>\n"
+                . "📝 دلیل: فاکتور unpaid در دیتابیس پیدا نشد (ممکن است قبلاً مصرف/حذف شده باشد).";
+            try {
+                foreach ((array)$admin_ids as $admin) {
+                    if (intval($admin) > 0) {
+                        sendmessage($admin, $admin_msg, null, 'HTML');
+                    }
+                }
+            } catch (Throwable $e_adm) {
+            }
+            if (function_exists('sendChannelReport')) {
+                sendChannelReport('rpt_create_error', $admin_msg);
+            }
             return;
         }
         $username_ac = $get_invoice['username'];
