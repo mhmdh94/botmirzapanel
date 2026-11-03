@@ -970,10 +970,42 @@ function DirectPayment($order_id)
     $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
     $steppay = explode("|", $Payment_report['invoice']);
     if ($steppay[0] == "getconfigafterpay") {
-        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE username = :username AND (Status = 'unpaid' OR status = 'unpaid') LIMIT 1");
-        $stmt->bindParam(':username', $steppay[1], PDO::PARAM_STR);
-        $stmt->execute();
-        $get_invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+        $uname_pay = strval($steppay[1] ?? '');
+        $uid_pay = intval($Payment_report['id_user'] ?? 0);
+        $get_invoice = false;
+        // 1) یوزرنیم + unpaid
+        if ($uname_pay !== '') {
+            $stmt = $pdo->prepare("SELECT * FROM invoice WHERE username = :username AND (Status = 'unpaid' OR status = 'unpaid') LIMIT 1");
+            $stmt->bindParam(':username', $uname_pay, PDO::PARAM_STR);
+            $stmt->execute();
+            $get_invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        // 2) همان کاربر + unpaid (اگر یوزرنیم عوض/ناسازگار شده)
+        if ((!$get_invoice || !is_array($get_invoice)) && $uid_pay > 0) {
+            $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :uid AND (Status = 'unpaid' OR status = 'unpaid') ORDER BY id DESC LIMIT 1");
+            $stmt->bindParam(':uid', $uid_pay, PDO::PARAM_STR);
+            $stmt->execute();
+            $get_invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($get_invoice)) {
+                error_log("DirectPayment: unpaid found by id_user={$uid_pay} username=" . ($get_invoice['username'] ?? ''));
+            }
+        }
+        // 3) یوزرنیم بدون فیلتر status — فقط اگر هنوز active نشده و مال همین کاربر است
+        if ((!$get_invoice || !is_array($get_invoice)) && $uname_pay !== '' && $uid_pay > 0) {
+            $stmt = $pdo->prepare("SELECT * FROM invoice WHERE username = :username AND id_user = :uid ORDER BY id DESC LIMIT 1");
+            $stmt->bindParam(':username', $uname_pay, PDO::PARAM_STR);
+            $stmt->bindParam(':uid', $uid_pay, PDO::PARAM_STR);
+            $stmt->execute();
+            $row_any = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row_any)) {
+                $st = strtolower(strval($row_any['Status'] ?? $row_any['status'] ?? ''));
+                if ($st === 'unpaid' || $st === '' || $st === '0') {
+                    $get_invoice = $row_any;
+                } else {
+                    error_log("DirectPayment: invoice exists but status={$st} for {$uname_pay}");
+                }
+            }
+        }
         if (!$get_invoice || !is_array($get_invoice)) {
             // فاکتور unpaid پیدا نشد — فقط شارژ کیف + اطلاع به کاربر و ادمین
             $uname_try = strval($steppay[1] ?? '-');
@@ -1010,7 +1042,7 @@ function DirectPayment($order_id)
                 . "🔑 یوزرنیم درخواستی: <code>" . htmlspecialchars($uname_try, ENT_QUOTES, 'UTF-8') . "</code>\n"
                 . "💰 مبلغ واریز به کیف: <b>{$credit_fmt}</b> تومان\n"
                 . "🧾 سفارش: <code>{$order_id}</code>\n"
-                . "📝 دلیل: فاکتور unpaid در دیتابیس پیدا نشد (ممکن است قبلاً مصرف/حذف شده باشد).";
+                . "📝 دلیل: فاکتور unpaid پیدا نشد (یوزر تکراری/INSERT ناموفق، وضعیت عوض‌شده، یا حذف فاکتور).";
             try {
                 foreach ((array)$admin_ids as $admin) {
                     if (intval($admin) > 0) {

@@ -3233,7 +3233,42 @@ if (isset($datain) && $datain === 'product_header') {
         $Status = "unpaid";
         $stmt->bind_param("ssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status);
         $stmt->execute();
+        $ins_ok = ($stmt->affected_rows > 0);
         $stmt->close();
+        // اگر INSERT IGNORE به‌خاطر یوزرنیم تکراری چیزی ننوشت، وضعیت unpaid را بازیابی/ثبت کن
+        if (!$ins_ok) {
+            global $pdo;
+            try {
+                $st_chk = $pdo->prepare("SELECT id, Status, status, id_user FROM invoice WHERE username = ? LIMIT 1");
+                $st_chk->execute([$username_ac]);
+                $ex = $st_chk->fetch(PDO::FETCH_ASSOC);
+                if (is_array($ex)) {
+                    $stv = strtolower(strval($ex['Status'] ?? $ex['status'] ?? ''));
+                    if ($stv !== 'unpaid') {
+                        // فاکتور قدیمی — به unpaid برای این خرید برنگردان اگر active است؛ یوزرنیم جدید بساز
+                        $username_ac = $username_ac . random_int(10, 99);
+                        $stmt2 = $connect->prepare("INSERT INTO invoice(id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)");
+                        $stmt2->bind_param("ssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status);
+                        $stmt2->execute();
+                        $stmt2->close();
+                    } elseif (intval($ex['id_user'] ?? 0) !== intval($from_id)) {
+                        $username_ac = $username_ac . random_int(10, 99);
+                        $stmt2 = $connect->prepare("INSERT INTO invoice(id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)");
+                        $stmt2->bind_param("ssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status);
+                        $stmt2->execute();
+                        $stmt2->close();
+                    }
+                    // اگر unpaid و مال همین کاربر است، همان فاکتور قابل استفاده است
+                } else {
+                    $stmt2 = $connect->prepare("INSERT INTO invoice(id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)");
+                    $stmt2->bind_param("ssssssssss", $from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $info_product['Volume_constraint'], $info_product['Service_time'], $Status);
+                    $stmt2->execute();
+                    $stmt2->close();
+                }
+            } catch (Throwable $e_ins) {
+                error_log('invoice unpaid ensure: ' . $e_ins->getMessage());
+            }
+        }
         update("user", "Processing_value_one", $username_ac, "id", $from_id);
         update("user", "Processing_value_tow", "getconfigafterpay", "id", $from_id);
         return;
