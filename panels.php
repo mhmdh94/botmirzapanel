@@ -77,19 +77,26 @@ class ManagePanel
         }
         if ($Get_Data_Panel['type'] == "marzban" || $Get_Data_Panel['type'] == "pasarguard") {
             $UsernameData = getuser($username, $Get_Data_Panel['name_panel']);
-            if (isset($UsernameData['detail']) && $UsernameData['detail']) {
+            if (!is_array($UsernameData)) {
                 return array(
                     'status' => 'Unsuccessful',
-                    'msg' => $UsernameData['detail']
-                );
-            } elseif (!isset($UsernameData['username'])) {
-                return array(
-                    'status' => 'Unsuccessful',
-                    'msg' => $UsernameData['detail']
+                    'msg' => 'ارتباط با پنل برقرار نشد یا پاسخ نامعتبر بود'
                 );
             }
-            if (!preg_match('/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?((\/[^\s\/]+)+)?$/', $UsernameData['subscription_url'])) {
-                $UsernameData['subscription_url'] = $Get_Data_Panel['url_panel'] . "/" . ltrim($UsernameData['subscription_url'], "/");
+            if (!empty($UsernameData['detail']) && empty($UsernameData['username'])) {
+                return array(
+                    'status' => 'Unsuccessful',
+                    'msg' => strval($UsernameData['detail'])
+                );
+            }
+            if (empty($UsernameData['username'])) {
+                return array(
+                    'status' => 'Unsuccessful',
+                    'msg' => strval($UsernameData['detail'] ?? $UsernameData['msg'] ?? 'کاربر در پنل یافت نشد')
+                );
+            }
+            if (empty($UsernameData['subscription_url']) || !preg_match('/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?((\/[^\s\/]+)+)?$/', strval($UsernameData['subscription_url']))) {
+                $UsernameData['subscription_url'] = rtrim(strval($Get_Data_Panel['url_panel'] ?? ''), '/') . '/' . ltrim(strval($UsernameData['subscription_url'] ?? ''), '/');
             }
             // نرمال‌سازی تاریخ انقضا برای پاسارگارد / مرزبان جدید
             if ($UsernameData['status'] == 'on_hold') {

@@ -88,7 +88,10 @@ function diagnose_panel_group_failure($location)
 
 function token_panel($code_panel){
     $panel = select("marzban_panel","*","id",$code_panel,"select");
-    if($panel['datelogin'] != null){
+    if (!$panel || !is_array($panel)) {
+        return ['error' => 'panel_not_found', 'access_token' => null];
+    }
+    if(($panel['datelogin'] ?? null) != null){
         $date = json_decode($panel['datelogin'],true);
         if(isset($date['time'])){
         $timecurrent = time();
@@ -143,7 +146,14 @@ function token_panel($code_panel){
 function getuser($usernameac,$location)
 {
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $location,"select");
+    if (!$marzban_list_get || !is_array($marzban_list_get)) {
+        return ['detail' => 'Panel Not Found', 'username' => null];
+    }
     $Check_token = token_panel($marzban_list_get['id']);
+    if (!is_array($Check_token) || empty($Check_token['access_token'])) {
+        $te = is_array($Check_token) ? strval($Check_token['errror'] ?? $Check_token['error'] ?? $Check_token['detail'] ?? '') : '';
+        return ['detail' => ($te !== '' ? $te : 'ارتباط با پنل برقرار نشد'), 'username' => null];
+    }
     $url =  $marzban_list_get['url_panel'].'/api/user/' . $usernameac;
     $header_value = 'Bearer ';
 
@@ -158,7 +168,13 @@ function getuser($usernameac,$location)
 
     $output = curl_exec($ch);
     curl_close($ch);
+    if ($output === false || $output === null || $output === '') {
+        return ['detail' => 'پاسخ خالی از پنل (قطع یا timeout)', 'username' => null];
+    }
     $data_useer = json_decode($output, true);
+    if (!is_array($data_useer)) {
+        return ['detail' => 'پاسخ نامعتبر از پنل', 'username' => null];
+    }
     return $data_useer;
 }
 #-----------------------------#
@@ -187,7 +203,15 @@ function ResetUserDataUsage($usernameac,$location)
 function adduser($username,$expire,$data_limit,$location,$is_test = false)
 {
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $location,"select");
+    if (!$marzban_list_get || !is_array($marzban_list_get)) {
+        return json_encode(['detail' => 'Panel Not Found', 'msg' => 'Panel Not Found', 'username' => null], JSON_UNESCAPED_UNICODE);
+    }
     $Check_token = token_panel($marzban_list_get['id']);
+    if (!is_array($Check_token) || empty($Check_token['access_token'])) {
+        $te = is_array($Check_token) ? strval($Check_token['errror'] ?? $Check_token['error'] ?? $Check_token['detail'] ?? '') : '';
+        $msg = $te !== '' ? $te : 'ارتباط با پنل برقرار نشد (قطع شبکه یا خاموش بودن سرور پنل)';
+        return json_encode(['detail' => $msg, 'msg' => $msg, 'username' => null], JSON_UNESCAPED_UNICODE);
+    }
     $url = $marzban_list_get['url_panel']."/api/user";
     $header_value = 'Bearer ';
     
@@ -613,6 +637,13 @@ function get_groups($location) {
         }
         if ($code >= 400 || $output === false) {
             error_log("get_groups HTTP {$code} url={$url} body=" . substr(strval($output), 0, 200));
+            if (function_exists('panel_set_last_error')) {
+                if ($code === 521 || $code === 522 || $code === 523 || $code === 525 || $code === 0) {
+                    panel_set_last_error('connection', "HTTP {$code}");
+                } else {
+                    panel_set_last_error('http_error', "HTTP {$code}");
+                }
+            }
             continue;
         }
         $decoded = json_decode($output, true);
