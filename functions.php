@@ -862,7 +862,7 @@ function notifyUserReceiptAccepted($user_id, $order_id, $price = 0, $extra = '')
         $GLOBALS['payment_user_notified'] = true;
         return true;
     } catch (Throwable $e) {
-        error_log('notifyUserReceiptAccepted fail uid=' . $uid . ' order=' . $order_id . ' err=' . $e->getMessage());
+        if (function_exists('botErrorLog')) { botErrorLog('notifyUserReceiptAccepted fail', ['uid' => $uid, 'order' => $order_id, 'error' => $e->getMessage()], 'ERROR', 'payment'); } else { error_log('notifyUserReceiptAccepted fail uid=' . $uid); }
         try {
             sendmessage($uid, $msg, null, 'HTML');
             $GLOBALS['payment_user_notified'] = true;
@@ -1009,7 +1009,7 @@ function DirectPayment($order_id)
         if (!$get_invoice || !is_array($get_invoice)) {
             // فاکتور unpaid پیدا نشد — فقط شارژ کیف + اطلاع به کاربر و ادمین
             $uname_try = strval($steppay[1] ?? '-');
-            error_log("DirectPayment getconfigafterpay: invoice not found for " . $uname_try);
+            if (function_exists('botErrorLog')) { botErrorLog('invoice unpaid not found after payment', ['order' => $order_id, 'username' => $uname_try, 'uid' => intval($Payment_report['id_user'] ?? 0), 'price' => $Payment_report['price'] ?? null, 'invoice_field' => $Payment_report['invoice'] ?? null], 'ERROR', 'payment'); } else { error_log("DirectPayment getconfigafterpay: invoice not found for " . $uname_try); }
             $uid = intval($Payment_report['id_user']);
             $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
             $Balance_id = select("user", "*", "id", $uid, "select");
@@ -1075,6 +1075,15 @@ function DirectPayment($order_id)
         }
 
         if ($dataoutput['username'] == null) {
+            if (function_exists('botErrorLog')) {
+                botErrorLog('create user failed after payment', [
+                    'order' => $order_id,
+                    'uid' => intval($Payment_report['id_user'] ?? 0),
+                    'username' => $username_ac ?? null,
+                    'panel' => $marzban_list_get['name_panel'] ?? null,
+                    'panel_msg' => is_string($dataoutput['msg'] ?? null) ? $dataoutput['msg'] : json_encode($dataoutput['msg'] ?? null, JSON_UNESCAPED_UNICODE),
+                ], 'ERROR', 'panel');
+            }
             $err_msg = formatPanelErrorMsg($dataoutput['msg'] ?? null);
             $pay_amount = intval($Payment_report['price']);
             $refunded = refundBalanceIfDeducted($Payment_report['id_user'], $pay_amount, null);
@@ -1209,7 +1218,7 @@ function DirectPayment($order_id)
             $GLOBALS['payment_user_notified'] = true;
         }
         if (!$__sent_cfg) {
-            error_log("DirectPayment: config NOT sent to user {$uid_buyer} order={$order_id}");
+            if (function_exists('botErrorLog')) { botErrorLog('config message not delivered to user', ['order' => $order_id, 'uid' => $uid_buyer, 'username' => $username_ac ?? null], 'ERROR', 'buy'); } else { error_log("DirectPayment: config NOT sent to user {$uid_buyer} order={$order_id}"); }
             // یک تلاش تأخیری آخر (بعد از قطع کوتاه شبکه)
             @usleep(500000);
             if (function_exists('deliverServiceConfigToUser')) {
@@ -1477,7 +1486,7 @@ function DirectPayment($order_id)
                 update("user", "Balance", $bv + $price_ext, "id", $uid);
             }
             sendmessage($uid, "❌ تمدید با خطا مواجه شد. مبلغ تمدید به کیف پول برگشت.\nاز «سرویس‌های من» دوباره تلاش کنید.", null, 'HTML');
-            error_log('extendafterpay fail: ' . $e->getMessage());
+            if (function_exists('botLogException')) { botLogException($e, 'renew'); } else { error_log('extendafterpay fail: ' . $e->getMessage()); }
         }
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
         if ($Payment_report['Payment_Method'] == "cart to cart" && !empty($callback_query_id)) {
@@ -2329,7 +2338,7 @@ function logWalletTx($id_user, $type, $amount, $balance_after = null, $detail = 
             time()
         ]);
     } catch (Exception $e) {
-        error_log('logWalletTx: ' . $e->getMessage());
+        if (function_exists('botLogException')) { botLogException($e, 'wallet'); } else { error_log('logWalletTx: ' . $e->getMessage()); }
     }
 }
 
@@ -2374,7 +2383,7 @@ function recordSale($id_user, $price, $sale_type = 'buy', $username = null, $id_
         $st = $pdo->prepare("INSERT INTO sales_ledger (id_user, username, price, sale_type, id_invoice, created_at) VALUES (?,?,?,?,?,?)");
         $st->execute([intval($id_user), $username, $price, $sale_type, $id_invoice, time()]);
     } catch (Exception $e) {
-        error_log('recordSale: ' . $e->getMessage());
+        if (function_exists('botLogException')) { botLogException($e, 'sales'); } else { error_log('recordSale: ' . $e->getMessage()); }
     }
 }
 

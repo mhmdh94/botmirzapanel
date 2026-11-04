@@ -238,7 +238,7 @@ function adduser($username,$expire,$data_limit,$location,$is_test = false)
     if (is_array($group_ids) && count($group_ids) > 0) {
         $data['group_ids'] = array_map('intval', array_values($group_ids));
     } else {
-        error_log("marzban adduser: no group_ids for panel={$location}");
+        if (function_exists('botErrorLog')) { botErrorLog('adduser no group_ids', ['panel' => $location], 'ERROR', 'panel'); } else { error_log("marzban adduser: no group_ids for panel={$location}"); }
         $diag = function_exists('diagnose_panel_group_failure')
             ? diagnose_panel_group_failure($location)
             : 'خواندن گروه از پنل ناموفق بود. اتصال پنل و تعریف گروه را بررسی کنید.';
@@ -580,7 +580,7 @@ function get_groups($location) {
     }
     $Check_token = token_panel($marzban_list_get['id']);
     if (!is_array($Check_token) || empty($Check_token['access_token'])) {
-        error_log("get_groups: token failed for {$location}: " . json_encode($Check_token));
+        if (function_exists('botErrorLog')) { botErrorLog('get_groups token failed', ['panel' => $location, 'token_resp' => is_array($Check_token) ? array_intersect_key($Check_token, array_flip(['error','errror','detail','msg'])) : null], 'ERROR', 'panel'); } else { error_log("get_groups: token failed for {$location}"); }
         if (function_exists('panel_set_last_error')) {
             $te = is_array($Check_token) ? strval($Check_token['errror'] ?? $Check_token['error'] ?? $Check_token['detail'] ?? '') : '';
             panel_set_last_error('token_failed', $te !== '' ? $te : 'no access_token');
@@ -636,7 +636,7 @@ function get_groups($location) {
             curl_close($ch);
         }
         if ($code >= 400 || $output === false) {
-            error_log("get_groups HTTP {$code} url={$url} body=" . substr(strval($output), 0, 200));
+            if (function_exists('botErrorLog')) { botErrorLog('get_groups HTTP error', ['panel' => $location, 'http' => $code, 'url' => $url, 'body' => substr(strval($output), 0, 200)], 'ERROR', 'panel'); } else { error_log("get_groups HTTP {$code}"); }
             if (function_exists('panel_set_last_error')) {
                 if ($code === 521 || $code === 522 || $code === 523 || $code === 525 || $code === 0) {
                     panel_set_last_error('connection', "HTTP {$code}");
@@ -655,7 +655,7 @@ function get_groups($location) {
             return array('groups' => $list, 'total' => count($list));
         }
     }
-    error_log("get_groups: no groups for panel={$location}");
+    if (function_exists('botErrorLog')) { botErrorLog('get_groups empty', ['panel' => $location], 'WARN', 'panel'); } else { error_log("get_groups: no groups for panel={$location}"); }
     if (function_exists('panel_set_last_error')) {
         $prev = panel_get_last_error();
         if (!$prev || ($prev['code'] ?? '') === '') {
@@ -684,7 +684,7 @@ function resolve_panel_group_ids($location, $is_test = false, $panel_row = null)
     $resp = get_groups($location);
     $list = _extract_groups_array($resp);
     if (!is_array($list) || count($list) === 0) {
-        error_log("resolve_panel_group_ids: empty for {$location}");
+        if (function_exists('botErrorLog')) { botErrorLog('resolve_panel_group_ids empty', ['panel' => $location], 'WARN', 'panel'); } else { error_log("resolve_panel_group_ids: empty for {$location}"); }
         return null;
     }
 

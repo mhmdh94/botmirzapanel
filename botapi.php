@@ -2,14 +2,90 @@
 /**
  * لاگ خطا در فایل error_log کنار ربات + error_log سیستم
  */
-function botErrorLog($message, array $ctx = [])
+/**
+ * لاگ یکپارچه ربات — همه بخش‌ها
+ * سطح: ERROR | WARN | INFO | DEBUG
+ * section: telegram | payment | panel | invoice | wallet | cron | admin | support | buy | renew | ...
+ */
+function botErrorLog($message, array $ctx = [], $level = 'ERROR', $section = '')
 {
-    $line = '[' . date('Y-m-d H:i:s') . ' Asia/Tehran] ' . strval($message);
-    if (!empty($ctx)) {
-        $safe = $ctx;
-        // توکن را لاگ نکن
-        unset($safe['token'], $safe['APIKEY']);
-        $line .= ' | ' . json_encode($safe, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $level = strtoupper(strval($level ?: 'ERROR'));
+    $section = strval($section);
+    if ($section === '' && isset($ctx['section'])) {
+        $section = strval($ctx['section']);
+        unset($ctx['section']);
+    }
+    // داده حساس را حذف کن
+    $deny = ['token', 'APIKEY', 'api_key', 'password', 'password_panel', 'passwd', 'secret', 'Authorization', 'card_number', 'card'];
+    $safe = [];
+    foreach ($ctx as $k => $v) {
+        $ks = strval($k);
+        $kl = strtolower($ks);
+        $skip = false;
+        foreach ($deny as $d) {
+            if ($kl === strtolower($d) || strpos($kl, 'password') !== false || strpos($kl, 'token') !== false) {
+                $skip = true;
+                break;
+            }
+        }
+        if ($skip) {
+            continue;
+        }
+        if (is_object($v)) {
+            if ($v instanceof Throwable) {
+                $safe[$ks] = $v->getMessage();
+            } else {
+                $safe[$ks] = '[object ' . get_class($v) . ']';
+            }
+        } elseif (is_array($v)) {
+            $safe[$ks] = $v;
+        } elseif (is_bool($v)) {
+            $safe[$ks] = $v ? true : false;
+        } elseif (is_resource($v)) {
+            $safe[$ks] = '[resource]';
+        } else {
+            $s = strval($v);
+            if (strlen($s) > 2000) {
+                $s = substr($s, 0, 2000) . '…';
+            }
+            $safe[$ks] = $s;
+        }
+    }
+    // غنی‌سازی خودکار از گلوبال‌های ربات (اگر موجود باشند)
+    foreach (['from_id' => 'uid', 'username' => 'tg_username', 'text' => 'user_text', 'datain' => 'callback'] as $g => $alias) {
+        if (!isset($safe[$alias]) && isset($GLOBALS[$g]) && $GLOBALS[$g] !== '' && $GLOBALS[$g] !== null) {
+            $val = $GLOBALS[$g];
+            if (is_scalar($val)) {
+                $s = strval($val);
+                if ($alias === 'user_text' && strlen($s) > 120) {
+                    $s = substr($s, 0, 120) . '…';
+                }
+                $safe[$alias] = $s;
+            }
+        }
+    }
+    if (!isset($safe['uri']) && !empty($_SERVER['REQUEST_URI'])) {
+        $safe['uri'] = strval($_SERVER['REQUEST_URI']);
+    }
+    // محل فراخوانی
+    if (!isset($safe['at'])) {
+        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+        foreach ($bt as $frame) {
+            $f = strval($frame['file'] ?? '');
+            if ($f === '' || substr($f, -9) === 'botapi.php') {
+                continue;
+            }
+            $safe['at'] = basename($f) . ':' . intval($frame['line'] ?? 0);
+            break;
+        }
+    }
+    $sec_part = $section !== '' ? "[{$section}] " : '';
+    $line = '[' . date('Y-m-d H:i:s') . " Asia/Tehran] [{$level}] {$sec_part}" . strval($message);
+    if (!empty($safe)) {
+        $json = json_encode($safe, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json !== false) {
+            $line .= ' | ' . $json;
+        }
     }
     $line .= "\n";
     @error_log(rtrim($line));
@@ -18,7 +94,9 @@ function botErrorLog($message, array $ctx = [])
         $paths[] = __DIR__ . '/error_log';
         $paths[] = dirname(__DIR__) . '/error_log';
     }
-    $paths[] = (isset($_SERVER['DOCUMENT_ROOT']) ? rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/error_log' : null);
+    if (!empty($_SERVER['DOCUMENT_ROOT'])) {
+        $paths[] = rtrim(strval($_SERVER['DOCUMENT_ROOT']), '/') . '/error_log';
+    }
     foreach ($paths as $p) {
         if (!$p) {
             continue;
@@ -33,6 +111,33 @@ function botErrorLog($message, array $ctx = [])
             break;
         }
     }
+}
+
+/** لاگ سریع با بخش مشخص */
+function botLog($section, $message, array $ctx = [], $level = 'INFO')
+{
+    if (!function_exists('botErrorLog')) {
+        return;
+    }
+    botErrorLog($message, $ctx, $level, $section);
+}
+
+/** لاگ Exception کامل */
+function botLogException($e, $section = 'exception', array $ctx = [])
+{
+    if (!($e instanceof Throwable)) {
+        botErrorLog(strval($e), $ctx, 'ERROR', $section);
+        return;
+    }
+    $ctx['exception'] = get_class($e);
+    $ctx['error'] = $e->getMessage();
+    $ctx['file'] = $e->getFile() . ':' . $e->getLine();
+    $trace = $e->getTraceAsString();
+    if (strlen($trace) > 1500) {
+        $trace = substr($trace, 0, 1500) . '…';
+    }
+    $ctx['trace'] = $trace;
+    botErrorLog($e->getMessage(), $ctx, 'ERROR', $section);
 }
 
 function telegram($method, $datas = [])
@@ -73,7 +178,7 @@ function telegram($method, $datas = [])
                 'curl_error' => $cerr,
                 'http' => $http,
                 'ms' => $ms,
-            ]);
+            ], 'ERROR', 'telegram');
         } else {
             error_log("NET telegram {$method}: [{$errno}] {$cerr}");
         }
@@ -90,7 +195,7 @@ function telegram($method, $datas = [])
                 'ms' => $ms,
                 'raw_len' => is_string($raw) ? strlen($raw) : 0,
                 'raw_head' => is_string($raw) ? substr($raw, 0, 200) : '',
-            ]);
+            ], 'ERROR', 'telegram');
         }
         return false;
     }
@@ -130,7 +235,7 @@ function telegram($method, $datas = [])
                     'description' => $desc,
                     'http' => $http,
                     'ms' => $ms,
-                ]);
+                ], 'ERROR', 'telegram');
             } else {
                 error_log(json_encode($res, JSON_UNESCAPED_UNICODE));
             }
@@ -250,7 +355,7 @@ function notifyAdmins($method, $payload, $admins = null)
         }
     }
     if ($ok === 0 && $fail > 0) {
-        error_log('notifyAdmins all failed method=' . $method . ' errs=' . json_encode($results, JSON_UNESCAPED_UNICODE));
+        if (function_exists('botErrorLog')) { botErrorLog('notifyAdmins all failed', ['method' => $method, 'errs' => $results], 'ERROR', 'admin'); } else { error_log('notifyAdmins all failed method=' . $method); }
     }
     return ['ok' => $ok, 'fail' => $fail, 'results' => $results];
 }
