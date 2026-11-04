@@ -139,9 +139,12 @@ function telegram($method, $datas = [])
     return $res;
 }
 
-function telegramRetry($method, $datas = [], $maxAttempts = 2)
+function telegramRetry($method, $datas = [], $maxAttempts = 3)
 {
-    // حداکثر ۲ تلاش — بدون sleep چندثانیه‌ای (جلوگیری از فریز PHP-FPM)
+    /**
+     * تلاش مجدد روی خطای شبکه (timeout/DNS) بدون پیام اضافه به کاربر.
+     * حداکثر ۳ بار؛ بین خطاهای شبکه ~۱ ثانیه صبر.
+     */
     $maxAttempts = max(1, min(3, intval($maxAttempts)));
     $last = false;
     for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
@@ -153,6 +156,7 @@ function telegramRetry($method, $datas = [], $maxAttempts = 2)
         if (is_array($last) && isset($last['description'])) {
             $desc = mb_strtolower(strval($last['description']), 'UTF-8');
         }
+        // خطای دائمی: retry بی‌فایده
         $permanent = [
             'chat not found',
             'bot was blocked',
@@ -164,22 +168,47 @@ function telegramRetry($method, $datas = [], $maxAttempts = 2)
             'need administrator rights',
             'group_deactivated',
             'chat_id is empty',
+            'message is not modified',
+            'query is too old',
         ];
-        foreach ($permanent as $p) {
-            if ($desc !== '' && strpos($desc, $p) !== false) {
+        foreach ($permanent as $pp) {
+            if ($desc !== '' && strpos($desc, $pp) !== false) {
                 return $last;
             }
         }
         if ($attempt >= $maxAttempts) {
             break;
         }
-        // حداکثر ~0.4s — sleep ثانیه‌ای در webhook ممنوع
-        $us = 200000;
-        if (is_array($last) && isset($last['parameters']['retry_after'])) {
-            $us = min(800000, max(200000, intval($last['parameters']['retry_after']) * 150000));
+        // شبکه: telegram() مقدار false برمی‌گرداند
+        $is_network = ($last === false || $last === null);
+        if (!$is_network && is_array($last)) {
+            $d = $desc;
+            if (
+                strpos($d, 'timeout') !== false
+                || strpos($d, 'timed out') !== false
+                || strpos($d, 'resolve') !== false
+                || strpos($d, 'connection') !== false
+                || strpos($d, 'curl') !== false
+            ) {
+                $is_network = true;
+            }
+            // 429 / flood
+            if (isset($last['error_code']) && intval($last['error_code']) === 429) {
+                $is_network = true;
+            }
         }
-        @usleep($us);
+        if ($is_network) {
+            // ~1.0 تا 1.2 ثانیه — همان «دوباره بعد ۱–۲ ثانیه»
+            $us = 1000000 + (($attempt - 1) * 200000);
+            if (is_array($last) && isset($last['parameters']['retry_after'])) {
+                $us = min(2000000, max(1000000, intval($last['parameters']['retry_after']) * 1000000));
+            }
+            @usleep($us);
+        } else {
+            @usleep(250000);
+        }
     }
+    // هیچ پیام خطایی به کاربر فرستاده نمی‌شود؛ فقط نتیجه برای caller
     return $last;
 }
 
@@ -212,7 +241,7 @@ function notifyAdmins($method, $payload, $admins = null)
         }
         $data = $payload;
         $data['chat_id'] = $aid;
-        $res = telegramRetry($method, $data, 2);
+        $res = telegramRetry($method, $data, 3);
         if (telegramOk($res)) {
             $ok++;
         } else {
@@ -228,13 +257,13 @@ function notifyAdmins($method, $payload, $admins = null)
 
 function sendmessage($chat_id, $text, $keyboard, $parse_mode)
 {
-    return telegram('sendmessage', [
+    return telegramRetry('sendmessage', [
         'chat_id' => $chat_id,
         'text' => $text,
         'disable_web_page_preview' => true,
         'reply_markup' => $keyboard,
         'parse_mode' => $parse_mode,
-    ]);
+    ], 3);
 }
 function forwardMessage($chat_id, $message_id, $chat_id_user)
 {
@@ -246,12 +275,12 @@ function forwardMessage($chat_id, $message_id, $chat_id_user)
 }
 function sendphoto($chat_id, $photoid, $caption, $parse_mode = "HTML")
 {
-    return telegram('sendphoto', [
+    return telegramRetry('sendphoto', [
         'chat_id' => $chat_id,
         'photo' => $photoid,
         'caption' => $caption,
         'parse_mode' => $parse_mode,
-    ]);
+    ], 3);
 }
 function sendvideo($chat_id, $videoid, $caption)
 {
@@ -263,13 +292,13 @@ function sendvideo($chat_id, $videoid, $caption)
 }
 function Editmessagetext($chat_id, $message_id, $text, $keyboard, $parse_mode = "html")
 {
-    return telegram('editmessagetext', [
+    return telegramRetry('editmessagetext', [
         'chat_id' => $chat_id,
         'message_id' => $message_id,
         'text' => $text,
         'reply_markup' => $keyboard,
         'parse_mode' => $parse_mode,
-    ]);
+    ], 3);
 }
 function deletemessage($chat_id, $message_id)
 {
