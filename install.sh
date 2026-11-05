@@ -2230,6 +2230,99 @@ function renew_ssl() {
 
 # --- Helper: list & select additional bot by number OR name ---
 # Sets: SELECTED_BOT, BOT_PATH  | returns 1 on cancel/error
+
+# Return SSL status line for a domain: days left / expired / missing
+function ssl_status_line_for_domain() {
+    local domain="$1"
+    domain=$(echo "$domain" | tr -d '[:space:]')
+    if [ -z "$domain" ]; then
+        echo -e "SSL: \033[33munknown domain\033[0m"
+        return
+    fi
+    local cert="/etc/letsencrypt/live/${domain}/cert.pem"
+    if [ ! -f "$cert" ]; then
+        echo -e "SSL \033[33m⚠️ not found\033[0m ($domain)"
+        return
+    fi
+    local end_raw end_epoch now_epoch left
+    end_raw=$(openssl x509 -enddate -noout -in "$cert" 2>/dev/null | cut -d= -f2)
+    end_epoch=$(date -d "$end_raw" +%s 2>/dev/null || echo 0)
+    now_epoch=$(date +%s)
+    if [ "$end_epoch" -eq 0 ]; then
+        echo -e "SSL \033[33m⚠️ unreadable\033[0m ($domain)"
+        return
+    fi
+    left=$(( (end_epoch - now_epoch) / 86400 ))
+    if [ "$left" -lt 0 ]; then
+        echo -e "SSL \033[31m❌ expired $((-left))d ago\033[0m ($domain)"
+    elif [ "$left" -lt 15 ]; then
+        echo -e "SSL \033[33m⚠️ ${left} days left\033[0m ($domain)"
+    else
+        echo -e "SSL \033[32m✅ ${left} days left\033[0m ($domain)"
+    fi
+}
+
+function domain_from_bot_config() {
+    local cfg="$1"
+    if [ ! -f "$cfg" ]; then
+        echo ""
+        return
+    fi
+    grep -E '^\$domainhosts' "$cfg" 2>/dev/null | head -1 | cut -d"'" -f2 | cut -d'/' -f1 | tr -d '[:space:]'
+}
+
+function show_additional_bots_ssl_status() {
+    clear
+    echo -e "\033[1;36m══════════════════════════════════════\033[0m"
+    echo -e "\033[1;36m  SSL status — Additional bots\033[0m"
+    echo -e "\033[1;36m══════════════════════════════════════\033[0m"
+    echo ""
+
+    local found=0
+    local d name domain cfg
+    for d in /var/www/html/*/; do
+        [ -d "$d" ] || continue
+        name="$(basename "$d")"
+        [ "$name" = "mirzabotconfig" ] && continue
+        case "$name" in
+            phpmyadmin|html|cgi-bin) continue ;;
+        esac
+        cfg="${d}config.php"
+        if [ -f "$cfg" ] && [ -f "${d}index.php" ]; then
+            found=1
+            domain=$(domain_from_bot_config "$cfg")
+            echo -ne "\033[1;36m• $name\033[0m  "
+            if [ -n "$domain" ]; then
+                ssl_status_line_for_domain "$domain"
+            else
+                echo -e "\033[33m(domain not found in config.php)\033[0m"
+            fi
+        fi
+    done
+
+    if [ "$found" -eq 0 ]; then
+        echo -e "\033[33mNo additional bots found.\033[0m"
+    fi
+
+    echo ""
+    # Main bot for comparison
+    if [ -f "/var/www/html/mirzabotconfig/config.php" ]; then
+        domain=$(domain_from_bot_config "/var/www/html/mirzabotconfig/config.php")
+        echo -ne "\033[36mMain bot (mirzabotconfig):\033[0m  "
+        if [ -n "$domain" ]; then
+            ssl_status_line_for_domain "$domain"
+        else
+            echo -e "\033[33m(domain unknown)\033[0m"
+        fi
+    fi
+
+    echo ""
+    echo -e "\033[36mTo renew all: Main menu → option 7\033[0m"
+    echo ""
+    read -p "Press Enter to return..."
+    manage_additional_bots
+}
+
 function select_additional_bot() {
     local prompt_msg="${1:-Select a bot (number or name)}"
     SELECTED_BOT=""
@@ -2256,9 +2349,15 @@ function select_additional_bot() {
     fi
 
     echo -e "\033[36mAvailable Additional Bots:\033[0m"
-    local i
+    local i _dom
     for i in "${!bot_arr[@]}"; do
-        printf "\033[1;36m%2d)\033[0m %s\n" "$((i + 1))" "${bot_arr[$i]}"
+        _dom=$(domain_from_bot_config "/var/www/html/${bot_arr[$i]}/config.php")
+        printf "\033[1;36m%2d)\033[0m %-20s " "$((i + 1))" "${bot_arr[$i]}"
+        if [ -n "$_dom" ] && type ssl_status_line_for_domain &>/dev/null; then
+            ssl_status_line_for_domain "$_dom"
+        else
+            echo ""
+        fi
     done
     echo -e "\033[1;36m 0)\033[0m Cancel"
     echo ""
@@ -2426,9 +2525,10 @@ function manage_additional_bots() {
     echo -e "\033[36m5) Import Additional Bot Database\033[0m"
     echo -e "\033[36m6) Configure Automated Backup for Additional Bot\033[0m"
     echo -e "\033[36m7) Change Domain for Additional Bot\033[0m"
-    echo -e "\033[36m8) Back to Main Menu\033[0m"
+    echo -e "\033[36m8) SSL certificate status (additional bots)\033[0m"
+    echo -e "\033[36m9) Back to Main Menu\033[0m"
     echo ""
-    read -p "Select an option [1-8]: " sub_option
+    read -p "Select an option [1-9]: " sub_option
     case $sub_option in
         1) install_additional_bot ;;
         2) update_additional_bot ;;
@@ -2437,7 +2537,8 @@ function manage_additional_bots() {
         5) import_additional_bot_database ;;
         6) configure_backup_additional_bot ;;
         7) change_domain_additional_bot ;;
-        8) show_menu ;;
+        8) show_additional_bots_ssl_status ;;
+        9) show_menu ;;
         *)
             echo -e "\033[31mInvalid option. Please try again.\033[0m"
             manage_additional_bots
