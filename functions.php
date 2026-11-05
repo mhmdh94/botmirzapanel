@@ -1442,6 +1442,7 @@ function DirectPayment($order_id)
                 }
             }
             update("invoice", "Status", "active", "id_invoice", $nameloc['id_invoice']);
+            update("invoice", "time_sell", date('Y-m-d H:i:s'), "id_invoice", $nameloc['id_invoice']);
             update("invoice", "Service_time", $product['Service_time'], "username", $ext_username);
             update("invoice", "Volume", $product['Volume_constraint'], "username", $ext_username);
             update("invoice", "price_product", $product['price_product'], "username", $ext_username);
@@ -4878,9 +4879,10 @@ function serviceListEmoji($status)
 function serviceListEmojiFromInvoice(array $row)
 {
     $s = strtolower(trim(strval($row['Status'] ?? $row['status'] ?? '')));
+    // وضعیت‌های صریح تمام‌شده
     if (in_array($s, [
         'end_of_time', 'end_of_volume', 'disabled', 'disabledn', 'inactive',
-        'expire', 'expired', 'deactive', 'limited', 'off', '0',
+        'expire', 'expired', 'deactive', 'limited', 'off',
     ], true)) {
         return '🔴';
     }
@@ -4888,9 +4890,9 @@ function serviceListEmojiFromInvoice(array $row)
         return '🟡';
     }
 
-    // محاسبه انقضای زمانی از فاکتور
     $days = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
     $ts_raw = $row['time_sell'] ?? $row['Time'] ?? '';
+    $left = null;
     if ($days > 0 && $ts_raw !== '' && $ts_raw !== null) {
         if (is_numeric($ts_raw) && intval($ts_raw) > 100000) {
             $start = intval($ts_raw);
@@ -4898,15 +4900,26 @@ function serviceListEmojiFromInvoice(array $row)
             $start = strtotime(strval($ts_raw));
         }
         if ($start && $start > 0) {
-            $end = $start + ($days * 86400);
-            $left = $end - time();
-            if ($left <= 0) {
-                return '🔴';
-            }
-            // کمتر از ۳ روز → زرد
-            if ($left <= 3 * 86400) {
-                return '🟡';
-            }
+            $left = ($start + ($days * 86400)) - time();
+        }
+    }
+
+    // اگر Status صریحاً active است، time_sell قدیمی را برای قرمز کردن نادیده بگیر
+    // (بعد از تمدید ممکن است پنل تمدید شده باشد ولی time_sell هنوز آپدیت نشده باشد)
+    if ($s === 'active') {
+        if ($left !== null && $left > 0 && $left <= 3 * 86400) {
+            return '🟡';
+        }
+        return '🟢';
+    }
+
+    // بدون وضعیت معتبر — از تاریخ استفاده کن
+    if ($left !== null) {
+        if ($left <= 0) {
+            return '🔴';
+        }
+        if ($left <= 3 * 86400) {
+            return '🟡';
         }
     }
     return '🟢';

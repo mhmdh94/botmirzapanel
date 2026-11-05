@@ -1907,6 +1907,21 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $priceproductformat = number_format($product['price_product']);
     $balanceformatsell = number_format(select("user", "Balance", "id", $from_id, "select")['Balance']);
     update("invoice", "Status", "active", "id_invoice", $nameloc['id_invoice']);
+    // ریست تاریخ فروش برای محاسبه صحیح ایموجی/انقضا بعد از تمدید
+    try {
+        $__ts_now = date('Y-m-d H:i:s');
+        update("invoice", "time_sell", $__ts_now, "id_invoice", $nameloc['id_invoice']);
+        if (!empty($product['Service_time'])) {
+            update("invoice", "Service_time", $product['Service_time'], "id_invoice", $nameloc['id_invoice']);
+        }
+        if (!empty($product['Volume_constraint'])) {
+            update("invoice", "Volume", $product['Volume_constraint'], "id_invoice", $nameloc['id_invoice']);
+        }
+    } catch (Throwable $e_ts) {
+        if (function_exists('botLogException')) {
+            botLogException($e_ts, 'renew');
+        }
+    }
     if (function_exists('resetSmartCronWarnings')) {
         resetSmartCronWarnings($nameloc['username'], $nameloc['Service_location']);
     }
