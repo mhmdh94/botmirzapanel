@@ -4865,24 +4865,86 @@ function ensureBotCommands($force = false)
  */
 
 /**
- * ایموجی لیست سرویس‌های من بر اساس وضعیت فاکتور
- * 🟢 فعال | 🟡 هشدار حجم/زمان | 🔴 تمام‌شده / غیرفعال
+ * ایموجی لیست سرویس‌های من
+ * 🟢 فعال | 🟡 نزدیک اتمام | 🔴 تمام‌شده / غیرفعال
+ * علاوه بر Status دیتابیس، از time_sell + Service_time هم استفاده می‌کند
+ * چون خیلی وقت‌ها Status روی active می‌ماند ولی سرویس تمام شده.
  */
 function serviceListEmoji($status)
 {
-    $s = strtolower(trim(strval($status)));
-    if ($s === '') {
-        return '🟢';
-    }
-    if (in_array($s, ['end_of_time', 'end_of_volume', 'disabled', 'inactive', 'expire', 'expired', 'deactive', 'limited'], true)) {
+    return serviceListEmojiFromInvoice(['Status' => $status, 'status' => $status]);
+}
+
+function serviceListEmojiFromInvoice(array $row)
+{
+    $s = strtolower(trim(strval($row['Status'] ?? $row['status'] ?? '')));
+    if (in_array($s, [
+        'end_of_time', 'end_of_volume', 'disabled', 'disabledn', 'inactive',
+        'expire', 'expired', 'deactive', 'limited', 'off', '0',
+    ], true)) {
         return '🔴';
     }
-    if (in_array($s, ['sendedwarn', 'warn', 'warning', 'on_hold'], true)) {
+    if (in_array($s, ['sendedwarn', 'warn', 'warning'], true)) {
         return '🟡';
     }
-    // active و سایر
+
+    // محاسبه انقضای زمانی از فاکتور
+    $days = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
+    $ts_raw = $row['time_sell'] ?? $row['Time'] ?? '';
+    if ($days > 0 && $ts_raw !== '' && $ts_raw !== null) {
+        if (is_numeric($ts_raw) && intval($ts_raw) > 100000) {
+            $start = intval($ts_raw);
+        } else {
+            $start = strtotime(strval($ts_raw));
+        }
+        if ($start && $start > 0) {
+            $end = $start + ($days * 86400);
+            $left = $end - time();
+            if ($left <= 0) {
+                return '🔴';
+            }
+            // کمتر از ۳ روز → زرد
+            if ($left <= 3 * 86400) {
+                return '🟡';
+            }
+        }
+    }
     return '🟢';
 }
+
+/**
+ * همگام‌سازی Status فاکتور با وضعیت واقعی پنل (بدون حذف فاکتور)
+ */
+function syncInvoiceStatusFromPanel($invoice_row, $panel_status)
+{
+    if (!is_array($invoice_row)) {
+        return;
+    }
+    $ps = strtolower(trim(strval($panel_status)));
+    $map = [
+        'expired' => 'end_of_time',
+        'limited' => 'end_of_volume',
+        'disabled' => 'disabled',
+        'on_hold' => 'sendedwarn',
+        'active' => 'active',
+    ];
+    if (!isset($map[$ps])) {
+        return;
+    }
+    $new = $map[$ps];
+    $cur = strtolower(trim(strval($invoice_row['Status'] ?? $invoice_row['status'] ?? '')));
+    if ($cur === $new) {
+        return;
+    }
+    $id = $invoice_row['id_invoice'] ?? null;
+    $user = $invoice_row['username'] ?? null;
+    if (!empty($id)) {
+        update('invoice', 'Status', $new, 'id_invoice', $id);
+    } elseif (!empty($user)) {
+        update('invoice', 'Status', $new, 'username', $user);
+    }
+}
+
 
 function emptyServicesKeyboard()
 {

@@ -692,7 +692,7 @@ if ($text == "/status") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmoji($row['Status'] ?? $row['status'] ?? '') . " " . $row['username'],
+                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -746,7 +746,7 @@ if ($text == "/renew") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmoji($row['Status'] ?? $row['status'] ?? '') . " " . $row['username'],
+                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
                 'callback_data' => "extend_" . $row['username']
             ],
         ];
@@ -839,7 +839,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
         $service_count++;
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmoji($row['Status'] ?? $row['status'] ?? '') . " " . $row['username'],
+                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -899,7 +899,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmoji($row['Status'] ?? $row['status'] ?? '') . " " . $row['username'],
+                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -950,7 +950,7 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmoji($row['Status'] ?? $row['status'] ?? '') . " " . $row['username'],
+                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -1075,7 +1075,7 @@ if ($user['step'] == "search_myservice") {
         $keyboardlists = ['inline_keyboard' => []];
         foreach ($results as $row) {
             $keyboardlists['inline_keyboard'][] = [
-                ['text' => serviceListEmoji($row['Status'] ?? $row['status'] ?? '') . " " . $row['username'], 'callback_data' => "product_" . $row['username']]
+                ['text' => serviceListEmojiFromInvoice($row) . " " . $row['username'], 'callback_data' => "product_" . $row['username']]
             ];
         }
         $keyboardlists['inline_keyboard'][] = [
@@ -1092,7 +1092,7 @@ if ($user['step'] == "search_myservice") {
     $keyboardfound = json_encode([
         'inline_keyboard' => [
             [
-                ['text' => serviceListEmoji($invoice['Status'] ?? $invoice['status'] ?? '') . " " . $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
+                ['text' => serviceListEmojiFromInvoice($invoice) . " " . $invoice['username'], 'callback_data' => "product_" . $invoice['username']]
             ],
             [
                 ['text' => $textbotlang['users']['search']['again'], 'callback_data' => 'search_myservice']
@@ -1126,6 +1126,9 @@ if ($user['step'] == "getusernameinfo") {
     }
     #-------------[ status ]----------------#
     $status = $DataUserOut['status'];
+    if (isset($nameloc) && is_array($nameloc) && function_exists('syncInvoiceStatusFromPanel')) {
+        syncInvoiceStatusFromPanel($nameloc, $status);
+    }
     $status_var = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
@@ -1223,6 +1226,9 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     }
     #-------------status----------------#
     $status = $DataUserOut['status'];
+    if (isset($nameloc) && is_array($nameloc) && function_exists('syncInvoiceStatusFromPanel')) {
+        syncInvoiceStatusFromPanel($nameloc, $status);
+    }
     $status_var = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
@@ -2330,6 +2336,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $usernamepanel);
     #-------------status----------------#
     $status = $DataUserOut['status'];
+    if (isset($nameloc) && is_array($nameloc) && function_exists('syncInvoiceStatusFromPanel')) {
+        syncInvoiceStatusFromPanel($nameloc, $status);
+    }
     $status_var = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
