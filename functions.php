@@ -4863,6 +4863,27 @@ function ensureBotCommands($force = false)
 /**
  * کیبورد حالت خالی «سرویس‌های من»: دکمه خرید (+ اختیاری افزودن دستی)
  */
+
+/**
+ * ایموجی لیست سرویس‌های من بر اساس وضعیت فاکتور
+ * 🟢 فعال | 🟡 هشدار حجم/زمان | 🔴 تمام‌شده / غیرفعال
+ */
+function serviceListEmoji($status)
+{
+    $s = strtolower(trim(strval($status)));
+    if ($s === '') {
+        return '🟢';
+    }
+    if (in_array($s, ['end_of_time', 'end_of_volume', 'disabled', 'inactive', 'expire', 'expired', 'deactive', 'limited'], true)) {
+        return '🔴';
+    }
+    if (in_array($s, ['sendedwarn', 'warn', 'warning', 'on_hold'], true)) {
+        return '🟡';
+    }
+    // active و سایر
+    return '🟢';
+}
+
 function emptyServicesKeyboard()
 {
     global $setting, $textbotlang, $datatextbot;
