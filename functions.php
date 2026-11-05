@@ -3389,6 +3389,103 @@ function smartCronDebugLog($message)
 }
 
 
+
+/**
+ * همگام‌سازی Status فاکتور از وضعیت واقعی پنل (کرون هوشمند)
+ * هیچ سرویسی را در پنل حذف/قطع نمی‌کند؛ فقط فیلد Status در دیتابیس ربات را به‌روز می‌کند.
+ * end_of_time | end_of_volume | disabled | sendedwarn | active
+ */
+function applySmartCronInvoiceStatus(array $row, array $dataUser)
+{
+    if (!is_array($dataUser)) {
+        return null;
+    }
+    $ps = strtolower(trim(strval($dataUser['status'] ?? '')));
+    if ($ps === '' || $ps === 'unsuccessful') {
+        return null;
+    }
+    $expire = intval($dataUser['expire'] ?? 0);
+    $data_limit = floatval($dataUser['data_limit'] ?? 0);
+    $used = floatval($dataUser['used_traffic'] ?? 0);
+
+    $new = null;
+    $reason = '';
+
+    if ($ps === 'expired' || ($expire > 0 && $expire <= time())) {
+        $new = 'end_of_time';
+        $reason = 'expired_or_time';
+    } elseif ($ps === 'limited' || ($data_limit > 0 && $used >= $data_limit - 0.000001)) {
+        $new = 'end_of_volume';
+        $reason = 'limited_or_volume';
+    } elseif ($ps === 'disabled') {
+        $new = 'disabled';
+        $reason = 'panel_disabled';
+    } elseif ($ps === 'on_hold') {
+        $new = 'sendedwarn';
+        $reason = 'on_hold';
+    } elseif ($ps === 'active') {
+        $near = false;
+        if ($expire > time() && ($expire - time()) <= 3 * 86400) {
+            $near = true;
+            $reason = 'near_time';
+        }
+        if ($data_limit > 0) {
+            $pct = ($used / $data_limit) * 100.0;
+            if ($pct >= 90.0) {
+                $near = true;
+                $reason = 'near_volume';
+            }
+        }
+        $new = $near ? 'sendedwarn' : 'active';
+        if (!$near) {
+            $reason = 'active';
+        }
+    } else {
+        return null;
+    }
+
+    $cur = strtolower(trim(strval($row['Status'] ?? $row['status'] ?? '')));
+    if ($cur === $new) {
+        return $new;
+    }
+
+    $id = $row['id_invoice'] ?? null;
+    $uname = strval($row['username'] ?? '');
+    $ok = false;
+    try {
+        if (!empty($id)) {
+            update('invoice', 'Status', $new, 'id_invoice', $id);
+            $ok = true;
+        } elseif ($uname !== '') {
+            update('invoice', 'Status', $new, 'username', $uname);
+            $ok = true;
+        }
+    } catch (Throwable $e) {
+        if (function_exists('botLogException')) {
+            botLogException($e, 'smart_cron');
+        }
+    }
+    // بعضی نصب‌ها ستون status با حرف کوچک دارند
+    try {
+        if (!empty($id)) {
+            update('invoice', 'status', $new, 'id_invoice', $id);
+        } elseif ($uname !== '') {
+            update('invoice', 'status', $new, 'username', $uname);
+        }
+    } catch (Throwable $e2) {
+        // نادیده
+    }
+
+    if ($ok && function_exists('smartCronDebugLog')) {
+        smartCronDebugLog(
+            "🔄 Status فاکتور به‌روز شد\n"
+            . "👤 <code>" . htmlspecialchars($uname, ENT_QUOTES, 'UTF-8') . "</code>\n"
+            . "📌 {$cur} → <b>{$new}</b> ({$reason})"
+        );
+    }
+    return $new;
+}
+
 function resetSmartCronWarnings($username, $location)
 {
     if (!function_exists('updateSmartCronState')) {
