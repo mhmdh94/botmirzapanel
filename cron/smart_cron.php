@@ -117,20 +117,29 @@ foreach ($rows as $row) {
         $pdo->prepare("DELETE FROM smart_cron_state WHERE username = ? AND service_location = ?")->execute([$username, $location]);
         smartCronDebugLog(
             "🗑 فاکتور حذف شد (یوزر در پنل نبود)\n"
-            . "👤 یوزرنیم: <code>{$username}</code>\n"
-            . "📍 پنل: {$location}\n"
+            . "👤 یوزرنیم: <code>{$username}</code>
+"
+            . "📍 پنل: {$location}
+"
             . "🆔 کاربر: <code>{$uid}</code>\n"
             . "🏷 محصول: " . strval($row['name_product'] ?? '-')
         );
         continue;
     }
 
-    // اگر فقط clean روشن است و اخطارها خاموش‌اند، ادامه نده
-    if (!$do_vol && !$do_time && !$do_exp) {
+    // همگام‌سازی Status حتی اگر اخطارها خاموش باشند (بعد از DataUser معتبر)
+    if (!is_array($dataUser) || ($dataUser['status'] ?? '') === 'Unsuccessful') {
         continue;
     }
 
-    if (!is_array($dataUser) || ($dataUser['status'] ?? '') === 'Unsuccessful') {
+    // همیشه Status فاکتور را از پنل همگام کن (برای ایموجی لیست سرویس‌ها)
+    // مستقل از روشن/خاموش بودن اخطارها — سرویس را در پنل دست نمی‌زند
+    if (function_exists('applySmartCronInvoiceStatus')) {
+        applySmartCronInvoiceStatus($row, $dataUser);
+    }
+
+    // اگر فقط clean روشن است و اخطارها خاموش‌اند، بعد از sync برو بعدی
+    if (!$do_vol && !$do_time && !$do_exp) {
         continue;
     }
 
@@ -149,21 +158,22 @@ foreach ($rows as $row) {
         if ($do_exp && intval($state['expired_notified']) === 0) {
             $show_emg = $do_emg && intval($state['emergency_used']) === 0;
             $msg = sprintf(
-                $textbotlang['users']['cron']['service_ended'] ?? "⛔️ سرویس <code>%s</code> به پایان رسیده است.\nبرای ادامه استفاده تمدید کنید.",
+                $textbotlang['users']['cron']['service_ended'] ?? "⛔️ سرویس <code>%s</code> به پایان رسیده است.
+برای ادامه استفاده تمدید کنید.",
                 $username
             );
             sendmessage($uid, $msg, buildServiceWarnKeyboard($username, $show_emg), 'HTML');
             updateSmartCronState($username, $location, 'expired_notified', 1);
-            // وضعیت فاکتور تست را هم sendedwarn کن اگر ستون status دارد
-            if (isset($row['status']) || isset($row['Status'])) {
-                update("invoice", "status", "sendedwarn", "username", $username);
-            }
             smartCronDebugLog(
-                "⛔️ اخطار اتمام سرویس ارسال شد\n"
-                . "👤 یوزرنیم: <code>{$username}</code>\n"
-                . "📍 پنل: {$location}\n"
+                "⛔️ اخطار اتمام سرویس ارسال شد
+"
+                . "👤 یوزرنیم: <code>{$username}</code>
+"
+                . "📍 پنل: {$location}
+"
                 . "🆔 کاربر: <code>{$uid}</code>"
-                . ($show_emg ? "\n🆘 دکمه تمدید اضطراری نمایش داده شد" : "")
+                . ($show_emg ? "
+🆘 دکمه تمدید اضطراری نمایش داده شد" : "")
             );
         }
         continue;
@@ -189,7 +199,8 @@ foreach ($rows as $row) {
             sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false), 'HTML');
             updateSmartCronState($username, $location, 'warn_time_level', $idx);
             smartCronDebugLog(
-                "⏰ اخطار زمان ارسال شد\n"
+                "⏰ اخطار زمان ارسال شد
+"
                 . "👤 <code>{$username}</code> | روز مانده: {$days_left} | مرحله: {$idx}"
             );
         }
@@ -215,7 +226,8 @@ foreach ($rows as $row) {
             sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false), 'HTML');
             updateSmartCronState($username, $location, 'warn_vol_level', $idx);
             smartCronDebugLog(
-                "📊 اخطار حجم ارسال شد\n"
+                "📊 اخطار حجم ارسال شد
+"
                 . "👤 <code>{$username}</code> | مصرف: " . number_format($pct, 1) . "% | مرحله: {$idx}"
             );
         }
