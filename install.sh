@@ -131,7 +131,7 @@ function show_menu() {
         echo -e "\033[1;36m 4)\033[0m Export Database"
         echo -e "\033[1;36m 5)\033[0m Import Database"
         echo -e "\033[1;36m 6)\033[0m Configure Automated Backup"
-        echo -e "\033[1;36m 7)\033[0m Renew SSL Certificates"
+        echo -e "\033[1;36m 7)\033[0m Renew SSL Certificates (main + additional bots)"
         echo -e "\033[1;36m 8)\033[0m Change Domain"
         echo -e "\033[1;36m 9)\033[0m Additional Bot Management"
         echo -e "\033[1;36m10)\033[0m Exit"
@@ -2112,36 +2112,120 @@ EOF
 }
 
 # Function to renew SSL certificates
+function collect_bot_domains() {
+    # Collect unique domains from main + additional bots (config.php $domainhosts)
+    local domains=()
+    local cfg domain
+    for cfg in /var/www/html/mirzabotconfig/config.php /var/www/html/*/config.php; do
+        [ -f "$cfg" ] || continue
+        domain=$(grep -E '^\$domainhosts' "$cfg" 2>/dev/null | head -1 | cut -d"'" -f2 | cut -d'/' -f1)
+        domain=$(echo "$domain" | tr -d '[:space:]')
+        if [[ -n "$domain" && "$domain" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            domains+=("$domain")
+        fi
+    done
+    if [ ${#domains[@]} -gt 0 ]; then
+        printf "%s\n" "${domains[@]}" | sort -u
+    fi
+}
+
+function ensure_certbot_timer() {
+    if command -v systemctl &>/dev/null; then
+        sudo systemctl enable certbot.timer >/dev/null 2>&1 || true
+        sudo systemctl start certbot.timer >/dev/null 2>&1 || true
+        if systemctl is-active --quiet certbot.timer 2>/dev/null; then
+            echo -e "\033[32m✅ certbot.timer is active (auto-renew for ALL Let's Encrypt certs on this server)\033[0m"
+        else
+            echo -e "\033[33m⚠️ certbot.timer not active — enabling best-effort...\033[0m"
+            sudo systemctl enable --now certbot.timer 2>/dev/null || true
+        fi
+    fi
+}
+
 function renew_ssl() {
-    echo -e "\033[33mStarting SSL renewal process...\033[0m"
+    echo -e "\033[33mStarting SSL renewal (main bot + all additional bots)...\033[0m"
 
     if ! command -v certbot &>/dev/null; then
         echo -e "\033[31m[ERROR]\033[0m Certbot is not installed. Please install Certbot to proceed."
         return 1
     fi
 
-    # Stop Apache to free port 80
-    echo -e "\033[33mStopping Apache...\033[0m"
-    sudo systemctl stop apache2 || {
-        echo -e "\033[31m[ERROR]\033[0m Failed to stop Apache. Exiting..."
-        return 1
-    }
+    ensure_certbot_timer
 
-    # Renew SSL certificates
-    if sudo certbot renew; then
-        echo -e "\033[32mSSL certificates successfully renewed.\033[0m"
+    echo -e "\033[36mDomains found in bot configs:\033[0m"
+    mapfile -t BOT_DOMAINS < <(collect_bot_domains)
+    if [ ${#BOT_DOMAINS[@]} -eq 0 ]; then
+        echo -e "\033[33m  (no domains parsed from config.php — will still run certbot renew for all certs)\033[0m"
     else
-        echo -e "\033[31m[ERROR]\033[0m SSL renewal failed. Please check Certbot logs for more details."
-        # Restart Apache even if renewal failed
-        sudo systemctl start apache2
-        return 1
+        for d in "${BOT_DOMAINS[@]}"; do
+            echo -e "  • $d"
+        done
     fi
 
-    # Restart Apache
-    echo -e "\033[33mRestarting Apache...\033[0m"
-    sudo systemctl restart apache2 || {
-        echo -e "\033[31m[WARNING]\033[0m Failed to restart Apache. Please check manually."
+    # 1) Prefer renew while Apache is RUNNING (needed for --apache / webroot authenticators)
+    echo -e "\033[33mEnsuring Apache is running for HTTP-01 challenges...\033[0m"
+    sudo systemctl start apache2 2>/dev/null || true
+
+    local renew_ok=0
+    if sudo certbot renew --non-interactive; then
+        echo -e "\033[32mSSL certificates successfully renewed (certbot renew).\033[0m"
+        renew_ok=1
+    else
+        echo -e "\033[33m[WARN] certbot renew reported errors — trying per-domain repair...\033[0m"
+    fi
+
+    # 2) For each bot domain: if cert missing or expires within 30 days, force issue/renew
+    for d in "${BOT_DOMAINS[@]}"; do
+        local need=0
+        if [ ! -f "/etc/letsencrypt/live/$d/cert.pem" ]; then
+            echo -e "\033[33mNo cert for $d — requesting new certificate...\033[0m"
+            need=1
+        else
+            local end_epoch now_epoch left
+            end_epoch=$(date -d "$(openssl x509 -enddate -noout -in "/etc/letsencrypt/live/$d/cert.pem" | cut -d= -f2)" +%s 2>/dev/null || echo 0)
+            now_epoch=$(date +%s)
+            left=$(( (end_epoch - now_epoch) / 86400 ))
+            if [ "$end_epoch" -eq 0 ] || [ "$left" -lt 30 ]; then
+                echo -e "\033[33mCert for $d expires in ${left}d (or unreadable) — force renew...\033[0m"
+                need=1
+            else
+                echo -e "\033[32m✅ $d — ${left} days remaining\033[0m"
+            fi
+        fi
+        if [ "$need" -eq 1 ]; then
+            # Try apache plugin first (Apache stays up)
+            if sudo certbot certonly --apache --non-interactive --agree-tos --preferred-challenges http -d "$d" --force-renewal; then
+                echo -e "\033[32m✅ Renewed $d via --apache\033[0m"
+                renew_ok=1
+            else
+                echo -e "\033[33mApache plugin failed for $d — trying standalone (brief Apache stop)...\033[0m"
+                sudo systemctl stop apache2 2>/dev/null || true
+                if sudo certbot certonly --standalone --non-interactive --agree-tos --preferred-challenges http -d "$d" --force-renewal; then
+                    echo -e "\033[32m✅ Renewed $d via --standalone\033[0m"
+                    renew_ok=1
+                else
+                    echo -e "\033[31m[ERROR] Failed to renew SSL for $d — check DNS A record and port 80\033[0m"
+                fi
+                sudo systemctl start apache2 2>/dev/null || true
+            fi
+        fi
+    done
+
+    echo -e "\033[33mReloading Apache...\033[0m"
+    sudo systemctl start apache2 2>/dev/null || true
+    sudo systemctl reload apache2 2>/dev/null || sudo systemctl restart apache2 || {
+        echo -e "\033[31m[WARNING]\033[0m Failed to reload Apache. Please check manually."
     }
+
+    echo -e "\033[36mCertificate summary:\033[0m"
+    sudo certbot certificates 2>/dev/null | sed -n '1,80p' || true
+
+    if [ "$renew_ok" -eq 1 ]; then
+        echo -e "\033[32mSSL renewal process finished.\033[0m"
+        return 0
+    fi
+    echo -e "\033[31mSSL renewal finished with errors. See /var/log/letsencrypt/letsencrypt.log\033[0m"
+    return 1
 }
 
 # --- Helper: list & select additional bot by number OR name ---
