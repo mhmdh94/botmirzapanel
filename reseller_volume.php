@@ -373,7 +373,6 @@ function buildResellerAdminsVolumeReport()
         }
     }
 
-    // همه یوزرنیم‌های ادمین پنل‌دار (یکتا)
     $usernames = [];
     try {
         $st = $pdo->query("SELECT id, panel_admin_username FROM user WHERE panel_admin_enabled = 1 AND panel_admin_username IS NOT NULL AND TRIM(panel_admin_username) != ''");
@@ -397,12 +396,10 @@ function buildResellerAdminsVolumeReport()
         return "📋 <b>وضعیت حجم ادمین‌های پنل</b>\n\nهیچ کاربر پنل‌داری ثبت نشده است.";
     }
 
-    $out = ["📊 <b>وضعیت حجم ادمین‌های پنل</b>", "🖥 پنل: <code>" . htmlspecialchars(strval($panel['url_panel'] ?? '-'), ENT_QUOTES, 'UTF-8') . "</code>", ""];
-    $ok_n = 0;
+    // جمع‌آوری + مرتب‌سازی بر اساس درصد مصرف (بیشتر = نزدیک‌تر به اتمام → بالاتر)
+    $items = [];
     $fail_n = 0;
-
     foreach ($usernames as $pa) {
-        $block = "👤 <code>" . htmlspecialchars($pa, ENT_QUOTES, 'UTF-8') . "</code>\n";
         try {
             $adm = getPanelAdmin($pa, $panel);
         } catch (Throwable $e) {
@@ -410,10 +407,14 @@ function buildResellerAdminsVolumeReport()
         }
         if (!is_array($adm) || !empty($adm['error'])) {
             $detail = is_array($adm) ? strval($adm['detail'] ?? 'unknown') : 'error';
-            $block .= "❌ خواندن از پنل ممکن نشد" . ($detail ? " (<code>" . htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') . "</code>)" : "");
+            $items[] = [
+                'pct' => -1,
+                'sort' => -1,
+                'username' => $pa,
+                'error' => true,
+                'detail' => $detail,
+            ];
             $fail_n++;
-            $out[] = $block;
-            $out[] = "────────";
             continue;
         }
         $status = strval($adm['status'] ?? $adm['is_active'] ?? 'active');
@@ -423,16 +424,69 @@ function buildResellerAdminsVolumeReport()
         $used = floatval($adm['used_traffic'] ?? 0);
         $limit = floatval($adm['data_limit'] ?? 0);
         $used_gb = $used > 0 ? round($used / (1024 ** 3), 2) : 0.0;
-
-        $block .= "📌 وضعیت: <b>" . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . "</b>\n";
-        if ($limit <= 0) {
-            $block .= "📊 حجم کل: <b>نامحدود</b>\n";
-            $block .= "📉 مصرف: <b>" . number_format($used_gb, 2) . " گیگ</b>\n";
-            $block .= "✅ مانده: <b>—</b>";
-        } else {
+        $unlimited = ($limit <= 0);
+        $pct = 0.0;
+        $limit_gb = 0.0;
+        $remain_gb = 0.0;
+        if (!$unlimited) {
             $limit_gb = round($limit / (1024 ** 3), 2);
             $remain_gb = max(0, round(($limit - $used) / (1024 ** 3), 2));
-            $pct = $limit > 0 ? round(($used / $limit) * 100, 1) : 0;
+            $pct = $limit > 0 ? round(($used / $limit) * 100, 1) : 0.0;
+        }
+        $items[] = [
+            'pct' => $unlimited ? -0.5 : $pct, // نامحدود پایین‌تر از محدودها با مصرف، بالاتر از خطا
+            'sort' => $unlimited ? -0.5 : $pct,
+            'username' => $pa,
+            'error' => false,
+            'status' => $status,
+            'unlimited' => $unlimited,
+            'used_gb' => $used_gb,
+            'limit_gb' => $limit_gb,
+            'remain_gb' => $remain_gb,
+            'pct_val' => $pct,
+        ];
+    }
+
+    usort($items, function ($a, $b) {
+        // درصد بیشتر اول؛ خطاها آخر
+        if ($a['sort'] == $b['sort']) {
+            return strcasecmp($a['username'], $b['username']);
+        }
+        return ($a['sort'] < $b['sort']) ? 1 : -1;
+    });
+
+    $out = [
+        "📊 <b>وضعیت حجم ادمین‌های پنل</b>",
+        "📌 مرتب‌شده از <b>بیشترین مصرف</b> به کمترین",
+        "🖥 پنل: <code>" . htmlspecialchars(strval($panel['url_panel'] ?? '-'), ENT_QUOTES, 'UTF-8') . "</code>",
+        "",
+    ];
+    $ok_n = 0;
+    $rank = 0;
+    foreach ($items as $it) {
+        if (!empty($it['error'])) {
+            $block = "👤 <code>" . htmlspecialchars($it['username'], ENT_QUOTES, 'UTF-8') . "</code>\n";
+            $block .= "❌ خواندن از پنل ممکن نشد";
+            if (!empty($it['detail'])) {
+                $block .= " (<code>" . htmlspecialchars($it['detail'], ENT_QUOTES, 'UTF-8') . "</code>)";
+            }
+            $out[] = $block;
+            $out[] = "────────";
+            continue;
+        }
+        $rank++;
+        $pa = $it['username'];
+        $block = "<b>#{$rank}</b> 👤 <code>" . htmlspecialchars($pa, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        $block .= "📌 وضعیت: <b>" . htmlspecialchars($it['status'], ENT_QUOTES, 'UTF-8') . "</b>\n";
+        if ($it['unlimited']) {
+            $block .= "📊 حجم کل: <b>نامحدود</b>\n";
+            $block .= "📉 مصرف: <b>" . number_format($it['used_gb'], 2) . " گیگ</b>\n";
+            $block .= "✅ مانده: <b>—</b>";
+        } else {
+            $limit_gb = $it['limit_gb'];
+            $used_gb = $it['used_gb'];
+            $remain_gb = $it['remain_gb'];
+            $pct = $it['pct_val'];
             if (function_exists('formatResellerVolumeLabel')) {
                 $limit_lbl = formatResellerVolumeLabel($limit_gb);
                 $used_lbl = ($used_gb >= 1024) ? formatResellerVolumeLabel($used_gb) : (number_format($used_gb, 2) . ' گیگ');
@@ -442,23 +496,33 @@ function buildResellerAdminsVolumeReport()
                 $used_lbl = number_format($used_gb, 2) . ' گیگ';
                 $remain_lbl = number_format($remain_gb, 2) . ' گیگ';
             }
+            // هشدار بصری برای درصد بالا
+            $pct_mark = '';
+            if ($pct >= 95) {
+                $pct_mark = ' 🔴';
+            } elseif ($pct >= 80) {
+                $pct_mark = ' 🟡';
+            }
             $block .= "📊 حجم کل: <b>{$limit_lbl}</b>\n";
-            $block .= "📉 مصرف: <b>{$used_lbl}</b> ({$pct}%)\n";
+            $block .= "📉 مصرف: <b>{$used_lbl}</b> ({$pct}%{$pct_mark})\n";
             $block .= "✅ مانده: <b>{$remain_lbl}</b>";
+            $ok_n++;
         }
-        $ok_n++;
+        if ($it['unlimited']) {
+            $ok_n++;
+        }
         $out[] = $block;
         $out[] = "────────";
     }
 
     $out[] = "\n✅ موفق: <b>{$ok_n}</b> | ❌ خطا: <b>{$fail_n}</b>";
     $text = implode("\n", $out);
-    // تلگرام محدودیت طول پیام دارد
     if (mb_strlen($text) > 3900) {
         $text = mb_substr($text, 0, 3850) . "\n\n… (لیست طولانی — بخشی نمایش داده شد)";
     }
     return $text;
 }
+
 
 function resellerPurchaseVolume($user_id, $plan_id, $admin_username = null)
 {
