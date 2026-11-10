@@ -163,6 +163,9 @@ function resellerVolumeAdminKeyboard()
                 ['text' => '👥 کاربران پنل‌دار', 'callback_data' => 'rv_list_users'],
             ],
             [
+                ['text' => '📊 وضعیت حجم ادمین‌ها', 'callback_data' => 'rv_admin_volume_status'],
+            ],
+            [
                 ['text' => "⏱ کرون هشدار حجم {$mark}", 'callback_data' => 'rv_cron_settings'],
             ],
             [
@@ -338,6 +341,124 @@ function buildResellerMyPanelStatusText($user_id)
     return implode("\n\n──────────────\n\n", $out);
 }
 
+
+
+/**
+ * گزارش حجم همه ادمین‌های پنل‌دار (برای منوی ادمین ربات)
+ * حجم کل / مصرف / باقی‌مانده از API پنل ریسلر
+ */
+function buildResellerAdminsVolumeReport()
+{
+    global $pdo, $textbotlang;
+    if (!function_exists('getResellerPanel')) {
+        return "❌ ماژول پنل ریسلر در دسترس نیست.";
+    }
+    $panel = getResellerPanel();
+    if (!$panel) {
+        return "❌ اطلاعات پنل ریسلر تنظیم نشده است.\nاز «تنظیم اطلاعات پنل» آدرس و یوزر را وارد کنید.";
+    }
+    if (!function_exists('getPanelAdmin')) {
+        $f = __DIR__ . '/pasarguard.php';
+        if (is_file($f)) {
+            require_once $f;
+        }
+    }
+    if (!function_exists('getPanelAdmin')) {
+        return "❌ ارتباط با API پنل ممکن نیست.";
+    }
+    if (function_exists('ensurePanelAdminSchema')) {
+        try {
+            ensurePanelAdminSchema();
+        } catch (Throwable $e) {
+        }
+    }
+
+    // همه یوزرنیم‌های ادمین پنل‌دار (یکتا)
+    $usernames = [];
+    try {
+        $st = $pdo->query("SELECT id, panel_admin_username FROM user WHERE panel_admin_enabled = 1 AND panel_admin_username IS NOT NULL AND TRIM(panel_admin_username) != ''");
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        foreach ($rows as $r) {
+            $list = function_exists('parsePanelAdminUsernames')
+                ? parsePanelAdminUsernames(strval($r['panel_admin_username'] ?? ''))
+                : array_filter(array_map('trim', explode(',', strval($r['panel_admin_username'] ?? ''))));
+            foreach ($list as $u) {
+                $u = trim(strval($u));
+                if ($u !== '') {
+                    $usernames[strtolower($u)] = $u;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        return "❌ خطا در خواندن لیست پنل‌دارها: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    }
+
+    if (!$usernames) {
+        return "📋 <b>وضعیت حجم ادمین‌های پنل</b>\n\nهیچ کاربر پنل‌داری ثبت نشده است.";
+    }
+
+    $out = ["📊 <b>وضعیت حجم ادمین‌های پنل</b>", "🖥 پنل: <code>" . htmlspecialchars(strval($panel['url_panel'] ?? '-'), ENT_QUOTES, 'UTF-8') . "</code>", ""];
+    $ok_n = 0;
+    $fail_n = 0;
+
+    foreach ($usernames as $pa) {
+        $block = "👤 <code>" . htmlspecialchars($pa, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        try {
+            $adm = getPanelAdmin($pa, $panel);
+        } catch (Throwable $e) {
+            $adm = ['error' => true, 'detail' => $e->getMessage()];
+        }
+        if (!is_array($adm) || !empty($adm['error'])) {
+            $detail = is_array($adm) ? strval($adm['detail'] ?? 'unknown') : 'error';
+            $block .= "❌ خواندن از پنل ممکن نشد" . ($detail ? " (<code>" . htmlspecialchars($detail, ENT_QUOTES, 'UTF-8') . "</code>)" : "");
+            $fail_n++;
+            $out[] = $block;
+            $out[] = "────────";
+            continue;
+        }
+        $status = strval($adm['status'] ?? $adm['is_active'] ?? 'active');
+        if ($status === '1' || $status === 'true') {
+            $status = 'active';
+        }
+        $used = floatval($adm['used_traffic'] ?? 0);
+        $limit = floatval($adm['data_limit'] ?? 0);
+        $used_gb = $used > 0 ? round($used / (1024 ** 3), 2) : 0.0;
+
+        $block .= "📌 وضعیت: <b>" . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . "</b>\n";
+        if ($limit <= 0) {
+            $block .= "📊 حجم کل: <b>نامحدود</b>\n";
+            $block .= "📉 مصرف: <b>" . number_format($used_gb, 2) . " گیگ</b>\n";
+            $block .= "✅ مانده: <b>—</b>";
+        } else {
+            $limit_gb = round($limit / (1024 ** 3), 2);
+            $remain_gb = max(0, round(($limit - $used) / (1024 ** 3), 2));
+            $pct = $limit > 0 ? round(($used / $limit) * 100, 1) : 0;
+            if (function_exists('formatResellerVolumeLabel')) {
+                $limit_lbl = formatResellerVolumeLabel($limit_gb);
+                $used_lbl = ($used_gb >= 1024) ? formatResellerVolumeLabel($used_gb) : (number_format($used_gb, 2) . ' گیگ');
+                $remain_lbl = ($remain_gb >= 1024) ? formatResellerVolumeLabel($remain_gb) : (number_format($remain_gb, 2) . ' گیگ');
+            } else {
+                $limit_lbl = number_format($limit_gb, 2) . ' گیگ';
+                $used_lbl = number_format($used_gb, 2) . ' گیگ';
+                $remain_lbl = number_format($remain_gb, 2) . ' گیگ';
+            }
+            $block .= "📊 حجم کل: <b>{$limit_lbl}</b>\n";
+            $block .= "📉 مصرف: <b>{$used_lbl}</b> ({$pct}%)\n";
+            $block .= "✅ مانده: <b>{$remain_lbl}</b>";
+        }
+        $ok_n++;
+        $out[] = $block;
+        $out[] = "────────";
+    }
+
+    $out[] = "\n✅ موفق: <b>{$ok_n}</b> | ❌ خطا: <b>{$fail_n}</b>";
+    $text = implode("\n", $out);
+    // تلگرام محدودیت طول پیام دارد
+    if (mb_strlen($text) > 3900) {
+        $text = mb_substr($text, 0, 3850) . "\n\n… (لیست طولانی — بخشی نمایش داده شد)";
+    }
+    return $text;
+}
 
 function resellerPurchaseVolume($user_id, $plan_id, $admin_username = null)
 {

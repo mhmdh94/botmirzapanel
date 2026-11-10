@@ -4839,6 +4839,32 @@ if ($__rv_is_admin && function_exists('isResellerFeatureEnabled') && isResellerF
     }
 
     // لیست پلن‌ها
+    
+    // وضعیت حجم همه ادمین‌های پنل‌دار
+    if ($datain === 'rv_admin_volume_status') {
+        $__rv_load();
+        if (function_exists('telegram')) {
+            try {
+                telegram('answerCallbackQuery', [
+                    'callback_query_id' => $callback_query_id,
+                    'text' => 'در حال دریافت از پنل…',
+                    'show_alert' => false,
+                ]);
+            } catch (Throwable $e) {
+            }
+        }
+        $report = function_exists('buildResellerAdminsVolumeReport')
+            ? buildResellerAdminsVolumeReport()
+            : '❌ تابع گزارش در دسترس نیست.';
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_admin_volume_status']],
+            [['text' => '🔙 بازگشت', 'callback_data' => 'rv_admin_hub']],
+        ]], JSON_UNESCAPED_UNICODE);
+        Editmessagetext($from_id, $message_id, $report, $kb);
+        return;
+    }
+
+
     if ($datain === 'rv_admin_plans' || $datain === 'rv_menu_plans') {
         $__rv_load();
         $kb = function_exists('resellerVolumePlansKeyboard') ? resellerVolumePlansKeyboard() : null;
