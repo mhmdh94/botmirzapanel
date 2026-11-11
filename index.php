@@ -258,38 +258,11 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
             );
             return;
         }
-        // دستورات منو / استارت نباید به‌عنوان پیام پشتیبانی بروند
-        $__nav_blocked = array_filter([
-            $textbotlang['users']['backhome'] ?? null,
-            $textbotlang['users']['backmenu'] ?? null,
-            $textbotlang['users']['back'] ?? null,
-            $datatextbot['text_support'] ?? null,
-            $datatextbot['text_sell'] ?? null,
-            $datatextbot['text_Purchased_services'] ?? null,
-            $datatextbot['text_Add_Balance'] ?? null,
-            $datatextbot['text_account'] ?? null,
-            $datatextbot['text_tariff'] ?? null,
-            $datatextbot['text_affiliates'] ?? null,
-            $datatextbot['text_help'] ?? null,
-            $datatextbot['text_start'] ?? null,
-            '/start',
-            '/support',
-            '/help',
-            '/new',
-            '/renew',
-            '/status',
-        ]);
-        if ($datain == 'backuser' || (isset($text) && is_string($text) && (
-            in_array($text, $__nav_blocked, true)
-            || strpos($text, '/start') === 0
-            || strpos($text, 'منوی اصلی') !== false
-            || strpos($text, 'خرید') !== false
-            || strpos($text, 'سرویس') !== false
-            || strpos($text, 'افزایش موجودی') !== false
-        ))) {
+        // دستورات منو نباید به‌عنوان پیام پشتیبانی بروند
+        if ($datain == 'backuser' || (isset($text) && is_string($text) && function_exists('isSupportNavKeyboardText') && isSupportNavKeyboardText($text))) {
             step('home', $from_id);
-            // می‌افتد به پیام مسدودی پایین همین بلاک
             $user['step'] = 'home';
+            // کاربر مسدود: فقط پیام مسدودی پایین نشان داده می‌شود
         } elseif ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
             sendmessage(
                 $from_id,
@@ -2701,6 +2674,61 @@ if (
     return;
 }
 
+
+/**
+ * آیا این متن، دکمه منوی اصلی / ناوبری است؟ (نه پیام واقعی پشتیبانی)
+ * شامل دکمه مشخصات با پسوند موجودی مثل «مشخصات کاربری | 12,000 ت»
+ */
+function isSupportNavKeyboardText($text)
+{
+    global $datatextbot, $textbotlang;
+    if (!is_string($text) || trim($text) === '') {
+        return false;
+    }
+    $t = trim($text);
+    $exact = array_filter([
+        $textbotlang['users']['backhome'] ?? null,
+        $textbotlang['users']['backmenu'] ?? null,
+        $textbotlang['users']['back'] ?? null,
+        $textbotlang['users']['affiliates']['btn'] ?? null,
+        $textbotlang['users']['reseller_volume']['btn'] ?? null,
+        $textbotlang['users']['reseller_request']['btn'] ?? null,
+        $datatextbot['text_support'] ?? null,
+        $datatextbot['text_sell'] ?? null,
+        $datatextbot['text_Purchased_services'] ?? null,
+        $datatextbot['text_Add_Balance'] ?? null,
+        $datatextbot['text_account'] ?? null,
+        $datatextbot['text_Tariff_list'] ?? null,
+        $datatextbot['text_start'] ?? null,
+        $datatextbot['text_usertest'] ?? null,
+        $datatextbot['text_help'] ?? null,
+        $datatextbot['text_fq'] ?? null,
+        $datatextbot['text_Discount'] ?? null,
+        '/start',
+        '/support',
+        '/help',
+    ]);
+    if (in_array($t, $exact, true)) {
+        return true;
+    }
+    // دکمه حساب با موجودی: «مشخصات کاربری | 67,000 ت»
+    $acc = trim(strval($datatextbot['text_account'] ?? ''));
+    if ($acc !== '' && strpos($t, $acc) === 0) {
+        return true;
+    }
+    $needles = [
+        'منوی اصلی', 'بازگشت به منو', 'خرید اشتراک', 'سرویس های من', 'سرویس‌های من',
+        'افزایش موجودی', 'مشخصات کاربری', 'تعرفه', 'پشتیبانی', 'مشارکت در فروش',
+        'Reseller Panel', 'پنل نمایندگی', 'اکانت تست',
+    ];
+    foreach ($needles as $n) {
+        if ($n !== '' && mb_strpos($t, $n) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #-----------support------------#
 if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "support") {
     if (function_exists('isSupportEnabled') && !isSupportEnabled()) {
@@ -2711,88 +2739,87 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
     sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
     step('gettextpm', $from_id);
 } elseif ($user['step'] == 'gettextpm') {
-    // نادیده گرفتن دکمه‌های منو / بازگشت تا به‌عنوان پیام پشتیبانی ارسال نشوند
-    $__nav_texts = array_filter([
-        $textbotlang['users']['backhome'] ?? null,
-        $textbotlang['users']['backmenu'] ?? null,
-        $textbotlang['users']['back'] ?? null,
-        $textbotlang['users']['reseller_request']['btn'] ?? null,
-        $datatextbot['text_support'] ?? null,
-        $datatextbot['text_sell'] ?? null,
-        $datatextbot['text_Purchased_services'] ?? null,
-        $datatextbot['text_Add_Balance'] ?? null,
-        $datatextbot['text_account'] ?? null,
-        $datatextbot['text_start'] ?? null,
-        '/start',
-        '/support',
-    ]);
-    if ($datain == 'backuser' || (isset($text) && is_string($text) && (in_array($text, $__nav_texts, true) || strpos($text, 'منوی اصلی') !== false || strpos($text, 'بازگشت') !== false))) {
+    // دکمه‌های منو نباید به‌عنوان پیام پشتیبانی ارسال شوند (مثلاً مشخصات کاربری | 67,000 ت)
+    if ($datain == 'backuser' || (isset($text) && is_string($text) && function_exists('isSupportNavKeyboardText') && isSupportNavKeyboardText($text))) {
         step('home', $from_id);
-        sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
-        return;
-    }
-    if ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
+        $user['step'] = 'home';
+        $__is_only_back = ($datain == 'backuser') || (isset($text) && is_string($text) && (
+            $text === ($textbotlang['users']['backhome'] ?? '___')
+            || $text === ($textbotlang['users']['backmenu'] ?? '___')
+            || $text === ($textbotlang['users']['back'] ?? '___')
+            || (mb_strpos($text, 'منوی اصلی') !== false && mb_strpos($text, 'خرید') === false && mb_strpos($text, 'سرویس') === false)
+        ));
+        if ($__is_only_back) {
+            sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
+            return;
+        }
+        // دکمه منو: step پاک شد — هندلرهای بعدی همان دکمه را پردازش می‌کنند
+    } elseif ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
         sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
         return;
-    }
-    sendmessage($from_id, $textbotlang['users']['support']['sendmessageadmin'], $keyboard, 'HTML');
-    if (function_exists('ensureSupportPendingTable')) {
-        ensureSupportPendingTable();
-        global $pdo;
-        try {
-            $st = $pdo->prepare("INSERT INTO support_pending (id_user, username, message_text, created_at, status) VALUES (?,?,?,?, 'waiting')");
-            $st->execute([$from_id, $username ?? '', isset($text) ? $text : ($caption ?? ''), time()]);
-        } catch (Exception $e) {}
-    }
+    } else {
+        // پیام واقعی کاربر برای پشتیبانی
+        sendmessage($from_id, $textbotlang['users']['support']['sendmessageadmin'], $keyboard, 'HTML');
+        if (function_exists('ensureSupportPendingTable')) {
+            ensureSupportPendingTable();
+            global $pdo;
+            try {
+                $st = $pdo->prepare("INSERT INTO support_pending (id_user, username, message_text, created_at, status) VALUES (?,?,?,?, 'waiting')");
+                $st->execute([$from_id, $username ?? '', isset($text) ? $text : ($caption ?? ''), time()]);
+            } catch (Exception $e) {}
+        }
 
-    $Response = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['support']['answermessage'], 'callback_data' => 'Response_' . $from_id],
-            ],
-            [
-                ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $from_id],
-            ],
-        ]
-    ]);
-    if ($text) {
-        $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $text);
-        if (function_exists('notifyAdmins')) {
-            notifyAdmins('sendmessage', [
-                'text' => $textsendadmin,
-                'reply_markup' => $Response,
-                'parse_mode' => 'HTML',
-                'disable_web_page_preview' => true,
-            ], $admin_ids);
-        } else {
-            foreach ($admin_ids as $id_admin) {
-                sendmessage($id_admin, $textsendadmin, $Response, 'HTML');
+        $Response = json_encode([
+            'inline_keyboard' => [
+                [
+                    ['text' => $textbotlang['users']['support']['answermessage'], 'callback_data' => 'Response_' . $from_id],
+                ],
+                [
+                    ['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . $from_id],
+                ],
+            ]
+        ]);
+        if ($text) {
+            $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $text);
+            if (function_exists('notifyAdmins')) {
+                notifyAdmins('sendmessage', [
+                    'text' => $textsendadmin,
+                    'reply_markup' => $Response,
+                    'parse_mode' => 'HTML',
+                    'disable_web_page_preview' => true,
+                ], $admin_ids);
+            } else {
+                foreach ($admin_ids as $id_admin) {
+                    sendmessage($id_admin, $textsendadmin, $Response, 'HTML');
+                }
             }
         }
-    }
-    if ($photo) {
-        $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $caption);
-        if (function_exists('notifyAdmins')) {
-            notifyAdmins('sendphoto', [
-                'photo' => $photoid,
-                'reply_markup' => $Response,
-                'caption' => $textsendadmin,
-                'parse_mode' => 'HTML',
-            ], $admin_ids);
-        } else {
-            foreach ($admin_ids as $id_admin) {
-                telegram('sendphoto', [
-                    'chat_id' => $id_admin,
+        if ($photo) {
+            $textsendadmin = sprintf($textbotlang['users']['support']['GetMessageOfUser'], $from_id, $username, $caption);
+            if (function_exists('notifyAdmins')) {
+                notifyAdmins('sendphoto', [
                     'photo' => $photoid,
                     'reply_markup' => $Response,
                     'caption' => $textsendadmin,
                     'parse_mode' => 'HTML',
-                ]);
+                ], $admin_ids);
+            } else {
+                foreach ($admin_ids as $id_admin) {
+                    telegram('sendphoto', [
+                        'chat_id' => $id_admin,
+                        'photo' => $photoid,
+                        'reply_markup' => $Response,
+                        'caption' => $textsendadmin,
+                        'parse_mode' => 'HTML',
+                    ]);
+                }
             }
         }
+        step('home', $from_id);
+        return;
     }
-    step('home', $from_id);
 }
+
 #-----------fq------------#
 if ($datain == "fqQuestions") {
     sendmessage($from_id, $datatextbot['text_dec_fq'], null, 'HTML');
