@@ -2681,11 +2681,42 @@ if (
  */
 function isSupportNavKeyboardText($text)
 {
-    global $datatextbot, $textbotlang;
+    global $datatextbot, $textbotlang, $setting, $from_id;
     if (!is_string($text) || trim($text) === '') {
         return false;
     }
     $t = trim($text);
+
+    // 1) الگوی دکمه حساب + موجودی: «... | 20,000 ت» یا «...|20000ت»
+    if (preg_match('/\|\s*[\d,،.\s]+\s*ت/u', $t)) {
+        return true;
+    }
+
+    // 2) ساخت همان متن دکمه حساب مثل keyboard.php
+    $acc_base = trim(strval($datatextbot['text_account'] ?? ''));
+    if ($acc_base !== '') {
+        if ($t === $acc_base || strpos($t, $acc_base) === 0 || mb_strpos($t, $acc_base) !== false) {
+            return true;
+        }
+        // نسخه با موجودی (حتی اگر جداکننده فرق کند)
+        if (isset($setting['show_balance']) && ($setting['show_balance'] == '1' || $setting['show_balance'] === 1)) {
+            $bal = 0;
+            if (!empty($from_id)) {
+                $u_bal = select("user", "Balance", "id", $from_id, "select");
+                if ($u_bal && isset($u_bal['Balance'])) {
+                    $bal = intval($u_bal['Balance']);
+                }
+            }
+            $btn1 = $acc_base . " | " . number_format($bal) . " ت";
+            $btn2 = $acc_base . "|" . number_format($bal) . "ت";
+            $btn3 = $acc_base . " | " . number_format($bal) . "ت";
+            if ($t === $btn1 || $t === $btn2 || $t === $btn3) {
+                return true;
+            }
+        }
+    }
+
+    // 3) لیست دقیق دکمه‌های منو
     $exact = array_filter([
         $textbotlang['users']['backhome'] ?? null,
         $textbotlang['users']['backmenu'] ?? null,
@@ -2711,15 +2742,20 @@ function isSupportNavKeyboardText($text)
     if (in_array($t, $exact, true)) {
         return true;
     }
-    // دکمه حساب با موجودی: «مشخصات کاربری | 67,000 ت»
-    $acc = trim(strval($datatextbot['text_account'] ?? ''));
-    if ($acc !== '' && strpos($t, $acc) === 0) {
-        return true;
+
+    // 4) هر دکمه منو که با متن دیتابیس شروع شود
+    foreach (['text_sell', 'text_Purchased_services', 'text_Add_Balance', 'text_support', 'text_Tariff_list', 'text_usertest'] as $k) {
+        $lab = trim(strval($datatextbot[$k] ?? ''));
+        if ($lab !== '' && (strpos($t, $lab) === 0 || $t === $lab)) {
+            return true;
+        }
     }
+
+    // 5) کلمات کلیدی منو (حتی با ایموجی جلوی متن)
     $needles = [
-        'منوی اصلی', 'بازگشت به منو', 'خرید اشتراک', 'سرویس های من', 'سرویس‌های من',
-        'افزایش موجودی', 'مشخصات کاربری', 'تعرفه', 'پشتیبانی', 'مشارکت در فروش',
-        'Reseller Panel', 'پنل نمایندگی', 'اکانت تست',
+        'منوی اصلی', 'بازگشت', 'خرید اشتراک', 'سرویس های من', 'سرویس‌های من',
+        'افزایش موجودی', 'مشخصات', 'تعرفه', 'پشتیبانی', 'مشارکت',
+        'Reseller', 'نمایندگی', 'اکانت تست', 'ارسال پیام به پشتیبانی',
     ];
     foreach ($needles as $n) {
         if ($n !== '' && mb_strpos($t, $n) !== false) {
@@ -2758,7 +2794,12 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
         sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
         return;
     } else {
-        // پیام واقعی کاربر برای پشتیبانی
+        // پیام واقعی کاربر برای پشتیبانی — آخرین خط دفاع اگر دکمه منو بود
+        if (isset($text) && is_string($text) && function_exists('isSupportNavKeyboardText') && isSupportNavKeyboardText($text)) {
+            step('home', $from_id);
+            $user['step'] = 'home';
+            return;
+        }
         sendmessage($from_id, $textbotlang['users']['support']['sendmessageadmin'], $keyboard, 'HTML');
         if (function_exists('ensureSupportPendingTable')) {
             ensureSupportPendingTable();
