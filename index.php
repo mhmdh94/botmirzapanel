@@ -558,15 +558,47 @@ if ($setting['Bot_Status'] == "0" && !in_array($from_id, $admin_ids)) {
 if (function_exists('cleanupExpiredUnpaidInvoices') && intval($from_id) != 0) {
     cleanupExpiredUnpaidInvoices($from_id);
 }
-#-----------cancel receipt wait on any other action------------#
-// منتظر عکس رسید: هر دکمه/متن/کالبک دیگر → کنسل انتظار (بدون خطای رسید نامعتبر)
+#-----------cancel receipt wait on menu navigation only------------#
+// منتظر عکس رسید: فقط دکمه‌های منو / بازگشت انتظار را کنسل می‌کنند
+// متن آزاد → step را نگه می‌داریم تا کاربر بتواند بعداً عکس بفرستد
 if (isset($user['step']) && in_array(strval($user['step']), ['cart_to_cart_user', 'crypto_receipt_user'], true)) {
     $__has_photo = !empty($photo);
+    $__has_doc_img = false;
+    if (!$__has_photo && !empty($update['message']['document'])) {
+        $__mime = strval($update['message']['document']['mime_type'] ?? '');
+        if (strpos($__mime, 'image/') === 0) {
+            $__has_photo = true; // در handler پایین به‌عنوان رسید قبول می‌شود
+            $__has_doc_img = true;
+        }
+    }
     $__has_text = isset($text) && is_string($text) && trim($text) !== '';
     $__has_cb = isset($datain) && is_string($datain) && $datain !== '';
     if (!$__has_photo && ($__has_text || $__has_cb)) {
-        step('home', $from_id);
-        $user['step'] = 'home';
+        $__is_menu = false;
+        if ($__has_cb && in_array($datain, ['backuser', 'mainmenu'], true)) {
+            $__is_menu = true;
+        }
+        if ($__has_text) {
+            if (function_exists('isSupportNavKeyboardText') && isSupportNavKeyboardText($text)) {
+                $__is_menu = true;
+            } else {
+                // دکمه‌های کپی مبلغ/کارت در صفحه پرداخت — انتظار را کنسل نکن
+                $__copy_btns = false;
+                if (function_exists('mb_strpos')) {
+                    $__copy_btns = (mb_strpos($text, 'کپی') !== false);
+                } else {
+                    $__copy_btns = (strpos($text, 'کپی') !== false);
+                }
+                if ($__copy_btns) {
+                    $__is_menu = false;
+                }
+            }
+        }
+        if ($__is_menu) {
+            step('home', $from_id);
+            $user['step'] = 'home';
+        }
+        // متن آزاد: step دست نخورده می‌ماند
     }
 }
 #-----------/start------------#
@@ -3907,19 +3939,79 @@ if ($datain == "cart_to_offline" || $datain == "iranpay") {
     }
 
 } elseif ($user['step'] == "cart_to_cart_user" || $user['step'] == "crypto_receipt_user") {
-    if (!$photo) {
-        // متن/دکمه: فقط مرحله را کنسل کن (handler منو قبلاً اجرا شده) — خطای رسید نده
+    // قبول عکس عادی یا فایل تصویری (document با mime image/*)
+    $__receipt_file_id = '';
+    if (!empty($photo) && !empty($photoid)) {
+        $__receipt_file_id = $photoid;
+    } elseif (!empty($update['message']['document'])) {
+        $__doc = $update['message']['document'];
+        $__mime = strval($__doc['mime_type'] ?? '');
+        if (strpos($__mime, 'image/') === 0 && !empty($__doc['file_id'])) {
+            $__receipt_file_id = strval($__doc['file_id']);
+            $photo = true;
+            $photoid = $__receipt_file_id;
+        }
+    }
+
+    if ($__receipt_file_id === '') {
+        // متن آزاد → راهنمایی بده و در همین مرحله بمان
         if (isset($text) && is_string($text) && trim($text) !== '') {
-            step('home', $from_id);
+            $__is_menu = (function_exists('isSupportNavKeyboardText') && isSupportNavKeyboardText($text));
+            $__is_copy = (function_exists('mb_strpos') ? mb_strpos($text, 'کپی') !== false : strpos($text, 'کپی') !== false);
+            $__is_back = (
+                $text === ($textbotlang['users']['backhome'] ?? '')
+                || $text === ($textbotlang['users']['backmenu'] ?? '')
+                || (function_exists('mb_strpos') && mb_strpos($text, 'منوی اصلی') !== false)
+            );
+            if ($__is_menu || $__is_back) {
+                step('home', $from_id);
+                $user['step'] = 'home';
+                if ($__is_back) {
+                    sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
+                    return;
+                }
+                // دکمه منو: step پاک شد تا هندلر اصلی کار کند
+            } elseif ($__is_copy) {
+                // کپی مبلغ/کارت — step را نگه دار
+                return;
+            } else {
+                sendmessage(
+                    $from_id,
+                    "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.
+متن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.",
+                    $backuser ?? $keyboard,
+                    'HTML'
+                );
+                // step همان cart_to_cart_user / crypto_receipt_user می‌ماند
+                return;
+            }
+        } elseif (isset($datain) && is_string($datain) && $datain !== '') {
+            if (in_array($datain, ['backuser', 'mainmenu'], true)) {
+                step('home', $from_id);
+                sendmessage($from_id, $textbotlang['users']['back'] ?? 'به منوی اصلی برگشتید.', $keyboard, 'HTML');
+                return;
+            }
+            // سایر کالبک‌ها: step را نگه دار مگر منو
+            return;
+        } else {
+            sendmessage(
+                $from_id,
+                $textbotlang['users']['Balance']['Invalid-receipt']
+                    ?? "❌ رسید نامعتبر است.
+فقط <b>عکس</b> رسید را ارسال کنید.",
+                $backuser ?? null,
+                'HTML'
+            );
             return;
         }
-        if (isset($datain) && is_string($datain) && $datain !== '') {
-            step('home', $from_id);
-            return;
-        }
-        // PDF/فایل خالی و بدون عکس
-        sendmessage($from_id, $textbotlang['users']['Balance']['Invalid-receipt'], null, 'HTML');
+    }
+
+    if ($__receipt_file_id === '' && empty($photo)) {
         return;
+    }
+    if ($__receipt_file_id !== '') {
+        $photoid = $__receipt_file_id;
+        $photo = true;
     }
 
     // اگر از قبل رسید waiting دارد، دوباره ثبت نکن
