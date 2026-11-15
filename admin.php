@@ -952,6 +952,77 @@ if ($text == $textbotlang['Admin']['changetext']['msg_support_disabled']) {
     update("textbot", "text", $text, "id_text", "msg_support_disabled");
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
     step('home', $from_id);
+
+#----- متن درخواست پیام پشتیبانی / تأیید ارسال / رسید -----
+if ($text == ($textbotlang['Admin']['changetext']['msg_support_prompt'] ?? 'متن: درخواست پیام پشتیبانی')) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText')
+        ? getEditableBotText('msg_support_prompt', $textbotlang['users']['support']['sendmessageuser'] ?? '')
+        : ($textbotlang['users']['support']['sendmessageuser'] ?? '');
+    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
+    step('edit_msg_support_prompt', $from_id);
+} elseif ($user['step'] == 'edit_msg_support_prompt') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    update("textbot", "text", $text, "id_text", "msg_support_prompt");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+if ($text == ($textbotlang['Admin']['changetext']['msg_support_sent'] ?? 'متن: تأیید ارسال به پشتیبانی')) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText')
+        ? getEditableBotText('msg_support_sent', $textbotlang['users']['support']['sendmessageadmin'] ?? '')
+        : ($textbotlang['users']['support']['sendmessageadmin'] ?? '');
+    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
+    step('edit_msg_support_sent', $from_id);
+} elseif ($user['step'] == 'edit_msg_support_sent') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    update("textbot", "text", $text, "id_text", "msg_support_sent");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+if ($text == ($textbotlang['Admin']['changetext']['msg_receipt_sent'] ?? 'متن: رسید ارسال شد')) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText')
+        ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt'] ?? '')
+        : ($textbotlang['users']['Balance']['Send-receipt'] ?? '');
+    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
+    step('edit_msg_receipt_sent', $from_id);
+} elseif ($user['step'] == 'edit_msg_receipt_sent') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    update("textbot", "text", $text, "id_text", "msg_receipt_sent");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+if ($text == ($textbotlang['Admin']['changetext']['msg_receipt_need_photo'] ?? 'متن: فقط عکس رسید')) {
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    $cur = function_exists('getEditableBotText')
+        ? getEditableBotText('msg_receipt_need_photo', "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.")
+        : "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.";
+    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
+    step('edit_msg_receipt_need_photo', $from_id);
+} elseif ($user['step'] == 'edit_msg_receipt_need_photo') {
+    if (!$text) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+        return;
+    }
+    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+    update("textbot", "text", $text, "id_text", "msg_receipt_need_photo");
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
+    step('home', $from_id);
+}
+
 }
 
 //_________________________________________________

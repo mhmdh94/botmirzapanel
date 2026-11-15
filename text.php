@@ -1774,6 +1774,10 @@ $textbotlang['Admin']['changetext']['msg_buy_disabled'] = "متن: خرید سر
 $textbotlang['Admin']['changetext']['msg_deposit_closed'] = "متن: واریز بسته";
 $textbotlang['Admin']['changetext']['msg_extend_disabled'] = "متن: تمدید بسته";
 $textbotlang['Admin']['changetext']['msg_support_disabled'] = "متن: پشتیبانی بسته";
+$textbotlang['Admin']['changetext']['msg_support_prompt'] = "متن: درخواست پیام پشتیبانی";
+$textbotlang['Admin']['changetext']['msg_support_sent'] = "متن: تأیید ارسال به پشتیبانی";
+$textbotlang['Admin']['changetext']['msg_receipt_sent'] = "متن: رسید ارسال شد";
+$textbotlang['Admin']['changetext']['msg_receipt_need_photo'] = "متن: فقط عکس رسید";
 
 $textbotlang['users']['reseller_volume']['btn'] = "پنل نمایندگی";
 $textbotlang['users']['reseller_volume']['btn_buy'] = "🛒 خرید حجم";

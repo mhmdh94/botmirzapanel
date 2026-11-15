@@ -240,7 +240,7 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
     ) {
         sendmessage(
             $from_id,
-            $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+            (function_exists('getEditableBotText') ? getEditableBotText('msg_support_prompt', $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.') : ($textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.')),
             null,
             'HTML'
         );
@@ -252,7 +252,7 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
         if ($datain == 'support_blocked' || $datain == 'support') {
             sendmessage(
                 $from_id,
-                $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+                (function_exists('getEditableBotText') ? getEditableBotText('msg_support_prompt', $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.') : ($textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.')),
                 null,
                 'HTML'
             );
@@ -266,7 +266,7 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
         } elseif ((empty($text) || !is_string($text) || trim($text) === '') && empty($photo)) {
             sendmessage(
                 $from_id,
-                $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+                (function_exists('getEditableBotText') ? getEditableBotText('msg_support_prompt', $textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.') : ($textbotlang['users']['support']['sendmessageuser'] ?? 'پیام خود را برای پشتیبانی بنویسید و ارسال کنید.')),
                 null,
                 'HTML'
             );
@@ -2804,7 +2804,7 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
         return;
     }
     // مستقیم درخواست پیام پشتیبانی — بدون منوی وسط سوالات متداول
-    sendmessage($from_id, $textbotlang['users']['support']['sendmessageuser'], $backuser, 'HTML');
+    sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_support_prompt', $textbotlang['users']['support']['sendmessageuser']) : $textbotlang['users']['support']['sendmessageuser']), $backuser, 'HTML');
     step('gettextpm', $from_id);
 } elseif ($user['step'] == 'gettextpm') {
     // دکمه‌های منو نباید به‌عنوان پیام پشتیبانی ارسال شوند (مثلاً مشخصات کاربری | 67,000 ت)
@@ -2832,7 +2832,7 @@ if ($text == $datatextbot['text_support'] || $text == "/support" || $datain == "
             $user['step'] = 'home';
             return;
         }
-        sendmessage($from_id, $textbotlang['users']['support']['sendmessageadmin'], $keyboard, 'HTML');
+        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_support_sent', $textbotlang['users']['support']['sendmessageadmin']) : $textbotlang['users']['support']['sendmessageadmin']), $keyboard, 'HTML');
         if (function_exists('ensureSupportPendingTable')) {
             ensureSupportPendingTable();
             global $pdo;
@@ -3977,8 +3977,9 @@ if ($datain == "cart_to_offline" || $datain == "iranpay") {
             } else {
                 sendmessage(
                     $from_id,
-                    "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.
-متن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.",
+                    (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_need_photo', "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.
+متن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.") : "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.
+متن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید."),
                     $backuser ?? $keyboard,
                     'HTML'
                 );
@@ -4204,7 +4205,7 @@ if ($datain == "cart_to_offline" || $datain == "iranpay") {
     if ($user['Processing_value_tow'] == "getconfigafterpay") {
         sendmessage($from_id, $textbotlang['users']['Balance']['Send-receip-buy'], $keyboard, 'HTML');
     } else {
-        sendmessage($from_id, $textbotlang['users']['Balance']['Send-receipt'], $keyboard, 'HTML');
+        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
     }
     if ($__admin_ok === 0) {
         // فقط لاگ؛ به کاربر پیام اضافه نده که گیج نشود

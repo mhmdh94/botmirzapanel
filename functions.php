@@ -635,6 +635,10 @@ function ensureEditableStatusTexts()
         'msg_deposit_closed' => $textbotlang['users']['Balance']['deposit_closed'] ?? "⛔️ واریز به حساب بسته است.\nلطفاً بعداً تلاش کنید.",
         'msg_extend_disabled' => $textbotlang['users']['extend']['disabled'] ?? "⛔️ تمدید سرویس فعلاً غیرفعال است.",
         'msg_support_disabled' => $textbotlang['users']['support']['disabled'] ?? "⛔️ پشتیبانی فعلاً در دسترس نیست.\nلطفاً بعداً تلاش کنید.",
+        'msg_support_prompt' => $textbotlang['users']['support']['sendmessageuser'] ?? "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.\nدر صورتی که اختلال در اتصال دارید لطفا اینترنتی که استفاده می‌کنید + شهر را هم به پشتیبانی اعلام کنید.",
+        'msg_support_sent' => $textbotlang['users']['support']['sendmessageadmin'] ?? "✅ پیام شما برای پشتیبانی ارسال شد.\nبه‌زودی از همین ربات پاسخ می‌گیرید.",
+        'msg_receipt_sent' => $textbotlang['users']['Balance']['Send-receipt'] ?? "🚀 رسید ارسال شد\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nفقط در صورت عدم تایید تا یک ساعت، به پشتیبانی پیام بدید.",
+        'msg_receipt_need_photo' => "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.",
     ];
     foreach ($defaults as $id => $def) {
         try {
@@ -3218,26 +3222,21 @@ function removeBotCrontabs()
 
 function isAutomaticCartConfirmEnabled()
 {
-    // فقط مقدار دیتابیس — پیش‌فرض خاموش؛ فقط '1' = روشن
-    $raw = null;
+    // فقط تنظیم دیتابیس — نه وجود خط در crontab (تا روشن/خاموش از ربات دقیق باشد)
     if (function_exists('getPaySettingValue')) {
         if (function_exists('ensurePaySetting')) {
             ensurePaySetting('auto_cart_confirm', '0');
         }
-        $raw = getPaySettingValue('auto_cart_confirm', '0');
-    } else {
-        $row = select("PaySetting", "ValuePay", "NamePay", "auto_cart_confirm", "select");
-        if (is_array($row)) {
-            $raw = $row['ValuePay'] ?? '0';
-        } elseif (is_string($row) || is_numeric($row)) {
-            $raw = $row;
-        } else {
-            $raw = '0';
-        }
+        return getPaySettingValue('auto_cart_confirm', '0') === '1';
     }
-    $v = strtolower(trim(strval($raw)));
-    // فقط این‌ها روشن‌اند
-    return in_array($v, ['1', 'on', 'true', 'yes'], true);
+    $row = select("PaySetting", "ValuePay", "NamePay", "auto_cart_confirm", "select");
+    if (is_array($row)) {
+        return strval($row['ValuePay'] ?? '0') === '1';
+    }
+    if (is_string($row) || is_numeric($row)) {
+        return strval($row) === '1';
+    }
+    return false;
 }
 
 function ensureUserCartAutoColumn()
