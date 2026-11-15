@@ -10,8 +10,26 @@ require_once '../text.php';
 require '../vendor/autoload.php';
 $ManagePanel = new ManagePanel();
 $setting = select("setting", "*");
-// اگر تأیید خودکار در تنظیمات خاموش است، اصلاً اجرا نشود (حتی اگر خط crontab مانده باشد)
-if (function_exists('isAutomaticCartConfirmEnabled') && !isAutomaticCartConfirmEnabled()) {
+// فقط اگر در دیتابیس صریحاً روشن باشد اجرا شود — در غیر این صورت خروج
+// (اگر تابع نبود یا مقدار غیر از 1 بود، هیچ رسیدی تأیید نشود)
+$__auto_cart_on = false;
+if (function_exists('isAutomaticCartConfirmEnabled')) {
+    $__auto_cart_on = (bool) isAutomaticCartConfirmEnabled();
+} elseif (function_exists('getPaySettingValue')) {
+    $__auto_cart_on = (strval(getPaySettingValue('auto_cart_confirm', '0')) === '1');
+} else {
+    try {
+        global $pdo;
+        if (isset($pdo) && $pdo) {
+            $st = $pdo->query("SELECT ValuePay FROM PaySetting WHERE NamePay = 'auto_cart_confirm' LIMIT 1");
+            $v = $st ? $st->fetchColumn() : null;
+            $__auto_cart_on = (strval($v) === '1');
+        }
+    } catch (Throwable $e) {
+        $__auto_cart_on = false;
+    }
+}
+if (!$__auto_cart_on) {
     exit;
 }
 $datatextbotget = select("textbot", "*",null ,null ,"fetchAll");
