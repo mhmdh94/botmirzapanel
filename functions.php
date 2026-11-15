@@ -3218,21 +3218,26 @@ function removeBotCrontabs()
 
 function isAutomaticCartConfirmEnabled()
 {
-    // فقط تنظیم دیتابیس — نه وجود خط در crontab (تا روشن/خاموش از ربات دقیق باشد)
+    // فقط مقدار دیتابیس — پیش‌فرض خاموش؛ فقط '1' = روشن
+    $raw = null;
     if (function_exists('getPaySettingValue')) {
         if (function_exists('ensurePaySetting')) {
             ensurePaySetting('auto_cart_confirm', '0');
         }
-        return getPaySettingValue('auto_cart_confirm', '0') === '1';
+        $raw = getPaySettingValue('auto_cart_confirm', '0');
+    } else {
+        $row = select("PaySetting", "ValuePay", "NamePay", "auto_cart_confirm", "select");
+        if (is_array($row)) {
+            $raw = $row['ValuePay'] ?? '0';
+        } elseif (is_string($row) || is_numeric($row)) {
+            $raw = $row;
+        } else {
+            $raw = '0';
+        }
     }
-    $row = select("PaySetting", "ValuePay", "NamePay", "auto_cart_confirm", "select");
-    if (is_array($row)) {
-        return strval($row['ValuePay'] ?? '0') === '1';
-    }
-    if (is_string($row) || is_numeric($row)) {
-        return strval($row) === '1';
-    }
-    return false;
+    $v = strtolower(trim(strval($raw)));
+    // فقط این‌ها روشن‌اند
+    return in_array($v, ['1', 'on', 'true', 'yes'], true);
 }
 
 function ensureUserCartAutoColumn()
