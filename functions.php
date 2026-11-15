@@ -676,6 +676,162 @@ function getEditableBotText($id_text, $fallback = '')
     return $cache[$id_text];
 }
 
+/**
+ * ذخیره متن قابل‌ویرایش (INSERT یا UPDATE)
+ */
+function upsertEditableBotText($id_text, $text)
+{
+    global $pdo;
+    $id_text = strval($id_text);
+    $text = strval($text);
+    if ($id_text === '') {
+        return false;
+    }
+    try {
+        if (function_exists('ensureEditableStatusTexts')) {
+            ensureEditableStatusTexts();
+        }
+        $st = $pdo->prepare("SELECT id_text FROM textbot WHERE id_text = ? LIMIT 1");
+        $st->execute([$id_text]);
+        if ($st->fetch()) {
+            $up = $pdo->prepare("UPDATE textbot SET text = ? WHERE id_text = ?");
+            return $up->execute([$text, $id_text]);
+        }
+        $ins = $pdo->prepare("INSERT INTO textbot (id_text, text) VALUES (?, ?)");
+        return $ins->execute([$id_text, $text]);
+    } catch (Throwable $e) {
+        error_log('upsertEditableBotText: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * کاتالوگ دکمه‌های «تنظیم متن ربات» — label باید دقیقاً با کیبورد یکی باشد
+ * type: message = متن پیام | button = متن دکمه منو
+ */
+function getBotTextSettingsCatalog()
+{
+    global $textbotlang, $datatextbot;
+    $tb = is_array($datatextbot ?? null) ? $datatextbot : [];
+    return [
+        // پیام‌ها
+        'text_start' => [
+            'label' => $textbotlang['users']['changetext']['set_start_text'] ?? 'تنظیم متن شروع',
+            'fallback' => $tb['text_start'] ?? ($textbotlang['users']['start'] ?? 'سلام خوش آمدید'),
+            'type' => 'message',
+        ],
+        'rule_text' => [
+            'label' => $textbotlang['users']['changetext']['law_text'] ?? '⚖️ متن قانون',
+            'fallback' => $tb['text_rules'] ?? ($textbotlang['users']['rules'] ?? ''),
+            'type' => 'message',
+            'id' => 'text_rules',
+        ],
+        'text_channel' => [
+            'label' => $textbotlang['users']['changetext']['mandatory_membership_description'] ?? '📝 تنظیم متن توضیحات عضویت اجباری',
+            'fallback' => $tb['text_channel'] ?? '',
+            'type' => 'message',
+        ],
+        'text_dec_fq' => [
+            'label' => $textbotlang['users']['changetext']['faq_description'] ?? '📝 تنظیم متن توضیحات سوالات متداول',
+            'fallback' => $tb['text_dec_fq'] ?? '',
+            'type' => 'message',
+        ],
+        // دکمه‌ها
+        'text_sell' => [
+            'label' => $textbotlang['users']['changetext']['buy_subscription_button'] ?? 'متن دکمه خرید اشتراک',
+            'fallback' => $tb['text_sell'] ?? '🛒 خرید سرویس',
+            'type' => 'button',
+        ],
+        'text_Purchased_services' => [
+            'label' => $textbotlang['users']['changetext']['purchased_service_button'] ?? 'دکمه سرویس خریداری شده',
+            'fallback' => $tb['text_Purchased_services'] ?? 'سرویس‌های من',
+            'type' => 'button',
+        ],
+        'text_Add_Balance' => [
+            'label' => $textbotlang['users']['changetext']['increase_balance_button'] ?? 'دکمه افزایش موجودی',
+            'fallback' => $tb['text_Add_Balance'] ?? 'افزایش موجودی',
+            'type' => 'button',
+        ],
+        'text_account' => [
+            'label' => $textbotlang['users']['changetext']['user_account_button'] ?? 'متن دکمه حساب کاربری',
+            'fallback' => $tb['text_account'] ?? 'مشخصات کاربری',
+            'type' => 'button',
+        ],
+        'text_usertest' => [
+            'label' => $textbotlang['users']['changetext']['test_account_button'] ?? 'دکمه اکانت تست',
+            'fallback' => $tb['text_usertest'] ?? 'اکانت تست',
+            'type' => 'button',
+        ],
+        'text_support' => [
+            'label' => $textbotlang['users']['changetext']['support_button'] ?? 'متن دکمه ☎️ پشتیبانی',
+            'fallback' => $tb['text_support'] ?? 'پشتیبانی',
+            'type' => 'button',
+        ],
+        'text_Tariff_list' => [
+            'label' => $textbotlang['users']['changetext']['tariff_list_button'] ?? 'متن دکمه لیست تعرفه',
+            'fallback' => $tb['text_Tariff_list'] ?? 'تعرفه‌ها',
+            'type' => 'button',
+        ],
+        'text_dec_Tariff_list' => [
+            'label' => $textbotlang['users']['changetext']['tariff_list_description'] ?? 'متن توضیحات لیست تعرفه',
+            'fallback' => $tb['text_dec_Tariff_list'] ?? '',
+            'type' => 'message',
+        ],
+        'text_fq' => [
+            'label' => $textbotlang['users']['changetext']['faq_button'] ?? 'دکمه سوالات متداول',
+            'fallback' => $tb['text_fq'] ?? 'سوالات متداول',
+            'type' => 'button',
+        ],
+        'text_help' => [
+            'label' => $textbotlang['users']['changetext']['tutorial_button'] ?? 'متن دکمه 📚 آموزش',
+            'fallback' => $tb['text_help'] ?? 'آموزش',
+            'type' => 'button',
+        ],
+        // سیستم
+        'msg_support_prompt' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_support_prompt'] ?? 'متن: درخواست پیام پشتیبانی',
+            'fallback' => $textbotlang['users']['support']['sendmessageuser'] ?? '📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.',
+            'type' => 'message',
+        ],
+        'msg_support_sent' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_support_sent'] ?? 'متن: تأیید ارسال به پشتیبانی',
+            'fallback' => $textbotlang['users']['support']['sendmessageadmin'] ?? '✅ پیام شما برای پشتیبانی ارسال شد.',
+            'type' => 'message',
+        ],
+        'msg_receipt_sent' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_receipt_sent'] ?? 'متن: رسید ارسال شد',
+            'fallback' => $textbotlang['users']['Balance']['Send-receipt'] ?? '🚀 رسید ارسال شد',
+            'type' => 'message',
+        ],
+        'msg_receipt_need_photo' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_receipt_need_photo'] ?? 'متن: فقط عکس رسید',
+            'fallback' => '📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.',
+            'type' => 'message',
+        ],
+        'msg_buy_disabled' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_buy_disabled'] ?? 'متن: خرید سرویس بسته',
+            'fallback' => $textbotlang['users']['sell']['buy_disabled'] ?? '',
+            'type' => 'message',
+        ],
+        'msg_deposit_closed' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_deposit_closed'] ?? 'متن: واریز بسته',
+            'fallback' => $textbotlang['users']['Balance']['deposit_closed'] ?? '',
+            'type' => 'message',
+        ],
+        'msg_extend_disabled' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_extend_disabled'] ?? 'متن: تمدید بسته',
+            'fallback' => $textbotlang['users']['extend']['disabled'] ?? '',
+            'type' => 'message',
+        ],
+        'msg_support_disabled' => [
+            'label' => $textbotlang['Admin']['changetext']['msg_support_disabled'] ?? 'متن: پشتیبانی بسته',
+            'fallback' => $textbotlang['users']['support']['disabled'] ?? '',
+            'type' => 'message',
+        ],
+    ];
+}
+
+
 
 function refundBalanceIfDeducted($user_id, $amount, $balance_before = null)
 {

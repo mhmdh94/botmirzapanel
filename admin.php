@@ -746,376 +746,75 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message']) {
 }
 //_________________________________________________
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $textbot, 'HTML');
-} elseif ($text == $textbotlang['Admin']['changetext']['textstart']) {
-    $textstart = $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_start'];
-    sendmessage($from_id, $textstart, $backadmin, 'HTML');
-    step('changetextstart', $from_id);
-} elseif ($user['step'] == "changetextstart") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
+    if (function_exists('ensureEditableStatusTexts')) {
+        ensureEditableStatusTexts();
     }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_start");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_Purchased_services']) {
-    $textstart = $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_Purchased_services'];
-    sendmessage($from_id, $textstart, $backadmin, 'HTML');
-    step('changetextinfo', $from_id);
-} elseif ($user['step'] == "changetextinfo") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_Purchased_services");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_usertest']) {
-    $textstart = $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_usertest'];
-    sendmessage($from_id, $textstart, $backadmin, 'HTML');
-    step('changetextusertest', $from_id);
-} elseif ($user['step'] == "changetextusertest") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_usertest");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_help']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_help'], $backadmin, 'HTML');
-    step('text_help', $from_id);
-} elseif ($user['step'] == "text_help") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_help");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_support']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_support'], $backadmin, 'HTML');
-    step('text_support', $from_id);
-} elseif ($user['step'] == "text_support") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_support");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_fq']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_fq'], $backadmin, 'HTML');
-    step('text_fq', $from_id);
-} elseif ($user['step'] == "text_fq") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_fq");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_dec_fq']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_dec_fq'], $backadmin, 'HTML');
-    step('text_dec_fq', $from_id);
-} elseif ($user['step'] == "text_dec_fq") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_dec_fq");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_channel']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_channel'], $backadmin, 'HTML');
-    step('text_channel', $from_id);
-} elseif ($user['step'] == "text_channel") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_channel");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_account']) {
-    $textstart = $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_account'];
-    sendmessage($from_id, $textstart, $backadmin, 'HTML');
-    step('text_account', $from_id);
-} elseif ($user['step'] == "text_account") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_account");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_Add_Balance']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_Add_Balance'], $backadmin, 'HTML');
-    step('text_Add_Balance', $from_id);
-} elseif ($user['step'] == "text_Add_Balance") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_Add_Balance");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['users']['changetext']['buy_subscription_button']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_sell'], $backadmin, 'HTML');
-    step('text_sell', $from_id);
-} elseif ($user['step'] == "text_sell") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_sell");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_Tariff_list']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_Tariff_list'], $backadmin, 'HTML');
-    step('text_Tariff_list', $from_id);
-} elseif ($user['step'] == "text_Tariff_list") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_Tariff_list");
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['changetext']['text_dec_Tariff_list']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $datatextbot['text_dec_Tariff_list'], $backadmin, 'HTML');
-    step('text_dec_Tariff_list', $from_id);
-} elseif ($user['step'] == "text_dec_Tariff_list") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    update("textbot", "text", $text, "id_text", "text_dec_Tariff_list");
+    sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید:', $textbot, 'HTML');
     step('home', $from_id);
 }
 
-#----- متن‌های وضعیت (خرید/واریز/تمدید/پشتیبانی بسته) -----
-if ($text == $textbotlang['Admin']['changetext']['msg_buy_disabled']) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_buy_disabled', $textbotlang['users']['sell']['buy_disabled']) : $textbotlang['users']['sell']['buy_disabled'];
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
-    step('edit_msg_buy_disabled', $from_id);
-} elseif ($user['step'] == 'edit_msg_buy_disabled') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+#----- تنظیم متن ربات (کاتالوگ یکپارچه) -----
+if (function_exists('getBotTextSettingsCatalog') && isset($text) && is_string($text) && trim($text) !== '') {
+    $__txt_cat = getBotTextSettingsCatalog();
+    $__matched_key = null;
+    $__matched = null;
+    foreach ($__txt_cat as $__k => $__meta) {
+        $__label = trim(strval($__meta['label'] ?? ''));
+        if ($__label !== '' && trim($text) === $__label) {
+            $__matched_key = $__k;
+            $__matched = $__meta;
+            break;
+        }
+    }
+    if ($__matched_key !== null) {
+        $__id = strval($__matched['id'] ?? $__matched_key);
+        $__fb = strval($__matched['fallback'] ?? '');
+        // مقدار فعلی از textbot
+        $__cur = function_exists('getEditableBotText') ? getEditableBotText($__id, $__fb) : $__fb;
+        if ($__cur === '' && isset($datatextbot[$__id])) {
+            $__cur = strval($datatextbot[$__id]);
+        }
+        if ($__cur === '') {
+            $__cur = $__fb !== '' ? $__fb : '—';
+        }
+        $__hint = ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? "متن فعلی را بفرستید:\n\n");
+        sendmessage($from_id, $__hint . $__cur, $backadmin, 'HTML');
+        step('edit_bottext_' . $__id, $from_id);
         return;
     }
-    update("textbot", "text", $text, "id_text", "msg_buy_disabled");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
 }
-if ($text == $textbotlang['Admin']['changetext']['msg_deposit_closed']) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']) : $textbotlang['users']['Balance']['deposit_closed'];
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
-    step('edit_msg_deposit_closed', $from_id);
-} elseif ($user['step'] == 'edit_msg_deposit_closed') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
+// ذخیره متن پس از انتخاب از کاتالوگ
+if (isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0) {
+    $__id = substr($user['step'], strlen('edit_bottext_'));
+    if ($__id !== '') {
+        if (!isset($text) || !is_string($text) || trim($text) === '') {
+            sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'] ?? 'متن نامعتبر است.', $textbot, 'HTML');
+            return;
+        }
+        if (function_exists('upsertEditableBotText')) {
+            upsertEditableBotText($__id, $text);
+        } else {
+            if (function_exists('ensureEditableStatusTexts')) {
+                ensureEditableStatusTexts();
+            }
+            try {
+                global $pdo;
+                $st = $pdo->prepare("SELECT id_text FROM textbot WHERE id_text = ? LIMIT 1");
+                $st->execute([$__id]);
+                if ($st->fetch()) {
+                    update("textbot", "text", $text, "id_text", $__id);
+                } else {
+                    $ins = $pdo->prepare("INSERT INTO textbot (id_text, text) VALUES (?, ?)");
+                    $ins->execute([$__id, $text]);
+                }
+            } catch (Throwable $e) {
+                update("textbot", "text", $text, "id_text", $__id);
+            }
+        }
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'] ?? '✅ ذخیره شد.', $textbot, 'HTML');
+        step('home', $from_id);
         return;
     }
-    update("textbot", "text", $text, "id_text", "msg_deposit_closed");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-}
-if ($text == $textbotlang['Admin']['changetext']['msg_extend_disabled']) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']) : $textbotlang['users']['extend']['disabled'];
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
-    step('edit_msg_extend_disabled', $from_id);
-} elseif ($user['step'] == 'edit_msg_extend_disabled') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    update("textbot", "text", $text, "id_text", "msg_extend_disabled");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-}
-if ($text == $textbotlang['Admin']['changetext']['msg_support_disabled']) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText') ? getEditableBotText('msg_support_disabled', $textbotlang['users']['support']['disabled']) : $textbotlang['users']['support']['disabled'];
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ChangeTextGet'] . $cur, $backadmin, 'HTML');
-    step('edit_msg_support_disabled', $from_id);
-} elseif ($user['step'] == 'edit_msg_support_disabled') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    update("textbot", "text", $text, "id_text", "msg_support_disabled");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-
-#----- متن درخواست پیام پشتیبانی / تأیید ارسال / رسید -----
-if ($text == ($textbotlang['Admin']['changetext']['msg_support_prompt'] ?? 'متن: درخواست پیام پشتیبانی')) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText')
-        ? getEditableBotText('msg_support_prompt', $textbotlang['users']['support']['sendmessageuser'] ?? '')
-        : ($textbotlang['users']['support']['sendmessageuser'] ?? '');
-    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
-    step('edit_msg_support_prompt', $from_id);
-} elseif ($user['step'] == 'edit_msg_support_prompt') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    update("textbot", "text", $text, "id_text", "msg_support_prompt");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-}
-if ($text == ($textbotlang['Admin']['changetext']['msg_support_sent'] ?? 'متن: تأیید ارسال به پشتیبانی')) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText')
-        ? getEditableBotText('msg_support_sent', $textbotlang['users']['support']['sendmessageadmin'] ?? '')
-        : ($textbotlang['users']['support']['sendmessageadmin'] ?? '');
-    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
-    step('edit_msg_support_sent', $from_id);
-} elseif ($user['step'] == 'edit_msg_support_sent') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    update("textbot", "text", $text, "id_text", "msg_support_sent");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-}
-if ($text == ($textbotlang['Admin']['changetext']['msg_receipt_sent'] ?? 'متن: رسید ارسال شد')) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText')
-        ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt'] ?? '')
-        : ($textbotlang['users']['Balance']['Send-receipt'] ?? '');
-    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
-    step('edit_msg_receipt_sent', $from_id);
-} elseif ($user['step'] == 'edit_msg_receipt_sent') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    update("textbot", "text", $text, "id_text", "msg_receipt_sent");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-}
-if ($text == ($textbotlang['Admin']['changetext']['msg_receipt_need_photo'] ?? 'متن: فقط عکس رسید')) {
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    $cur = function_exists('getEditableBotText')
-        ? getEditableBotText('msg_receipt_need_photo', "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.")
-        : "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.";
-    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? 'متن فعلی:\n\n') . $cur, $backadmin, 'HTML');
-    step('edit_msg_receipt_need_photo', $from_id);
-} elseif ($user['step'] == 'edit_msg_receipt_need_photo') {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'], $textbot, 'HTML');
-        return;
-    }
-    if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
-    update("textbot", "text", $text, "id_text", "msg_receipt_need_photo");
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'], $textbot, 'HTML');
-    step('home', $from_id);
-}
-
-}
-
-//_________________________________________________
-if ($text == $textbotlang['Admin']['systemsms']['sendmessageauser']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetText'], $backadmin, 'HTML');
-    step('sendmessagetext', $from_id);
-} elseif ($user['step'] == "sendmessagetext") {
-    update("user", "Processing_value", $text, "id", $from_id);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetIDMessage'], $backadmin, 'HTML');
-    step('sendmessagetid', $from_id);
-} elseif ($user['step'] == "sendmessagetid") {
-    if (!in_array($text, $users_ids)) {
-        sendmessage($from_id, $textbotlang['Admin']['not-user'], $backadmin, 'HTML');
-        return;
-    }
-    $textsendadmin = sprintf($textbotlang['Admin']['systemsms']['sendedmessagetouser'], $user['Processing_value']);
-    sendmessage($text, $textsendadmin, null, 'HTML');
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['MessageSent'], $keyboardadmin, 'HTML');
-    step('home', $from_id);
-}
-//_________________________________________________
-if ($text == $textbotlang['Admin']['Help']['titlebtn']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardhelpadmin, 'HTML');
-} elseif ($text == $textbotlang['Admin']['Help']['addhelp']) {
-    sendmessage($from_id, $textbotlang['Admin']['Help']['GetAddNameHelp'], $backadmin, 'HTML');
-    step('add_name_help', $from_id);
-} elseif ($user['step'] == "add_name_help") {
-    $stmt = $pdo->prepare("INSERT IGNORE INTO help (name_os) VALUES (?)");
-    $stmt->bindParam(1, $text, PDO::PARAM_STR);
-    $stmt->execute();
-    sendmessage($from_id, $textbotlang['Admin']['Help']['GetAddDecHelp'], $backadmin, 'HTML');
-    step('add_dec', $from_id);
-    update("user", "Processing_value", $text, "id", $from_id);
-} elseif ($user['step'] == "add_dec") {
-    if ($photo) {
-        update("help", "Media_os", $photoid, "name_os", $user['Processing_value']);
-        update("help", "Description_os", $caption, "name_os", $user['Processing_value']);
-        update("help", "type_Media_os", "photo", "name_os", $user['Processing_value']);
-    } elseif ($text) {
-        update("help", "Description_os", $text, "name_os", $user['Processing_value']);
-    } elseif ($video) {
-        update("help", "Media_os", $videoid, "name_os", $user['Processing_value']);
-        update("help", "Description_os", $caption, "name_os", $user['Processing_value']);
-        update("help", "type_Media_os", "video", "name_os", $user['Processing_value']);
-    }
-    sendmessage($from_id, $textbotlang['Admin']['Help']['SaveHelp'], $keyboardadmin, 'HTML');
-    step('home', $from_id);
-} elseif ($text == $textbotlang['Admin']['Help']['removehelpbtn']) {
-    sendmessage($from_id, $textbotlang['Admin']['Help']['SelectName'], $json_list_help, 'HTML');
-    step('remove_help', $from_id);
-} elseif ($user['step'] == "remove_help") {
-    $stmt = $pdo->prepare("DELETE FROM help WHERE name_os = ?");
-    $stmt->execute([$text]);
-    sendmessage($from_id, $textbotlang['Admin']['Help']['RemoveHelp'], $keyboardhelpadmin, 'HTML');
-    step('home', $from_id);
-}
-//_________________________________________________
-if (preg_match('/Response_(\w+)/', $datain, $dataget)) {
-    $iduser = $dataget[1];
-    update("user", "Processing_value", $iduser, "id", $from_id);
-    step('getmessageAsAdmin', $from_id);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetTextResponse'], $backadmin, 'HTML');
-} elseif ($user['step'] == "getmessageAsAdmin") {
-    $btn_reply = $textbotlang['users']['support']['reply_btn'] ?? '💬 پاسخ به پشتیبانی';
-    $reply_support_kb = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $btn_reply, 'callback_data' => 'support'],
-            ],
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    $target_user = $user['Processing_value'];
-    $sent_ok = false;
-    if ($text) {
-        $textSendAdminToUser = sprintf($textbotlang['Admin']['systemsms']['sendedmessagetouser'], $text);
-        sendmessage($target_user, $textSendAdminToUser, $reply_support_kb, 'HTML');
-        $sent_ok = true;
-    }
-    if ($photo) {
-        $textSendAdminToUser = sprintf($textbotlang['Admin']['systemsms']['sendedmessagetouser'], $caption);
-        telegram('sendphoto', [
-            'chat_id' => $target_user,
-            'photo' => $photoid,
-            'caption' => $textSendAdminToUser,
-            'parse_mode' => "HTML",
-            'reply_markup' => $reply_support_kb,
-        ]);
-        $sent_ok = true;
-    }
-    if ($sent_ok) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SendMessageuser'], null, 'HTML');
-    }
-    step('home', $from_id);
 }
 //_________________________________________________
 if ($text == $textbotlang['Admin']['managepanel']['showpanelbtn']) {

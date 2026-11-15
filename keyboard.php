@@ -434,18 +434,15 @@ $list_marzban_panel_usertest['inline_keyboard'][] = [
 $list_marzban_usertest = json_encode($list_marzban_panel_usertest);
 $textbot = json_encode([
     'keyboard' => [
-        // --- پیام‌های اصلی ---
         [['text' => $textbotlang['users']['changetext']['set_start_text']], ['text' => $textbotlang['users']['changetext']['law_text']]],
         [['text' => $textbotlang['users']['changetext']['mandatory_membership_description']], ['text' => $textbotlang['users']['changetext']['faq_description']]],
-        // --- متن دکمه‌های منو ---
         [['text' => $textbotlang['users']['changetext']['buy_subscription_button']], ['text' => $textbotlang['users']['changetext']['purchased_service_button']]],
         [['text' => $textbotlang['users']['changetext']['increase_balance_button']], ['text' => $textbotlang['users']['changetext']['user_account_button']]],
         [['text' => $textbotlang['users']['changetext']['test_account_button']], ['text' => $textbotlang['users']['changetext']['support_button']]],
         [['text' => $textbotlang['users']['changetext']['tariff_list_button']], ['text' => $textbotlang['users']['changetext']['tariff_list_description']]],
         [['text' => $textbotlang['users']['changetext']['faq_button']], ['text' => $textbotlang['users']['changetext']['tutorial_button']]],
-        // --- پیام‌های وضعیت / سیستم ---
-        [['text' => $textbotlang['Admin']['changetext']['msg_support_prompt']], ['text' => $textbotlang['Admin']['changetext']['msg_support_sent']]],
-        [['text' => $textbotlang['Admin']['changetext']['msg_receipt_sent']], ['text' => $textbotlang['Admin']['changetext']['msg_receipt_need_photo']]],
+        [['text' => ($textbotlang['Admin']['changetext']['msg_support_prompt'] ?? 'متن: درخواست پیام پشتیبانی')], ['text' => ($textbotlang['Admin']['changetext']['msg_support_sent'] ?? 'متن: تأیید ارسال به پشتیبانی')]],
+        [['text' => ($textbotlang['Admin']['changetext']['msg_receipt_sent'] ?? 'متن: رسید ارسال شد')], ['text' => ($textbotlang['Admin']['changetext']['msg_receipt_need_photo'] ?? 'متن: فقط عکس رسید')]],
         [['text' => $textbotlang['Admin']['changetext']['msg_buy_disabled']], ['text' => $textbotlang['Admin']['changetext']['msg_deposit_closed']]],
         [['text' => $textbotlang['Admin']['changetext']['msg_extend_disabled']], ['text' => $textbotlang['Admin']['changetext']['msg_support_disabled']]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
