@@ -18,7 +18,71 @@ if ($text == $textbotlang['Admin']['Back-Adminment'] || $datain == "back_admin")
     sendmessage($from_id, $textbotlang['Admin']['Back-Admin'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     step('home', $from_id);
     return;
-} elseif ($text == $textbotlang['Admin']['channel']['changechannelbtn']) {
+}
+
+#----- پاسخ / ارسال پیام به کاربر (دکمه Response_) -----
+if (isset($datain) && is_string($datain) && preg_match('/^Response_(\d+)$/', $datain, $dataget)) {
+    $iduser = $dataget[1];
+    update("user", "Processing_value", $iduser, "id", $from_id);
+    step('getmessageAsAdmin', $from_id);
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetTextResponse'] ?? 'متن پاسخ را ارسال کنید:', $backadmin, 'HTML');
+} elseif (isset($user['step']) && $user['step'] == 'getmessageAsAdmin') {
+    // انصراف با بازگشت
+    if (isset($text) && is_string($text) && (
+        $text === ($textbotlang['Admin']['Back-Adminment'] ?? '')
+        || $text === ($textbotlang['users']['backhome'] ?? '')
+        || (function_exists('mb_strpos') && mb_strpos($text, 'بازگشت') !== false)
+    )) {
+        step('home', $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['Back-Admin'] ?? 'بازگشت', function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+        return;
+    }
+    $target_uid = $user['Processing_value'] ?? '';
+    if ($target_uid === '' || $target_uid === null) {
+        step('home', $from_id);
+        sendmessage($from_id, '❌ کاربر هدف مشخص نیست.', function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+        return;
+    }
+    $reply_kb = json_encode([
+        'inline_keyboard' => [
+            [[
+                'text' => $textbotlang['users']['support']['reply_btn'] ?? '💬 پاسخ به پشتیبانی',
+                'callback_data' => 'support',
+            ]],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
+    $sent_ok = false;
+    if (!empty($text) && is_string($text) && trim($text) !== '') {
+        $textSendAdminToUser = sprintf(
+            $textbotlang['Admin']['systemsms']['sendedmessagetouser'] ?? "📩 یک پیام از طرف مدیریت ارسال شده است\n\n%s",
+            $text
+        );
+        sendmessage($target_uid, $textSendAdminToUser, $reply_kb, 'HTML');
+        $sent_ok = true;
+    }
+    if (!empty($photo)) {
+        $cap = sprintf(
+            $textbotlang['Admin']['systemsms']['sendedmessagetouser'] ?? "📩 یک پیام از طرف مدیریت ارسال شده است\n\n%s",
+            isset($caption) && $caption !== null && $caption !== '' ? $caption : ''
+        );
+        telegram('sendphoto', [
+            'chat_id' => $target_uid,
+            'photo' => $photoid,
+            'caption' => $cap,
+            'reply_markup' => $reply_kb,
+            'parse_mode' => 'HTML',
+        ]);
+        $sent_ok = true;
+    }
+    if (!$sent_ok) {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetTextResponse'] ?? 'متن یا عکس پاسخ را ارسال کنید.', $backadmin, 'HTML');
+        return;
+    }
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SendMessageuser'] ?? '✅ پیام برای کاربر ارسال شد.', function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    step('home', $from_id);
+}
+ elseif ($text == $textbotlang['Admin']['channel']['changechannelbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['channel']['changechannel'] . $channels['link'], $backadmin, 'HTML');
     step('addchannel', $from_id);
 } elseif ($user['step'] == "addchannel") {

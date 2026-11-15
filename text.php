@@ -1086,7 +1086,7 @@ $textbotlang['Admin']['systemsms']['sendforwardtousers'] = "✅ پیام به ت
 $textbotlang['Admin']['systemsms']['sendmessageauser'] = "✍️ ارسال پیام برای یک کاربر";
 $textbotlang['Admin']['systemsms']['sendedmessagetouser'] = "📩 یک پیام از طرف مدیریت ارسال شده است
 
-متن پیام: %s";
+%s";
 
 
 
