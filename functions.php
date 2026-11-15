@@ -635,7 +635,7 @@ function ensureEditableStatusTexts()
         'msg_deposit_closed' => $textbotlang['users']['Balance']['deposit_closed'] ?? "⛔️ واریز به حساب بسته است.\nلطفاً بعداً تلاش کنید.",
         'msg_extend_disabled' => $textbotlang['users']['extend']['disabled'] ?? "⛔️ تمدید سرویس فعلاً غیرفعال است.",
         'msg_support_disabled' => $textbotlang['users']['support']['disabled'] ?? "⛔️ پشتیبانی فعلاً در دسترس نیست.\nلطفاً بعداً تلاش کنید.",
-        'msg_support_prompt' => $textbotlang['users']['support']['sendmessageuser'] ?? "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.\nدر صورتی که اختلال در اتصال دارید لطفا اینترنتی که استفاده می‌کنید + شهر را هم به پشتیبانی اعلام کنید.",
+        'msg_support_prompt' => $textbotlang['users']['support']['sendmessageuser'] ?? "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.",
         'msg_support_sent' => $textbotlang['users']['support']['sendmessageadmin'] ?? "✅ پیام شما برای پشتیبانی ارسال شد.\nبه‌زودی از همین ربات پاسخ می‌گیرید.",
         'msg_receipt_sent' => $textbotlang['users']['Balance']['Send-receipt'] ?? "🚀 رسید ارسال شد\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nفقط در صورت عدم تایید تا یک ساعت، به پشتیبانی پیام بدید.",
         'msg_receipt_need_photo' => "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.",

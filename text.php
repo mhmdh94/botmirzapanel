@@ -295,8 +295,7 @@ $textbotlang['users']['support']['title'] = "☎️ پشتیبانی";
 $textbotlang['users']['support']['sendmessageadmin'] = "✅ پیام شما برای پشتیبانی ارسال شد.
 به‌زودی از همین ربات پاسخ می‌گیرید.";
 $textbotlang['users']['support']['answermessage'] = "💬 پاسخ به پیام";
-$textbotlang['users']['support']['sendmessageuser'] = "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.
-در صورتی که اختلال در اتصال دارید لطفا اینترنتی که استفاده می‌کنید + شهر را هم به پشتیبانی اعلام کنید.";
+$textbotlang['users']['support']['sendmessageuser'] = "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.";
 $textbotlang['users']['support']['reply_btn'] = "💬 پاسخ به پشتیبانی";
 $textbotlang['users']['support']['btnsupport'] = "☎️ ابتدا «سوالات متداول» را ببینید.
 اگر پاسخ‌تان نبود، برای پشتیبانی پیام بفرستید.";
