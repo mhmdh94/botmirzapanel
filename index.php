@@ -551,7 +551,7 @@ if ($text == $textbotlang['users']['rulesaccept']) {
 
 #-----------Bot_Status------------#
 if ($setting['Bot_Status'] == "0" && !in_array($from_id, $admin_ids)) {
-    sendmessage($from_id, $datatextbot['text_bot_off'], null, 'html');
+    sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('text_bot_off', $datatextbot['text_bot_off'] ?? ($textbotlang['users']['updatingbot'] ?? '❌ ربات غیرفعال است.')) : ($datatextbot['text_bot_off'] ?? '')), null, 'html');
     return;
 }
 #-----------clear_data (unpaid TTL)------------#
@@ -632,7 +632,7 @@ if ($text == "/new") {
         return;
     }
     if ($setting['get_number'] == "1" && $user['step'] != "get_number" && $user['number'] == "none") {
-        sendmessage($from_id, $textbotlang['users']['number']['Confirming'], $request_contact, 'HTML');
+        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_phone_verify', $textbotlang['users']['number']['Confirming']) : $textbotlang['users']['number']['Confirming']), $request_contact, 'HTML');
         step('get_number', $from_id);
         return;
     }
@@ -2486,7 +2486,7 @@ if ($text == $datatextbot['text_usertest']) {
         return;
     }
     if ($setting['get_number'] == "1" && $user['step'] != "get_number" && $user['number'] == "none") {
-        sendmessage($from_id, $textbotlang['users']['number']['Confirming'], $request_contact, 'HTML');
+        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_phone_verify', $textbotlang['users']['number']['Confirming']) : $textbotlang['users']['number']['Confirming']), $request_contact, 'HTML');
         step('get_number', $from_id);
     }
     if ($user['number'] == "none" && $setting['get_number'] == "1")
@@ -2684,8 +2684,9 @@ if (
         sendmessage($from_id, '✅ شما هم‌اکنون به پنل نمایندگی دسترسی دارید.', $keyboard, 'HTML');
         return;
     }
-    $info = $textbotlang['users']['reseller_request']['info']
-        ?? "📋 <b>درخواست پنل نمایندگی</b>\n\nدر صورت داشتن بیش از ۱۰۰ کاربر فعال ماهانه می‌توانید درخواست دهید.";
+    $info = function_exists('getEditableBotText')
+        ? getEditableBotText('msg_reseller_request_info', $textbotlang['users']['reseller_request']['info'] ?? "📋 <b>درخواست پنل نمایندگی</b>")
+        : ($textbotlang['users']['reseller_request']['info'] ?? "📋 <b>درخواست پنل نمایندگی</b>");
     $kb_req = json_encode([
         'inline_keyboard' => [
             [[
@@ -3105,7 +3106,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         return;
     }
     if ($setting['get_number'] == "1" && $user['step'] != "get_number" && $user['number'] == "none") {
-        sendmessage($from_id, $textbotlang['users']['number']['Confirming'], $request_contact, 'HTML');
+        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_phone_verify', $textbotlang['users']['number']['Confirming']) : $textbotlang['users']['number']['Confirming']), $request_contact, 'HTML');
         step('get_number', $from_id);
     }
     if ($user['number'] == "none" && $setting['get_number'] == "1")
@@ -3803,7 +3804,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
     if ($setting['get_number'] == "1" && $user['step'] != "get_number" && $user['number'] == "none") {
-        sendmessage($from_id, $textbotlang['users']['number']['Confirming'], $request_contact, 'HTML');
+        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_phone_verify', $textbotlang['users']['number']['Confirming']) : $textbotlang['users']['number']['Confirming']), $request_contact, 'HTML');
         step('get_number', $from_id);
     }
     if ($user['number'] == "none" && $setting['get_number'] == "1")
@@ -4321,7 +4322,16 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
         $price_Discount = $textbotlang['users']['status']['disabled'] ?? 'غیرفعال';
     }
     // اول متن توضیحات مشارکت، بعد لینک
-    $textaffiliates_info = sprintf($textbotlang['users']['affiliates']['infotext'], $price_Discount, $affiliatespercentage);
+    $__aff_tpl = function_exists('getEditableBotText')
+        ? getEditableBotText('msg_affiliates_info', $textbotlang['users']['affiliates']['infotext'])
+        : $textbotlang['users']['affiliates']['infotext'];
+    if (is_string($__aff_tpl) && substr_count($__aff_tpl, '%s') >= 2) {
+        $textaffiliates_info = sprintf($__aff_tpl, $price_Discount, $affiliatespercentage);
+    } elseif (is_string($__aff_tpl) && substr_count($__aff_tpl, '%s') == 1) {
+        $textaffiliates_info = sprintf($__aff_tpl, $affiliatespercentage);
+    } else {
+        $textaffiliates_info = strval($__aff_tpl) . "\n\n🎁 هدیه دعوت: <b>{$price_Discount}</b>\n📊 درصد پورسانت: <b>{$affiliatespercentage}</b>";
+    }
     sendmessage($from_id, $textaffiliates_info, $keyboard, 'HTML');
 
     $invite_link = "https://t.me/{$usernamebot}?start={$my_code}";

@@ -445,6 +445,8 @@ $textbot = json_encode([
         [['text' => ($textbotlang['Admin']['changetext']['msg_receipt_sent'] ?? 'متن: رسید ارسال شد')], ['text' => ($textbotlang['Admin']['changetext']['msg_receipt_need_photo'] ?? 'متن: فقط عکس رسید')]],
         [['text' => $textbotlang['Admin']['changetext']['msg_buy_disabled']], ['text' => $textbotlang['Admin']['changetext']['msg_deposit_closed']]],
         [['text' => $textbotlang['Admin']['changetext']['msg_extend_disabled']], ['text' => $textbotlang['Admin']['changetext']['msg_support_disabled']]],
+        [['text' => ($textbotlang['Admin']['changetext']['msg_reseller_request_info'] ?? 'متن: درخواست پنل نمایندگی')], ['text' => ($textbotlang['Admin']['changetext']['msg_affiliates_info'] ?? 'متن: مشارکت در فروش')]],
+        [['text' => ($textbotlang['Admin']['changetext']['msg_phone_verify'] ?? 'متن: احراز هویت شماره')], ['text' => ($textbotlang['Admin']['changetext']['text_bot_off'] ?? 'متن: ربات خاموش')]],
         [['text' => $textbotlang['Admin']['Back-Adminment']]]
     ],
     'resize_keyboard' => true

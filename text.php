@@ -1777,6 +1777,10 @@ $textbotlang['Admin']['changetext']['msg_support_prompt'] = "متن: درخوا�
 $textbotlang['Admin']['changetext']['msg_support_sent'] = "متن: تأیید ارسال به پشتیبانی";
 $textbotlang['Admin']['changetext']['msg_receipt_sent'] = "متن: رسید ارسال شد";
 $textbotlang['Admin']['changetext']['msg_receipt_need_photo'] = "متن: فقط عکس رسید";
+$textbotlang['Admin']['changetext']['text_bot_off'] = "متن: ربات خاموش";
+$textbotlang['Admin']['changetext']['msg_phone_verify'] = "متن: احراز هویت شماره";
+$textbotlang['Admin']['changetext']['msg_affiliates_info'] = "متن: مشارکت در فروش";
+$textbotlang['Admin']['changetext']['msg_reseller_request_info'] = "متن: درخواست پنل نمایندگی";
 
 $textbotlang['users']['reseller_volume']['btn'] = "پنل نمایندگی";
 $textbotlang['users']['reseller_volume']['btn_buy'] = "🛒 خرید حجم";
