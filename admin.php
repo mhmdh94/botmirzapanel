@@ -810,11 +810,24 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message']) {
 }
 //_________________________________________________
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] || $datain === 'btxt_menu') {
+    if (function_exists('ensureEditableStatusTexts')) {
+        @ensureEditableStatusTexts();
+    }
     if (function_exists('buildBotTextSettingsPanel')) {
-        list($__bt_title, $__bt_kb) = buildBotTextSettingsPanel();
+        $__bt_pack = buildBotTextSettingsPanel();
+        $__bt_title = is_array($__bt_pack) ? $__bt_pack[0] : '📝 تنظیم متن ربات';
+        $__bt_kb = is_array($__bt_pack) ? $__bt_pack[1] : null;
     } else {
-        $__bt_title = "📝 <b>تنظیم متن ربات</b>";
-        $__bt_kb = json_encode(['inline_keyboard' => [[['text' => '🔙 بستن', 'callback_data' => 'btxt_close']]]]);
+        $__bt_title = '📝 تنظیم متن ربات';
+        $__bt_kb = null;
+    }
+    if (!is_string($__bt_kb) || $__bt_kb === '') {
+        // contingency: دکمه‌های حداقلی
+        $__bt_kb = json_encode(['inline_keyboard' => [
+            [['text' => 'متن شروع', 'callback_data' => 'btxt_text_start'], ['text' => 'متن قانون', 'callback_data' => 'btxt_text_rules']],
+            [['text' => 'دکمه خرید', 'callback_data' => 'btxt_text_sell'], ['text' => 'دکمه پشتیبانی', 'callback_data' => 'btxt_text_support']],
+            [['text' => '🔄 بروزرسانی', 'callback_data' => 'btxt_menu'], ['text' => '🔙 بستن', 'callback_data' => 'btxt_close']],
+        ]], JSON_UNESCAPED_UNICODE);
     }
     if ($datain === 'btxt_menu' && !empty($message_id)) {
         Editmessagetext($from_id, $message_id, $__bt_title, $__bt_kb);
