@@ -809,50 +809,96 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message']) {
     unlink($filename);
 }
 //_________________________________________________
-if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings']) {
+if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] || $datain === 'btxt_menu') {
     if (function_exists('ensureEditableStatusTexts')) {
         ensureEditableStatusTexts();
     }
-    sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید:', $textbot, 'HTML');
+    $kb = function_exists('buildBotTextSettingsInlineKeyboard') ? buildBotTextSettingsInlineKeyboard() : null;
+    $title = "📝 <b>تنظیم متن ربات</b>\n\nیکی از موارد زیر را انتخاب کنید:";
+    if ($datain === 'btxt_menu' && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $title, $kb);
+    } else {
+        sendmessage($from_id, $title, $kb, 'HTML');
+    }
     step('home', $from_id);
 }
 
-#----- تنظیم متن ربات (کاتالوگ یکپارچه) -----
-if (function_exists('getBotTextSettingsCatalog') && isset($text) && is_string($text) && trim($text) !== '') {
-    $__txt_cat = getBotTextSettingsCatalog();
-    $__matched_key = null;
-    $__matched = null;
-    foreach ($__txt_cat as $__k => $__meta) {
-        $__label = trim(strval($__meta['label'] ?? ''));
-        if ($__label !== '' && trim($text) === $__label) {
-            $__matched_key = $__k;
-            $__matched = $__meta;
-            break;
-        }
+if (isset($datain) && is_string($datain) && $datain === 'btxt_close') {
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, '✅ تنظیم متن بسته شد.', null);
     }
-    if ($__matched_key !== null) {
-        $__id = strval($__matched['id'] ?? $__matched_key);
-        $__fb = strval($__matched['fallback'] ?? '');
-        // مقدار فعلی از textbot
-        $__cur = function_exists('getEditableBotText') ? getEditableBotText($__id, $__fb) : $__fb;
-        if ($__cur === '' && isset($datatextbot[$__id])) {
-            $__cur = strval($datatextbot[$__id]);
-        }
-        if ($__cur === '') {
-            $__cur = $__fb !== '' ? $__fb : '—';
-        }
-        $__hint = ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? "متن فعلی را بفرستید:\n\n");
-        sendmessage($from_id, $__hint . $__cur, $backadmin, 'HTML');
-        step('edit_bottext_' . $__id, $from_id);
+    step('home', $from_id);
+}
+
+if (isset($datain) && is_string($datain) && preg_match('/^btxt_([a-zA-Z0-9_]+)$/', $datain, $m_btxt) && $datain !== 'btxt_menu' && $datain !== 'btxt_close') {
+    if (!function_exists('getBotTextSettingsCatalog')) {
         return;
     }
+    $__key = $m_btxt[1];
+    $__cat = getBotTextSettingsCatalog();
+    $__matched = $__cat[$__key] ?? null;
+    if ($__matched === null) {
+        // جستجو با id سفارشی
+        foreach ($__cat as $__k => $__meta) {
+            $__id_try = strval($__meta['id'] ?? $__k);
+            if ($__id_try === $__key || $__k === $__key) {
+                $__matched = $__meta;
+                $__key = $__k;
+                break;
+            }
+        }
+    }
+    if ($__matched === null) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id ?? '',
+            'text' => 'مورد یافت نشد',
+            'show_alert' => true,
+        ]);
+        return;
+    }
+    $__id = strval($__matched['id'] ?? $__key);
+    $__fb = strval($__matched['fallback'] ?? '');
+    $__cur = function_exists('getEditableBotText') ? getEditableBotText($__id, $__fb) : $__fb;
+    if ($__cur === '' && isset($datatextbot[$__id])) {
+        $__cur = strval($datatextbot[$__id]);
+    }
+    if ($__cur === '') {
+        $__cur = $__fb !== '' ? $__fb : '—';
+    }
+    $__label = strval($__matched['label'] ?? $__id);
+    $__hint = "📝 <b>" . htmlspecialchars($__label, ENT_QUOTES, 'UTF-8') . "</b>\n\n";
+    $__hint .= ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? "متن فعلی:\n\n");
+    $__hint .= $__cur . "\n\n✍️ متن جدید را ارسال کنید.";
+    $cancel_kb = json_encode([
+        'inline_keyboard' => [
+            [['text' => '🔙 بازگشت به لیست', 'callback_data' => 'btxt_menu']],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__hint, $cancel_kb);
+    } else {
+        sendmessage($from_id, $__hint, $cancel_kb, 'HTML');
+    }
+    step('edit_bottext_' . $__id, $from_id);
+    return;
 }
-// ذخیره متن پس از انتخاب از کاتالوگ
+
+// ذخیره متن پس از انتخاب از منوی اینلاین
 if (isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0) {
     $__id = substr($user['step'], strlen('edit_bottext_'));
     if ($__id !== '') {
+        // بازگشت ادمین
+        if (isset($text) && is_string($text) && (
+            $text === ($textbotlang['Admin']['Back-Adminment'] ?? '')
+            || (function_exists('mb_strpos') && mb_strpos($text, 'بازگشت') !== false)
+        )) {
+            step('home', $from_id);
+            $kb = function_exists('buildBotTextSettingsInlineKeyboard') ? buildBotTextSettingsInlineKeyboard() : null;
+            sendmessage($from_id, "📝 <b>تنظیم متن ربات</b>\n\nیکی از موارد زیر را انتخاب کنید:", $kb, 'HTML');
+            return;
+        }
         if (!isset($text) || !is_string($text) || trim($text) === '') {
-            sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'] ?? 'متن نامعتبر است.', $textbot, 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ErrorText'] ?? 'متن نامعتبر است. دوباره ارسال کنید.', $backadmin, 'HTML');
             return;
         }
         if (function_exists('upsertEditableBotText')) {
@@ -875,11 +921,15 @@ if (isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'e
                 update("textbot", "text", $text, "id_text", $__id);
             }
         }
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'] ?? '✅ ذخیره شد.', $textbot, 'HTML');
         step('home', $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'] ?? '✅ ذخیره شد.', null, 'HTML');
+        $kb = function_exists('buildBotTextSettingsInlineKeyboard') ? buildBotTextSettingsInlineKeyboard() : null;
+        sendmessage($from_id, "📝 <b>تنظیم متن ربات</b>\n\nیکی از موارد زیر را انتخاب کنید:", $kb, 'HTML');
         return;
     }
 }
+
+
 //_________________________________________________
 if ($text == $textbotlang['Admin']['managepanel']['showpanelbtn']) {
     $panel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");

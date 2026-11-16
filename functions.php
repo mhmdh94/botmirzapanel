@@ -862,6 +862,45 @@ function getBotTextSettingsCatalog()
 
 
 
+
+/**
+ * کیبورد اینلاین تنظیم متن ربات (۲ ستون)
+ */
+function buildBotTextSettingsInlineKeyboard()
+{
+    global $textbotlang;
+    $cat = function_exists('getBotTextSettingsCatalog') ? getBotTextSettingsCatalog() : [];
+    $rows = [];
+    $row = [];
+    foreach ($cat as $key => $meta) {
+        $label = strval($meta['label'] ?? $key);
+        if ($label === '') {
+            continue;
+        }
+        // کوتاه کردن برچسب خیلی بلند برای دکمه
+        if (function_exists('mb_strlen') && mb_strlen($label) > 40) {
+            $label = mb_substr($label, 0, 38) . '…';
+        } elseif (strlen($label) > 40) {
+            $label = substr($label, 0, 38) . '...';
+        }
+        $cb = 'btxt_' . preg_replace('/[^a-zA-Z0-9_]/', '', strval($key));
+        if (strlen($cb) > 60) {
+            $cb = substr($cb, 0, 60);
+        }
+        $row[] = ['text' => $label, 'callback_data' => $cb];
+        if (count($row) >= 2) {
+            $rows[] = $row;
+            $row = [];
+        }
+    }
+    if ($row) {
+        $rows[] = $row;
+    }
+    $rows[] = [['text' => '🔙 بستن', 'callback_data' => 'btxt_close']];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+
+
 function refundBalanceIfDeducted($user_id, $amount, $balance_before = null)
 {
     $amount = intval($amount);
