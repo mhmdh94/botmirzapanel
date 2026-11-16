@@ -810,15 +810,16 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message']) {
 }
 //_________________________________________________
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] || $datain === 'btxt_menu') {
-    if (function_exists('ensureEditableStatusTexts')) {
-        ensureEditableStatusTexts();
-    }
-    $kb = function_exists('buildBotTextSettingsInlineKeyboard') ? buildBotTextSettingsInlineKeyboard() : null;
-    $title = "📝 <b>تنظیم متن ربات</b>\n\nیکی از موارد زیر را انتخاب کنید:";
-    if ($datain === 'btxt_menu' && !empty($message_id)) {
-        Editmessagetext($from_id, $message_id, $title, $kb);
+    if (function_exists('buildBotTextSettingsPanel')) {
+        list($__bt_title, $__bt_kb) = buildBotTextSettingsPanel();
     } else {
-        sendmessage($from_id, $title, $kb, 'HTML');
+        $__bt_title = "📝 <b>تنظیم متن ربات</b>";
+        $__bt_kb = json_encode(['inline_keyboard' => [[['text' => '🔙 بستن', 'callback_data' => 'btxt_close']]]]);
+    }
+    if ($datain === 'btxt_menu' && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__bt_title, $__bt_kb);
+    } else {
+        sendmessage($from_id, $__bt_title, $__bt_kb, 'HTML');
     }
     step('home', $from_id);
 }
@@ -831,33 +832,30 @@ if (isset($datain) && is_string($datain) && $datain === 'btxt_close') {
 }
 
 if (isset($datain) && is_string($datain) && preg_match('/^btxt_([a-zA-Z0-9_]+)$/', $datain, $m_btxt) && $datain !== 'btxt_menu' && $datain !== 'btxt_close') {
-    if (!function_exists('getBotTextSettingsCatalog')) {
-        return;
-    }
     $__key = $m_btxt[1];
-    $__cat = getBotTextSettingsCatalog();
-    $__matched = $__cat[$__key] ?? null;
-    if ($__matched === null) {
-        // جستجو با id سفارشی
-        foreach ($__cat as $__k => $__meta) {
-            $__id_try = strval($__meta['id'] ?? $__k);
-            if ($__id_try === $__key || $__k === $__key) {
-                $__matched = $__meta;
-                $__key = $__k;
-                break;
+    $__matched = null;
+    $__id = $__key;
+    $__fb = '';
+    $__label = $__key;
+    if (function_exists('getBotTextSettingsCatalog')) {
+        $__cat = getBotTextSettingsCatalog();
+        if (isset($__cat[$__key])) {
+            $__matched = $__cat[$__key];
+        } else {
+            foreach ($__cat as $__k => $__meta) {
+                if (strval($__meta['id'] ?? $__k) === $__key) {
+                    $__matched = $__meta;
+                    $__key = $__k;
+                    break;
+                }
             }
         }
     }
-    if ($__matched === null) {
-        telegram('answerCallbackQuery', [
-            'callback_query_id' => $callback_query_id ?? '',
-            'text' => 'مورد یافت نشد',
-            'show_alert' => true,
-        ]);
-        return;
+    if ($__matched !== null) {
+        $__id = strval($__matched['id'] ?? $__key);
+        $__fb = strval($__matched['fallback'] ?? '');
+        $__label = strval($__matched['label'] ?? $__id);
     }
-    $__id = strval($__matched['id'] ?? $__key);
-    $__fb = strval($__matched['fallback'] ?? '');
     $__cur = function_exists('getEditableBotText') ? getEditableBotText($__id, $__fb) : $__fb;
     if ($__cur === '' && isset($datatextbot[$__id])) {
         $__cur = strval($datatextbot[$__id]);
@@ -865,7 +863,6 @@ if (isset($datain) && is_string($datain) && preg_match('/^btxt_([a-zA-Z0-9_]+)$/
     if ($__cur === '') {
         $__cur = $__fb !== '' ? $__fb : '—';
     }
-    $__label = strval($__matched['label'] ?? $__id);
     $__hint = "📝 <b>" . htmlspecialchars($__label, ENT_QUOTES, 'UTF-8') . "</b>\n\n";
     $__hint .= ($textbotlang['Admin']['ManageUser']['ChangeTextGet'] ?? "متن فعلی:\n\n");
     $__hint .= $__cur . "\n\n✍️ متن جدید را ارسال کنید.";
@@ -893,8 +890,10 @@ if (isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'e
             || (function_exists('mb_strpos') && mb_strpos($text, 'بازگشت') !== false)
         )) {
             step('home', $from_id);
-            $kb = function_exists('buildBotTextSettingsInlineKeyboard') ? buildBotTextSettingsInlineKeyboard() : null;
-            sendmessage($from_id, "📝 <b>تنظیم متن ربات</b>\n\nیکی از موارد زیر را انتخاب کنید:", $kb, 'HTML');
+            if (function_exists('buildBotTextSettingsPanel')) {
+                list($__bt_title, $__bt_kb) = buildBotTextSettingsPanel();
+                sendmessage($from_id, $__bt_title, $__bt_kb, 'HTML');
+            }
             return;
         }
         if (!isset($text) || !is_string($text) || trim($text) === '') {
@@ -923,8 +922,10 @@ if (isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'e
         }
         step('home', $from_id);
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SaveText'] ?? '✅ ذخیره شد.', null, 'HTML');
-        $kb = function_exists('buildBotTextSettingsInlineKeyboard') ? buildBotTextSettingsInlineKeyboard() : null;
-        sendmessage($from_id, "📝 <b>تنظیم متن ربات</b>\n\nیکی از موارد زیر را انتخاب کنید:", $kb, 'HTML');
+        if (function_exists('buildBotTextSettingsPanel')) {
+            list($__bt_title, $__bt_kb) = buildBotTextSettingsPanel();
+            sendmessage($from_id, $__bt_title, $__bt_kb, 'HTML');
+        }
         return;
     }
 }
