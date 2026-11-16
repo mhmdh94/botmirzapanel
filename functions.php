@@ -878,34 +878,80 @@ function buildBotTextSettingsPanel()
         }
     }
 
-    // لیست ثابت آیتم‌ها: id => برچسب (حتی اگر catalog نباشد کار می‌کند)
-    $items = [
-        'text_start' => $textbotlang['users']['changetext']['set_start_text'] ?? 'متن شروع',
-        'text_rules' => $textbotlang['users']['changetext']['law_text'] ?? 'متن قانون',
-        'text_channel' => $textbotlang['users']['changetext']['mandatory_membership_description'] ?? 'عضویت اجباری',
-        'text_dec_fq' => $textbotlang['users']['changetext']['faq_description'] ?? 'توضیح سوالات متداول',
-        'text_sell' => $textbotlang['users']['changetext']['buy_subscription_button'] ?? 'دکمه خرید اشتراک',
-        'text_Purchased_services' => $textbotlang['users']['changetext']['purchased_service_button'] ?? 'دکمه سرویس‌های من',
-        'text_Add_Balance' => $textbotlang['users']['changetext']['increase_balance_button'] ?? 'دکمه افزایش موجودی',
-        'text_account' => $textbotlang['users']['changetext']['user_account_button'] ?? 'دکمه حساب کاربری',
-        'text_usertest' => $textbotlang['users']['changetext']['test_account_button'] ?? 'دکمه اکانت تست',
-        'text_support' => $textbotlang['users']['changetext']['support_button'] ?? 'دکمه پشتیبانی',
-        'text_Tariff_list' => $textbotlang['users']['changetext']['tariff_list_button'] ?? 'دکمه لیست تعرفه',
-        'text_dec_Tariff_list' => $textbotlang['users']['changetext']['tariff_list_description'] ?? 'توضیح تعرفه',
-        'msg_support_prompt' => $textbotlang['Admin']['changetext']['msg_support_prompt'] ?? 'درخواست پیام پشتیبانی',
-        'msg_support_sent' => $textbotlang['Admin']['changetext']['msg_support_sent'] ?? 'تأیید ارسال پشتیبانی',
-        'msg_receipt_sent' => $textbotlang['Admin']['changetext']['msg_receipt_sent'] ?? 'رسید ارسال شد',
-        'msg_receipt_need_photo' => $textbotlang['Admin']['changetext']['msg_receipt_need_photo'] ?? 'فقط عکس رسید',
-        'msg_buy_disabled' => $textbotlang['Admin']['changetext']['msg_buy_disabled'] ?? 'خرید سرویس بسته',
-        'msg_deposit_closed' => $textbotlang['Admin']['changetext']['msg_deposit_closed'] ?? 'واریز بسته',
-        'msg_extend_disabled' => $textbotlang['Admin']['changetext']['msg_extend_disabled'] ?? 'تمدید بسته',
-        'msg_support_disabled' => $textbotlang['Admin']['changetext']['msg_support_disabled'] ?? 'پشتیبانی بسته',
-        'msg_reseller_request_info' => $textbotlang['Admin']['changetext']['msg_reseller_request_info'] ?? 'درخواست پنل نمایندگی',
-        'msg_affiliates_info' => $textbotlang['Admin']['changetext']['msg_affiliates_info'] ?? 'مشارکت در فروش',
-        'msg_phone_verify' => $textbotlang['Admin']['changetext']['msg_phone_verify'] ?? 'احراز هویت شماره',
-        'text_bot_off' => $textbotlang['Admin']['changetext']['text_bot_off'] ?? 'ربات خاموش',
+    // برچسب‌ها
+    $L = function ($path, $fallback) use ($textbotlang) {
+        // path مثل users.changetext.set_start_text
+        $parts = explode('.', $path);
+        $cur = $textbotlang;
+        foreach ($parts as $p) {
+            if (!is_array($cur) || !array_key_exists($p, $cur)) {
+                return $fallback;
+            }
+            $cur = $cur[$p];
+        }
+        return (is_string($cur) && $cur !== '') ? $cur : $fallback;
+    };
+
+    // گروه‌های مرتبط — هر آرایه داخلی یک ردیف ۲ستونه (یا ۱تایی)
+    $groups = [
+        // پیام‌های اصلی
+        [
+            ['text_start', $L('users.changetext.set_start_text', 'متن شروع')],
+            ['text_rules', $L('users.changetext.law_text', 'متن قانون')],
+        ],
+        [
+            ['text_channel', $L('users.changetext.mandatory_membership_description', 'عضویت اجباری')],
+            ['text_bot_off', $L('Admin.changetext.text_bot_off', 'ربات خاموش')],
+        ],
+        // دکمه‌های منوی کاربر
+        [
+            ['text_sell', $L('users.changetext.buy_subscription_button', 'دکمه خرید')],
+            ['text_Purchased_services', $L('users.changetext.purchased_service_button', 'دکمه سرویس‌ها')],
+        ],
+        [
+            ['text_Add_Balance', $L('users.changetext.increase_balance_button', 'دکمه موجودی')],
+            ['text_account', $L('users.changetext.user_account_button', 'دکمه حساب')],
+        ],
+        [
+            ['text_usertest', $L('users.changetext.test_account_button', 'دکمه اکانت تست')],
+            ['text_support', $L('users.changetext.support_button', 'دکمه پشتیبانی')],
+        ],
+        [
+            ['text_Tariff_list', $L('users.changetext.tariff_list_button', 'دکمه تعرفه')],
+            ['text_dec_Tariff_list', $L('users.changetext.tariff_list_description', 'توضیح تعرفه')],
+        ],
+        [
+            ['text_dec_fq', $L('users.changetext.faq_description', 'توضیح FAQ')],
+            ['msg_phone_verify', $L('Admin.changetext.msg_phone_verify', 'احراز شماره')],
+        ],
+        // پشتیبانی
+        [
+            ['msg_support_prompt', $L('Admin.changetext.msg_support_prompt', 'درخواست پشتیبانی')],
+            ['msg_support_sent', $L('Admin.changetext.msg_support_sent', 'تأیید ارسال پشتیبانی')],
+        ],
+        // رسید / پرداخت
+        [
+            ['msg_receipt_sent', $L('Admin.changetext.msg_receipt_sent', 'رسید ارسال شد')],
+            ['msg_receipt_need_photo', $L('Admin.changetext.msg_receipt_need_photo', 'فقط عکس رسید')],
+        ],
+        // پیام‌های غیرفعال بودن
+        [
+            ['msg_buy_disabled', $L('Admin.changetext.msg_buy_disabled', 'خرید بسته')],
+            ['msg_deposit_closed', $L('Admin.changetext.msg_deposit_closed', 'واریز بسته')],
+        ],
+        [
+            ['msg_extend_disabled', $L('Admin.changetext.msg_extend_disabled', 'تمدید بسته')],
+            ['msg_support_disabled', $L('Admin.changetext.msg_support_disabled', 'پشتیبانی بسته')],
+        ],
+        // رشد / ریسلر
+        [
+            ['msg_affiliates_info', $L('Admin.changetext.msg_affiliates_info', 'مشارکت در فروش')],
+            ['msg_reseller_request_info', $L('Admin.changetext.msg_reseller_request_info', 'درخواست نمایندگی')],
+        ],
     ];
-    // اگر catalog هست، labelهایش را ترجیح بده
+
+    // label از catalog اگر موجود باشد
+    $cat_labels = [];
     if (function_exists('getBotTextSettingsCatalog')) {
         try {
             $cat = getBotTextSettingsCatalog();
@@ -914,7 +960,7 @@ function buildBotTextSettingsPanel()
                     $id = strval($meta['id'] ?? $k);
                     $lab = trim(strval($meta['label'] ?? ''));
                     if ($lab !== '') {
-                        $items[$id] = $lab;
+                        $cat_labels[$id] = $lab;
                     }
                 }
             }
@@ -923,27 +969,38 @@ function buildBotTextSettingsPanel()
     }
 
     $text = "📝 <b>تنظیم متن ربات</b>\n\n"
-        . "از این صفحه متن پیام‌ها و دکمه‌های ربات را یکجا مدیریت کنید.\n"
-        . "روی هر مورد بزنید، متن فعلی را ببینید و متن جدید را بفرستید.";
+        . "متن پیام‌ها و دکمه‌ها را از این صفحه مدیریت کنید.\n"
+        . "روی مورد بزنید → متن فعلی را ببینید → متن جدید را بفرستید.";
 
     $ik = [];
-    foreach ($items as $id => $label) {
-        $label = strval($label);
-        if ($label === '') {
-            continue;
+    foreach ($groups as $pair) {
+        $row = [];
+        foreach ($pair as $item) {
+            $id = $item[0];
+            $label = $cat_labels[$id] ?? $item[1];
+            $label = strval($label);
+            if ($label === '') {
+                continue;
+            }
+            if (function_exists('mb_strlen') && mb_strlen($label) > 36) {
+                $label = mb_substr($label, 0, 34) . '…';
+            } elseif (strlen($label) > 36) {
+                $label = substr($label, 0, 34) . '...';
+            }
+            $cb = 'btxt_' . preg_replace('/[^a-zA-Z0-9_]/', '', strval($id));
+            if ($cb === 'btxt_' || strlen($cb) > 64) {
+                continue;
+            }
+            $row[] = ['text' => $label, 'callback_data' => $cb];
         }
-        if (function_exists('mb_strlen') && mb_strlen($label) > 60) {
-            $label = mb_substr($label, 0, 58) . '…';
+        if ($row) {
+            $ik[] = $row;
         }
-        $cb = 'btxt_' . preg_replace('/[^a-zA-Z0-9_]/', '', strval($id));
-        if ($cb === 'btxt_' || strlen($cb) > 64) {
-            continue;
-        }
-        // یک دکمه در هر ردیف — مثل مشارکت در فروش
-        $ik[] = [['text' => $label, 'callback_data' => $cb]];
     }
-    $ik[] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'btxt_menu']];
-    $ik[] = [['text' => '🔙 بستن', 'callback_data' => 'btxt_close']];
+    $ik[] = [
+        ['text' => '🔄 بروزرسانی', 'callback_data' => 'btxt_menu'],
+        ['text' => '🔙 بستن', 'callback_data' => 'btxt_close'],
+    ];
 
     $kb = json_encode(['inline_keyboard' => $ik], JSON_UNESCAPED_UNICODE);
     if ($kb === false || $kb === '') {
