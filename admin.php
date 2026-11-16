@@ -835,6 +835,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] || $dat
         sendmessage($from_id, $__bt_title, $__bt_kb, 'HTML');
     }
     step('home', $from_id);
+    return;
 }
 
 if (isset($datain) && is_string($datain) && $datain === 'btxt_close') {
@@ -842,6 +843,7 @@ if (isset($datain) && is_string($datain) && $datain === 'btxt_close') {
         Editmessagetext($from_id, $message_id, '✅ تنظیم متن بسته شد.', null);
     }
     step('home', $from_id);
+    return;
 }
 
 if (isset($datain) && is_string($datain) && preg_match('/^btxt_([a-zA-Z0-9_]+)$/', $datain, $m_btxt) && $datain !== 'btxt_menu' && $datain !== 'btxt_close') {
@@ -897,6 +899,12 @@ if (isset($datain) && is_string($datain) && preg_match('/^btxt_([a-zA-Z0-9_]+)$/
 if (isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0) {
     $__id = substr($user['step'], strlen('edit_bottext_'));
     if ($__id !== '') {
+        // اگر کاربر روی دکمه اینلاین زد (بازگشت به لیست و ...) متن خالی است — ذخیره نکن و خطا نده
+        if (isset($datain) && is_string($datain) && $datain !== '') {
+            // callback جداگانه هندل می‌شود
+            return;
+        }
+
         // بازگشت ادمین
         if (isset($text) && is_string($text) && (
             $text === ($textbotlang['Admin']['Back-Adminment'] ?? '')
