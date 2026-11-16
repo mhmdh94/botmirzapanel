@@ -174,6 +174,21 @@ foreach ($datatxtbot as $item) {
 }
 if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
 
+#----- ادمین در حال ویرایش متن / پاسخ به کاربر: منوی کاربر قورت ندهد -----
+if (
+    isset($from_id, $admin_ids, $user)
+    && in_array(strval($from_id), array_map('strval', (array)$admin_ids), true)
+    && isset($user['step']) && is_string($user['step'])
+    && (
+        strpos($user['step'], 'edit_bottext_') === 0
+        || $user['step'] === 'getmessageAsAdmin'
+    )
+) {
+    require_once __DIR__ . '/admin.php';
+    return;
+}
+
+
 
 
 if (function_exists('shell_exec') && is_callable('shell_exec')) {
