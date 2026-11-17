@@ -4,6 +4,161 @@
 $textadmin = ["panel", "/panel", $textbotlang['Admin']['commendadminmanagment'], $textbotlang['Admin']['commendadmin']];
 if (!in_array($from_id, $admin_ids))
     return;
+
+# ----- منوهای اینلاین بخش‌ها: کیبورد پایین عوض نشود -----
+# keyboard.php قبل از functions.php لود می‌شود؛ اینجا بعد از لود توابع دوباره می‌سازیم
+if (function_exists('buildAdminShopInlineKeyboard')) {
+    $shopkeyboard = buildAdminShopInlineKeyboard();
+}
+if (function_exists('buildAdminUserServicesInlineKeyboard')) {
+    $User_Services = buildAdminUserServicesInlineKeyboard();
+}
+if (function_exists('buildAdminBroadcastInlineKeyboard')) {
+    $sendmessageuser = buildAdminBroadcastInlineKeyboard();
+}
+
+if (isset($datain) && is_string($datain) && $datain === 'nav_sec_close') {
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, '✅ بسته شد.', null);
+    }
+    return;
+}
+
+# هندل صریح دکمه‌های اینلاین بخش‌ها — خارج از زنجیره elseif تا هیچ step قدیمی قورت ندهد
+if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|navcast_)/', $datain)) {
+    // هر کلیک ناوبری، step قبلی را خنثی می‌کند تا هندلر ورودی عددی/متنی گیر ندهد
+    if (isset($user['step']) && is_string($user['step']) && $user['step'] !== '' && $user['step'] !== 'home') {
+        step('home', $from_id);
+        $user['step'] = 'home';
+    }
+
+    // ----- فروشگاه -----
+    if ($datain === 'navshop_prod') {
+        sendmessage($from_id, function_exists('shopProductListTitle') ? shopProductListTitle() : '🏬 مدیریت محصولات', function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
+        return;
+    }
+    if ($datain === 'navshop_cat') {
+        if (function_exists('adminCategoriesListKeyboard')) {
+            list($__tx, $__kb) = adminCategoriesListKeyboard();
+            sendmessage($from_id, $__tx, $__kb, 'HTML');
+        } else {
+            sendmessage($from_id, $textbotlang['Admin']['category']['getname'] ?? 'نام دسته را بفرستید', $backadmin, 'HTML');
+            step('getremarkcategory', $from_id);
+        }
+        return;
+    }
+    if ($datain === 'navshop_vol') {
+        sendmessage($from_id, ($textbotlang['users']['Extra_volume']['SetPrice'] ?? 'قیمت حجم اضافه: ') . ($setting['Extra_volume'] ?? ''), $backadmin, 'HTML');
+        step('GetPriceExtra', $from_id);
+        return;
+    }
+    if ($datain === 'navshop_codes') {
+        if (function_exists('codesAdminHubText')) {
+            sendmessage($from_id, codesAdminHubText(), codesAdminHubKeyboard(), 'HTML');
+        } else {
+            sendmessage($from_id, '🎟 مدیریت کد تخفیف و هدیه', null, 'HTML');
+        }
+        return;
+    }
+    if ($datain === 'navshop_test') {
+        if (function_exists('adminUsertestPanel')) {
+            list($__tx, $__kb) = adminUsertestPanel();
+            sendmessage($from_id, $__tx, $__kb, 'HTML');
+        } else {
+            sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'انتخاب کنید', $keyboard_usertest, 'HTML');
+        }
+        return;
+    }
+
+    // ----- خدمات کاربر -----
+    if ($datain === 'navuser_search') {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ViewOrder'] ?? 'آیدی/یوزرنیم سفارش را بفرستید', $backadmin, 'HTML');
+        step('getidfororder', $from_id);
+        return;
+    }
+    if ($datain === 'navuser_del') {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['RemoveService'] ?? 'یوزرنیم سرویس را بفرستید', $backadmin, 'HTML');
+        step('removeservice', $from_id);
+        return;
+    }
+    if ($datain === 'navuser_ball') {
+        sendmessage($from_id, $textbotlang['Admin']['Balance']['addallbalance'] ?? 'مبلغ شارژ همگانی را بفرستید', $backadmin, 'HTML');
+        step('add_Balance_all', $from_id);
+        return;
+    }
+    if ($datain === 'navuser_block') {
+        // همان منطق لیست مسدودها
+        $text = $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها';
+        // عمداً return نمی‌کنیم تا if مستقل پایین‌تر اجرا شود — اما برای اطمینان مستقیم اجرا:
+        global $pdo;
+        try {
+            $stmt = $pdo->query("SELECT id, username, description_blocking FROM user WHERE User_Status = 'block' ORDER BY id DESC LIMIT 80");
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Exception $e) {
+            $rows = [];
+        }
+        if (empty($rows)) {
+            sendmessage($from_id, 'هیچ کاربر مسدودی نیست.', $User_Services, 'HTML');
+        } else {
+            $msg = "🚫 <b>مسدود شده‌ها</b> (" . count($rows) . ")\n\n";
+            foreach ($rows as $r) {
+                $un = htmlspecialchars(strval($r['username'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $desc = htmlspecialchars(strval($r['description_blocking'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $msg .= "• <code>{$r['id']}</code> @{$un}" . ($desc !== '' ? " — {$desc}" : '') . "\n";
+            }
+            sendmessage($from_id, $msg, $User_Services, 'HTML');
+        }
+        return;
+    }
+    if ($datain === 'navuser_rcpt') {
+        sendmessage($from_id, '⏳ در حال بررسی رسیدهای در انتظار تأیید…', null, 'HTML');
+        $res = function_exists('resendWaitingPaymentReceipts')
+            ? resendWaitingPaymentReceipts($from_id, 40)
+            : ['ok' => false, 'count' => 0, 'msg' => 'تابع موجود نیست'];
+        $msg = $res['msg'] ?? '';
+        if (intval($res['count'] ?? 0) === 0 && !empty($res['ok'])) {
+            $msg = $msg !== '' ? $msg : 'هیچ رسید در انتظار تأییدی نیست.';
+        }
+        sendmessage($from_id, $msg, $User_Services, 'HTML');
+        return;
+    }
+    if ($datain === 'navuser_rich') {
+        $text = $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۵۰۰ هزار';
+        // مستقیم: لیست موجودی بالا (همان شرط اصلی هندلر)
+        global $pdo;
+        try {
+            $stmt = $pdo->query("SELECT id, username, Balance FROM user WHERE Balance >= 500000 ORDER BY Balance DESC LIMIT 80");
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        } catch (Exception $e) {
+            $rows = [];
+        }
+        if (empty($rows)) {
+            sendmessage($from_id, 'کاربری با موجودی بالای ۵۰۰ هزار نیست.', $User_Services, 'HTML');
+        } else {
+            $msg = "💰 <b>موجودی بالای ۵۰۰ هزار</b> (" . count($rows) . ")\n\n";
+            foreach ($rows as $r) {
+                $un = htmlspecialchars(strval($r['username'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $bal = number_format(intval($r['Balance'] ?? 0));
+                $msg .= "• <code>{$r['id']}</code> @{$un} — {$bal}\n";
+            }
+            sendmessage($from_id, $msg, $User_Services, 'HTML');
+        }
+        return;
+    }
+
+    // ----- پیام همگانی -----
+    if ($datain === 'navcast_text') {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetText'] ?? 'متن پیام همگانی را بفرستید', $backadmin, 'HTML');
+        step('getconfirmsendall', $from_id);
+        return;
+    }
+    if ($datain === 'navcast_fwd') {
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ForwardGetext'] ?? 'پیام را فوروارد کنید', $backadmin, 'HTML');
+        step('gettextforwardMessage', $from_id);
+        return;
+    }
+}
+
 if (in_array($text, $textadmin) || $datain == "PANEL") {
     if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
         $cronCommandsendmessage = "*/1 * * * * curl https://$domainhosts/cron/sendmessage.php";
@@ -744,8 +899,14 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     }
     step('home', $from_id);
 }
-if ($text == $textbotlang['Admin']['keyboardadmin']['send_message']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $sendmessageuser, 'HTML');
+if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain === 'nav_cast') {
+    $__tx = function_exists('buildAdminBroadcastText') ? buildAdminBroadcastText() : '📨 ارسال پیام همگانی';
+    $__kb = function_exists('buildAdminBroadcastInlineKeyboard') ? buildAdminBroadcastInlineKeyboard() : $sendmessageuser;
+    if ($datain === 'nav_cast' && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+    } else {
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
 } elseif ($text == $textbotlang['Admin']['systemsms']['sendbulkbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetText'], $backadmin, 'HTML');
     step('getconfirmsendall', $from_id);
@@ -1112,8 +1273,14 @@ if (isset($textbotlang['Admin']['Help']['addhelp']) && (
     return;
 }
 
-if ($text == $textbotlang['Admin']['keyboardadmin']['user_services']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $User_Services, 'HTML');
+if ($text == $textbotlang['Admin']['keyboardadmin']['user_services'] || $datain === 'nav_user') {
+    $__tx = function_exists('buildAdminUserServicesText') ? buildAdminUserServicesText() : '👤 خدمات کاربر';
+    $__kb = function_exists('buildAdminUserServicesInlineKeyboard') ? buildAdminUserServicesInlineKeyboard() : $User_Services;
+    if ($datain === 'nav_user' && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+    } else {
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
 }
 
 # رسیدهای تایید نشده (waiting)
@@ -1333,8 +1500,14 @@ if ($text == $textbotlang['Admin']['channel']['channelreport']) {
 ❌ = ارسال نمی‌شود", function_exists('buildReportChannelKeyboard') ? buildReportChannelKeyboard() : null);
 }
 #-------------------------#
-if ($text == $textbotlang['Admin']['keyboardadmin']['shop_section']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $shopkeyboard, 'HTML');
+if ($text == $textbotlang['Admin']['keyboardadmin']['shop_section'] || $datain === 'nav_shop') {
+    $__tx = function_exists('buildAdminShopSectionText') ? buildAdminShopSectionText() : '🏬 بخش فروشگاه';
+    $__kb = function_exists('buildAdminShopInlineKeyboard') ? buildAdminShopInlineKeyboard() : $shopkeyboard;
+    if ($datain === 'nav_shop' && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+    } else {
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
 }
 
 #------------------------- مدیریت محصولات اینلاین (فروشگاه) -------------------------#
@@ -2836,7 +3009,7 @@ if ($text == $textbotlang['Admin']['Discountsell']['remove']) {
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $affiliates, 'HTML');
+    // فقط صفحه اینلاین — کیبورد پایین (reply) عوض نشود
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
@@ -2905,7 +3078,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
         return;
     }
     update("affiliates", "affiliatespercentage", $text);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], $affiliates, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], $setting_panel, 'HTML');
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
@@ -2920,7 +3093,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
         return;
     }
     update("affiliates", "price_Discount", $text);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], $affiliates, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], $setting_panel, 'HTML');
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
@@ -2936,7 +3109,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
     }
     update("affiliates", "description", $caption);
     update("affiliates", "id_media", $photoid);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['insertbanner'], $affiliates, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['affiliates']['insertbanner'], $setting_panel, 'HTML');
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');

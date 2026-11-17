@@ -257,19 +257,9 @@ $step_payment['inline_keyboard'][] = [
     ['text' => $textbotlang['users']['closelist'], 'callback_data' => "closelist"]
 ];
 $step_payment = json_encode($step_payment);
-$User_Services = json_encode([
-    'keyboard' => [
-        [['text' => $textbotlang['Admin']['ManageUser']['searchorder']]],
-        [['text' => $textbotlang['Admin']['ManageUser']['removeorderbtn']], ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll']]],
-        [['text' => $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها']],
-        [
-            ['text' => $textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده'],
-            ['text' => $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۵۰۰ هزار'],
-        ],
-        [['text' => $textbotlang['Admin']['Back-Adminment']]]
-    ],
-    'resize_keyboard' => true
-]);
+$User_Services = function_exists('buildAdminUserServicesInlineKeyboard')
+    ? buildAdminUserServicesInlineKeyboard()
+    : json_encode(['inline_keyboard' => [[['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']]]]);
 $keyboardhelpadmin = json_encode([ // Help removed
 
     'keyboard' => [
@@ -279,15 +269,9 @@ $keyboardhelpadmin = json_encode([ // Help removed
     ],
     'resize_keyboard' => true
 ]);
-$shopkeyboard = json_encode([
-    'keyboard' => [
-        [['text' => '📦 مدیریت محصولات'], ['text' => '📁 مدیریت دسته‌بندی']],
-        [['text' => $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']], ['text' => $textbotlang['Admin']['keyboardadmin']['codes_section']]],
-        [['text' => $textbotlang['Admin']['keyboardadmin']['test_account_settings']]],
-        [['text' => $textbotlang['Admin']['Back-Adminment']]]
-    ],
-    'resize_keyboard' => true
-], JSON_UNESCAPED_UNICODE);
+$shopkeyboard = function_exists('buildAdminShopInlineKeyboard')
+    ? buildAdminShopInlineKeyboard()
+    : json_encode(['inline_keyboard' => [[['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']]]], JSON_UNESCAPED_UNICODE);
 $confrimrolls = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['users']['rulesaccept']]],
@@ -301,13 +285,9 @@ $request_contact = json_encode([
     ],
     'resize_keyboard' => true
 ]);
-$sendmessageuser = json_encode([
-    'keyboard' => [
-        [['text' => $textbotlang['Admin']['systemsms']['sendbulkbtn']], ['text' => $textbotlang['Admin']['systemsms']['forwardbulkbtn']]],
-        [['text' => $textbotlang['Admin']['Back-Adminment']]]
-    ],
-    'resize_keyboard' => true
-]);
+$sendmessageuser = function_exists('buildAdminBroadcastInlineKeyboard')
+    ? buildAdminBroadcastInlineKeyboard()
+    : json_encode(['inline_keyboard' => [[['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']]]]);
 $channelkeyboard = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['channel']['changechannelbtn']]],

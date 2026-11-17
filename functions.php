@@ -2488,6 +2488,91 @@ function buildBalancePackageAdminKeyboard()
 /**
  * پنل یکپارچه تنظیمات مشارکت در فروش (ادمین)
  */
+
+function buildAdminShopInlineKeyboard()
+{
+    global $textbotlang;
+    $vol = $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume'] ?? '➕ حجم اضافه';
+    $codes = $textbotlang['Admin']['keyboardadmin']['codes_section'] ?? '🎟 کد تخفیف';
+    $test = $textbotlang['Admin']['keyboardadmin']['test_account_settings'] ?? '🔑 اکانت تست';
+    $kb = [
+        'inline_keyboard' => [
+            [
+                ['text' => '📦 مدیریت محصولات', 'callback_data' => 'navshop_prod'],
+                ['text' => '📁 دسته‌بندی', 'callback_data' => 'navshop_cat'],
+            ],
+            [
+                ['text' => $vol, 'callback_data' => 'navshop_vol'],
+                ['text' => $codes, 'callback_data' => 'navshop_codes'],
+            ],
+            [
+                ['text' => $test, 'callback_data' => 'navshop_test'],
+            ],
+            [
+                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
+            ],
+        ],
+    ];
+    return json_encode($kb, JSON_UNESCAPED_UNICODE);
+}
+
+function buildAdminShopSectionText()
+{
+    return "🏬 <b>بخش فروشگاه</b>\n\nمحصول، دسته‌بندی، حجم اضافه، کد تخفیف و اکانت تست را از همین صفحه مدیریت کنید.";
+}
+
+function buildAdminUserServicesInlineKeyboard()
+{
+    global $textbotlang;
+    $kb = [
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['searchorder'] ?? '🛍 جستجو سفارش', 'callback_data' => 'navuser_search'],
+                ['text' => $textbotlang['Admin']['ManageUser']['removeorderbtn'] ?? '❌ حذف سرویس', 'callback_data' => 'navuser_del'],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll'] ?? '👥 شارژ همگانی', 'callback_data' => 'navuser_ball'],
+                ['text' => $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها', 'callback_data' => 'navuser_block'],
+            ],
+            [
+                ['text' => $textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده', 'callback_data' => 'navuser_rcpt'],
+                ['text' => $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالا', 'callback_data' => 'navuser_rich'],
+            ],
+            [
+                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
+            ],
+        ],
+    ];
+    return json_encode($kb, JSON_UNESCAPED_UNICODE);
+}
+
+function buildAdminUserServicesText()
+{
+    return "👤 <b>خدمات کاربر</b>\n\nجستجو و حذف سرویس، شارژ همگانی، مسدودها، رسیدهای در انتظار و موجودی بالا.";
+}
+
+function buildAdminBroadcastInlineKeyboard()
+{
+    global $textbotlang;
+    $kb = [
+        'inline_keyboard' => [
+            [
+                ['text' => $textbotlang['Admin']['systemsms']['sendbulkbtn'] ?? '✉️ ارسال همگانی', 'callback_data' => 'navcast_text'],
+                ['text' => $textbotlang['Admin']['systemsms']['forwardbulkbtn'] ?? '📤 فوروارد همگانی', 'callback_data' => 'navcast_fwd'],
+            ],
+            [
+                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
+            ],
+        ],
+    ];
+    return json_encode($kb, JSON_UNESCAPED_UNICODE);
+}
+
+function buildAdminBroadcastText()
+{
+    return "📨 <b>ارسال پیام همگانی</b>\n\nارسال متن به همه کاربران فعال، یا فوروارد یک پیام.";
+}
+
 function buildAffiliatesAdminPanel()
 {
     global $textbotlang;
