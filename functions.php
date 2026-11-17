@@ -2627,10 +2627,11 @@ function buildAffiliatesAdminPanel()
             ],
             [
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'affpanel_refresh'],
+                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
             ],
         ]
     ];
-    return [$text, json_encode($kb)];
+    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
 
@@ -6123,6 +6124,7 @@ function adminCategoriesListKeyboard()
     }
     $kb['inline_keyboard'][] = [['text' => '➕ افزودن دسته', 'callback_data' => 'adm_cat_add']];
     $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_cat_list']];
+    $kb['inline_keyboard'][] = [['text' => '🔙 بازگشت به فروشگاه', 'callback_data' => 'nav_shop']];
     $text = "📁 <b>مدیریت دسته‌بندی محصولات</b>\nتعداد: <b>{$n}</b>\n\n🗑 = حذف دسته";
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
@@ -6197,6 +6199,9 @@ function adminUsertestPanel()
             [
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_ut_panel'],
             ],
+            [
+                ['text' => '🔙 بازگشت به فروشگاه', 'callback_data' => 'nav_shop'],
+            ],
         ],
     ], JSON_UNESCAPED_UNICODE);
     return [$text, $kb];
@@ -6230,6 +6235,9 @@ function codesAdminHubKeyboard()
             ],
             [
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'codes_hub'],
+            ],
+            [
+                ['text' => '🔙 بازگشت به فروشگاه', 'callback_data' => 'nav_shop'],
             ],
         ],
     ], JSON_UNESCAPED_UNICODE);
@@ -6605,6 +6613,7 @@ function shopProductListKeyboard($location = null)
         }
         $kb['inline_keyboard'][] = [['text' => '➕ افزودن محصول جدید', 'callback_data' => 'shop_add']];
         $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی لیست', 'callback_data' => 'shop_list']];
+        $kb['inline_keyboard'][] = [['text' => '🔙 بازگشت به فروشگاه', 'callback_data' => 'nav_shop']];
         return json_encode($kb, JSON_UNESCAPED_UNICODE);
     }
 
@@ -6647,6 +6656,7 @@ function shopProductListKeyboard($location = null)
     }
     $kb['inline_keyboard'][] = [['text' => '➕ افزودن محصول جدید', 'callback_data' => 'shop_add']];
     $kb['inline_keyboard'][] = [['text' => '🔙 همه موقعیت‌ها', 'callback_data' => 'shop_list']];
+    $kb['inline_keyboard'][] = [['text' => '🔙 بازگشت به فروشگاه', 'callback_data' => 'nav_shop']];
     return json_encode($kb, JSON_UNESCAPED_UNICODE);
 }
 

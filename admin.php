@@ -24,23 +24,35 @@ if (isset($datain) && is_string($datain) && $datain === 'nav_sec_close') {
     return;
 }
 
-# هندل صریح دکمه‌های اینلاین بخش‌ها — خارج از زنجیره elseif تا هیچ step قدیمی قورت ندهد
+# هندل صریح دکمه‌های اینلاین بخش‌ها — همان پیام ویرایش شود + بازگشت
 if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|navcast_)/', $datain)) {
     // هر کلیک ناوبری، step قبلی را خنثی می‌کند تا هندلر ورودی عددی/متنی گیر ندهد
     if (isset($user['step']) && is_string($user['step']) && $user['step'] !== '' && $user['step'] !== 'home') {
         step('home', $from_id);
         $user['step'] = 'home';
     }
+    // ویرایش همان پیام اگر از اینلاین آمده؛ وگرنه پیام جدید
+    $__nav_edit = !empty($message_id);
+    $__nav_show = function ($t, $k) use ($from_id, $message_id, $__nav_edit) {
+        if ($__nav_edit) {
+            Editmessagetext($from_id, $message_id, $t, $k);
+        } else {
+            sendmessage($from_id, $t, $k, 'HTML');
+        }
+    };
 
     // ----- فروشگاه -----
     if ($datain === 'navshop_prod') {
-        sendmessage($from_id, function_exists('shopProductListTitle') ? shopProductListTitle() : '🏬 مدیریت محصولات', function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null, 'HTML');
+        $__nav_show(
+            function_exists('shopProductListTitle') ? shopProductListTitle() : '🏬 مدیریت محصولات',
+            function_exists('shopProductListKeyboard') ? shopProductListKeyboard() : null
+        );
         return;
     }
     if ($datain === 'navshop_cat') {
         if (function_exists('adminCategoriesListKeyboard')) {
             list($__tx, $__kb) = adminCategoriesListKeyboard();
-            sendmessage($from_id, $__tx, $__kb, 'HTML');
+            $__nav_show($__tx, $__kb);
         } else {
             sendmessage($from_id, $textbotlang['Admin']['category']['getname'] ?? 'نام دسته را بفرستید', $backadmin, 'HTML');
             step('getremarkcategory', $from_id);
@@ -48,22 +60,23 @@ if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|nav
         return;
     }
     if ($datain === 'navshop_vol') {
+        // نیاز به ورودی عددی → پیام جدا با کیبورد بازگشت
         sendmessage($from_id, ($textbotlang['users']['Extra_volume']['SetPrice'] ?? 'قیمت حجم اضافه: ') . ($setting['Extra_volume'] ?? ''), $backadmin, 'HTML');
         step('GetPriceExtra', $from_id);
         return;
     }
     if ($datain === 'navshop_codes') {
         if (function_exists('codesAdminHubText')) {
-            sendmessage($from_id, codesAdminHubText(), codesAdminHubKeyboard(), 'HTML');
+            $__nav_show(codesAdminHubText(), codesAdminHubKeyboard());
         } else {
-            sendmessage($from_id, '🎟 مدیریت کد تخفیف و هدیه', null, 'HTML');
+            $__nav_show('🎟 مدیریت کد تخفیف و هدیه', null);
         }
         return;
     }
     if ($datain === 'navshop_test') {
         if (function_exists('adminUsertestPanel')) {
             list($__tx, $__kb) = adminUsertestPanel();
-            sendmessage($from_id, $__tx, $__kb, 'HTML');
+            $__nav_show($__tx, $__kb);
         } else {
             sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'انتخاب کنید', $keyboard_usertest, 'HTML');
         }
@@ -87,9 +100,6 @@ if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|nav
         return;
     }
     if ($datain === 'navuser_block') {
-        // همان منطق لیست مسدودها
-        $text = $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها';
-        // عمداً return نمی‌کنیم تا if مستقل پایین‌تر اجرا شود — اما برای اطمینان مستقیم اجرا:
         global $pdo;
         try {
             $stmt = $pdo->query("SELECT id, username, description_blocking FROM user WHERE User_Status = 'block' ORDER BY id DESC LIMIT 80");
@@ -98,20 +108,40 @@ if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|nav
             $rows = [];
         }
         if (empty($rows)) {
-            sendmessage($from_id, 'هیچ کاربر مسدودی نیست.', $User_Services, 'HTML');
+            $__nav_show($textbotlang['Admin']['ManageUser']['blocked_empty'] ?? 'هیچ کاربر مسدودی نیست.', $User_Services);
         } else {
-            $msg = "🚫 <b>مسدود شده‌ها</b> (" . count($rows) . ")\n\n";
-            foreach ($rows as $r) {
-                $un = htmlspecialchars(strval($r['username'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $desc = htmlspecialchars(strval($r['description_blocking'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $msg .= "• <code>{$r['id']}</code> @{$un}" . ($desc !== '' ? " — {$desc}" : '') . "\n";
+            try {
+                $total = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status = 'block'")->fetchColumn());
+            } catch (Exception $e) {
+                $total = count($rows);
             }
-            sendmessage($from_id, $msg, $User_Services, 'HTML');
+            $lines = [];
+            foreach ($rows as $r) {
+                $uid = $r['id'] ?? '-';
+                $un = !empty($r['username']) ? $r['username'] : '-';
+                $reason = trim(strval($r['description_blocking'] ?? ''));
+                if ($reason === '') {
+                    $reason = '-';
+                }
+                if (function_exists('mb_substr')) {
+                    $reason = mb_substr($reason, 0, 40);
+                } else {
+                    $reason = substr($reason, 0, 40);
+                }
+                $lines[] = "🆔 <code>{$uid}</code> | @{$un}\n📝 {$reason}";
+            }
+            $msg = "🚫 <b>مسدود شده‌ها</b> (نمایش " . count($rows) . " از {$total})\n\n" . implode("\n\n", $lines);
+            $kb_back = json_encode([
+                'inline_keyboard' => [
+                    [['text' => '🔙 بازگشت به خدمات کاربر', 'callback_data' => 'nav_user']],
+                ],
+            ], JSON_UNESCAPED_UNICODE);
+            $__nav_show($msg, $kb_back);
         }
         return;
     }
     if ($datain === 'navuser_rcpt') {
-        sendmessage($from_id, '⏳ در حال بررسی رسیدهای در انتظار تأیید…', null, 'HTML');
+        // رسیدها چند پیام می‌فرستد؛ فقط وضعیت را روی همان صفحه نشان بده
         $res = function_exists('resendWaitingPaymentReceipts')
             ? resendWaitingPaymentReceipts($from_id, 40)
             : ['ok' => false, 'count' => 0, 'msg' => 'تابع موجود نیست'];
@@ -119,34 +149,62 @@ if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|nav
         if (intval($res['count'] ?? 0) === 0 && !empty($res['ok'])) {
             $msg = $msg !== '' ? $msg : 'هیچ رسید در انتظار تأییدی نیست.';
         }
-        sendmessage($from_id, $msg, $User_Services, 'HTML');
+        $kb_back = json_encode([
+            'inline_keyboard' => [
+                [['text' => '🔙 بازگشت به خدمات کاربر', 'callback_data' => 'nav_user']],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+        $__nav_show($msg, $kb_back);
         return;
     }
     if ($datain === 'navuser_rich') {
-        $text = $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۵۰۰ هزار';
-        // مستقیم: لیست موجودی بالا (همان شرط اصلی هندلر)
         global $pdo;
+        $limit = 80;
         try {
-            $stmt = $pdo->query("SELECT id, username, Balance FROM user WHERE Balance >= 500000 ORDER BY Balance DESC LIMIT 80");
+            $stmt = $pdo->query("SELECT id, username, Balance FROM user WHERE CAST(Balance AS SIGNED) >= 500000 ORDER BY CAST(Balance AS SIGNED) DESC LIMIT {$limit}");
             $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
         } catch (Exception $e) {
             $rows = [];
         }
+        $kb_back = json_encode([
+            'inline_keyboard' => [
+                [['text' => '🔙 بازگشت به خدمات کاربر', 'callback_data' => 'nav_user']],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
         if (empty($rows)) {
-            sendmessage($from_id, 'کاربری با موجودی بالای ۵۰۰ هزار نیست.', $User_Services, 'HTML');
+            $__nav_show($textbotlang['Admin']['ManageUser']['balance_gt1_empty'] ?? 'هیچ کاربری با موجودی بالای ۵۰۰٬۰۰۰ تومان نیست.', $kb_back);
         } else {
-            $msg = "💰 <b>موجودی بالای ۵۰۰ هزار</b> (" . count($rows) . ")\n\n";
-            foreach ($rows as $r) {
-                $un = htmlspecialchars(strval($r['username'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $bal = number_format(intval($r['Balance'] ?? 0));
-                $msg .= "• <code>{$r['id']}</code> @{$un} — {$bal}\n";
+            $total = count($rows);
+            $sum_all = 0;
+            try {
+                $stc = $pdo->query("SELECT COUNT(*) AS c, COALESCE(SUM(CAST(Balance AS SIGNED)),0) AS s FROM user WHERE CAST(Balance AS SIGNED) >= 500000");
+                $rc = $stc ? $stc->fetch(PDO::FETCH_ASSOC) : null;
+                if ($rc) {
+                    $total = intval($rc['c'] ?? $total);
+                    $sum_all = intval($rc['s'] ?? 0);
+                }
+            } catch (Exception $e) {
+                foreach ($rows as $r) {
+                    $sum_all += intval($r['Balance'] ?? 0);
+                }
             }
-            sendmessage($from_id, $msg, $User_Services, 'HTML');
+            $lines = [];
+            foreach ($rows as $r) {
+                $uid = $r['id'] ?? '-';
+                $un = trim(strval($r['username'] ?? ''));
+                if ($un === '') {
+                    $un = '-';
+                }
+                $bal = number_format(intval($r['Balance'] ?? 0));
+                $lines[] = "🆔 <code>{$uid}</code> | @{$un}\n💰 {$bal} تومان";
+            }
+            $msg = "💰 <b>موجودی بالای ۵۰۰ هزار</b>\nتعداد: <b>{$total}</b> | مجموع: <b>" . number_format($sum_all) . "</b>\n\n" . implode("\n\n", $lines);
+            $__nav_show($msg, $kb_back);
         }
         return;
     }
 
-    // ----- پیام همگانی -----
+    // ----- پیام همگانی (نیاز به ورودی متن/فوروارد → پیام جدا) -----
     if ($datain === 'navcast_text') {
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetText'] ?? 'متن پیام همگانی را بفرستید', $backadmin, 'HTML');
         step('getconfirmsendall', $from_id);
@@ -158,6 +216,7 @@ if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|nav
         return;
     }
 }
+
 
 if (in_array($text, $textadmin) || $datain == "PANEL") {
     if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
