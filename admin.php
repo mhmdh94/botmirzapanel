@@ -1487,7 +1487,8 @@ elseif (preg_match('/confirmnumber_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
     update("user", "number", "confrim number by admin", "id", $iduser);
     step('home', $iduser);
-    sendmessage($from_id, $textbotlang['Admin']['phone']['active'], $User_Services, 'HTML');
+    // نه منوی خدمات کاربر — فقط کیبورد ادمین
+    sendmessage($from_id, $textbotlang['Admin']['phone']['active'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['Admin']['channel']['channelreport']) {
     $ch_id = $setting['Channel_Report'] ?? '-';
