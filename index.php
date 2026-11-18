@@ -1149,13 +1149,14 @@ if ($user['step'] == "getusernameinfo") {
     if (isset($nameloc) && is_array($nameloc) && function_exists('syncInvoiceStatusFromPanel')) {
         syncInvoiceStatusFromPanel($nameloc, $status);
     }
-    $status_var = [
+    $__status_map = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
         'disabled' => $textbotlang['users']['status']['disabled'],
         'expired' => $textbotlang['users']['status']['expired'],
-        'on_hold' => $textbotlang['users']['status']['onhold']
-    ][$status];
+        'on_hold' => $textbotlang['users']['status']['onhold'],
+    ];
+    $status_var = $__status_map[$status] ?? ($status !== '' && $status !== null ? strval($status) : ($textbotlang['users']['status']['disabled'] ?? 'نامشخص'));
     #--------------[ expire ]---------------#
     $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
     #-------------[ data_limit ]----------------#
@@ -1249,13 +1250,14 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     if (isset($nameloc) && is_array($nameloc) && function_exists('syncInvoiceStatusFromPanel')) {
         syncInvoiceStatusFromPanel($nameloc, $status);
     }
-    $status_var = [
+    $__status_map = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
         'disabled' => $textbotlang['users']['status']['disabled'],
         'expired' => $textbotlang['users']['status']['expired'],
-        'on_hold' => $textbotlang['users']['status']['onhold']
-    ][$status];
+        'on_hold' => $textbotlang['users']['status']['onhold'],
+    ];
+    $status_var = $__status_map[$status] ?? ($status !== '' && $status !== null ? strval($status) : ($textbotlang['users']['status']['disabled'] ?? 'نامشخص'));
     #--------------[ expire ]---------------#
     $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
     #-------------[ data_limit ]----------------#
@@ -2389,13 +2391,14 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (isset($nameloc) && is_array($nameloc) && function_exists('syncInvoiceStatusFromPanel')) {
         syncInvoiceStatusFromPanel($nameloc, $status);
     }
-    $status_var = [
+    $__status_map = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
         'disabled' => $textbotlang['users']['status']['disabled'],
         'expired' => $textbotlang['users']['status']['expired'],
-        'on_hold' => $textbotlang['users']['status']['onhold']
-    ][$status];
+        'on_hold' => $textbotlang['users']['status']['onhold'],
+    ];
+    $status_var = $__status_map[$status] ?? ($status !== '' && $status !== null ? strval($status) : ($textbotlang['users']['status']['disabled'] ?? 'نامشخص'));
     #--------------[ expire ]---------------#
     $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
     #-------------[ data_limit ]----------------#

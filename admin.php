@@ -2428,25 +2428,33 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'], $backadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['AddBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
-    $Balance_add_user = $Balance_user['Balance'] + $text;
-    update("user", "Balance", $Balance_add_user, "id", $user['Processing_value']);
-    if (function_exists('logWalletTx')) {
-        logWalletTx($user['Processing_value'], 'admin_add', intval($text), $Balance_add_user, 'افزایش موجودی توسط ادمین');
+    $__uid_bal = $user['Processing_value'];
+    $__amt = intval($text);
+    if (function_exists('atomicAddBalance')) {
+        atomicAddBalance($__uid_bal, $__amt);
+    } else {
+        $Balance_user = select("user", "*", "id", $__uid_bal, "select");
+        update("user", "Balance", intval($Balance_user['Balance'] ?? 0) + $__amt, "id", $__uid_bal);
     }
-    $amt_fmt = number_format($text);
-    sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt), null, 'HTML');
+    $Balance_user = select("user", "*", "id", $__uid_bal, "select");
+    $Balance_add_user = intval(is_array($Balance_user) ? ($Balance_user['Balance'] ?? 0) : 0);
+    if (function_exists('logWalletTx')) {
+        logWalletTx($__uid_bal, 'admin_add', $__amt, $Balance_add_user, 'افزایش موجودی توسط ادمین');
+    }
+    $amt_fmt = number_format($__amt);
+    sendmessage($from_id, $textbotlang['Admin']['Balance']['AddBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>افزایش موجودی توسط ادمین</b>
 
 👨‍💼 ادمین: <code>{$from_id}</code>
-🆔 کاربر: <code>{$user['Processing_value']}</code>
+🆔 کاربر: <code>{$__uid_bal}</code>
 
 ➕ مبلغ: {$amt_fmt} تومان
-💳 موجودی جدید: " . number_format($Balance_add_user) . " تومان");
+💳 موجودی جدید: " . number_format(intval($Balance_add_user)) . " تومان");
     }
     step('home', $from_id);
+    return;
 }
 #-------------------------#
 elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
@@ -2463,25 +2471,40 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'], $backadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['NegativeBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
-    $Balance_Low_user = $Balance_user['Balance'] - $text;
-    update("user", "Balance", $Balance_Low_user, "id", $user['Processing_value']);
-    if (function_exists('logWalletTx')) {
-        logWalletTx($user['Processing_value'], 'admin_low', intval($text), $Balance_Low_user, 'کاهش موجودی توسط ادمین');
+    $__uid_bal = $user['Processing_value'];
+    $__amt = intval($text);
+    if (function_exists('atomicDeductBalance')) {
+        $__ded = atomicDeductBalance($__uid_bal, $__amt);
+        if ($__ded === false || $__ded === null) {
+            // موجودی کافی نبود یا خطا — همچنان کم می‌کنیم تا رفتار قبلی حفظ شود
+            $Balance_user = select("user", "*", "id", $__uid_bal, "select");
+            $Balance_Low_user = intval($Balance_user['Balance'] ?? 0) - $__amt;
+            update("user", "Balance", $Balance_Low_user, "id", $__uid_bal);
+        } else {
+            $Balance_Low_user = intval($__ded);
+        }
+    } else {
+        $Balance_user = select("user", "*", "id", $__uid_bal, "select");
+        $Balance_Low_user = intval($Balance_user['Balance'] ?? 0) - $__amt;
+        update("user", "Balance", $Balance_Low_user, "id", $__uid_bal);
     }
-    $amt_fmt = number_format($text);
-    sendmessage($user['Processing_value'], sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt), null, 'HTML');
+    if (function_exists('logWalletTx')) {
+        logWalletTx($__uid_bal, 'admin_low', $__amt, $Balance_Low_user, 'کاهش موجودی توسط ادمین');
+    }
+    $amt_fmt = number_format($__amt);
+    sendmessage($from_id, $textbotlang['Admin']['Balance']['NegativeBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>کاهش موجودی توسط ادمین</b>
 
 👨‍💼 ادمین: <code>{$from_id}</code>
-🆔 کاربر: <code>{$user['Processing_value']}</code>
+🆔 کاربر: <code>{$__uid_bal}</code>
 
 ➖ مبلغ: {$amt_fmt} تومان
-💳 موجودی جدید: " . number_format($Balance_Low_user) . " تومان");
+💳 موجودی جدید: " . number_format(intval($Balance_Low_user)) . " تومان");
     }
     step('home', $from_id);
+    return;
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['Discount']['titlebtn']) {
