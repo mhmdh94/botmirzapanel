@@ -2237,6 +2237,9 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     } catch (Exception $e) {
         return;
     }
+    if (!empty($message_id)) {
+        update("user", "Processing_value_tow", strval($message_id), "id", $from_id);
+    }
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Reasonrejecting'], $backadmin, 'HTML');
     step('reject-dec', $from_id);
     // رسید معمولاً عکس است — text خالی است و editMessageText خطای "message text is empty" می‌دهد
@@ -2268,30 +2271,63 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
         }
     }
 } elseif ($user['step'] == "reject-dec") {
-    update("Payment_report", "dec_not_confirmed", $text, "id_order", $user['Processing_value_one']);
+    $rj_uid = $user['Processing_value'] ?? '';
+    $rj_order = $user['Processing_value_one'] ?? '';
+    $rj_msgid = $user['Processing_value_tow'] ?? '';
+    if ($rj_order !== '') {
+        update("Payment_report", "dec_not_confirmed", $text, "id_order", $rj_order);
+    }
+    // به‌روزرسانی پیام رسید: از «در حال رد» به «رد شد»
+    $__reason_safe = htmlspecialchars(strval($text), ENT_QUOTES, 'UTF-8');
+    $__order_safe = htmlspecialchars(strval($rj_order), ENT_QUOTES, 'UTF-8');
+    $__final = "❌ <b>پرداخت رد شد</b>\n"
+        . "🧾 کد: <code>{$__order_safe}</code>\n"
+        . "✍️ دلیل: {$__reason_safe}";
+    $__empty_kb = json_encode(['inline_keyboard' => []]);
+    if ($rj_msgid !== '' && $rj_msgid !== '0' && $rj_msgid !== null) {
+        $__mid = intval($rj_msgid);
+        // اول کپشن (رسید عکسی)؛ اگر نشد متن
+        $__cap_res = telegram('editMessageCaption', [
+            'chat_id' => $from_id,
+            'message_id' => $__mid,
+            'caption' => $__final,
+            'parse_mode' => 'HTML',
+            'reply_markup' => $__empty_kb,
+        ]);
+        $__cap_ok = is_array($__cap_res) && !empty($__cap_res['ok']);
+        if (!$__cap_ok) {
+            Editmessagetext($from_id, $__mid, $__final, $__empty_kb);
+        }
+    }
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Rejected'], $keyboardadmin, 'HTML');
     try {
-        $rj_uid = $user['Processing_value'];
-        $rj_order = $user['Processing_value_one'];
-        $rj_msg = sprintf($textbotlang['users']['moeny']['rejectresid'] ?? "❌ رسید پرداخت شما رد شد.\n📝 دلیل: %s\n🛒 کد: %s", $text, $rj_order);
-        sendmessage($rj_uid, $rj_msg, null, 'HTML');
+        $rj_msg = sprintf(
+            $textbotlang['users']['moeny']['rejectresid'] ?? "❌ <b>پرداخت رد شد</b>\n✍️ دلیل: %s\n🧾 کد: <code>%s</code>",
+            $text,
+            $rj_order
+        );
+        if ($rj_uid !== '') {
+            sendmessage($rj_uid, $rj_msg, null, 'HTML');
+        }
     } catch (Throwable $e) {
         error_log('reject notify fail: ' . $e->getMessage());
         try {
-            sendmessage($user['Processing_value'], "❌ رسید پرداخت شما رد شد.\n🛒 کد: " . $user['Processing_value_one'], null, 'HTML');
+            if ($rj_uid !== '') {
+                sendmessage($rj_uid, "❌ رسید پرداخت شما رد شد.\n🛒 کد: " . $rj_order, null, 'HTML');
+            }
         } catch (Throwable $e2) {}
     }
     if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_reject', "❌ <b>رد رسید پرداخت</b>
-
-👨‍💼 ادمین: <code>{$from_id}</code>
-🆔 کاربر: <code>{$user['Processing_value']}</code>
-🧾 سفارش: <code>{$user['Processing_value_one']}</code>
-📝 دلیل: {$text}");
+        sendChannelReport('rpt_reject', "❌ <b>رد رسید پرداخت</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n🆔 کاربر: <code>{$rj_uid}</code>\n🧾 سفارش: <code>{$rj_order}</code>\n📝 دلیل: {$text}");
     }
+    // پاک‌سازی مقادیر موقت
+    update("user", "Processing_value", "0", "id", $from_id);
+    update("user", "Processing_value_one", "0", "id", $from_id);
+    update("user", "Processing_value_tow", "0", "id", $from_id);
     step('home', $from_id);
     return;
 }
+
 #-------------------------#
 if ($text == $textbotlang['Admin']['Product']['titlebtnremove']) {
     sendmessage($from_id, $textbotlang['Admin']['Product']['Rmove_location'], $json_list_marzban_panel, 'HTML');
