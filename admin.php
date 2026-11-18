@@ -2196,6 +2196,14 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
 if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     $id_order = $datagetr[1];
     $Payment_report = select("Payment_report", "*", "id_order", $id_order, "select");
+    if (!$Payment_report || !is_array($Payment_report)) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'سفارش یافت نشد',
+            'show_alert' => true,
+        ]);
+        return;
+    }
     update("user", "Processing_value", $Payment_report['id_user'], "id", $from_id);
     update("user", "Processing_value_one", $id_order, "id", $from_id);
     if (($Payment_report['payment_Status'] ?? '') == "reject" || ($Payment_report['payment_Status'] ?? '') == "paid") {
@@ -2231,7 +2239,34 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     }
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Reasonrejecting'], $backadmin, 'HTML');
     step('reject-dec', $from_id);
-    Editmessagetext($from_id, $message_id, $text_callback, null);
+    // رسید معمولاً عکس است — text خالی است و editMessageText خطای "message text is empty" می‌دهد
+    $__rj_note = "❌ <b>در حال رد پرداخت</b>\nکد: <code>" . htmlspecialchars(strval($id_order), ENT_QUOTES, 'UTF-8') . "</code>\nمنتظر دلیل رد...";
+    $__cb_msg = $update['callback_query']['message'] ?? [];
+    $__empty_kb = json_encode(['inline_keyboard' => []]);
+    if (!empty($__cb_msg['photo']) || (isset($__cb_msg['caption']) && strval($__cb_msg['caption']) !== '')) {
+        $__cap = strval($__cb_msg['caption'] ?? $caption ?? '');
+        $__new_cap = ($__cap !== '' ? $__cap . "\n\n" : '') . $__rj_note;
+        telegram('editMessageCaption', [
+            'chat_id' => $from_id,
+            'message_id' => $message_id,
+            'caption' => $__new_cap,
+            'parse_mode' => 'HTML',
+            'reply_markup' => $__empty_kb,
+        ]);
+    } else {
+        $__base = trim(strval($text_callback ?? ''));
+        $__new_txt = ($__base !== '' ? $__base . "\n\n" : '') . $__rj_note;
+        if ($__new_txt !== '') {
+            Editmessagetext($from_id, $message_id, $__new_txt, $__empty_kb);
+        } else {
+            // فقط دکمه‌ها را بردار
+            telegram('editMessageReplyMarkup', [
+                'chat_id' => $from_id,
+                'message_id' => $message_id,
+                'reply_markup' => $__empty_kb,
+            ]);
+        }
+    }
 } elseif ($user['step'] == "reject-dec") {
     update("Payment_report", "dec_not_confirmed", $text, "id_order", $user['Processing_value_one']);
     sendmessage($from_id, $textbotlang['Admin']['Payment']['Rejected'], $keyboardadmin, 'HTML');
@@ -2255,6 +2290,7 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
 📝 دلیل: {$text}");
     }
     step('home', $from_id);
+    return;
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['Product']['titlebtnremove']) {
