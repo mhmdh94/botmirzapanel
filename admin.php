@@ -3421,7 +3421,14 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
     if (function_exists('sendAdminUserInfo')) {
         sendAdminUserInfo($from_id, $text);
     }
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboardadmin, 'HTML');
+    // فقط کیبورد ادمین را برگردان؛ پیام «یکی از گزینه‌ها...» اضافه نباشد
+    // (دکمه‌های مدیریت همین الان روی پیام اطلاعات کاربر هستند)
+    if (function_exists('buildAdminKeyboard')) {
+        // reply keyboard را بدون پیام مزاحم عوض نمی‌شود؛ یک پیام خیلی کوتاه
+        sendmessage($from_id, '✅', buildAdminKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, '✅', $keyboardadmin, 'HTML');
+    }
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['timeset']) {
