@@ -2427,7 +2427,7 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'], $backadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['AddBalanceUser'], $User_Services, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Balance']['AddBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_add_user = $Balance_user['Balance'] + $text;
     update("user", "Balance", $Balance_add_user, "id", $user['Processing_value']);
@@ -2462,7 +2462,7 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'], $backadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['NegativeBalanceUser'], $User_Services, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['Balance']['NegativeBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     $Balance_user = select("user", "*", "id", $user['Processing_value'], "select");
     $Balance_Low_user = $Balance_user['Balance'] - $text;
     update("user", "Balance", $Balance_Low_user, "id", $user['Processing_value']);

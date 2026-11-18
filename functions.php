@@ -5372,10 +5372,11 @@ function syncInvoiceStatusFromPanel($invoice_row, $panel_status)
         return;
     }
     $ps = strtolower(trim(strval($panel_status)));
+    // disabled را روی فاکتور نمی‌نویسیم: کاربر باید بتواند دوباره فعال کند
+    // و سرویس در لیست «سرویس‌های من» بماند.
     $map = [
         'expired' => 'end_of_time',
         'limited' => 'end_of_volume',
-        'disabled' => 'disabled',
         'on_hold' => 'sendedwarn',
         'active' => 'active',
     ];

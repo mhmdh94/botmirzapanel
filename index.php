@@ -2000,8 +2000,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         ]);
         return;
     }
-    $invStatus = isset($nameloc['Status']) ? $nameloc['Status'] : (isset($nameloc['status']) ? $nameloc['status'] : '');
-    if (!in_array($invStatus, ['active', 'end_of_time', 'end_of_volume', 'sendedwarn'])) {
+    $invStatus = strtolower(trim(strval(isset($nameloc['Status']) ? $nameloc['Status'] : (isset($nameloc['status']) ? $nameloc['status'] : ''))));
+    // active + اخطار/اتمام + disabled/disabledn (بعد از غیرفعال‌سازی یا sync پنل)
+    $__toggle_ok_status = ['active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'disabled', 'disabledn', 'inactive', 'deactive'];
+    if ($invStatus !== '' && !in_array($invStatus, $__toggle_ok_status, true)) {
+        // unpaid / delete و مشابه: اجازه نده
         telegram('answerCallbackQuery', [
             'callback_query_id' => $callback_query_id,
             'text' => $textbotlang['users']['togglestatus']['notallowed'],
@@ -2064,6 +2067,18 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             'show_alert' => true,
         ]);
         return;
+    }
+    // فاکتور: با فعال‌سازی → active؛ با غیرفعال‌سازی Status را active نگه دار
+    // تا سرویس از «سرویس‌های من» حذف نشود (لیست فقط active/end_*/sendedwarn را نشان می‌دهد)
+    if (!empty($nameloc['id_invoice'])) {
+        if ($enabled_now) {
+            update('invoice', 'Status', 'active', 'id_invoice', $nameloc['id_invoice']);
+        } else {
+            // عمداً disabled نمی‌نویسیم تا از لیست نپرد
+            if (in_array($invStatus, ['disabled', 'disabledn', 'inactive', 'deactive'], true)) {
+                update('invoice', 'Status', 'active', 'id_invoice', $nameloc['id_invoice']);
+            }
+        }
     }
     $msg = $enabled_now
         ? $textbotlang['users']['togglestatus']['enabled_ok']
