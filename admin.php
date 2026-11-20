@@ -25,7 +25,7 @@ if (isset($datain) && is_string($datain) && $datain === 'nav_sec_close') {
 }
 
 # هندل صریح دکمه‌های اینلاین بخش‌ها — همان پیام ویرایش شود + بازگشت
-if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|navcast_)/', $datain)) {
+if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|navcast_|navset_)/', $datain) || in_array($datain, ['nav_settings','nav_finance','nav_panel','nav_admin'], true))) {
     // هر کلیک ناوبری، step قبلی را خنثی می‌کند تا هندلر ورودی عددی/متنی گیر ندهد
     if (isset($user['step']) && is_string($user['step']) && $user['step'] !== '' && $user['step'] !== 'home') {
         step('home', $from_id);
@@ -213,6 +213,99 @@ if (isset($datain) && is_string($datain) && preg_match('/^(navshop_|navuser_|nav
     if ($datain === 'navcast_fwd') {
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ForwardGetext'] ?? 'پیام را فوروارد کنید', $backadmin, 'HTML');
         step('gettextforwardMessage', $from_id);
+        return;
+    }
+
+    // ----- تنظیمات / مالی / پنل / ادمین -----
+    if ($datain === 'nav_settings') {
+        $__nav_show(
+            function_exists('buildAdminSettingsSectionText') ? buildAdminSettingsSectionText() : '⚙️ تنظیمات',
+            function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : null
+        );
+        return;
+    }
+    if ($datain === 'nav_finance') {
+        $__tx = "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز، پکیج شارژ و تأیید خودکار رسید را مدیریت کنید.";
+        $__kb = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : json_encode(['inline_keyboard' => []]);
+        $__nav_show($__tx, $__kb);
+        return;
+    }
+    if ($datain === 'nav_panel') {
+        if (function_exists('adminPanelsListKeyboard')) {
+            list($__tx, $__kb) = adminPanelsListKeyboard();
+            $__nav_show($__tx, $__kb);
+        } else {
+            $__nav_show('🖥 مدیریت پنل', null);
+        }
+        return;
+    }
+    if ($datain === 'nav_admin') {
+        if (function_exists('adminAdminsListKeyboard')) {
+            list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
+            $__nav_show($__tx, $__kb);
+        } else {
+            $__nav_show('👮 بخش ادمین', null);
+        }
+        return;
+    }
+    if ($datain === 'navset_features') {
+        // صفحه وضعیت قابلیت‌ها بزرگ است؛ با فلگ edit در همان پیام
+        $GLOBALS['__admin_nav_edit_mid'] = $message_id;
+        $text = $textbotlang['Admin']['keyboardadmin']['seetingstatus'];
+        // بدون return — هندلر قدیمی seetingstatus اجرا می‌شود
+    } elseif ($datain === 'navset_cron') {
+        if (function_exists('ensureSmartCronSettings')) { ensureSmartCronSettings(); }
+        if (function_exists('ensureSmartCronStateTable')) { ensureSmartCronStateTable(); }
+        $__tx = $textbotlang['Admin']['smartcron']['menu'] ?? '🕚 تنظیمات کرون';
+        $__kb = function_exists('buildSmartCronAdminKeyboard') ? buildSmartCronAdminKeyboard() : null;
+        $__nav_show($__tx, $__kb);
+        return;
+    } elseif ($datain === 'navset_chreport') {
+        $ch_id = $setting['Channel_Report'] ?? '-';
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
+            [['text' => '⚙️ فعالیت‌های گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
+            [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test']],
+            [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
+        ]], JSON_UNESCAPED_UNICODE);
+        $__nav_show("📣 <b>تنظیمات کانال گزارش</b>\n\nکانال فعلی: <code>{$ch_id}</code>", $kb);
+        return;
+    } elseif ($datain === 'navset_chjoin') {
+        // تغییر کانال عضویت نیاز به ورودی متن دارد
+        sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید.', $channelkeyboard ?? $backadmin, 'HTML');
+        return;
+    } elseif ($datain === 'navset_aff') {
+        if (function_exists('buildAffiliatesAdminPanel')) {
+            list($__tx, $__kb) = buildAffiliatesAdminPanel();
+            $__nav_show($__tx, $__kb);
+        } else {
+            $__nav_show('👥 <b>تنظیمات مشارکت در فروش</b>', null);
+        }
+        return;
+    } elseif ($datain === 'navset_btxt') {
+        $__tx = '📝 <b>تنظیم متن ربات</b>\nمتن مورد نظر را انتخاب کنید.';
+        $__kb = function_exists('buildBotTextSettingsPanel') ? buildBotTextSettingsPanel() : null;
+        $__nav_show($__tx, $__kb);
+        return;
+    } elseif ($datain === 'navset_update') {
+        $kb = json_encode(['inline_keyboard' => [
+            [
+                ['text' => $textbotlang['Admin']['bot_update']['yes'] ?? '✅ بله', 'callback_data' => 'bot_update_yes'],
+                ['text' => $textbotlang['Admin']['bot_update']['no'] ?? '❌ خیر', 'callback_data' => 'nav_settings'],
+            ],
+            [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
+        ]], JSON_UNESCAPED_UNICODE);
+        $__nav_show($textbotlang['Admin']['bot_update']['confirm'] ?? 'آیا از آپدیت ربات مطمئن هستید؟', $kb);
+        return;
+    } elseif ($datain === 'navset_backup') {
+        if (function_exists('backupSettingsText') && function_exists('buildBackupSettingsKeyboard')) {
+            $__nav_show(backupSettingsText(), buildBackupSettingsKeyboard());
+        } else {
+            $__nav_show('💾 پشتیبان‌گیری', null);
+        }
+        return;
+    } elseif (strpos(strval($datain), 'navset_') === 0 || in_array($datain, ['nav_settings','nav_finance','nav_panel','nav_admin'], true)) {
+        // callback ناشناخته در این خانواده
         return;
     }
 }
@@ -1852,18 +1945,28 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_cat' && !emp
     step('home', $from_id);
 }
 #-------------------------#
-if ($text == $textbotlang['Admin']['keyboardadmin']['admin_section']) {
+if ($text == $textbotlang['Admin']['keyboardadmin']['admin_section'] || $datain === 'nav_admin') {
     if (function_exists('adminAdminsListKeyboard')) {
         list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
+        if ($datain === 'nav_admin' && !empty($message_id)) {
+            Editmessagetext($from_id, $message_id, $__tx, $__kb);
+        } else {
+            sendmessage($from_id, $__tx, $__kb, 'HTML');
+        }
     } else {
         $kb_admin_sec = function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel;
         sendmessage($from_id, $textbotlang['users']['selectoption'], $kb_admin_sec, 'HTML');
     }
 }
 #-------------------------#
-if ($text == $textbotlang['Admin']['keyboardadmin']['settings']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $setting_panel, 'HTML');
+if ($text == $textbotlang['Admin']['keyboardadmin']['settings'] || $datain === 'nav_settings') {
+    $__tx = function_exists('buildAdminSettingsSectionText') ? buildAdminSettingsSectionText() : '⚙️ تنظیمات';
+    $__kb = function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : $setting_panel;
+    if ($datain === 'nav_settings' && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+    } else {
+        sendmessage($from_id, $__tx, $__kb, 'HTML');
+    }
 }
 
 
@@ -2935,10 +3038,14 @@ if ($text == $textbotlang['users']['moeny']['mr_payment_merchant_settings']) {
     update("PaySetting", "ValuePay", $text, "NamePay", "merchant_id_aqayepardakht");
     step('home', $from_id);
 }
-if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel']) {
+if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain === 'nav_panel') {
     if (function_exists('adminPanelsListKeyboard')) {
         list($__tx, $__kb) = adminPanelsListKeyboard();
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
+        if ($datain === 'nav_panel' && !empty($message_id)) {
+            Editmessagetext($from_id, $message_id, $__tx, $__kb);
+        } else {
+            sendmessage($from_id, $__tx, $__kb, 'HTML');
+        }
     } else {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['getloc'], $json_list_marzban_panel, 'HTML');
         step('GetLocationEdit', $from_id);
@@ -3889,7 +3996,13 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             ],
         ]
     ]);
-    sendmessage($from_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status, 'HTML');
+    if (!empty($GLOBALS['__admin_nav_edit_mid'])) {
+        $__mid_feat = intval($GLOBALS['__admin_nav_edit_mid']);
+        unset($GLOBALS['__admin_nav_edit_mid']);
+        Editmessagetext($from_id, $__mid_feat, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status);
+    } else {
+        sendmessage($from_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status, 'HTML');
+    }
 } elseif (preg_match('/^editstsuts-(.*)-(.*)/', $datain, $dataget)) {
     if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColumns(); }
     $type = $dataget[1];

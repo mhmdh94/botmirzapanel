@@ -2489,6 +2489,39 @@ function buildBalancePackageAdminKeyboard()
  * پنل یکپارچه تنظیمات مشارکت در فروش (ادمین)
  */
 
+
+function buildAdminSettingsSectionText()
+{
+    return "⚙️ <b>تنظیمات</b>\n\nوضعیت قابلیت‌ها، کرون، کانال‌ها، مشارکت، متن ربات، آپدیت و پشتیبان‌گیری.";
+}
+
+function buildAdminSettingsInlineKeyboard()
+{
+    global $textbotlang;
+    $rows = [
+        [
+            ['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus'] ?? '⚙️ وضعیت قابلیت ها', 'callback_data' => 'navset_features'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['settingscron'] ?? '🕚 تنظیمات کرون جاب', 'callback_data' => 'navset_cron'],
+        ],
+        [
+            ['text' => $textbotlang['Admin']['channel']['channelreport'] ?? '📣 کانال گزارش', 'callback_data' => 'navset_chreport'],
+            ['text' => $textbotlang['Admin']['channel']['setting'] ?? '📢 کانال عضویت', 'callback_data' => 'navset_chjoin'],
+        ],
+        [
+            ['text' => $textbotlang['Admin']['keyboardadmin']['affiliate_settings'] ?? '👥 مشارکت در فروش', 'callback_data' => 'navset_aff'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] ?? '📝 تنظیم متن ربات', 'callback_data' => 'navset_btxt'],
+        ],
+        [
+            ['text' => $textbotlang['Admin']['keyboardadmin']['bot_update'] ?? '🔄 آپدیت ربات', 'callback_data' => 'navset_update'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'],
+        ],
+        [
+            ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
+        ],
+    ];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+
 function buildAdminShopInlineKeyboard()
 {
     global $textbotlang;
@@ -2791,7 +2824,7 @@ function listAffiliatesActiveUsersPanel($page = 0)
             . "هنوز هیچ کاربری پورسانت دریافت نکرده است.";
         $kb = json_encode([
             'inline_keyboard' => [
-                [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'affpanel_refresh']],
+                [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
             ],
         ], JSON_UNESCAPED_UNICODE);
         return [$text, $kb];
@@ -2850,7 +2883,7 @@ function listAffiliatesActiveUsersPanel($page = 0)
     if ($nav) {
         $kb_rows[] = $nav;
     }
-    $kb_rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'affpanel_refresh']];
+    $kb_rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
     $kb = json_encode(['inline_keyboard' => $kb_rows], JSON_UNESCAPED_UNICODE);
     return [$text, $kb];
 }
@@ -3164,8 +3197,11 @@ function buildFinanceKeyboard()
         [
             ['text' => $textbotlang['Admin']['balance_pkg']['menu'] ?? '🎁 پکیج افزایش موجودی', 'callback_data' => 'balance_packages_settings'],
         ],
+        [
+            ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
+        ],
     ];
-    return json_encode(['inline_keyboard' => $rows]);
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
 /**
@@ -5923,6 +5959,7 @@ function adminPanelsListKeyboard()
         ['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_pan_list'],
     ];
     $text = "🖥 <b>مدیریت پنل‌ها</b>\nتعداد: <b>{$n}</b>\n\nروی پنل بزنید تا تنظیمات باز شود.\nبرای پنل جدید «افزودن پنل» را بزنید.";
+        $kb['inline_keyboard'][] = [['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']];
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
@@ -6162,6 +6199,7 @@ function adminAdminsListKeyboard($viewer_id)
     $kb['inline_keyboard'][] = [['text' => '➕ افزودن ادمین', 'callback_data' => 'adm_adm_add']];
     $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_adm_list']];
     $text = "👮 <b>مدیریت ادمین‌ها</b>\nتعداد: <b>{$n}</b>\n\nادمین اصلی قابل حذف نیست.";
+        $kb['inline_keyboard'][] = [['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']];
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
