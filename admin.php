@@ -271,8 +271,23 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         $__nav_show("📣 <b>تنظیمات کانال گزارش</b>\n\nکانال فعلی: <code>{$ch_id}</code>", $kb);
         return;
     } elseif ($datain === 'navset_chjoin') {
-        // تغییر کانال عضویت نیاز به ورودی متن دارد
-        sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید.', $channelkeyboard ?? $backadmin, 'HTML');
+        // مستقیم درخواست آیدی کانال — بدون منوی میانی reply
+        $__ch_link = '';
+        try {
+            $__ch_row = select('channels', 'link', null, null, 'select');
+            if (is_array($__ch_row)) {
+                $__ch_link = strval($__ch_row['link'] ?? '');
+            } elseif (isset($channels) && is_array($channels)) {
+                $__ch_link = strval($channels['link'] ?? '');
+            }
+        } catch (Throwable $e) {
+            if (isset($channels) && is_array($channels)) {
+                $__ch_link = strval($channels['link'] ?? '');
+            }
+        }
+        $__prompt = ($textbotlang['Admin']['channel']['changechannel'] ?? 'آیدی کانال عضویت اجباری را بدون @ بفرستید.\nکانال فعلی: @') . $__ch_link;
+        sendmessage($from_id, $__prompt, $backadmin, 'HTML');
+        step('addchannel', $from_id);
         return;
     } elseif ($datain === 'navset_aff') {
         if (function_exists('buildAffiliatesAdminPanel')) {
@@ -393,7 +408,8 @@ if (isset($datain) && is_string($datain) && preg_match('/^Response_(\d+)$/', $da
     sendmessage($from_id, $textbotlang['Admin']['channel']['changechannel'] . $channels['link'], $backadmin, 'HTML');
     step('addchannel', $from_id);
 } elseif ($user['step'] == "addchannel") {
-    sendmessage($from_id, $textbotlang['Admin']['channel']['setchannel'], $channelkeyboard, 'HTML');
+    $__after_ch_kb = function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : ($keyboardadmin ?? $backadmin);
+    sendmessage($from_id, $textbotlang['Admin']['channel']['setchannel'], $__after_ch_kb, 'HTML');
     step('home', $from_id);
     $channels_ch = select("channels", "link", null, null, "count");
     $Check_filde = $connect->query("SHOW COLUMNS FROM channels LIKE 'Channel_lock'");
@@ -1139,7 +1155,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] || $dat
         $__bt_kb = json_encode(['inline_keyboard' => [
             [['text' => 'متن شروع', 'callback_data' => 'btxt_text_start'], ['text' => 'متن قانون', 'callback_data' => 'btxt_text_rules']],
             [['text' => 'دکمه خرید', 'callback_data' => 'btxt_text_sell'], ['text' => 'دکمه پشتیبانی', 'callback_data' => 'btxt_text_support']],
-            [['text' => '🔄 بروزرسانی', 'callback_data' => 'btxt_menu'], ['text' => '🔙 بستن', 'callback_data' => 'btxt_close']],
+            [['text' => '🔄 بروزرسانی', 'callback_data' => 'btxt_menu'], ['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
         ]], JSON_UNESCAPED_UNICODE);
     }
     if ($datain === 'btxt_menu' && !empty($message_id)) {
@@ -3993,6 +4009,9 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $st_reseller_req, 'callback_data' => 'editstsuts-status_reseller_request-' . strval($setting['status_reseller_request'] ?? '0')],
                 ['text' => $textbotlang['Admin']['Status']['status_reseller_request'] ?? 'درخواست پنل نمایندگی', 'callback_data' => "status_reseller_request"],
+            ],
+            [
+                ['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings'],
             ],
         ]
     ]);

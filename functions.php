@@ -911,12 +911,12 @@ function buildBotTextSettingsPanel()
     }
     $ik[] = [
         ['text' => '🔄 بروزرسانی', 'callback_data' => 'btxt_menu'],
-        ['text' => '🔙 بستن', 'callback_data' => 'btxt_close'],
+        ['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings'],
     ];
 
     $kb = json_encode(['inline_keyboard' => $ik], JSON_UNESCAPED_UNICODE);
     if (!is_string($kb) || $kb === '') {
-        $kb = '{"inline_keyboard":[[{"text":"🔙 بستن","callback_data":"btxt_close"}]]}';
+        $kb = '{"inline_keyboard":[[{"text":"🔙 بازگشت به تنظیمات","callback_data":"nav_settings"}]]}';
     }
     return [$text, $kb];
 }
@@ -2515,9 +2515,6 @@ function buildAdminSettingsInlineKeyboard()
             ['text' => $textbotlang['Admin']['keyboardadmin']['bot_update'] ?? '🔄 آپدیت ربات', 'callback_data' => 'navset_update'],
             ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'],
         ],
-        [
-            ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
-        ],
     ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
@@ -2540,9 +2537,6 @@ function buildAdminShopInlineKeyboard()
             ],
             [
                 ['text' => $test, 'callback_data' => 'navshop_test'],
-            ],
-            [
-                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
             ],
         ],
     ];
@@ -2571,9 +2565,6 @@ function buildAdminUserServicesInlineKeyboard()
                 ['text' => $textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده', 'callback_data' => 'navuser_rcpt'],
                 ['text' => $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالا', 'callback_data' => 'navuser_rich'],
             ],
-            [
-                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
-            ],
         ],
     ];
     return json_encode($kb, JSON_UNESCAPED_UNICODE);
@@ -2592,9 +2583,6 @@ function buildAdminBroadcastInlineKeyboard()
             [
                 ['text' => $textbotlang['Admin']['systemsms']['sendbulkbtn'] ?? '✉️ ارسال همگانی', 'callback_data' => 'navcast_text'],
                 ['text' => $textbotlang['Admin']['systemsms']['forwardbulkbtn'] ?? '📤 فوروارد همگانی', 'callback_data' => 'navcast_fwd'],
-            ],
-            [
-                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
             ],
         ],
     ];
@@ -2660,7 +2648,7 @@ function buildAffiliatesAdminPanel()
             ],
             [
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'affpanel_refresh'],
-                ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
+                ['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings'],
             ],
         ]
     ];
@@ -3196,9 +3184,6 @@ function buildFinanceKeyboard()
         ],
         [
             ['text' => $textbotlang['Admin']['balance_pkg']['menu'] ?? '🎁 پکیج افزایش موجودی', 'callback_data' => 'balance_packages_settings'],
-        ],
-        [
-            ['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close'],
         ],
     ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
@@ -4315,7 +4300,7 @@ function buildBackupSettingsKeyboard()
             ],
             [['text' => ($cron_on ? $on : $off) . ' بک‌آپ خودکار (کرون)', 'callback_data' => 'backup_tog_cron']],
             [['text' => '⏱ فاصله: هر ' . $hours . ' ساعت', 'callback_data' => 'backup_set_hours']],
-            [['text' => '🔙 بازگشت', 'callback_data' => 'backup_back']],
+            [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
         ],
     ], JSON_UNESCAPED_UNICODE);
 }
@@ -4596,6 +4581,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => '📋 دستور کرون سیستم', 'callback_data' => 'smartcron_show_cmd']],
         [['text' => '🛠 نصب خودکار کرون در سرور', 'callback_data' => 'smartcron_install_crontab']],
         [['text' => '🗑 حذف کرون‌های ربات از سرور', 'callback_data' => 'smartcron_remove_crontab']],
+        [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
     ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
@@ -5959,8 +5945,7 @@ function adminPanelsListKeyboard()
         ['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_pan_list'],
     ];
     $text = "🖥 <b>مدیریت پنل‌ها</b>\nتعداد: <b>{$n}</b>\n\nروی پنل بزنید تا تنظیمات باز شود.\nبرای پنل جدید «افزودن پنل» را بزنید.";
-        $kb['inline_keyboard'][] = [['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']];
-    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+        return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
 function adminPanelGetById($id)
@@ -6199,8 +6184,7 @@ function adminAdminsListKeyboard($viewer_id)
     $kb['inline_keyboard'][] = [['text' => '➕ افزودن ادمین', 'callback_data' => 'adm_adm_add']];
     $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_adm_list']];
     $text = "👮 <b>مدیریت ادمین‌ها</b>\nتعداد: <b>{$n}</b>\n\nادمین اصلی قابل حذف نیست.";
-        $kb['inline_keyboard'][] = [['text' => '🔙 بستن', 'callback_data' => 'nav_sec_close']];
-    return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+        return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
 function adminUsertestPanel()
