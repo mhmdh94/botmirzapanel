@@ -298,8 +298,20 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         }
         return;
     } elseif ($datain === 'navset_btxt') {
-        $__tx = '📝 <b>تنظیم متن ربات</b>\nمتن مورد نظر را انتخاب کنید.';
-        $__kb = function_exists('buildBotTextSettingsPanel') ? buildBotTextSettingsPanel() : null;
+        if (function_exists('ensureEditableStatusTexts')) {
+            @ensureEditableStatusTexts();
+        }
+        if (function_exists('buildBotTextSettingsPanel')) {
+            $__bt_pack = buildBotTextSettingsPanel();
+            $__tx = is_array($__bt_pack) ? ($__bt_pack[0] ?? '📝 تنظیم متن ربات') : '📝 تنظیم متن ربات';
+            $__kb = is_array($__bt_pack) ? ($__bt_pack[1] ?? null) : null;
+            if (!is_string($__kb) || $__kb === '') {
+                $__kb = null;
+            }
+        } else {
+            $__tx = '📝 تنظیم متن ربات';
+            $__kb = null;
+        }
         $__nav_show($__tx, $__kb);
         return;
     } elseif ($datain === 'navset_update') {
