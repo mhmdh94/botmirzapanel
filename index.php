@@ -4049,16 +4049,57 @@ if ($datain == "cart_to_offline" || $datain == "iranpay") {
         $photo = true;
     }
 
-    // اگر از قبل رسید waiting دارد، دوباره ثبت نکن
+    // اگر از قبل رسید waiting دارد: فقط اگر تازه باشد بلاک کن؛ قدیمی‌ها را منقضی کن
     try {
-        $st_dup = $pdo->prepare("SELECT id_order, price FROM Payment_report WHERE id_user = ? AND payment_Status = 'waiting' ORDER BY id DESC LIMIT 1");
-        $st_dup->execute([$from_id]);
-        $dup = $st_dup->fetch(PDO::FETCH_ASSOC);
-        if ($dup) {
+        $st_dup = $pdo->prepare("SELECT id, id_order, price, time FROM Payment_report WHERE id_user = ? AND payment_Status = 'waiting' ORDER BY id DESC LIMIT 5");
+        $st_dup->execute([strval($from_id)]);
+        $dups = $st_dup->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        // اگر با str پیدا نشد (نوع id_user)، با int هم امتحان کن
+        if (!$dups) {
+            $st_dup->execute([intval($from_id)]);
+            $dups = $st_dup->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        }
+        $__wait_limit_sec = 3600; // 1 ساعت — مطابق متن راهنما
+        $__now = time();
+        $__fresh = null;
+        foreach ($dups as $__row) {
+            $__ts = 0;
+            $__traw = strval($__row['time'] ?? '');
+            if ($__traw !== '') {
+                // فرمت ذخیره‌شده: Y/m/d H:i:s
+                $__norm = str_replace('/', '-', $__traw);
+                $__parsed = strtotime($__norm);
+                if ($__parsed !== false) {
+                    $__ts = intval($__parsed);
+                }
+            }
+            $__age = ($__ts > 0) ? ($__now - $__ts) : 999999;
+            if ($__age <= $__wait_limit_sec) {
+                $__fresh = $__row;
+                break;
+            }
+            // قدیمی‌تر از ۱ ساعت → منقضی تا کاربر گیر نکند و لیست ادمین هم تمیز شود
+            try {
+                $st_exp = $pdo->prepare("UPDATE Payment_report SET payment_Status = 'expired', dec_not_confirmed = COALESCE(NULLIF(dec_not_confirmed,''), 'auto-expired after 1h idle') WHERE id = ? AND payment_Status = 'waiting'");
+                $st_exp->execute([intval($__row['id'])]);
+            } catch (Throwable $e_exp) {
+                try {
+                    $st_exp2 = $pdo->prepare("UPDATE Payment_report SET payment_Status = 'expired' WHERE id = ? AND payment_Status = 'waiting'");
+                    $st_exp2->execute([intval($__row['id'])]);
+                } catch (Throwable $e_exp2) {}
+            }
+        }
+        if ($__fresh) {
+            $__oid = htmlspecialchars(strval($__fresh['id_order'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $__prc = number_format(intval($__fresh['price'] ?? 0));
             step('home', $from_id);
             sendmessage(
                 $from_id,
-                "✅ رسید قبلی شما ثبت شده و در انتظار تأیید مدیریت است.\nلطفاً دوباره ارسال نکنید و صبور باشید.\n\nفقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدهید.",
+                "✅ رسید قبلی شما ثبت شده و در انتظار تأیید مدیریت است.\n"
+                . "🧾 کد: <code>{$__oid}</code>\n"
+                . "💰 مبلغ: {$__prc} تومان\n\n"
+                . "لطفاً دوباره ارسال نکنید و صبور باشید.\n"
+                . "فقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدهید.",
                 $keyboard,
                 'HTML'
             );
