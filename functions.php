@@ -2473,7 +2473,7 @@ function buildBalancePackageAdminKeyboard()
         ]];
     }
     $rows[] = [['text' => '➕ افزودن پکیج', 'callback_data' => 'balpkgadm_add']];
-    $rows[] = [['text' => $textbotlang['Admin']['Back-Adminment'] ?? 'بازگشت', 'callback_data' => 'balpkgadm_back']];
+    $rows[] = [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'balpkgadm_back']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 

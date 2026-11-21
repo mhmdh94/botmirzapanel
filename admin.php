@@ -3368,7 +3368,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
         return;
     }
     update("affiliates", "affiliatespercentage", $text);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], $setting_panel, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : $setting_panel, 'HTML');
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
@@ -3383,7 +3383,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
         return;
     }
     update("affiliates", "price_Discount", $text);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], $setting_panel, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : $setting_panel, 'HTML');
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
@@ -3399,7 +3399,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
     }
     update("affiliates", "description", $caption);
     update("affiliates", "id_media", $photoid);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['insertbanner'], $setting_panel, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['affiliates']['insertbanner'], function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : $setting_panel, 'HTML');
     if (function_exists('buildAffiliatesAdminPanel')) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
@@ -4528,7 +4528,7 @@ if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_lim
         $textbotlang['Admin']['deposit']['saved'],
         formatToman($lim['min']),
         formatToman($lim['max'])
-    ), $keyboardadmin, 'HTML');
+    ), function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : $keyboardadmin, 'HTML');
     step('home', $from_id);
 }
 
@@ -4628,7 +4628,15 @@ if ($datain == "balance_packages_settings") {
     sendmessage($from_id, $msg, buildBalancePackageAdminKeyboard(), 'HTML');
 }
 if ($datain == "balpkgadm_back") {
-    sendmessage($from_id, $textbotlang['users']['selectoption'] ?? "یک گزینه را انتخاب کنید", $keyboardadmin, 'HTML');
+    $__fin_tx = "💳 <b>تنظیمات مالی</b>
+
+از این بخش درگاه‌ها، حداقل/حداکثر واریز، پکیج شارژ و تأیید خودکار رسید را مدیریت کنید.";
+    $__fin_kb = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__fin_tx, $__fin_kb);
+    } else {
+        sendmessage($from_id, $__fin_tx, $__fin_kb, 'HTML');
+    }
     step('home', $from_id);
 }
 if ($datain == "balpkgadm_add") {
