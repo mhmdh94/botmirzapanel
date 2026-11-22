@@ -2645,7 +2645,11 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
         logWalletTx($__uid_bal, 'admin_add', $__amt, $Balance_add_user, 'افزایش موجودی توسط ادمین');
     }
     $amt_fmt = number_format($__amt);
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['AddBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    $__bal_fmt = number_format($Balance_add_user);
+    $__msg_admin_add = ($textbotlang['Admin']['Balance']['AddBalanceUser'] ?? '✅ مبلغ به موجودی کاربر اضافه شد')
+        . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
+        . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
+    sendmessage($from_id, $__msg_admin_add, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>افزایش موجودی توسط ادمین</b>
@@ -2695,7 +2699,11 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
         logWalletTx($__uid_bal, 'admin_low', $__amt, $Balance_Low_user, 'کاهش موجودی توسط ادمین');
     }
     $amt_fmt = number_format($__amt);
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['NegativeBalanceUser'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    $__bal_fmt = number_format(intval($Balance_Low_user ?? 0));
+    $__msg_admin_neg = ($textbotlang['Admin']['Balance']['NegativeBalanceUser'] ?? '✅ مبلغ از موجودی کاربر کسر شد')
+        . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
+        . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
+    sendmessage($from_id, $__msg_admin_neg, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>کاهش موجودی توسط ادمین</b>
