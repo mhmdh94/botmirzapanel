@@ -413,7 +413,10 @@ if (isset($datain) && is_string($datain) && preg_match('/^Response_(\d+)$/', $da
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetTextResponse'] ?? 'متن یا عکس پاسخ را ارسال کنید.', $backadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['SendMessageuser'] ?? '✅ پیام برای کاربر ارسال شد.', function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    $__to_uid = htmlspecialchars(strval($user['Processing_value'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $__sent_msg = ($textbotlang['Admin']['ManageUser']['SendMessageuser'] ?? '✅ پیام برای کاربر ارسال شد.')
+        . ($__to_uid !== '' ? "\n🆔 کاربر: <code>{$__to_uid}</code>" : '');
+    sendmessage($from_id, $__sent_msg, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
     step('home', $from_id);
 }
  elseif ($text == $textbotlang['Admin']['channel']['changechannelbtn']) {
@@ -1389,7 +1392,12 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
         $reason_text = 'مسدود توسط مدیریت';
     }
     update("user", "description_blocking", $reason_text, "id", $blocked_id);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['DescriptionBlock'], $keyboardadmin, 'HTML');
+    $__blk_id = htmlspecialchars(strval($blocked_id), ENT_QUOTES, 'UTF-8');
+    $__blk_reason = htmlspecialchars($reason_text, ENT_QUOTES, 'UTF-8');
+    $__blk_msg = ($textbotlang['Admin']['ManageUser']['DescriptionBlock'] ?? '✅ کاربر مسدود شد')
+        . "\n🆔 کاربر: <code>{$__blk_id}</code>"
+        . "\n📝 دلیل: {$__blk_reason}";
+    sendmessage($from_id, $__blk_msg, $keyboardadmin, 'HTML');
     // به کاربر پیام فوری ارسال نمی‌شود؛ وقتی خودش با ربات کار کند پیام مسدودی + پشتیبانی می‌بیند
     $bu = select("user", "*", "id", $blocked_id, "select");
     $bu_name = is_array($bu) ? ($bu['username'] ?? '-') : '-';
@@ -1416,7 +1424,10 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
     update("user", "User_Status", "Active", "id", $iduser);
     update("user", "description_blocking", "", "id", $iduser);
     update("user", "message_count", "0", "id", $iduser);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['UserUnblocked'], $keyboardadmin, 'HTML');
+    $__ub_id = htmlspecialchars(strval($iduser), ENT_QUOTES, 'UTF-8');
+    $__ub_msg = ($textbotlang['Admin']['ManageUser']['UserUnblocked'] ?? '✅ مسدودی کاربر برداشته شد')
+        . "\n🆔 کاربر: <code>{$__ub_id}</code>";
+    sendmessage($from_id, $__ub_msg, $keyboardadmin, 'HTML');
     if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['unblock_user'])) {
         $uu_name = is_array($userunblock) ? ($userunblock['username'] ?? '-') : '-';
         $rep = sprintf(
@@ -2430,7 +2441,12 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
             Editmessagetext($from_id, $__mid, $__final, $__empty_kb);
         }
     }
-    sendmessage($from_id, $textbotlang['Admin']['Payment']['Rejected'], $keyboardadmin, 'HTML');
+    $__rj_show = htmlspecialchars(strval($rj_order), ENT_QUOTES, 'UTF-8');
+    $__rj_uid_show = htmlspecialchars(strval($rj_uid), ENT_QUOTES, 'UTF-8');
+    $__rj_admin_msg = ($textbotlang['Admin']['Payment']['Rejected'] ?? '⭕️ پرداخت رد شد')
+        . "\n🆔 کاربر: <code>{$__rj_uid_show}</code>"
+        . "\n🧾 سفارش: <code>{$__rj_show}</code>";
+    sendmessage($from_id, $__rj_admin_msg, $keyboardadmin, 'HTML');
     try {
         $rj_msg = sprintf(
             $textbotlang['users']['moeny']['rejectresid'] ?? "❌ <b>پرداخت رد شد</b>\n✍️ دلیل: %s\n🧾 کد: <code>%s</code>",
@@ -2880,7 +2896,10 @@ if ($text == $textbotlang['Admin']['ManageUser']['removeorderbtn']) {
     $stmt = $pdo->prepare("DELETE FROM invoice WHERE username = ?");
     $stmt->bindParam(1, $text);
     $stmt->execute();
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['RemovedService'], $keyboardadmin, 'HTML');
+    $__rm_user = htmlspecialchars(strval($text), ENT_QUOTES, 'UTF-8');
+    $__rm_msg = ($textbotlang['Admin']['ManageUser']['RemovedService'] ?? '✅ سرویس حذف شد')
+        . "\n👤 یوزرنیم سرویس: <code>{$__rm_user}</code>";
+    sendmessage($from_id, $__rm_msg, $keyboardadmin, 'HTML');
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['managepanel']['methodusername']) {
@@ -3241,10 +3260,16 @@ if ($text == $textbotlang['Admin']['Balance']['SendBalanceAll']) {
         sendmessage($from_id, $textbotlang['Admin']['Balance']['Invalidprice'], $backadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['AddBalanceUsers'], $User_Services, 'HTML');
+    $__mass_amt = intval($text);
+    $__mass_fmt = number_format($__mass_amt);
     $stmt = $pdo->prepare("UPDATE user SET Balance = Balance + :balance");
-    $stmt->bindParam(':balance', $text, PDO::PARAM_INT);
+    $stmt->bindParam(':balance', $__mass_amt, PDO::PARAM_INT);
     $stmt->execute();
+    $__affected = intval($stmt->rowCount());
+    $__mass_msg = ($textbotlang['Admin']['Balance']['AddBalanceUsers'] ?? '✅ مبلغ به موجودی کاربران اضافه شد')
+        . "\n💰 مبلغ هر کاربر: <b>{$__mass_fmt}</b> تومان"
+        . "\n👥 ردیف‌های به‌روز شده: <b>{$__affected}</b>";
+    sendmessage($from_id, $__mass_msg, $User_Services, 'HTML');
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['Discountsell']['create']) {
@@ -4394,7 +4419,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         return;
     }
     update("user", "verify", "1", "id", $iduser);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['verifyeduser'], $keyboardadmin, 'HTML');
+    $__vf_id = htmlspecialchars(strval($iduser), ENT_QUOTES, 'UTF-8');
+    $__vf_msg = ($textbotlang['Admin']['ManageUser']['verifyeduser'] ?? '✅ کاربر احراز شد')
+        . "\n🆔 کاربر: <code>{$__vf_id}</code>";
+    sendmessage($from_id, $__vf_msg, $keyboardadmin, 'HTML');
     step('home', $from_id);
 } elseif (preg_match('/verifyun_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
@@ -4404,7 +4432,10 @@ if ($text == $textbotlang['users']['status']['manageService']) {
         return;
     }
     update("user", "verify", "0", "id", $iduser);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['unverifyed'], $keyboardadmin, 'HTML');
+    $__uv_id = htmlspecialchars(strval($iduser), ENT_QUOTES, 'UTF-8');
+    $__uv_msg = ($textbotlang['Admin']['ManageUser']['unverifyed'] ?? '✅ احراز هویت برداشته شد')
+        . "\n🆔 کاربر: <code>{$__uv_id}</code>";
+    sendmessage($from_id, $__uv_msg, $keyboardadmin, 'HTML');
     step('home', $from_id);
 } elseif ($text == '📁 مدیریت دسته‌بندی' || $text == $textbotlang['Admin']['category']['add'] || $text == $textbotlang['Admin']['category']['remove']) {
     if (function_exists('adminCategoriesListKeyboard')) {
