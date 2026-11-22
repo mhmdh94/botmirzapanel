@@ -1620,7 +1620,10 @@ elseif (preg_match('/confirmnumber_(\w+)/', $datain, $dataget)) {
     update("user", "number", "confrim number by admin", "id", $iduser);
     step('home', $iduser);
     // نه منوی خدمات کاربر — فقط کیبورد ادمین
-    sendmessage($from_id, $textbotlang['Admin']['phone']['active'], function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
+    $__ph_id = htmlspecialchars(strval($iduser), ENT_QUOTES, 'UTF-8');
+    $__ph_msg = ($textbotlang['Admin']['phone']['active'] ?? 'شماره موبایل کاربر تایید شده است ✅🎉')
+        . "\n🆔 کاربر: <code>{$__ph_id}</code>";
+    sendmessage($from_id, $__ph_msg, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['Admin']['channel']['channelreport']) {
     $ch_id = $setting['Channel_Report'] ?? '-';
