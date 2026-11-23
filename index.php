@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.0";
+$version = "2.1";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -523,7 +523,7 @@ if (!$__is_admin) {
 if (($setting['Bot_Status'] ?? '') == "✅  ربات روشن است" && !in_array($from_id, $admin_ids)) {
     sendmessage($from_id, $textbotlang['users']['updatingbot'], null, 'html');
     foreach ($admin_ids as $admin) {
-        sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعالسازی به منوی تنظیمات عمومی > وضعیت قابلیت ها بروید تا رباتتان فعال شود.", null, 'html');
+        sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعالسازی به منوی تنظیمات عمومی > روشن/خاموش قابلیتها بروید تا رباتتان فعال شود.", null, 'html');
     }
     return;
 }
@@ -1317,6 +1317,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         ];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
         $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
+        $textinfo .= botUsageBar($DataUserOut['used_traffic'] ?? 0, $DataUserOut['data_limit'] ?? 0);
     } elseif (!in_array($status, ['active', 'on_hold'], true)) {
         // منقضی (زمان) / محدود (حجم) و ...
         // بازگشت وجه فقط برای active و disabled
@@ -1336,6 +1337,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         $__kb_dis[] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
         $keyboardsetting = json_encode(['inline_keyboard' => $__kb_dis]);
         $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceDisable'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
+        $textinfo .= botUsageBar($DataUserOut['used_traffic'] ?? 0, $DataUserOut['data_limit'] ?? 0);
     } else {
         // ترتیب دکمه‌ها: لینک/کانفیگ | تمدید/تغییر لینک | غیرفعال/حجم اضافه | بازگشت وجه | بازگشت لیست
         $keyboarddate = array(
@@ -1428,8 +1430,10 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         $keyboardsetting = json_encode($keyboardsetting);
         if ($marzban_list_get['type'] == "mikrotik") {
             $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceActive_mikrotik'], $status_var, $DataUserOut['username'], $DataUserOut['subscription_url'], $nameloc['Service_location'], $nameloc['id_invoice'], $LastTraffic, $usedTrafficGb, $expirationDate, $day);
+            $textinfo .= botUsageBar($DataUserOut['used_traffic'] ?? 0, $DataUserOut['data_limit'] ?? 0);
         } else {
             $textinfo = sprintf($textbotlang['users']['status']['InfoSerivceActive'], $status_var, $DataUserOut['username'], $nameloc['Service_location'], $nameloc['id_invoice'], $lastonline, $LastTraffic, $usedTrafficGb, $expirationDate, $day);
+            $textinfo .= botUsageBar($DataUserOut['used_traffic'] ?? 0, $DataUserOut['data_limit'] ?? 0);
         }
     }
     Editmessagetext($from_id, $message_id, $textinfo, $keyboardsetting);
@@ -1475,12 +1479,12 @@ if (preg_match('/qrcode_(\w+)/', $datain, $dataget)) {
         $caption = "📷 QR Code سرویس <code>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</code>\n\n"
             . "📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:\n"
             . "<code>" . htmlspecialchars($subscriptionurl, ENT_QUOTES, 'UTF-8') . "</code>";
-        telegram('sendphoto', [
+        botSendPhotoWithCopy([
             'chat_id' => $from_id,
             'photo' => new CURLFile($urlimage),
             'caption' => mb_substr($caption, 0, 1024),
             'parse_mode' => "HTML",
-        ]);
+        ], $subscriptionurl);
         @unlink($urlimage);
     } catch (Throwable $e) {
         error_log('qrcode_ service: ' . $e->getMessage());
@@ -1511,12 +1515,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
     $result = $writer->write($qrCode, null, null);
     $result->saveToFile($urlimage);
-    telegram('sendphoto', [
+    botSendPhotoWithCopy([
         'chat_id' => $from_id,
         'photo' => new CURLFile($urlimage),
         'caption' => $textsub,
         'parse_mode' => "HTML",
-    ]);
+    ], $marzban_list_get['type'] == "wgdashboard" ? '' : $subscriptionurl);
     if ($marzban_list_get['type'] == "wgdashboard") {
         $urldocs = "{$marzban_list_get['inboundid']}_{$nameloc['id_invoice']}.conf";
         file_put_contents($urldocs, $DataUserOut['subscription_url']);
@@ -3640,7 +3644,7 @@ if (isset($datain) && $datain === 'product_header') {
                     addAffiliatesBalance($aff_uid, $result_int);
                 }
                 $result_fmt = number_format($result_int);
-                $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.", $result_fmt);
+                $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.", $result_fmt) . botUserBalanceLine($aff_uid);
                 sendmessage($aff_uid, $textadd, null, 'HTML');
                 if (function_exists('sendChannelReport')) {
                     $__buy_amt = number_format(intval($priceproduct));
@@ -4384,7 +4388,7 @@ if ($datain == "Discount") {
     $get_codesql = $stmt->fetch(PDO::FETCH_ASSOC);
     step('home', $from_id);
     number_format($get_codesql['price']);
-    $text_balance_code = sprintf($textbotlang['users']['Discount']['acceptdiscount'], number_format(intval($get_codesql['price'])));
+    $text_balance_code = sprintf($textbotlang['users']['Discount']['acceptdiscount'], number_format(intval($get_codesql['price']))) . botBalanceLine($balance_user);
     sendmessage($from_id, $text_balance_code, $keyboard, 'HTML');
     $stmt = $pdo->prepare("INSERT INTO Giftcodeconsumed (id_user, code) VALUES (?, ?)");
     $stmt->bindParam(1, $from_id);

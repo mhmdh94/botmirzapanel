@@ -133,7 +133,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
             $msg = "🚫 <b>مسدود شده‌ها</b> (نمایش " . count($rows) . " از {$total})\n\n" . implode("\n\n", $lines);
             $kb_back = json_encode([
                 'inline_keyboard' => [
-                    [['text' => '🔙 بازگشت به خدمات کاربر', 'callback_data' => 'nav_user']],
+                    [['text' => '🔙 بازگشت به مدیریت کاربران', 'callback_data' => 'nav_user']],
                 ],
             ], JSON_UNESCAPED_UNICODE);
             $__nav_show($msg, $kb_back);
@@ -151,7 +151,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         }
         $kb_back = json_encode([
             'inline_keyboard' => [
-                [['text' => '🔙 بازگشت به خدمات کاربر', 'callback_data' => 'nav_user']],
+                [['text' => '🔙 بازگشت به مدیریت کاربران', 'callback_data' => 'nav_user']],
             ],
         ], JSON_UNESCAPED_UNICODE);
         $__nav_show($msg, $kb_back);
@@ -168,7 +168,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         }
         $kb_back = json_encode([
             'inline_keyboard' => [
-                [['text' => '🔙 بازگشت به خدمات کاربر', 'callback_data' => 'nav_user']],
+                [['text' => '🔙 بازگشت به مدیریت کاربران', 'callback_data' => 'nav_user']],
             ],
         ], JSON_UNESCAPED_UNICODE);
         if (empty($rows)) {
@@ -2725,7 +2725,7 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
         . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
         . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
     sendmessage($from_id, $__msg_admin_neg, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt), null, 'HTML');
+    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt) . botBalanceLine($Balance_Low_user), null, 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>کاهش موجودی توسط ادمین</b>
 
@@ -3613,7 +3613,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['settingscron']) {
     sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($text == $textbotlang['Admin']['cron']['test']['active']) {
-    sendmessage($from_id, "⚠️ کرون‌های قدیمی غیرفعال شده‌اند.\nاز «تنظیمات کرون جاب» فقط <b>کرون هوشمند</b> را فعال و تنظیم کنید.", null, 'HTML');
+    sendmessage($from_id, "⚠️ کرون‌های قدیمی غیرفعال شده‌اند.\nاز «زمانبندیها (کرون)» فقط <b>کرون هوشمند</b> را فعال و تنظیم کنید.", null, 'HTML');
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
         sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
@@ -4414,7 +4414,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     $iduser = $dataget[1];
     $userunverify = select("user", "*", "id", $iduser, "select");
     if ($userunverify['verify'] == "1") {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['verifyeduser'], $backadmin, 'HTML');
+        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['alreadyverified'] ?? 'کاربر از قبل احراز شده است', $backadmin, 'HTML');
         return;
     }
     update("user", "verify", "1", "id", $iduser);

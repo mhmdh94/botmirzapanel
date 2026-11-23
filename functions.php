@@ -653,6 +653,50 @@ function atomicDeductBalanceFloorZero($user_id, $amount)
     return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
 }
 
+/** خط «موجودی فعلی» برای انتهای پیامهای کیف پول (به متنهای قابل ویرایش دست نمیزند) */
+function botBalanceLine($balance)
+{
+    return "\n👛 موجودی فعلی: <b>" . number_format(intval($balance)) . "</b> تومان";
+}
+
+/** همان خط، با خواندن موجودی تازه از دیتابیس */
+function botUserBalanceLine($user_id)
+{
+    $row = select("user", "Balance", "id", $user_id, "select");
+    return botBalanceLine(is_array($row) ? ($row['Balance'] ?? 0) : 0);
+}
+
+/** نوار پیشرفت مصرف حجم؛ برای سرویس نامحدود رشته خالی */
+function botUsageBar($used, $limit)
+{
+    $limit = floatval($limit);
+    if ($limit <= 0) {
+        return '';
+    }
+    $pct = max(0, min(100, (floatval($used) / $limit) * 100));
+    $filled = intval(round($pct / 10));
+    return "\n📶 " . str_repeat('▓', $filled) . str_repeat('░', 10 - $filled) . ' ' . number_format($pct, 0) . '%';
+}
+
+/**
+ * ارسال عکس با دکمه «کپی لینک» (copy_text). اگر تلگرام دکمه را نپذیرفت، همان عکس بدون دکمه ارسال میشود.
+ */
+function botSendPhotoWithCopy(array $params, $copyText)
+{
+    $copyText = strval($copyText);
+    if ($copyText !== '' && strlen($copyText) <= 256) {
+        $withKb = $params;
+        $withKb['reply_markup'] = json_encode(['inline_keyboard' => [[
+            ['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $copyText]],
+        ]]], JSON_UNESCAPED_UNICODE);
+        $res = telegram('sendphoto', $withKb);
+        if (is_array($res) && !empty($res['ok'])) {
+            return $res;
+        }
+    }
+    return telegram('sendphoto', $params);
+}
+
 /**
  * قفل MySQL برای جلوگیری از اجرای همزمان یک عملیات (مثلاً دو بار ثبت کد هدیه).
  * در پایان درخواست خودکار آزاد میشود. نام با دیتابیس پیشوند میخورد تا رباتهای مختلف تداخل نکنند.
@@ -1597,7 +1641,7 @@ function DirectPayment($order_id)
                     $textadd = sprintf(
                         $textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.",
                         $result_fmt
-                    );
+                    ) . botUserBalanceLine($aff_uid);
                     sendmessage($aff_uid, $textadd, null, 'HTML');
                     if (function_exists('sendChannelReport')) {
                         $__buy_amt = number_format(intval(round($base_price)));
@@ -1864,7 +1908,7 @@ function DirectPayment($order_id)
                 )
             );
         }
-        $textpay = sprintf($textbotlang['users']['moeny']['Charged.'], $credit_fmt, $Payment_report['id_order']);
+        $textpay = sprintf($textbotlang['users']['moeny']['Charged.'], $credit_fmt, $Payment_report['id_order']) . botBalanceLine($Balance_confrim);
         if ($credit_amount > intval($Payment_report['price'])) {
             $textpay .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
         }
@@ -2533,8 +2577,8 @@ function buildAdminSettingsInlineKeyboard()
     global $textbotlang;
     $rows = [
         [
-            ['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus'] ?? '⚙️ وضعیت قابلیت ها', 'callback_data' => 'navset_features'],
-            ['text' => $textbotlang['Admin']['keyboardadmin']['settingscron'] ?? '🕚 تنظیمات کرون جاب', 'callback_data' => 'navset_cron'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus'] ?? '🎛 روشن/خاموش قابلیتها', 'callback_data' => 'navset_features'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['settingscron'] ?? '⏱ زمانبندیها (کرون)', 'callback_data' => 'navset_cron'],
         ],
         [
             ['text' => $textbotlang['Admin']['channel']['channelreport'] ?? '📣 کانال گزارش', 'callback_data' => 'navset_chreport'],
