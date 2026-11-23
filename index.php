@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.1";
+$version = "2.2.2";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -182,6 +182,11 @@ foreach ($datatxtbot as $item) {
     }
 }
 if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+// نسخه 2.2.2: دکمههای منوی قدیمی (کیبورد ذخیرهشده نزد کاربر) به متن جدید نگاشت شوند
+if (isset($text) && is_string($text) && function_exists('botAliasLegacyMenuText')
+    && !(isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0)) {
+    $text = botAliasLegacyMenuText($text, $datatextbot);
+}
 
 #----- ادمین در حال ویرایش متن / پاسخ به کاربر: منوی کاربر قورت ندهد -----
 if (
@@ -2704,6 +2709,10 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservicetest'], $username_ac, $output_config_link, $text_config);
         $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
     }
+    // نسخه 2.2.2: کم کردن سهمیه تست قبل از ارسال منو، تا منوی بعدی دکمه تست را (در صورت صفر شدن) نشان ندهد
+    $limit_usertest = $user['limit_usertest'] - 1;
+    update("user", "limit_usertest", $limit_usertest, "id", $from_id);
+    $__menu_after_test = function_exists('buildUserMainKeyboard') ? buildUserMainKeyboard($from_id) : $keyboard;
     if ($marzban_list_get['sublink'] == "onsublink" && $marzban_list_get['type'] != "mikrotik") {
         $urlimage = "$from_id$randomString.png";
         $writer = new PngWriter();
@@ -2728,15 +2737,13 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
             sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
             unlink($urlimage);
         }
-        sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $__menu_after_test, 'HTML');
         unlink($urlimage);
     } else {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $__menu_after_test, 'HTML');
     }
     step('home', $from_id);
-    $limit_usertest = $user['limit_usertest'] - 1;
-    update("user", "limit_usertest", $limit_usertest, "id", $from_id);
     step('home', $from_id);
     $text_report = sprintf($textbotlang['Admin']['Report']['ReportTestCreate'], $from_id, $username, $username_ac, $first_name, $marzban_list_get['name_panel']);
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_test', $text_report); }

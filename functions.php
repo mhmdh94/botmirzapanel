@@ -698,6 +698,69 @@ function botSendPhotoWithCopy(array $params, $copyText)
 }
 
 /** متن دکمههای منو از جدول textbot (برای ساخت منو خارج از keyboard.php، مثلاً در کرون) */
+/**
+ * نسخه 2.2.2: متن جدید دکمههای منو + متنهای قدیمی (پیشفرض) برای مهاجرت.
+ * فقط اگر متن دیتابیس دقیقاً یکی از پیشفرضهای قدیمی باشد عوض میشود؛ متن سفارشی ادمین دست نمیخورد.
+ */
+function botMenuLabelMigrations()
+{
+    return [
+        'text_account' => ['👤 مشخصات کاربری', ['🏧 مشخصات کاربری', '👨🏻‍💻 مشخصات کاربری', '👨🏻💻 مشخصات کاربری']],
+        'text_support' => ['☎️ پشتیبانی', ['☎️ ارسال پیام به پشتیبانی', '☎ ارسال پیام به پشتیبانی', '📨 ارسال پیام به پشتیبانی']],
+        'text_Purchased_services' => ['🛍 سرویس‌های من', ['🛍 سرویس های من', '🛍️ سرویس های من']],
+        'text_sell' => ['🛒 خرید اشتراک', ['🔐 خرید اشتراک']],
+    ];
+}
+
+/** اگر متن دیتابیس پیشفرض قدیمی است، در دیتابیس بهروز کن و متن جدید را برگردان */
+function botMigrateMenuLabel($id_text, $text)
+{
+    $map = botMenuLabelMigrations();
+    if (!isset($map[$id_text])) {
+        return $text;
+    }
+    list($new, $legacy) = $map[$id_text];
+    if (in_array(strval($text), $legacy, true)) {
+        try {
+            update("textbot", "text", $new, "id_text", $id_text);
+            return $new;
+        } catch (Throwable $e) {
+            return $text;
+        }
+    }
+    return $text;
+}
+
+/**
+ * کاربرانی که هنوز کیبورد قدیمی را دارند: متن دکمه قدیمی را به متن فعلی نگاشت کن
+ * تا خرید/پشتیبانی/... بعد از تغییر نام دکمه از کار نیفتد.
+ */
+function botAliasLegacyMenuText($text, $datatextbot)
+{
+    if (!is_string($text) || $text === '') {
+        return $text;
+    }
+    foreach (botMenuLabelMigrations() as $key => $pair) {
+        $current = strval($datatextbot[$key] ?? '');
+        if ($current === '') {
+            continue;
+        }
+        foreach ($pair[1] as $old) {
+            if ($old === $current) {
+                continue;
+            }
+            if ($text === $old) {
+                return $current;
+            }
+            // دکمه حساب همراه موجودی: «متن قدیمی | 530,000 ت»
+            if ($key === 'text_account' && strpos($text, $old . ' |') === 0) {
+                return $current . substr($text, strlen($old));
+            }
+        }
+    }
+    return $text;
+}
+
 function botLoadMenuTexts()
 {
     $d = [
@@ -709,7 +772,7 @@ function botLoadMenuTexts()
         if (is_array($rows)) {
             foreach ($rows as $r) {
                 if (isset($r['id_text']) && array_key_exists($r['id_text'], $d)) {
-                    $d[$r['id_text']] = $r['text'];
+                    $d[$r['id_text']] = botMigrateMenuLabel($r['id_text'], $r['text']);
                 }
             }
         }
@@ -738,7 +801,19 @@ $row1 = [];
 // دکمه خرید همیشه هست؛ اگر خرید خاموش باشد در index پیام «بسته است» می‌دهد
 $row1[] = ['text' => $datatextbot['text_sell']];
 if (!isset($setting['status_usertest']) || $setting['status_usertest'] == '1' || $setting['status_usertest'] === 1) {
-    $row1[] = ['text' => $datatextbot['text_usertest']];
+    // نسخه 2.2.2: اگر سهمیه تست کاربر صفر شده، دکمه نمایش داده نشود (با افزایش سهمیه دوباره میآید)
+    $__show_test = true;
+    if (isset($from_id) && intval($from_id) > 0) {
+        try {
+            $__u_lim = select("user", "limit_usertest", "id", $from_id, "select");
+            if (is_array($__u_lim) && array_key_exists('limit_usertest', $__u_lim) && intval($__u_lim['limit_usertest']) <= 0) {
+                $__show_test = false;
+            }
+        } catch (Throwable $e) {}
+    }
+    if ($__show_test) {
+        $row1[] = ['text' => $datatextbot['text_usertest']];
+    }
 }
 $keyboard_rows = [];
 // Reseller — بالاترین ردیف (فقط پنل‌دار + قابلیت روشن)

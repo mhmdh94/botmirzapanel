@@ -39,7 +39,7 @@ if ($table_exists) {
     }
     foreach ($data_text_bot as $item) {
         if (isset($datatextbot[$item['id_text']])) {
-            $datatextbot[$item['id_text']] = $item['text'];
+            $datatextbot[$item['id_text']] = function_exists('botMigrateMenuLabel') ? botMigrateMenuLabel($item['id_text'], $item['text']) : $item['text'];
         }
     }
 }

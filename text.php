@@ -617,8 +617,8 @@ $textbotlang['users']['account'] = "👤 <b>حساب کاربری</b>
 
 📆 %s
 ⏰ %s";
-$textbotlang['users']['accountbtn'] = "👨🏻‍💻 مشخصات کاربری";
-$textbotlang['users']['buybtn'] = "🔐 خرید اشتراک";
+$textbotlang['users']['accountbtn'] = "👤 مشخصات کاربری";
+$textbotlang['users']['buybtn'] = "🛒 خرید اشتراک";
 $textbotlang['users']['add_balance'] = "💰 افزایش موجودی";
 $textbotlang['users']['Percentage'] = " درصد ";
 $textbotlang['users']['IRT'] = " تومان ";
@@ -1136,7 +1136,7 @@ $textbotlang['Admin']['Help']['change']['editmedianew'] = "تصویر یا فی�
 
 
 
-$textbotlang['Admin']['Status']['title'] ="🛍 سرویس های من";
+$textbotlang['Admin']['Status']['title'] ="🛍 سرویس‌های من";
 $textbotlang['Admin']['Status']['btn'] ="📈 آمار ربات شما";
 $textbotlang['Admin']['Status']['subject'] = "عنوان";
 $textbotlang['Admin']['Status']['statussubject'] = "وضعیت";
