@@ -224,9 +224,11 @@ $textbotlang['users']['buy']['invoicebuy'] = "🧾 <b>پیش‌فاکتور خر
 💰 مبلغ: <b>%s</b> تومان
 📊 حجم: %s گیگ
 💵 موجودی: %s تومان
+%s
 
 ✅ برای پرداخت، دکمه زیر را بزنید.";
 $textbotlang['users']['buy']['payandGet'] = "💰 پرداخت و دریافت سرویس";
+$textbotlang['users']['buy']['cancel'] = "❌ انصراف";
 $textbotlang['users']['buy']['discount'] = "🎁 ثبت کد تخفیف";
 $textbotlang['users']['buy']['configwg'] = "⚙️ کانفیگ شما";
 
@@ -276,7 +278,7 @@ $textbotlang['users']['Extra_volume']['invoiceExtraVolume'] = "🧾 <b>پیش‌
 
 
 
-$textbotlang['users']['usertest']['limitwarning'] = "⚠️ محدودیت ساخت اشتراک تست شما به پایان رسید.";
+$textbotlang['users']['usertest']['limitwarning'] = "ℹ️ اکانت تست شما قبلاً ساخته شده است.\nبرای ادامه استفاده، یک اشتراک تهیه کنید 👇";
 $textbotlang['users']['usertest']['errorcreat'] = "⚠️ ساخت اکانت تست انجام نشد.
 لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['usertest']['iduser'] = "آیدی عددی کاربر";
@@ -650,7 +652,7 @@ $textbotlang['users']['affiliates']['infotext'] = "🤝 <b>مشارکت در ف�
 🎁 هدیه دعوت: <b>%s</b>
 📊 درصد پورسانت: <b>%s</b>
 
-از دکمه زیر لینک دعوت خود را بگیرید.";
+لینک دعوت شما پایین همین پیام است؛ با دکمه زیر برای دوستانتان بفرستید.";
 $textbotlang['users']['affiliates']['share'] = "🔗 اشتراک‌گذاری لینک";
 $textbotlang['users']['closelist'] = "❌ بستن لیست";
 
@@ -742,7 +744,7 @@ $textbotlang['Admin']['Report']['create_error'] = "⚠️ <b>خطا در ساخ�
 🧾 مسیر: %s";
 
 #--------------[ admin ]--------------#
-$textbotlang['Admin']['commendadmin'] = "ادمین";
+$textbotlang['Admin']['commendadmin'] = "⚙️ پنل مدیریت";
 $textbotlang['Admin']['commendadminmanagment'] = "پنل مدیریت";
 $textbotlang['Admin']['login-admin'] = "
 سلام 😍

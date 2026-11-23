@@ -1,7 +1,7 @@
 <?php
 
 #----------------[  admin section  ]------------------#
-$textadmin = ["panel", "/panel", $textbotlang['Admin']['commendadminmanagment'], $textbotlang['Admin']['commendadmin']];
+$textadmin = ["panel", "/panel", $textbotlang['Admin']['commendadminmanagment'], $textbotlang['Admin']['commendadmin'], "ادمین"]; // «ادمین» برای کیبوردهای قدیمی
 if (!in_array($from_id, $admin_ids))
     return;
 
@@ -2671,7 +2671,7 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
         . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
         . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
     sendmessage($from_id, $__msg_admin_add, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt, $__bal_fmt), null, 'HTML');
+    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt, $__bal_fmt), botMenuForBalance($__uid_bal), 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>افزایش موجودی توسط ادمین</b>
 
@@ -2725,7 +2725,7 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
         . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
         . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
     sendmessage($from_id, $__msg_admin_neg, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt) . botBalanceLine($Balance_Low_user), null, 'HTML');
+    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt) . botBalanceLine($Balance_Low_user), botMenuForBalance($__uid_bal), 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>کاهش موجودی توسط ادمین</b>
 
@@ -3555,7 +3555,7 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     $pricecancel = number_format(intval($text));
     if (intval($text) != 0) {
         $Balance_id_cancel_fee = atomicAdjustBalance($nameloc['id_user'], intval($text));
-        sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel, number_format(intval($Balance_id_cancel_fee))), null, 'HTML');
+        sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel, number_format(intval($Balance_id_cancel_fee))), botMenuForBalance($nameloc['id_user']), 'HTML');
     }
     if (function_exists('sendChannelReport')) {
         // کانفیگ = نام کاربری سرویس (نه یوزرنیم تلگرام ادمین/کاربر)

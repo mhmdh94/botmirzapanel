@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.1";
+$version = "2.2";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -720,7 +720,7 @@ if ($text == "/status") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
+                'text' => serviceListButtonLabel($row),
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -735,15 +735,15 @@ if ($text == "/status") {
     }
     $total_items = select("invoice", "*", "id_user", $from_id, "count");
     $total_pages = ceil($total_items / $items_per_page);
+    $__pg_row = [];
     if ($page > 1) {
-        $keyboardlists['inline_keyboard'][] = [
-            ['text' => $textbotlang['users']['page']['previous'], 'callback_data' => 'previous_page']
-        ];
+        $__pg_row[] = ['text' => $textbotlang['users']['page']['previous'], 'callback_data' => 'previous_page'];
     }
     if ($page < $total_pages) {
-        $keyboardlists['inline_keyboard'][] = [
-            ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'next_page']
-        ];
+        $__pg_row[] = ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'next_page'];
+    }
+    if (!empty($__pg_row)) {
+        $keyboardlists['inline_keyboard'][] = $__pg_row;
     }
     $keyboardlists['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"],
@@ -774,7 +774,7 @@ if ($text == "/renew") {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
+                'text' => serviceListButtonLabel($row),
                 'callback_data' => "extend_" . $row['username']
             ],
         ];
@@ -867,7 +867,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
         $service_count++;
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
+                'text' => serviceListButtonLabel($row),
                 'callback_data' => "product_" . $row['username']
             ],
         ];
@@ -885,7 +885,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     }
     if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
+            ['text' => '🔎 جستجوی سرویس', 'callback_data' => 'search_myservice']
         ];
     }
     if (($setting['NotUser'] ?? '') == "1") {
@@ -896,8 +896,8 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     // صفحه‌بندی فقط وقتی بیش از یک صفحه سرویس هست
     if ($invoices > $items_per_page) {
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'next_page'],
             ['text' => $textbotlang['users']['page']['previous'], 'callback_data' => 'previous_page'],
+            ['text' => $textbotlang['users']['page']['next'], 'callback_data' => 'next_page'],
         ];
     }
     $keyboard_json = json_encode($keyboardlists);
@@ -927,19 +927,19 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
+                'text' => serviceListButtonLabel($row),
                 'callback_data' => "product_" . $row['username']
             ],
         ];
     }
     $pagination_buttons = [
         [
-            'text' => $textbotlang['users']['page']['next'],
-            'callback_data' => 'next_page'
-        ],
-        [
             'text' => $textbotlang['users']['page']['previous'],
             'callback_data' => 'previous_page'
+        ],
+        [
+            'text' => $textbotlang['users']['page']['next'],
+            'callback_data' => 'next_page'
         ]
     ];
     $usernotlist = [
@@ -950,7 +950,7 @@ if ($datain == 'next_page') {
     ];
     if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
+            ['text' => '🔎 جستجوی سرویس', 'callback_data' => 'search_myservice']
         ];
     }
     if ($setting['NotUser'] == "1") {
@@ -978,19 +978,19 @@ if ($datain == 'next_page') {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $keyboardlists['inline_keyboard'][] = [
             [
-                'text' => serviceListEmojiFromInvoice($row) . " " . $row['username'],
+                'text' => serviceListButtonLabel($row),
                 'callback_data' => "product_" . $row['username']
             ],
         ];
     }
     $pagination_buttons = [
         [
-            'text' => $textbotlang['users']['page']['next'],
-            'callback_data' => 'next_page'
-        ],
-        [
             'text' => $textbotlang['users']['page']['previous'],
             'callback_data' => 'previous_page'
+        ],
+        [
+            'text' => $textbotlang['users']['page']['next'],
+            'callback_data' => 'next_page'
         ]
     ];
     $usernotlist = [
@@ -1001,7 +1001,7 @@ if ($datain == 'next_page') {
     ];
     if (!isset($setting['status_search_service']) || $setting['status_search_service'] == '1' || $setting['status_search_service'] === 1) {
         $keyboardlists['inline_keyboard'][] = [
-            ['text' => '🔎  جستجوی سرویس  🔎', 'callback_data' => 'search_myservice']
+            ['text' => '🔎 جستجوی سرویس', 'callback_data' => 'search_myservice']
         ];
     }
     if ($setting['NotUser'] == "1") {
@@ -1103,7 +1103,7 @@ if ($user['step'] == "search_myservice") {
         $keyboardlists = ['inline_keyboard' => []];
         foreach ($results as $row) {
             $keyboardlists['inline_keyboard'][] = [
-                ['text' => serviceListEmojiFromInvoice($row) . " " . $row['username'], 'callback_data' => "product_" . $row['username']]
+                ['text' => serviceListButtonLabel($row), 'callback_data' => "product_" . $row['username']]
             ];
         }
         $keyboardlists['inline_keyboard'][] = [
@@ -2565,14 +2565,25 @@ if ($text == $datatextbot['text_usertest']) {
     if ($user['number'] == "none" && $setting['get_number'] == "1")
         return;
     if ($user['limit_usertest'] <= 0) {
-        sendmessage($from_id, $textbotlang['users']['usertest']['limitwarning'], $keyboard, 'html');
+        sendmessage($from_id, $textbotlang['users']['usertest']['limitwarning'], botBuyButtonKeyboard(), 'html');
         return;
     }
-    sendmessage($from_id, $textbotlang['users']['Service']['Location'], $list_marzban_usertest, 'html');
+    // نسخه 2.2: اگر فقط یک لوکیشن تست هست، مرحله انتخاب رد میشود (مثل خرید)
+    $__test_panels = [];
+    try {
+        $__test_panels = $pdo->query("SELECT id FROM marzban_panel WHERE statusTest = 'ontestshowpanel'")->fetchAll(PDO::FETCH_COLUMN);
+    } catch (Throwable $e) {
+        $__test_panels = [];
+    }
+    if (is_array($__test_panels) && count($__test_panels) === 1) {
+        $datain = "locationtests_" . $__test_panels[0];
+    } else {
+        sendmessage($from_id, $textbotlang['users']['Service']['Location'], $list_marzban_usertest, 'html');
+    }
 }
 if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $datain, $dataget)) {
     if ($user['limit_usertest'] <= 0) {
-        sendmessage($from_id, $textbotlang['users']['usertest']['limitwarning'], $keyboard, 'html');
+        sendmessage($from_id, $textbotlang['users']['usertest']['limitwarning'], botBuyButtonKeyboard(), 'html');
         return;
     }
     if ($user['step'] == "createusertest") {
@@ -2717,11 +2728,11 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
             sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
             unlink($urlimage);
         }
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         unlink($urlimage);
     } else {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
     }
     step('home', $from_id);
     $limit_usertest = $user['limit_usertest'] - 1;
@@ -3356,7 +3367,7 @@ if (isset($datain) && $datain === 'product_header') {
         $info_product['Volume_constraint'] = $textbotlang['users']['status']['Unlimited'];
     $price_disp = number_format(intval($info_product['price_product']), 0);
     $bal_disp = number_format(intval($user['Balance']), 0);
-    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $price_disp, $info_product['Volume_constraint'], $bal_disp);
+    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $price_disp, $info_product['Volume_constraint'], $bal_disp, botInvoiceBalanceLine($info_product['price_product'], $user['Balance']));
     // پیش‌فاکتور جایگزین همان پیام یوزرنیم (نه پیام جدید)
     if ($edit_mid > 0) {
         Editmessagetext($from_id, $edit_mid, $textin, $payment);
@@ -3645,7 +3656,7 @@ if (isset($datain) && $datain === 'product_header') {
                 }
                 $result_fmt = number_format($result_int);
                 $textadd = sprintf($textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.", $result_fmt) . botUserBalanceLine($aff_uid);
-                sendmessage($aff_uid, $textadd, null, 'HTML');
+                sendmessage($aff_uid, $textadd, botMenuForBalance($aff_uid), 'HTML');
                 if (function_exists('sendChannelReport')) {
                     $__buy_amt = number_format(intval($priceproduct));
                     $__pct_l = rtrim(rtrim(number_format($aff_pct, 2, '.', ''), '0'), '.');
@@ -3704,7 +3715,7 @@ if (isset($datain) && $datain === 'product_header') {
     }
     if ($marzban_list_get['type'] == "mikrotik") {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
     } else {
         if ($marzban_list_get['sublink'] == "onsublink") {
             $urlimage = "$from_id$randomString.png";
@@ -3748,7 +3759,7 @@ if (isset($datain) && $datain === 'product_header') {
                 sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
                 @unlink($urldocs);
             }
-            sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         } elseif ($marzban_list_get['config'] == "onconfig") {
             if (count($dataoutput['configs']) == 1) {
                 $urlimage = "$from_id$randomString.png";
@@ -3774,7 +3785,7 @@ if (isset($datain) && $datain === 'product_header') {
             }
         } else {
             sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-            sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         }
     }
     // موجودی قبلاً اتمیک کسر شده — فقط لاگ و آزادسازی قفل
@@ -3851,12 +3862,13 @@ if (isset($datain) && $datain === 'product_header') {
         $info_product['Service_time'],
         number_format(intval($info_product['price_product'])),
         $info_product['Volume_constraint'],
-        number_format(intval($user['Balance']))
+        number_format(intval($user['Balance'])),
+        botInvoiceBalanceLine($info_product['price_product'], $user['Balance'])
     );
     $paymentDiscount = json_encode([
         'inline_keyboard' => [
             [['text' => $textbotlang['users']['buy']['payandGet'], 'callback_data' => "confirmandgetserviceDiscount"]],
-            [['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"]]
+            [['text' => $textbotlang['users']['buy']['cancel'] ?? '❌ انصراف', 'callback_data' => "backuser"]]
         ]
     ]);
     $parametrsendvalue = "dis_" . $text . "_" . $info_product['price_product'];
@@ -3867,7 +3879,7 @@ if (isset($datain) && $datain === 'product_header') {
 
 
 #-------------------[ text_Add_Balance ]---------------------#
-if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
+if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain == "acc_wallet") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
         return;
@@ -4389,7 +4401,7 @@ if ($datain == "Discount") {
     step('home', $from_id);
     number_format($get_codesql['price']);
     $text_balance_code = sprintf($textbotlang['users']['Discount']['acceptdiscount'], number_format(intval($get_codesql['price']))) . botBalanceLine($balance_user);
-    sendmessage($from_id, $text_balance_code, $keyboard, 'HTML');
+    sendmessage($from_id, $text_balance_code, (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
     $stmt = $pdo->prepare("INSERT INTO Giftcodeconsumed (id_user, code) VALUES (?, ?)");
     $stmt->bindParam(1, $from_id);
     $stmt->bindParam(2, $text, PDO::PARAM_STR);
@@ -4406,13 +4418,13 @@ if ($text == $datatextbot['text_Tariff_list']) {
         sendmessage($from_id, $textbotlang['users']['sell']['tariff_disabled'], $keyboard, 'HTML');
         return;
     }
-    sendmessage($from_id, $datatextbot['text_dec_Tariff_list'], null, 'HTML');
+    sendmessage($from_id, $datatextbot['text_dec_Tariff_list'], botBuyButtonKeyboard(), 'HTML');
 }
 if ($datain == "closelist") {
     deletemessage($from_id, $message_id);
     sendmessage($from_id, $textbotlang['users']['back'], $keyboard, 'HTML');
 }
-if ($text == $textbotlang['users']['affiliates']['btn']) {
+if ($text == $textbotlang['users']['affiliates']['btn'] || $datain == "acc_invite") {
     if (isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0)) {
         sendmessage($from_id, $textbotlang['users']['affiliates']['offaffiliates'], $keyboard, 'HTML');
         return;
@@ -4450,8 +4462,6 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
     } else {
         $textaffiliates_info = strval($__aff_tpl) . "\n\n🎁 هدیه دعوت: <b>{$price_Discount}</b>\n📊 درصد پورسانت: <b>{$affiliatespercentage}</b>";
     }
-    sendmessage($from_id, $textaffiliates_info, $keyboard, 'HTML');
-
     $invite_link = "https://t.me/{$usernamebot}?start={$my_code}";
     $share_url = "https://t.me/share/url?url=" . rawurlencode($invite_link);
     $keyboard_share = json_encode([
@@ -4461,22 +4471,37 @@ if ($text == $textbotlang['users']['affiliates']['btn']) {
             ],
         ]
     ]);
-    $textaffiliates = ($affiliates['description'] !== null && $affiliates['description'] !== '' && $affiliates['description'] !== 'none')
-        ? "{$affiliates['description']}
-
-🔗 {$invite_link}"
-        : "🔗 {$invite_link}";
-
-    if (!empty($affiliates['id_media']) && $affiliates['id_media'] !== 'none') {
+    // نسخه 2.2: توضیح + آمار + لینک دعوت در یک پیام
+    $__aff_stats = "\n\n👥 دعوت‌شده‌های شما: <b>" . number_format(intval($user['affiliatescount'] ?? 0)) . "</b> نفر"
+        . "\n💸 پورسانت دریافتی: <b>" . number_format(function_exists('getAffiliatesEarned') ? intval(getAffiliatesEarned($from_id)) : 0) . "</b> تومان";
+    $__aff_desc = (isset($affiliates['description']) && $affiliates['description'] !== '' && $affiliates['description'] !== 'none')
+        ? "\n\n" . $affiliates['description']
+        : '';
+    $__aff_all = $textaffiliates_info . $__aff_stats . $__aff_desc . "\n\n🔗 " . $invite_link;
+    $__aff_media = !empty($affiliates['id_media']) && $affiliates['id_media'] !== 'none';
+    if ($__aff_media && mb_strlen(strip_tags($__aff_all)) <= 1000) {
+        $__aff_res = telegram('sendphoto', [
+            'chat_id' => $from_id,
+            'photo' => $affiliates['id_media'],
+            'caption' => $__aff_all,
+            'parse_mode' => "HTML",
+            'reply_markup' => $keyboard_share
+        ]);
+        if (!is_array($__aff_res) || empty($__aff_res['ok'])) {
+            sendmessage($from_id, $__aff_all, $keyboard_share, 'HTML');
+        }
+    } elseif ($__aff_media) {
+        // متن برای کپشن عکس خیلی بلند است: مثل قبل در دو پیام
+        sendmessage($from_id, $textaffiliates_info . $__aff_stats, null, 'HTML');
         telegram('sendphoto', [
             'chat_id' => $from_id,
             'photo' => $affiliates['id_media'],
-            'caption' => $textaffiliates,
+            'caption' => mb_substr(ltrim($__aff_desc) . "\n\n🔗 " . $invite_link, 0, 1024),
             'parse_mode' => "HTML",
             'reply_markup' => $keyboard_share
         ]);
     } else {
-        sendmessage($from_id, $textaffiliates, $keyboard_share, 'HTML');
+        sendmessage($from_id, $__aff_all, $keyboard_share, 'HTML');
     }
 }
 

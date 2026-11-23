@@ -697,6 +697,203 @@ function botSendPhotoWithCopy(array $params, $copyText)
     return telegram('sendphoto', $params);
 }
 
+/** متن دکمههای منو از جدول textbot (برای ساخت منو خارج از keyboard.php، مثلاً در کرون) */
+function botLoadMenuTexts()
+{
+    $d = [
+        'text_sell' => '', 'text_usertest' => '', 'text_Purchased_services' => '', 'text_Add_Balance' => '',
+        'text_account' => '', 'text_Tariff_list' => '', 'text_support' => '',
+    ];
+    try {
+        $rows = select("textbot", "*", null, null, "fetchAll");
+        if (is_array($rows)) {
+            foreach ($rows as $r) {
+                if (isset($r['id_text']) && array_key_exists($r['id_text'], $d)) {
+                    $d[$r['id_text']] = $r['text'];
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+    return $d;
+}
+
+/**
+ * منوی اصلی کاربر (همان منطق قبلی keyboard.php، بدون تغییر چیدمان).
+ * پارامترهای اختیاری برای جلوگیری از کوئری تکراری در keyboard.php.
+ */
+function buildUserMainKeyboard($from_id, $datatextbot = null, $setting = null, $admin_ids = null)
+{
+    global $textbotlang;
+    if ($setting === null) {
+        $setting = select("setting", "*");
+    }
+    if ($admin_ids === null) {
+        $admin_ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
+    }
+    if ($datatextbot === null) {
+        $datatextbot = botLoadMenuTexts();
+    }
+// ---- Main keyboard (dynamic by feature flags) ----
+$row1 = [];
+// دکمه خرید همیشه هست؛ اگر خرید خاموش باشد در index پیام «بسته است» می‌دهد
+$row1[] = ['text' => $datatextbot['text_sell']];
+if (!isset($setting['status_usertest']) || $setting['status_usertest'] == '1' || $setting['status_usertest'] === 1) {
+    $row1[] = ['text' => $datatextbot['text_usertest']];
+}
+$keyboard_rows = [];
+// Reseller — بالاترین ردیف (فقط پنل‌دار + قابلیت روشن)
+try {
+    if (
+        isset($from_id) && intval($from_id) > 0
+        && function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()
+        && function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id)
+    ) {
+        $keyboard_rows[] = [[
+            'text' => ($textbotlang['users']['reseller_volume']['btn'] ?? 'پنل نمایندگی')
+        ]];
+    }
+} catch (Throwable $e) {}
+if (!empty($row1)) {
+    $keyboard_rows[] = $row1;
+}
+// ردیف: سرویس‌های من (+ افزایش موجودی در صورت فعال بودن واریز)
+$row_svc = [['text' => $datatextbot['text_Purchased_services']]];
+$__dep_on = true;
+if (isset($setting['status_deposit']) && ($setting['status_deposit'] == '0' || $setting['status_deposit'] === 0)) {
+    $__dep_on = false;
+}
+if ($__dep_on) {
+    $row_svc[] = ['text' => $datatextbot['text_Add_Balance']];
+}
+$keyboard_rows[] = $row_svc;
+
+// ردیف: حساب کاربری (+موجودی) + تعرفه اشتراک (در صورت فعال بودن)
+$account_btn = $datatextbot['text_account'];
+if (isset($setting['show_balance']) && ($setting['show_balance'] == '1' || $setting['show_balance'] === 1)) {
+    $bal_user = 0;
+    if (isset($from_id) && $from_id) {
+        $u_bal = select("user", "Balance", "id", $from_id, "select");
+        if ($u_bal && isset($u_bal['Balance'])) {
+            $bal_user = intval($u_bal['Balance']);
+        }
+    }
+    $account_btn = $datatextbot['text_account'] . " | " . number_format($bal_user) . " ت";
+}
+$row_account = [['text' => $account_btn]];
+if (!isset($setting['status_tariff_list']) || $setting['status_tariff_list'] == '1' || $setting['status_tariff_list'] === 1) {
+    $row_account[] = ['text' => $datatextbot['text_Tariff_list']];
+}
+$keyboard_rows[] = $row_account;
+
+$row_sup = [];
+$__sup_on = true;
+if (isset($setting['status_support']) && ($setting['status_support'] == '0' || $setting['status_support'] === 0)) {
+    $__sup_on = false;
+}
+if ($__sup_on) {
+    $row_sup[] = ['text' => $datatextbot['text_support']];
+}
+$aff_on = true;
+if (isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0)) {
+    $aff_on = false;
+}
+// اگر در جدول affiliates هم خاموش باشد دکمه را نشان نده
+try {
+    $aff_row = select("affiliates", "*", null, null, "select");
+    if ($aff_row && isset($aff_row['affiliatesstatus']) && $aff_row['affiliatesstatus'] == 'offaffiliates') {
+        $aff_on = false;
+    }
+} catch (Throwable $e) {}
+if ($aff_on) {
+    $row_sup[] = ['text' => $textbotlang['users']['affiliates']['btn']];
+}
+if (!empty($row_sup)) {
+    $keyboard_rows[] = $row_sup;
+}
+// درخواست پنل نمایندگی — فقط اگر قابلیت روشن باشد و کاربر پنل‌دار نباشد
+try {
+    if (
+        isset($from_id) && intval($from_id) > 0
+        && function_exists('isResellerRequestEnabled') && isResellerRequestEnabled()
+        && !(function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id))
+    ) {
+        $keyboard_rows[] = [[
+            'text' => ($textbotlang['users']['reseller_request']['btn'] ?? 'درخواست پنل نمایندگی')
+        ]];
+    }
+} catch (Throwable $e) {}
+
+$keyboard = [
+    'keyboard' => $keyboard_rows,
+    'resize_keyboard' => true
+];
+if (isset($from_id) && is_array($admin_ids) && in_array($from_id, $admin_ids)) {
+    $keyboard['keyboard'][] = [
+        ['text' => $textbotlang['Admin']['commendadmin']],
+    ];
+}
+    return json_encode($keyboard);
+}
+
+/**
+ * منوی تازه (با موجودی بهروز روی دکمه حساب) برای فرستادن همراه پیامهای کیف پول.
+ * فقط وقتی «نمایش موجودی روی دکمه» روشن است؛ وگرنه null (یعنی کیبورد کاربر دست نمیخورد).
+ */
+function botMenuForBalance($user_id)
+{
+    try {
+        $st = select("setting", "*");
+        if (!is_array($st) || strval($st['show_balance'] ?? '0') !== '1') {
+            return null;
+        }
+        return buildUserMainKeyboard($user_id, null, $st, null);
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/** خط «موجودی بعد از خرید» یا «کسری» در پیشفاکتور */
+function botInvoiceBalanceLine($price, $balance)
+{
+    $price = intval($price);
+    $balance = intval($balance);
+    if ($balance >= $price) {
+        return "🧮 موجودی بعد از خرید: <b>" . number_format($balance - $price) . "</b> تومان";
+    }
+    return "⚠️ کسری موجودی: <b>" . number_format($price - $balance) . "</b> تومان (در مرحله بعد پرداخت میکنید)";
+}
+
+/** دکمه «🔐 خرید اشتراک» (اینلاین) */
+function botBuyButtonKeyboard()
+{
+    return json_encode(['inline_keyboard' => [[['text' => '🔐 خرید اشتراک', 'callback_data' => 'buy']]]]);
+}
+
+/**
+ * متن دکمه هر سرویس در «سرویسهای من»: ایموجی + یوزرنیم + روزهای باقیمانده (تخمین از دیتابیس ربات).
+ * برای سرویس نامحدود یا تمامشده، روز نشان داده نمیشود.
+ */
+function serviceListButtonLabel(array $row)
+{
+    $emoji = serviceListEmojiFromInvoice($row);
+    $label = $emoji . " " . strval($row['username'] ?? '');
+    if ($emoji === '🔴') {
+        return $label;
+    }
+    $days = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
+    $ts_raw = $row['time_sell'] ?? '';
+    if ($days > 0 && $ts_raw !== '' && $ts_raw !== null) {
+        $start = (is_numeric($ts_raw) && intval($ts_raw) > 100000) ? intval($ts_raw) : strtotime(strval($ts_raw));
+        if ($start && $start > 0) {
+            $left = ($start + ($days * 86400)) - time();
+            if ($left > 0) {
+                $label .= " | " . intval(ceil($left / 86400)) . " روز";
+            }
+        }
+    }
+    return $label;
+}
+
 /**
  * قفل MySQL برای جلوگیری از اجرای همزمان یک عملیات (مثلاً دو بار ثبت کد هدیه).
  * در پایان درخواست خودکار آزاد میشود. نام با دیتابیس پیشوند میخورد تا رباتهای مختلف تداخل نکنند.
@@ -1642,7 +1839,7 @@ function DirectPayment($order_id)
                         $textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.",
                         $result_fmt
                     ) . botUserBalanceLine($aff_uid);
-                    sendmessage($aff_uid, $textadd, null, 'HTML');
+                    sendmessage($aff_uid, $textadd, botMenuForBalance($aff_uid), 'HTML');
                     if (function_exists('sendChannelReport')) {
                         $__buy_amt = number_format(intval(round($base_price)));
                         $__pct_l = rtrim(rtrim(number_format($aff_pct, 2, '.', ''), '0'), '.');
@@ -1912,7 +2109,7 @@ function DirectPayment($order_id)
         if ($credit_amount > intval($Payment_report['price'])) {
             $textpay .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
         }
-        sendmessage($Payment_report['id_user'], $textpay, null, 'HTML');
+        sendmessage($Payment_report['id_user'], $textpay, botMenuForBalance($Payment_report['id_user']), 'HTML');
         $GLOBALS['payment_user_notified'] = true;
     }
 }

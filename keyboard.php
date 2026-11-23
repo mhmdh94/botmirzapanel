@@ -43,117 +43,32 @@ if ($table_exists) {
         }
     }
 }
-// ---- Main keyboard (dynamic by feature flags) ----
-$row1 = [];
-// دکمه خرید همیشه هست؛ اگر خرید خاموش باشد در index پیام «بسته است» می‌دهد
-$row1[] = ['text' => $datatextbot['text_sell']];
-if (!isset($setting['status_usertest']) || $setting['status_usertest'] == '1' || $setting['status_usertest'] === 1) {
-    $row1[] = ['text' => $datatextbot['text_usertest']];
-}
-$keyboard_rows = [];
-// Reseller — بالاترین ردیف (فقط پنل‌دار + قابلیت روشن)
-try {
-    if (
-        isset($from_id) && intval($from_id) > 0
-        && function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()
-        && function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id)
-    ) {
-        $keyboard_rows[] = [[
-            'text' => ($textbotlang['users']['reseller_volume']['btn'] ?? 'پنل نمایندگی')
-        ]];
-    }
-} catch (Throwable $e) {}
-if (!empty($row1)) {
-    $keyboard_rows[] = $row1;
-}
-// ردیف: سرویس‌های من (+ افزایش موجودی در صورت فعال بودن واریز)
-$row_svc = [['text' => $datatextbot['text_Purchased_services']]];
-$__dep_on = true;
-if (isset($setting['status_deposit']) && ($setting['status_deposit'] == '0' || $setting['status_deposit'] === 0)) {
-    $__dep_on = false;
-}
-if ($__dep_on) {
-    $row_svc[] = ['text' => $datatextbot['text_Add_Balance']];
-}
-$keyboard_rows[] = $row_svc;
+// ---- Main keyboard: از نسخه 2.2 در functions.php ساخته میشود (buildUserMainKeyboard) تا بعد از تغییر موجودی هم قابل ارسال باشد ----
+$keyboard = buildUserMainKeyboard(isset($from_id) ? $from_id : 0, $datatextbot, $setting, $admin_ids);
 
-// ردیف: حساب کاربری (+موجودی) + تعرفه اشتراک (در صورت فعال بودن)
-$account_btn = $datatextbot['text_account'];
-if (isset($setting['show_balance']) && ($setting['show_balance'] == '1' || $setting['show_balance'] === 1)) {
-    $bal_user = 0;
-    if (isset($from_id) && $from_id) {
-        $u_bal = select("user", "Balance", "id", $from_id, "select");
-        if ($u_bal && isset($u_bal['Balance'])) {
-            $bal_user = intval($u_bal['Balance']);
+
+
+// صفحه حساب کاربری: تاریخچه + افزایش موجودی + کد هدیه + لینک دعوت (نسخه 2.2)
+$__acc_rows = [[['text' => '📜 تاریخچه تراکنش‌ها', 'callback_data' => 'user_tx_history']]];
+$__acc_row2 = [];
+if (!(isset($setting['status_deposit']) && ($setting['status_deposit'] == '0' || $setting['status_deposit'] === 0))) {
+    $__acc_row2[] = ['text' => (($datatextbot['text_Add_Balance'] ?? '') !== '' ? $datatextbot['text_Add_Balance'] : '💰 افزایش موجودی'), 'callback_data' => 'acc_wallet'];
+}
+$__acc_row2[] = ['text' => '🎁 ثبت کد هدیه', 'callback_data' => 'Discount'];
+$__acc_rows[] = $__acc_row2;
+$__acc_aff = !(isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0));
+if ($__acc_aff) {
+    try {
+        $__acc_aff_row = select("affiliates", "*", null, null, "select");
+        if ($__acc_aff_row && isset($__acc_aff_row['affiliatesstatus']) && $__acc_aff_row['affiliatesstatus'] == 'offaffiliates') {
+            $__acc_aff = false;
         }
-    }
-    $account_btn = $datatextbot['text_account'] . " | " . number_format($bal_user) . " ت";
+    } catch (Throwable $e) {}
 }
-$row_account = [['text' => $account_btn]];
-if (!isset($setting['status_tariff_list']) || $setting['status_tariff_list'] == '1' || $setting['status_tariff_list'] === 1) {
-    $row_account[] = ['text' => $datatextbot['text_Tariff_list']];
+if ($__acc_aff) {
+    $__acc_rows[] = [['text' => '🤝 لینک دعوت من', 'callback_data' => 'acc_invite']];
 }
-$keyboard_rows[] = $row_account;
-
-$row_sup = [];
-$__sup_on = true;
-if (isset($setting['status_support']) && ($setting['status_support'] == '0' || $setting['status_support'] === 0)) {
-    $__sup_on = false;
-}
-if ($__sup_on) {
-    $row_sup[] = ['text' => $datatextbot['text_support']];
-}
-$aff_on = true;
-if (isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0)) {
-    $aff_on = false;
-}
-// اگر در جدول affiliates هم خاموش باشد دکمه را نشان نده
-try {
-    $aff_row = select("affiliates", "*", null, null, "select");
-    if ($aff_row && isset($aff_row['affiliatesstatus']) && $aff_row['affiliatesstatus'] == 'offaffiliates') {
-        $aff_on = false;
-    }
-} catch (Throwable $e) {}
-if ($aff_on) {
-    $row_sup[] = ['text' => $textbotlang['users']['affiliates']['btn']];
-}
-if (!empty($row_sup)) {
-    $keyboard_rows[] = $row_sup;
-}
-// درخواست پنل نمایندگی — فقط اگر قابلیت روشن باشد و کاربر پنل‌دار نباشد
-try {
-    if (
-        isset($from_id) && intval($from_id) > 0
-        && function_exists('isResellerRequestEnabled') && isResellerRequestEnabled()
-        && !(function_exists('isUserPanelAdmin') && isUserPanelAdmin($from_id))
-    ) {
-        $keyboard_rows[] = [[
-            'text' => ($textbotlang['users']['reseller_request']['btn'] ?? 'درخواست پنل نمایندگی')
-        ]];
-    }
-} catch (Throwable $e) {}
-
-$keyboard = [
-    'keyboard' => $keyboard_rows,
-    'resize_keyboard' => true
-];
-if (isset($from_id) && is_array($admin_ids) && in_array($from_id, $admin_ids)) {
-    $keyboard['keyboard'][] = [
-        ['text' => $textbotlang['Admin']['commendadmin']],
-    ];
-}
-$keyboard = json_encode($keyboard);
-
-
-
-$keyboardPanel = json_encode([
-    'inline_keyboard' => [
-        [
-            ['text' => '📜 تاریخچه تراکنش‌ها', 'callback_data' => 'user_tx_history'],
-        ],
-    ],
-    'resize_keyboard' => true
-]);
+$keyboardPanel = json_encode(['inline_keyboard' => $__acc_rows]);
 // منوی ادمین گروه‌بندی‌شده: آمار | فروش/مالی | پنل | کاربران | تنظیمات/متن
 $__kb_admin_rows = [
     [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
@@ -533,7 +448,7 @@ $payment = json_encode([
     'inline_keyboard' => [
         [['text' => $textbotlang['users']['buy']['payandGet'], 'callback_data' => "confirmandgetservice"]],
         [['text' => $textbotlang['users']['buy']['discount'], 'callback_data' => "aptdc"]],
-        [['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"]]
+        [['text' => $textbotlang['users']['buy']['cancel'] ?? '❌ انصراف', 'callback_data' => "backuser"]]
     ]
 ]);
 $change_product = json_encode([
