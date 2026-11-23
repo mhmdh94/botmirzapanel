@@ -1124,66 +1124,92 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         sendmessage($from_id, $__tx, $__kb, 'HTML');
     }
 } elseif ($text == $textbotlang['Admin']['systemsms']['sendbulkbtn']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['GetText'], $backadmin, 'HTML');
+    sendmessage($from_id, "✉️ متن پیام همگانی را بفرستید.\nمیتوانید <b>عکس با کپشن</b> هم بفرستید. قالب HTML (مثل <code>&lt;b&gt;</code>) پشتیبانی میشود.", $backadmin, 'HTML');
     step('getconfirmsendall', $from_id);
-} elseif ($user['step'] == "getconfirmsendall") {
-    if (!$text) {
-        sendmessage($from_id, $textbotlang['Admin']['systemsms']['allowsendtext'], $backadmin, 'HTML');
+} elseif ($user['step'] == "getconfirmsendall" || $user['step'] == "gettextforwardMessage") {
+    // نسخه 2.3.9: پیشنمایش + تأیید + صف کرون (برای متن، عکس و فوروارد)
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
         return;
     }
-    savedata("clear", "text", $text);
-    savedata("save", "id_admin", $from_id);
-    sendmessage($from_id, $textbotlang['Admin']['systemsms']['acceptsend'], $backadmin, 'HTML');
-    step("gettextforsendall", $from_id);
-} elseif ($user['step'] == "gettextforsendall") {
-    $userdata = json_decode($user['Processing_value'], true);
-    if ($text == $textbotlang['Admin']['accept']) {
+    if (is_file('cron/info')) {
         step('home', $from_id);
-        $result = select("user", "id", "User_Status", "Active", "fetchAll");
-        $Respuseronse = json_encode([
-            'inline_keyboard' => [
-                [
-                    ['text' => $textbotlang['Admin']['systemsms']['cancelsend'], 'callback_data' => 'cancel_sendmessage'],
-                ],
-            ]
-        ]);
-        file_put_contents('cron/users.json', json_encode($result));
-        file_put_contents('cron/info', $user['Processing_value']);
-        sendmessage($from_id, $textbotlang['Admin']['systemsms']['sendingmessage'], $Respuseronse, 'HTML');
+        sendmessage($from_id, "⏳ یک ارسال همگانی هنوز در حال انجام است. صبر کنید تمام شود یا آن را لغو کنید.", $keyboardadmin, 'HTML');
+        return;
     }
-} elseif ($datain == "cancel_sendmessage") {
-    unlink('cron/users.json');
-    unlink('cron/info');
-    deletemessage($from_id, $message_id);
-    sendmessage($from_id, $textbotlang['Admin']['systemsms']['canceledmessage'], null, 'HTML');
-} elseif ($text == $textbotlang['Admin']['systemsms']['forwardbulkbtn']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ForwardGetext'], $backadmin, 'HTML');
-    step('gettextforwardMessage', $from_id);
-} elseif ($user['step'] == "gettextforwardMessage") {
-    sendmessage($from_id, $textbotlang['Admin']['systemsms']['sendingforward'], $keyboardadmin, 'HTML');
+    $__bc = ['type' => 'text', 'id_admin' => $from_id, 'sent' => 0, 'fail' => 0];
+    if ($user['step'] == "gettextforwardMessage") {
+        if (empty($message_id)) {
+            return;
+        }
+        $__bc['type'] = 'forward';
+        $__bc['from_chat'] = $from_id;
+        $__bc['msg_id'] = intval($message_id);
+        $__pv = telegram('forwardMessage', ['chat_id' => $from_id, 'from_chat_id' => $from_id, 'message_id' => intval($message_id)]);
+    } elseif (!empty($photo) && !empty($photoid)) {
+        $__bc['type'] = 'photo';
+        $__bc['photo'] = $photoid;
+        $__bc['text'] = strval($caption ?? '');
+        $__pv = telegram('sendphoto', ['chat_id' => $from_id, 'photo' => $photoid, 'caption' => $__bc['text'], 'parse_mode' => 'HTML']);
+    } elseif (isset($text) && is_string($text) && trim($text) !== '') {
+        $__bc['text'] = $text;
+        $__pv = telegram('sendmessage', ['chat_id' => $from_id, 'text' => $text, 'parse_mode' => 'HTML', 'disable_web_page_preview' => true]);
+    } else {
+        sendmessage($from_id, "❌ فقط متن یا عکس (با کپشن) بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__pv_ok = function_exists('telegramOk') ? telegramOk($__pv) : (is_array($__pv) && !empty($__pv['ok']));
+    if (!$__pv_ok) {
+        sendmessage($from_id, "❌ این پیام قابل ارسال نیست؛ احتمالاً قالب HTML آن اشتباه است (مثلاً تگ بسته نشده).\nاصلاح کنید و دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__cnt = 0;
+    try {
+        $__cnt = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status = 'Active'")->fetchColumn());
+    } catch (Throwable $e) {
+    }
+    $__bc['cast_pending'] = 1;
+    update("user", "Processing_value", json_encode($__bc, JSON_UNESCAPED_UNICODE), "id", $from_id);
     step('home', $from_id);
-    $filename = 'user.txt';
-    $stmt = $pdo->prepare("SELECT id FROM user");
-    $stmt->execute();
-    if ($result) {
-        $ids = array();
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $ids[] = $row['id'];
+    $__ckb = json_encode(['inline_keyboard' => [
+        [['text' => '✅ ارسال برای همه', 'callback_data' => 'cast_ok']],
+        [['text' => '❌ انصراف', 'callback_data' => 'cast_no']],
+    ]], JSON_UNESCAPED_UNICODE);
+    sendmessage($from_id, "👆 پیشنمایش پیام بالاست.\n\n👥 تعداد گیرندهها (کاربران فعال): <b>" . number_format($__cnt) . "</b>\n⏱ زمان تقریبی: <b>" . max(1, intval(ceil($__cnt / 20))) . "</b> دقیقه\n\nارسال شود؟", $__ckb, 'HTML');
+} elseif ($datain == "cast_ok" || $datain == "cast_no") {
+    $__bc = json_decode(strval($user['Processing_value'] ?? ''), true);
+    if ($datain == "cast_no" || !is_array($__bc) || empty($__bc['cast_pending'])) {
+        if (is_array($__bc) && !empty($__bc['cast_pending'])) {
+            update("user", "Processing_value", "0", "id", $from_id);
         }
-        $idsText = implode("\n", $ids);
-        file_put_contents($filename, $idsText);
+        Editmessagetext($from_id, $message_id, ($datain == "cast_no" ? "❌ ارسال همگانی لغو شد." : "⚠️ این درخواست منقضی شده است. دوباره شروع کنید."), json_encode(['inline_keyboard' => []]));
+        return;
     }
-    $file = fopen($filename, 'r');
-    if ($file) {
-        while (($line = fgets($file)) !== false) {
-            $line = trim($line);
-            forwardMessage($from_id, $message_id, $line);
-            usleep(2000000);
-        }
-        sendmessage($from_id, $textbotlang['Admin']['systemsms']['sendforwardtousers'], $keyboardadmin, 'HTML');
-        fclose($file);
+    if (is_file('cron/info')) {
+        Editmessagetext($from_id, $message_id, "⏳ یک ارسال همگانی دیگر در حال انجام است.", json_encode(['inline_keyboard' => []]));
+        return;
     }
-    unlink($filename);
+    update("user", "Processing_value", "0", "id", $from_id);
+    unset($__bc['cast_pending']);
+    $result = select("user", "id", "User_Status", "Active", "fetchAll");
+    $result = is_array($result) ? $result : [];
+    $__bc['total'] = count($result);
+    $__bc['started'] = time();
+    $__cancel_kb = json_encode(['inline_keyboard' => [[['text' => $textbotlang['Admin']['systemsms']['cancelsend'] ?? 'لغو ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
+    $__pm = sendmessage($from_id, "📨 <b>ارسال همگانی در صف قرار گرفت</b>\n\n👥 گیرندهها: <b>" . number_format($__bc['total']) . "</b>\n✅ ارسالشده: 0 | ❌ ناموفق: 0", $__cancel_kb, 'HTML');
+    if (is_array($__pm) && isset($__pm['result']['message_id'])) {
+        $__bc['progress_mid'] = intval($__pm['result']['message_id']);
+    }
+    file_put_contents('cron/users.json', json_encode($result));
+    file_put_contents('cron/info', json_encode($__bc, JSON_UNESCAPED_UNICODE));
+    Editmessagetext($from_id, $message_id, "✅ تأیید شد.", json_encode(['inline_keyboard' => []]));
+} elseif ($datain == "cancel_sendmessage") {
+    @unlink('cron/users.json');
+    @unlink('cron/info');
+    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['systemsms']['canceledmessage'] ?? '📌 ارسال پیام لغو گردید.', json_encode(['inline_keyboard' => []]));
+} elseif ($text == $textbotlang['Admin']['systemsms']['forwardbulkbtn']) {
+    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ForwardGetext'] ?? 'پیام را فوروارد کنید', $backadmin, 'HTML');
+    step('gettextforwardMessage', $from_id);
 }
 //_________________________________________________
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] || $datain === 'btxt_menu') {
@@ -3025,20 +3051,48 @@ if ($text == $textbotlang['Admin']['ManageUser']['removeorderbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['RemoveService'], $backadmin, 'HTML');
     step('removeservice', $from_id);
 } elseif ($user['step'] == "removeservice") {
-    $info_product = select("invoice", "*", "username", $text, "select");
-    $marzban_list_get = select("marzban_panel", "*", "name_panel", $info_product['Service_location'], "select");
-    $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $text);
-    if (isset($DataUserOut['status'])) {
-        $ManagePanel->RemoveUser($marzban_list_get['name_panel'], $text);
+    // نسخه 2.3.9: نمایش مشخصات و تأیید قبل از حذف
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
     }
-    $stmt = $pdo->prepare("DELETE FROM invoice WHERE username = ?");
-    $stmt->bindParam(1, $text);
-    $stmt->execute();
-    $__rm_user = htmlspecialchars(strval($text), ENT_QUOTES, 'UTF-8');
-    $__rm_msg = ($textbotlang['Admin']['ManageUser']['RemovedService'] ?? '✅ سرویس حذف شد')
-        . "\n👤 یوزرنیم سرویس: <code>{$__rm_user}</code>";
-    sendmessage($from_id, $__rm_msg, $keyboardadmin, 'HTML');
+    $__su = trim(strval($text));
+    $info_product = $__su !== '' ? select("invoice", "*", "username", $__su, "select") : null;
+    if (!is_array($info_product)) {
+        sendmessage($from_id, "❌ سرویسی با این یوزرنیم پیدا نشد. یوزرنیم سرویس را دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
     step('home', $from_id);
+    $__h = function ($v) { return htmlspecialchars(strval($v), ENT_QUOTES, 'UTF-8'); };
+    $__rkb = json_encode(['inline_keyboard' => [
+        [['text' => '🗑 بله، حذف شود', 'callback_data' => 'rmsvc_ok_' . strval($info_product['id_invoice'])]],
+        [['text' => '❌ انصراف', 'callback_data' => 'rmsvc_no']],
+    ]], JSON_UNESCAPED_UNICODE);
+    sendmessage($from_id, "⚠️ <b>حذف سرویس</b>\n\n👤 یوزرنیم: <code>" . $__h($info_product['username']) . "</code>\n🆔 کاربر: <code>" . $__h($info_product['id_user']) . "</code>\n📦 محصول: " . $__h($info_product['name_product']) . "\n📍 پنل: " . $__h($info_product['Service_location']) . "\n📌 وضعیت: " . $__h($info_product['Status']) . "\n\n❗️ سرویس از پنل و ربات حذف میشود و <b>مبلغی به کاربر برنمیگردد</b>. مطمئنید؟", $__rkb, 'HTML');
+}
+if (isset($datain) && ($datain === 'rmsvc_no' || preg_match('/^rmsvc_ok_([A-Za-z0-9]+)$/', strval($datain), $__m_rs))) {
+    if ($datain === 'rmsvc_no') {
+        Editmessagetext($from_id, $message_id, "❌ حذف سرویس لغو شد.", json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    $info_product = select("invoice", "*", "id_invoice", $__m_rs[1], "select");
+    if (!is_array($info_product)) {
+        Editmessagetext($from_id, $message_id, "⚠️ این سرویس قبلاً حذف شده یا پیدا نشد.", json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    $__su = strval($info_product['username']);
+    $marzban_list_get = select("marzban_panel", "*", "name_panel", $info_product['Service_location'], "select");
+    if (is_array($marzban_list_get)) {
+        $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $__su);
+        if (isset($DataUserOut['status'])) {
+            $ManagePanel->RemoveUser($marzban_list_get['name_panel'], $__su);
+        }
+    }
+    $stmt = $pdo->prepare("DELETE FROM invoice WHERE id_invoice = ?");
+    $stmt->execute([strval($info_product['id_invoice'])]);
+    $__rm_user = htmlspecialchars($__su, ENT_QUOTES, 'UTF-8');
+    Editmessagetext($from_id, $message_id, ($textbotlang['Admin']['ManageUser']['RemovedService'] ?? '✅ سرویس حذف شد') . "\n👤 یوزرنیم سرویس: <code>{$__rm_user}</code>", json_encode(['inline_keyboard' => [[['text' => '🔙 مدیریت کاربران', 'callback_data' => 'nav_user']]]], JSON_UNESCAPED_UNICODE));
+    return;
 }
 if ($text == $textbotlang['Admin']['managepanel']['methodusername']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['decmthodusername'], $MethodUsername, 'HTML');
@@ -3555,21 +3609,77 @@ if ($text == $textbotlang['Admin']['Balance']['SendBalanceAll']) {
     sendmessage($from_id, $textbotlang['Admin']['Balance']['addallbalance'], $backadmin, 'HTML');
     step('add_Balance_all', $from_id);
 } elseif ($user['step'] == "add_Balance_all") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['Invalidprice'], $backadmin, 'HTML');
+    // نسخه 2.3.9: شارژ همگانی با تأیید + ثبت در تاریخچه + بدون کاربران مسدود
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
         return;
     }
-    $__mass_amt = intval($text);
-    $__mass_fmt = number_format($__mass_amt);
-    $stmt = $pdo->prepare("UPDATE user SET Balance = Balance + :balance");
-    $stmt->bindParam(':balance', $__mass_amt, PDO::PARAM_INT);
-    $stmt->execute();
-    $__affected = intval($stmt->rowCount());
-    $__mass_msg = ($textbotlang['Admin']['Balance']['AddBalanceUsers'] ?? '✅ مبلغ به موجودی کاربران اضافه شد')
-        . "\n💰 مبلغ هر کاربر: <b>{$__mass_fmt}</b> تومان"
-        . "\n👥 ردیف‌های به‌روز شده: <b>{$__affected}</b>";
-    sendmessage($from_id, $__mass_msg, $User_Services, 'HTML');
+    $__mv = str_replace([',', '٬', '،', ' '], '', function_exists('botNormalizeDigits') ? botNormalizeDigits(trim(strval($text))) : trim(strval($text)));
+    if (!ctype_digit($__mv) || intval($__mv) < 1 || intval($__mv) > 100000000) {
+        sendmessage($from_id, "❌ مبلغ را فقط بهصورت عدد بفرستید (۱ تا ۱۰۰,۰۰۰,۰۰۰ تومان):", $backadmin, 'HTML');
+        return;
+    }
+    $__mamt = intval($__mv);
+    $__mcnt = 0;
+    try {
+        $__mcnt = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status IS NULL OR User_Status != 'block'")->fetchColumn());
+    } catch (Throwable $e) {
+    }
+    update("user", "Processing_value", json_encode(['mass_charge' => $__mamt, 'ts' => time()]), "id", $from_id);
     step('home', $from_id);
+    $__mkb = json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، شارژ شود', 'callback_data' => 'massc_ok']],
+        [['text' => '❌ انصراف', 'callback_data' => 'massc_no']],
+    ]], JSON_UNESCAPED_UNICODE);
+    sendmessage($from_id, "⚠️ <b>تأیید شارژ همگانی</b>\n\n💰 مبلغ برای هر کاربر: <b>" . number_format($__mamt) . "</b> تومان\n👥 تعداد کاربران (بدون مسدودها): <b>" . number_format($__mcnt) . "</b>\n💸 جمع کل: <b>" . number_format($__mamt * $__mcnt) . "</b> تومان\n\nاین کار قابل برگشت خودکار نیست. مطمئنید؟", $__mkb, 'HTML');
+}
+if (isset($datain) && ($datain === 'massc_ok' || $datain === 'massc_no')) {
+    $__mpv = json_decode(strval($user['Processing_value'] ?? ''), true);
+    $__mamt = (is_array($__mpv) && isset($__mpv['mass_charge'])) ? intval($__mpv['mass_charge']) : 0;
+    if ($datain === 'massc_no' || $__mamt <= 0 || (time() - intval($__mpv['ts'] ?? 0)) > 1800) {
+        if ($__mamt > 0) {
+            update("user", "Processing_value", "0", "id", $from_id);
+        }
+        Editmessagetext($from_id, $message_id, ($datain === 'massc_no' ? "❌ شارژ همگانی لغو شد." : "⚠️ این درخواست منقضی شده یا قبلاً انجام شده است. دوباره از «شارژ همگانی» شروع کنید."), json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    // قفل: فقط یکبار اجرا شود (ضد دابلکلیک)
+    $__claim = $pdo->prepare("UPDATE user SET Processing_value = '0' WHERE id = ? AND Processing_value = ?");
+    $__claim->execute([strval($from_id), strval($user['Processing_value'])]);
+    if ($__claim->rowCount() < 1) {
+        Editmessagetext($from_id, $message_id, "⚠️ این شارژ قبلاً انجام شده است.", json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    $__aff = 0;
+    try {
+        if (function_exists('ensureWalletLog')) {
+            ensureWalletLog();
+        }
+        $pdo->beginTransaction();
+        $__up = $pdo->prepare("UPDATE user SET Balance = Balance + ? WHERE User_Status IS NULL OR User_Status != 'block'");
+        $__up->execute([$__mamt]);
+        $__aff = intval($__up->rowCount());
+        try {
+            $__lg = $pdo->prepare("INSERT INTO wallet_log (id_user, type, amount, balance_after, detail, created_at) SELECT id, 'admin_add', ?, Balance, ?, ? FROM user WHERE User_Status IS NULL OR User_Status != 'block'");
+            $__lg->execute([$__mamt, 'شارژ همگانی توسط ادمین', time()]);
+        } catch (Throwable $e_lg) {
+            error_log('mass charge log: ' . $e_lg->getMessage());
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log('mass charge: ' . $e->getMessage());
+        Editmessagetext($from_id, $message_id, "❌ شارژ همگانی انجام نشد (خطای دیتابیس). موجودی هیچ کاربری تغییر نکرد.", json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    $__mfmt = number_format($__mamt);
+    Editmessagetext($from_id, $message_id, "✅ <b>شارژ همگانی انجام شد</b>\n💰 مبلغ هر کاربر: <b>{$__mfmt}</b> تومان\n👥 کاربران: <b>" . number_format($__aff) . "</b>\n📜 در تاریخچه تراکنش کاربران هم ثبت شد.", json_encode(['inline_keyboard' => [[['text' => '🔙 مدیریت کاربران', 'callback_data' => 'nav_user']]]], JSON_UNESCAPED_UNICODE));
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_admin_balance', "💰 <b>شارژ همگانی توسط ادمین</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n💰 مبلغ هر کاربر: <b>{$__mfmt}</b> تومان\n👥 کاربران: <b>" . number_format($__aff) . "</b>");
+    }
+    return;
 }
 if ($text == $textbotlang['Admin']['Discountsell']['create']) {
     sendmessage($from_id, $textbotlang['Admin']['Discountsell']['GetCode'], $backadmin, 'HTML');
@@ -3976,25 +4086,49 @@ if ($text == $textbotlang['Admin']['cron']['remove']['disable']) {
     unlink('/tmp/crontab.txt');
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockUserId'], $backadmin, 'HTML');
+    // نسخه 2.3.9: جستجو با آیدی عددی، یوزرنیم تلگرام یا یوزرنیم سرویس
+    sendmessage($from_id, "🔍 <b>جستجوی کاربر</b>\n\nیکی از اینها را بفرستید:\n• آیدی عددی (مثلاً <code>123456789</code>)\n• یوزرنیم تلگرام (مثلاً <code>@username</code>)\n• یوزرنیم سرویس (مثلاً <code>ali_123</code>)", $backadmin, 'HTML');
     step('show_infos', $from_id);
 } elseif ($user['step'] == "show_infos") {
-    if (!in_array($text, $users_ids)) {
-        sendmessage($from_id, $textbotlang['Admin']['not-user'], $backadmin, 'HTML');
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
         return;
     }
-    if (function_exists('sendAdminUserInfo')) {
-        sendAdminUserInfo($from_id, $text);
+    $__q = trim(function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text));
+    $__found = null;
+    $__how = '';
+    if ($__q !== '' && ctype_digit($__q)) {
+        $__r = select("user", "id", "id", $__q, "select");
+        if (is_array($__r) && !empty($__r['id'])) {
+            $__found = $__r['id'];
+            $__how = 'آیدی عددی';
+        }
     }
-    // فقط کیبورد ادمین را برگردان؛ پیام «یکی از گزینه‌ها...» اضافه نباشد
-    // (دکمه‌های مدیریت همین الان روی پیام اطلاعات کاربر هستند)
-    if (function_exists('buildAdminKeyboard')) {
-        // reply keyboard را بدون پیام مزاحم عوض نمی‌شود؛ یک پیام خیلی کوتاه
-        sendmessage($from_id, '✅', buildAdminKeyboard(), 'HTML');
-    } else {
-        sendmessage($from_id, '✅', $keyboardadmin, 'HTML');
+    if ($__found === null && $__q !== '') {
+        $__r = select("user", "id", "username", ltrim($__q, '@'), "select");
+        if (is_array($__r) && !empty($__r['id'])) {
+            $__found = $__r['id'];
+            $__how = 'یوزرنیم تلگرام';
+        }
+    }
+    if ($__found === null && $__q !== '' && strpos($__q, '@') !== 0) {
+        $__r = select("invoice", "id_user", "username", $__q, "select");
+        if (is_array($__r) && !empty($__r['id_user'])) {
+            $__found = $__r['id_user'];
+            $__how = 'یوزرنیم سرویس';
+        }
+    }
+    if ($__found === null) {
+        sendmessage($from_id, "❌ کاربری پیدا نشد.\nآیدی عددی، یوزرنیم تلگرام (@...) یا یوزرنیم سرویس را دوباره بفرستید:", $backadmin, 'HTML');
+        return;
     }
     step('home', $from_id);
+    if ($__how !== 'آیدی عددی') {
+        sendmessage($from_id, "🔎 پیدا شد با {$__how} → آیدی <code>" . htmlspecialchars(strval($__found), ENT_QUOTES, 'UTF-8') . "</code>", $keyboardadmin, 'HTML');
+    }
+    if (function_exists('sendAdminUserInfo')) {
+        sendAdminUserInfo($from_id, $__found);
+    }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['timeset']) {
     sendmessage($from_id, $textbotlang['Admin']['cron']['remove']['dectime'], $backadmin, 'HTML');
@@ -4764,9 +4898,14 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ViewOrder'], $backadmin, 'HTML');
     step("getidfororder", $from_id);
 } elseif ($user['step'] == "getidfororder") {
-    $OrderUser = select("invoice", "*", "username", $text, "select");
+    // نسخه 2.3.9: بازگشت + پیام خطا با کیبورد
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $OrderUser = select("invoice", "*", "username", trim(strval($text)), "select");
     if (!$OrderUser) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['OrderNotFound'], null, 'HTML');
+        sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['OrderNotFound'] ?? '❌ سفارش پیدا نشد.') . "\nیوزرنیم سرویس را دوباره بفرستید:", $backadmin, 'HTML');
         return;
     }
     $timeacc = jdate('Y/m/d H:i:s', $OrderUser['time_sell']);
