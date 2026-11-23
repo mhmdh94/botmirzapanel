@@ -39,6 +39,14 @@ if (!in_array($Chat_type, ["private"]))
 #-----------telegram_ip_ranges------------#
 if (!checktelegramip())
     die("Unauthorized access");
+#-----------webhook secret_token------------#
+if (!botVerifyWebhookSecret()) {
+    http_response_code(403);
+    die("Unauthorized access");
+}
+#-----------duplicate update guard------------#
+if (!botClaimUpdate($update['update_id'] ?? 0))
+    return;
 #-------------Variable----------#
 $users_ids = select("user", "id", null, null, "FETCH_COLUMN");
 // قبل از INSERT: آیا این کاربر از قبل عضو ربات بوده؟

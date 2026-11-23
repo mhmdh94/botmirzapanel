@@ -430,8 +430,10 @@ function generateUsername($from_id, $Metode, $username, $randomString, $text)
     } elseif ($Metode == $textbotlang['users']['customusernameandorder']) {
         return $username . "_" . $randomString;
     } elseif ($Metode == $textbotlang['users']['customusernameorder']) {
-        $statistics = mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(id_user)  FROM invoice WHERE id_user = '$from_id'"));
-        $countInvoice = intval($statistics['COUNT(id_user)']) + 1;
+        global $pdo;
+        $st_cnt = $pdo->prepare("SELECT COUNT(id_user) FROM invoice WHERE id_user = ?");
+        $st_cnt->execute([strval($from_id)]);
+        $countInvoice = intval($st_cnt->fetchColumn()) + 1;
         return $username . "_" . $countInvoice;
     } elseif ($Metode == $textbotlang['users']['customusername'])
         return $text;
@@ -3244,7 +3246,7 @@ function getAutoCartCronCommand($minutes = null)
         $m = 60;
     }
     $host = strval($domainhosts ?? '');
-    return "*/{$m} * * * * curl https://{$host}/cron/croncard.php";
+    return "*/{$m} * * * * curl -s " . botCronUrl('croncard.php') . " >/dev/null 2>&1";
 }
 
 /** دامنه این ربات برای تطبیق خطوط crontab */
@@ -3399,7 +3401,7 @@ function getSmartCronCommandLine()
 {
     global $domainhosts;
     $host = trim(strval($domainhosts ?? ''));
-    return "*/30 * * * * curl -s https://{$host}/cron/smart_cron.php >/dev/null 2>&1";
+    return "*/30 * * * * curl -s " . botCronUrl('smart_cron.php') . " >/dev/null 2>&1";
 }
 
 /**
@@ -4148,7 +4150,7 @@ function getBackupCronCommandLine()
         $sched = '0 3 * * *';
     }
     // مثل بقیه کرون‌های ربات — با path کامل دامنه
-    return "{$sched} curl -s https://{$host}/cron/backup_cron.php >/dev/null 2>&1";
+    return "{$sched} curl -s " . botCronUrl('backup_cron.php') . " >/dev/null 2>&1";
 }
 
 /**
@@ -5013,7 +5015,7 @@ function runBotSelfUpdate($repoZipUrl = null)
 
         $downloadOk = false;
         $lastErr = '';
-        foreach ([true, false] as $verifySsl) {
+        foreach ([true] as $verifySsl) { // دانلود کد بدون بررسی گواهی = خطر اجرای کد مخرب
             $ch = curl_init($url);
             curl_setopt_array($ch, [
                 CURLOPT_FILE => $fp,

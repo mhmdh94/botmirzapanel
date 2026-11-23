@@ -150,8 +150,8 @@ function telegram($method, $datas = [])
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $datas);
     $t0 = microtime(true);
     $raw = curl_exec($ch);
@@ -425,6 +425,117 @@ function sendDocument($chat_id, $documentPath, $caption)
         'caption' => $caption,
     ]);
 }
+/**
+ * جلوگیری از پردازش دوباره یک آپدیت (خرید/تمدید دوبل وقتی تلگرام آپدیت را دوباره میفرستد).
+ * true = آپدیت جدید است و باید پردازش شود؛ false = تکراری است.
+ */
+function botClaimUpdate($update_id)
+{
+    global $pdo;
+    $update_id = intval($update_id);
+    if ($update_id <= 0 || !isset($pdo) || !($pdo instanceof PDO)) {
+        return true;
+    }
+    $sql = "INSERT IGNORE INTO processed_updates (update_id, created_at) VALUES (?, ?)";
+    try {
+        $st = $pdo->prepare($sql);
+        $st->execute([$update_id, time()]);
+    } catch (Throwable $e) {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS processed_updates (
+                update_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+                created_at INT UNSIGNED NOT NULL,
+                KEY idx_created (created_at)
+            ) ENGINE=InnoDB");
+            $st = $pdo->prepare($sql);
+            $st->execute([$update_id, time()]);
+        } catch (Throwable $e2) {
+            botErrorLog('update dedup unavailable', ['error' => $e2->getMessage()], 'WARN', 'telegram');
+            return true; // اگر بررسی ممکن نبود، ربات از کار نیفتد
+        }
+    }
+    if ($st->rowCount() === 0) {
+        botLog('telegram', 'duplicate update skipped', ['update_id' => $update_id], 'INFO');
+        return false;
+    }
+    // پاکسازی گاهبهگاه (قدیمیتر از ۲ روز)
+    if (mt_rand(1, 500) === 1) {
+        try {
+            $pdo->prepare("DELETE FROM processed_updates WHERE created_at < ?")->execute([time() - 172800]);
+        } catch (Throwable $e) {
+        }
+    }
+    return true;
+}
+
+/** مقدار تنظیمشده و غیر placeholder است؟ ({...} یعنی نصبکننده هنوز پر نکرده) */
+function botConfigValueSet($v)
+{
+    $v = is_string($v) ? trim($v) : '';
+    return $v !== '' && $v[0] !== '{';
+}
+
+/**
+ * بررسی هدر X-Telegram-Bot-Api-Secret-Token.
+ * اگر $secrettoken در config تنظیم نشده باشد (نصبهای قدیمی) چیزی رد نمیشود.
+ */
+function botVerifyWebhookSecret()
+{
+    global $secrettoken;
+    if (!botConfigValueSet($secrettoken ?? '')) {
+        return true;
+    }
+    $got = strval($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '');
+    if ($got !== '' && hash_equals(strval($secrettoken), $got)) {
+        return true;
+    }
+    botErrorLog('webhook secret mismatch', ['ip' => strval($_SERVER['REMOTE_ADDR'] ?? '')], 'WARN', 'telegram');
+    return false;
+}
+
+/** کلید دسترسی کرونها — از توکن ربات مشتق میشود، تنظیم جدیدی لازم نیست */
+function botCronKey()
+{
+    global $APIKEY, $domainhosts;
+    return substr(hash_hmac('sha256', 'mirza-cron:' . strval($domainhosts), strval($APIKEY)), 0, 32);
+}
+
+/** آدرس کامل کرون همراه کلید، برای crontab */
+function botCronUrl($script)
+{
+    global $domainhosts;
+    return 'https://' . strval($domainhosts) . '/cron/' . $script . '?key=' . botCronKey();
+}
+
+/**
+ * فقط اجرای CLI، درخواست از خود سرور، یا درخواست با ?key= درست مجاز است.
+ * کرونهای قدیمی (curl از همین سرور) بدون تغییر کار میکنند.
+ */
+function botRequireCronAccess()
+{
+    if (PHP_SAPI === 'cli') {
+        return;
+    }
+    $ip = strval($_SERVER['REMOTE_ADDR'] ?? '');
+    $local = ['127.0.0.1', '::1'];
+    if (!empty($_SERVER['SERVER_ADDR'])) {
+        $local[] = strval($_SERVER['SERVER_ADDR']);
+    }
+    if ($ip !== '' && in_array($ip, $local, true)) {
+        return;
+    }
+    $key = strval($_GET['key'] ?? '');
+    if ($key !== '' && hash_equals(botCronKey(), $key)) {
+        return;
+    }
+    botErrorLog('cron access denied', [
+        'ip' => $ip,
+        'script' => basename(strval($_SERVER['SCRIPT_NAME'] ?? '')),
+    ], 'WARN', 'cron');
+    http_response_code(403);
+    exit;
+}
+
 #-----------------------------#
 $update = json_decode(file_get_contents("php://input"), true);
 

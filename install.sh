@@ -2748,6 +2748,7 @@ EOF"
 
     # Configure the Bot
     CONFIG_FILE="$BOT_DIR/config.php"
+    BOT_SECRET_TOKEN=$(openssl rand -hex 16)
     echo -e "\033[33mSaving bot configuration...\033[0m"
     cat <<EOF > "$CONFIG_FILE"
 <?php
@@ -2758,6 +2759,7 @@ EOF"
 \$domainhosts = '$DOMAIN_NAME/$BOT_NAME';
 \$adminnumber = '$CHAT_ID';
 \$usernamebot = '$BOT_NAME';
+\$secrettoken = '$BOT_SECRET_TOKEN';
 \$connect = mysqli_connect('localhost', \$usernamedb, \$passworddb, \$dbname);
 if (\$connect->connect_error) {
     die('Database connection failed: ' . \$connect->connect_error);
@@ -2784,7 +2786,7 @@ EOF
 
     # Set Webhook
     echo -e "\033[33mSetting webhook for bot...\033[0m"
-    curl -F "url=https://$DOMAIN_NAME/$BOT_NAME/index.php" "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" || {
+    curl -F "url=https://$DOMAIN_NAME/$BOT_NAME/index.php" -F "secret_token=$BOT_SECRET_TOKEN" "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" || {
         echo -e "\033[31mError: Failed to set webhook for bot.\033[0m"
         return 1
     }
