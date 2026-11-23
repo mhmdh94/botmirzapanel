@@ -1007,7 +1007,7 @@ function ensureEditableStatusTexts()
         'msg_support_disabled' => $textbotlang['users']['support']['disabled'] ?? "⛔️ پشتیبانی فعلاً در دسترس نیست.\nلطفاً بعداً تلاش کنید.",
         'msg_support_prompt' => $textbotlang['users']['support']['sendmessageuser'] ?? "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.\nدر صورتی که اختلال در اتصال دارید لطفا اینترنتی که استفاده می‌کنید + شهر را هم به پشتیبانی اعلام کنید.",
         'msg_support_sent' => $textbotlang['users']['support']['sendmessageadmin'] ?? "✅ پیام شما برای پشتیبانی ارسال شد.\nبه‌زودی از همین ربات پاسخ می‌گیرید.",
-        'msg_receipt_sent' => $textbotlang['users']['Balance']['Send-receipt'] ?? "🚀 رسید ارسال شد\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nفقط در صورت عدم تایید تا یک ساعت، به پشتیبانی پیام بدید.",
+        'msg_receipt_sent' => $textbotlang['users']['Balance']['Send-receipt'] ?? "🚀 رسید ارسال شد\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nفقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدید.",
         'msg_receipt_need_photo' => "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.",
     
         'msg_reseller_request_info' => $textbotlang['users']['reseller_request']['info'] ?? "📋 درخواست پنل نمایندگی — در صورت بیش از ۱۰۰ کاربر فعال ماهانه می‌توانید درخواست دهید.",
@@ -2191,8 +2191,69 @@ function DirectPayment($order_id)
         if ($credit_amount > intval($Payment_report['price'])) {
             $textpay .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
         }
-        sendmessage($Payment_report['id_user'], $textpay, botMenuForBalance($Payment_report['id_user']), 'HTML');
+        // نسخه 2.2.4: پیام تأیید با دکمه خرید / سرویسهای من؛ منوی بهروز (موجودی) جدا
+        $__kb_after = function_exists('botAfterDepositKeyboard') ? botAfterDepositKeyboard() : null;
+        $__menu_bal = botMenuForBalance($Payment_report['id_user']);
+        if ($__kb_after) {
+            sendmessage($Payment_report['id_user'], $textpay, $__kb_after, 'HTML');
+            if ($__menu_bal) {
+                sendmessage($Payment_report['id_user'], $textbotlang['users']['selectoption'] ?? '🏠 منوی اصلی', $__menu_bal, 'HTML');
+            }
+        } else {
+            sendmessage($Payment_report['id_user'], $textpay, $__menu_bal, 'HTML');
+        }
         $GLOBALS['payment_user_notified'] = true;
+    }
+}
+
+/** نسخه 2.2.4: خط «کسری» در پیام موجودی ناکافی */
+function botShortfallLine($amount)
+{
+    $amount = intval($amount);
+    if ($amount <= 0) {
+        return '';
+    }
+    return "\n\n💳 کسری: <b>" . number_format($amount) . "</b> تومان";
+}
+
+/** نسخه 2.2.4: دکمههای زیر پیام «موجودی شارژ شد» */
+function botAfterDepositKeyboard()
+{
+    global $textbotlang;
+    try {
+        $t = function_exists('botLoadMenuTexts') ? botLoadMenuTexts() : [];
+        $st = select("setting", "*");
+        $row = [];
+        if (!(is_array($st) && isset($st['status_buy']) && strval($st['status_buy']) === '0')) {
+            $row[] = ['text' => (strval($t['text_sell'] ?? '') !== '' ? $t['text_sell'] : ($textbotlang['users']['buybtn'] ?? '🛒 خرید اشتراک')), 'callback_data' => 'goto_buy'];
+        }
+        $row[] = ['text' => (strval($t['text_Purchased_services'] ?? '') !== '' ? $t['text_Purchased_services'] : '🛍 سرویس‌های من'), 'callback_data' => 'goto_services'];
+        return json_encode(['inline_keyboard' => [$row]], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/** نسخه 2.2.4: اگر متن رسید ذخیرهشده همان پیشفرض قدیمی است، به املای «تأیید» بهروز شود */
+function botMigrateEditableDefaults()
+{
+    global $textbotlang;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        $new = strval($textbotlang['users']['Balance']['Send-receipt'] ?? '');
+        $old = str_replace('عدم تأیید', 'عدم تایید', $new);
+        if ($new === '' || $old === $new) {
+            return;
+        }
+        $cur = select("textbot", "text", "id_text", "msg_receipt_sent", "select");
+        if (is_array($cur) && strval($cur['text'] ?? '') === $old) {
+            update("textbot", "text", $new, "id_text", "msg_receipt_sent");
+        }
+    } catch (Throwable $e) {
     }
 }
 function savedata($type, $namefiled, $valuefiled)
@@ -2670,7 +2731,8 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
             $textcart = $ctx . $textcart;
         }
         preg_match_all('/\d+/', $PaySetting, $Matches);
-        if (!empty($Matches[0]) && intval($setting['copy_cart'] ?? 0) == 1) {
+        // نسخه 2.2.4: دکمه کپی همیشه (اگر شماره کارت پیدا شد)
+        if (!empty($Matches[0])) {
             $card_number = implode('', $Matches[0]);
             $KEYBOARD = json_encode([
                 "inline_keyboard" => [

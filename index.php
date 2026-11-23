@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.3";
+$version = "2.2.4";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -182,6 +182,7 @@ foreach ($datatxtbot as $item) {
     }
 }
 if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
+if (function_exists('botMigrateEditableDefaults')) { botMigrateEditableDefaults(); }
 // نسخه 2.2.2: دکمههای منوی قدیمی (کیبورد ذخیرهشده نزد کاربر) به متن جدید نگاشت شوند
 if (isset($text) && is_string($text) && function_exists('botAliasLegacyMenuText')
     && !(isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0)) {
@@ -191,6 +192,14 @@ if (isset($text) && is_string($text) && function_exists('botAliasLegacyMenuText'
 if (isset($datain) && $datain === 'buy_fromtest') {
     $datain = '';
     $text = $datatextbot['text_sell'];
+}
+// نسخه 2.2.4: دکمههای زیر پیام تأیید پرداخت (پیام تأیید ویرایش نشود)
+if (isset($datain) && $datain === 'goto_buy') {
+    $datain = '';
+    $text = $datatextbot['text_sell'];
+} elseif (isset($datain) && $datain === 'goto_services') {
+    $datain = '';
+    $text = $datatextbot['text_Purchased_services'];
 }
 
 #----- ادمین در حال ویرایش متن / پاسخ به کاربر: منوی کاربر قورت ندهد -----
@@ -1830,7 +1839,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         update("user", "Processing_value_one", $ext_code, "id", $from_id);
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         if (function_exists('presentPaymentMethods')) {
-            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . (function_exists('botShortfallLine') ? botShortfallLine($Balance_prim) : '') . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
         } else {
             sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
             step('get_step_payment', $from_id);
@@ -2247,7 +2256,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             }
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
             if (function_exists('presentPaymentMethods')) {
-                presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
+                presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . (function_exists('botShortfallLine') ? botShortfallLine($Balance_prim) : '') . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
             } else {
                 sendmessage($from_id, $textbotlang['users']['sell']['None-credit'], $step_payment, 'HTML');
                 step('get_step_payment', $from_id);
@@ -2582,7 +2591,7 @@ if ($text == $datatextbot['text_usertest']) {
 
     $locationproduct = select("marzban_panel", "*", null, null, "count");
     if ($locationproduct == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], $keyboard, 'HTML');
         return;
     }
     if ($setting['get_number'] == "1" && $user['step'] != "get_number" && $user['number'] == "none") {
@@ -3215,7 +3224,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
 
     $locationproduct = select("marzban_panel", "*", "status", "activepanel", "count");
     if ($locationproduct == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['nullpanel'], $keyboard, 'HTML');
         return;
     }
     if ($setting['get_number'] == "1" && $user['step'] != "get_number" && $user['number'] == "none") {
@@ -3231,7 +3240,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         if ($setting['statuscategory'] == "0") {
             $nullproduct = select("product", "*", null, null, "count");
             if ($nullproduct == 0) {
-                sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], null, 'HTML');
+                sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], $keyboard, 'HTML');
                 return;
             }
             $textproduct = sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']);
@@ -3244,7 +3253,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         } else {
             $emptycategory = select("category", "*", null, null, "count");
             if ($emptycategory == 0) {
-                sendmessage($from_id, $textbotlang['users']['category']['NotFound'], null, 'HTML');
+                sendmessage($from_id, $textbotlang['users']['category']['NotFound'], $keyboard, 'HTML');
                 return;
             }
             if ($datain == "buy") {
@@ -3265,12 +3274,12 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $product = [];
     $nullproduct = select("product", "*", null, null, "count");
     if ($nullproduct == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], $keyboard, 'HTML');
         return;
     }
     $location = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if ($location == false) {
-        sendmessage($from_id, $textbotlang['users']['category']['error'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['category']['error'], $keyboard, 'HTML');
         return;
     }
     Editmessagetext($from_id, $message_id, sprintf($textbotlang['users']['buy']['selectService'], $location['name_panel']), KeyboardProduct($location['name_panel'], "buy", $location['MethodUsername'], $categoryid));
@@ -3283,14 +3292,14 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     if ($setting['statuscategory'] == "0") {
         $nullproduct = select("product", "*", null, null, "count");
         if ($nullproduct == 0) {
-            sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], null, 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], $keyboard, 'HTML');
             return;
         }
         Editmessagetext($from_id, $message_id, sprintf($textbotlang['users']['buy']['selectService'], $panellist['name_panel']), KeyboardProduct($panellist['name_panel'], "buy", $panellist['MethodUsername']));
     } else {
         $emptycategory = select("category", "*", null, null, "count");
         if ($emptycategory == 0) {
-            sendmessage($from_id, $textbotlang['users']['category']['NotFound'], null, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['category']['NotFound'], $keyboard, 'HTML');
             return;
         }
         Editmessagetext($from_id, $message_id, $textbotlang['users']['category']['selectCategory'], KeyboardCategorybuy("buy", $panellist['name_panel']));
@@ -3458,7 +3467,7 @@ if (isset($datain) && $datain === 'product_header') {
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         if (function_exists('presentPaymentMethods')) {
 
-            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . (function_exists('botShortfallLine') ? botShortfallLine($Balance_prim) : '') . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
 
         } else {
 
@@ -3539,7 +3548,7 @@ if (isset($datain) && $datain === 'product_header') {
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         if (function_exists('presentPaymentMethods')) {
 
-            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
+            presentPaymentMethods($from_id, $textbotlang['users']['sell']['None-credit'] . (function_exists('botShortfallLine') ? botShortfallLine($Balance_prim) : '') . "\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید'), $message_id);
 
         } else {
 

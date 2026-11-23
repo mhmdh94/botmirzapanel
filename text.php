@@ -341,13 +341,13 @@ $textbotlang['users']['Balance']['Send-receipt'] = "🚀 <b>رسید ارسال 
 پس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.
 لطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.
 
-فقط در صورت عدم تایید تا یک ساعت، به پشتیبانی پیام بدید.";
+فقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدید.";
 $textbotlang['users']['Balance']['Send-receip-buy'] = "🚀 <b>رسید ارسال شد</b>
 
-پس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.
+پس از تأیید مدیریت، سرویس شما <b>خودکار ساخته</b> و همینجا ارسال میشود.
 لطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.
 
-فقط در صورت عدم تایید تا یک ساعت، به پشتیبانی پیام بدید.";
+فقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدید.";
 $textbotlang['users']['changelink']['btntitle'] = "🔄 تغییر لینک اتصال";
 $textbotlang['users']['changelink']['warnchange'] = "⚠️ با تغییر لینک، اتصال فعلی قطع می‌شود.\nبعد از تأیید، لینک/کانفیگ جدید را از جزئیات سرویس بگیرید.";
 $textbotlang['users']['changelink']['confirm'] = "✅ تأیید تغییر لینک";
@@ -560,10 +560,10 @@ $textbotlang['users']['moeny']['date_label'] = "تاریخ : ";
 $textbotlang['users']['moeny']['back_to_bot'] = "بازگشت به ربات";
 $textbotlang['users']['moeny']['setting'] = "⚙️ تنظیمات";
 $textbotlang['users']['moeny']['settingpay'] = "📌 از لیست زیر می‌توانید درگاه‌های موجود را انتخاب و مدیریت کنید";
-$textbotlang['users']['moeny']['copy_card_number'] = "کپی، شماره کارت";
-$textbotlang['users']['moeny']['copy_price'] = "کپی، مبلغ";
+$textbotlang['users']['moeny']['copy_card_number'] = "📋 کپی شماره کارت";
+$textbotlang['users']['moeny']['copy_price'] = "📋 کپی مبلغ (ریال)";
 $textbotlang['users']['moeny']['copy_cart_status'] = "💸 کپی شماره کارت";
-$textbotlang['users']['moeny']['paymentaccepted'] = "✅ پرداخت تایید شده است";
+$textbotlang['users']['moeny']['paymentaccepted'] = "✅ پرداخت تأیید شده است";
 
 
 
