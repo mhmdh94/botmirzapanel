@@ -7,9 +7,9 @@ $configDirectory = $rootDirectory.'config.php';
 $tablesDirectory = $rootDirectory.'table.php';
 if(!file_exists($configDirectory) || !file_exists($tablesDirectory)) {
     $ERROR[] = "فایل های پروژه ناقص هستند.";
-    $ERROR[] = "فایل های پروژه را مجددا دانلود و بارگذاری کنید (<a href='https://github.com/mahdiMGF2/botmirzapanel'>‎🌐 Github</a>)";
+    $ERROR[] = "فایل های پروژه را مجددا دانلود و بارگذاری کنید (<a href='https://github.com/mhmdh94/botmirzapanel'>‎🌐 Github</a>)";
 }
-if(phpversion() < 8.2){
+if(version_compare(PHP_VERSION, '8.2.0', '<')){
     $ERROR[] = "نسخه PHP شما باید حداقل 8.2 باشد.";
     $ERROR[] = "نسخه فعلی: ".phpversion();
     $ERROR[] = "لطفا نسخه PHP خود را به 8.2 یا بالاتر ارتقا دهید.";
@@ -26,7 +26,13 @@ else {
     $webAddress = $_SERVER['HTTP_HOST'].dirname(dirname($_SERVER['SCRIPT_NAME']));
 }
 
-if(isset($uPOST['submit']) && $uPOST['submit']) {
+// اگر config قبلاً پر شده، نصب مجدد (و بازنویسی تنظیمات) ممکن نیست
+$alreadyInstalled = file_exists($configDirectory) && strpos(file_get_contents($configDirectory), '{BOT_TOKEN}') === false;
+if ($alreadyInstalled) {
+    $ERROR[] = "ربات قبلاً نصب شده است. برای نصب مجدد، config.php اصلی را دوباره بارگذاری کنید.";
+}
+
+if(!$alreadyInstalled && isset($uPOST['submit']) && $uPOST['submit']) {
 
     $ERROR = [];
     $SUCCESS[] = "✅ ربات با موفقیت نصب شد !";
@@ -35,10 +41,18 @@ if(isset($uPOST['submit']) && $uPOST['submit']) {
     $tgAdminId = $uPOST['admin_id'];
     $tgBotToken = $uPOST['tg_bot_token'];
     $dbInfo['host'] = 'localhost';
-    $dbInfo['name'] = $uPOST['database_name'];
-    $dbInfo['username'] = $uPOST['database_username'];
-    $dbInfo['password'] = $uPOST['database_password'];
-    $document['address'] = dirname($uPOST['bot_address_webhook']);
+    // مقادیر خام (بدون htmlspecialchars) — وگرنه رمزهای دارای & ' " < خراب ذخیره میشدند
+    $dbInfo['name'] = strval($_POST['database_name'] ?? '');
+    $dbInfo['username'] = strval($_POST['database_username'] ?? '');
+    $dbInfo['password'] = strval($_POST['database_password'] ?? '');
+    $document['address'] = preg_replace('#^https?://#i', '', strval($_POST['bot_address_webhook'] ?? ''));
+    $document['address'] = rtrim(dirname($document['address']), '/');
+    $webhookSecret = bin2hex(random_bytes(16));
+
+    // آدرس داخل رشته "..." در config قرار میگیرد؛ فقط کاراکترهای امن مجازند
+    if (!preg_match('#^[A-Za-z0-9.\-]+(:\d+)?(/[A-Za-z0-9._\-~]+)*$#', $document['address'])) {
+        $ERROR[] = "آدرس سورس ربات نامعتبر است.";
+    }
 
     if($_SERVER['REQUEST_SCHEME'] != 'https') {
         $ERROR[] = 'برای فعال سازی ربات تلگرام نیازمند فعال بودن SSL (https) هستید';
@@ -88,18 +102,22 @@ if(isset($uPOST['submit']) && $uPOST['submit']) {
             '{BOT_USERNAME}' => $tgBot['details']['result']['username'],
             '{BOT_TOKEN}' => $tgBotToken,
             '{ADMIN_#ID}' => $tgAdminId,
-            '{DATABASE_USERNAME}' => $dbInfo['username'],
-            '{DATABASE_PASSOWRD}' => $dbInfo['password'],
-            '{DATABASE_NAME}' => $dbInfo['name']
+            '{DATABASE_USERNAME}' => configEscapeSingle($dbInfo['username']),
+            '{DATABASE_PASSOWRD}' => configEscapeSingle($dbInfo['password']),
+            '{DATABASE_NAME}' => configEscapeSingle($dbInfo['name']),
+            '{SECRET_TOKEN}' => $webhookSecret,
         ];
 
         $newConfigData = str_replace(array_keys($replacements),array_values($replacements),$rawConfigData,$count);
         if(file_put_contents($configDirectory,$newConfigData) === false || $count == 0) {
             $ERROR[] = '✏️❌ خطا در زمان بازنویسی اطلاعات فایل اصلی ربات';
-            $ERROR[] = "فایل های پروژه را مجددا دانلود و بارگذاری کنید (<a href='https://github.com/mahdiMGF2/botmirzapanel'>‎🌐 Github</a>)";
+            $ERROR[] = "فایل های پروژه را مجددا دانلود و بارگذاری کنید (<a href='https://github.com/mhmdh94/botmirzapanel'>‎🌐 Github</a>)";
         }
         else {
-            getContents("https://api.telegram.org/bot".$tgBotToken."/setwebhook?url=https://".$document['address'].'/index.php');
+            getContents("https://api.telegram.org/bot".$tgBotToken."/setWebhook?".http_build_query([
+                'url' => 'https://'.$document['address'].'/index.php',
+                'secret_token' => $webhookSecret,
+            ]));
             getContents("https://".$document['address']."/table.php");
             $botFirstMessage = "\n[🤖] شما به عنوان ادمین معرفی شدید.";
             getContents('https://api.telegram.org/bot'.$tgBotToken.'/sendMessage?chat_id='.$tgAdminId.'&text='.urlencode(' '.$SUCCESS[0].$botFirstMessage).'&reply_markup={"inline_keyboard":[[{"text":"⚙️ شروع ربات، رفتن به تنظیمات بخش ادمین","callback_data":"PANEL"}]]}');
@@ -176,7 +194,7 @@ if(isset($uPOST['submit']) && $uPOST['submit']) {
                 <button type="submit" name="submit" value="submit">نصب ربات</button>
             </form>
         <footer>
-            <p>Mirzabot Installer , Made by ♥️ | <a href="https://github.com/mahdiMGF2/botmirzapanel">Github</a> | <a href="https://t.me/mirzapanel">Telegram</a> | &copy; <?php echo date('Y'); ?></p>
+            <p>Mirzabot Installer , Made by ♥️ | <a href="https://github.com/mhmdh94/botmirzapanel">Github</a> | <a href="https://t.me/mirzapanel">Telegram</a> | &copy; <?php echo date('Y'); ?></p>
         </footer>
     </div>
 </body>
@@ -184,6 +202,10 @@ if(isset($uPOST['submit']) && $uPOST['submit']) {
 
 <?php 
 
+/** برای قرار دادن امن داخل '...' در config.php */
+function configEscapeSingle($v) {
+    return str_replace(['\\', "'"], ['\\\\', "\\'"], strval($v));
+}
 function getContents($url) {
     return json_decode(file_get_contents($url),true);
 }

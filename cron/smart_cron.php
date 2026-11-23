@@ -11,9 +11,17 @@ ini_set('error_log', 'error_log');
 date_default_timezone_set('Asia/Tehran');
 require_once '../config.php';
 require_once '../botapi.php';
+botRequireCronAccess();
 require_once '../panels.php';
 require_once '../functions.php';
 require_once '../text.php';
+
+function saveSmartCronCursor($value)
+{
+    global $pdo;
+    $pdo->prepare("UPDATE PaySetting SET ValuePay = ? WHERE NamePay = 'smart_cron_cursor_id'")
+        ->execute([strval($value)]);
+}
 
 $ManagePanel = new ManagePanel();
 ensureSmartCronSettings();
@@ -36,51 +44,42 @@ if ($limit > 200) {
     $limit = 200;
 }
 
-ensurePaySetting('smart_cron_cursor', '0');
-$offset = intval(getPaySettingValue('smart_cron_cursor', '0'));
-if ($offset < 0 || $offset > 100000000) {
-    $offset = 0;
-}
-
-// همه فاکتورهای دارای یوزرنیم (از جمله تست)
-$status_sql = "username IS NOT NULL AND TRIM(username) != ''";
+// نشانگر بر اساس id_invoice (keyset) به جای OFFSET:
+// اگر وسط اجرا فاکتوری حذف شود، ردیفهای بعدی جابهجا نمیشوند و کاربری جا نمیماند.
+ensurePaySetting('smart_cron_cursor_id', '');
+$cursor = strval(getPaySettingValue('smart_cron_cursor_id', ''));
 
 $cnt_stmt = $pdo->query("SELECT COUNT(*) FROM invoice WHERE username IS NOT NULL AND username != ''");
 $total = intval($cnt_stmt->fetchColumn());
 if ($total <= 0) {
-    $pdo->prepare("UPDATE PaySetting SET ValuePay = '0' WHERE NamePay = 'smart_cron_cursor'")->execute();
+    saveSmartCronCursor('');
     exit;
-}
-if ($offset >= $total) {
-    $offset = 0;
 }
 
 $stmt = $pdo->prepare(
     "SELECT * FROM invoice
-     WHERE username IS NOT NULL AND username != ''
+     WHERE username IS NOT NULL AND username != '' AND id_invoice > ?
      ORDER BY id_invoice ASC
-     LIMIT " . intval($limit) . " OFFSET " . intval($offset)
+     LIMIT " . intval($limit)
 );
-$stmt->execute();
+$stmt->execute([$cursor]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (count($rows) === 0) {
-    $offset = 0;
-    $stmt = $pdo->prepare(
-        "SELECT * FROM invoice
-         WHERE username IS NOT NULL AND username != ''
-         ORDER BY id_invoice ASC
-         LIMIT " . intval($limit) . " OFFSET 0"
-    );
-    $stmt->execute();
+if (count($rows) === 0 && $cursor !== '') {
+    // به انتهای جدول رسیدیم — دور بعدی از اول
+    $cursor = '';
+    $stmt->execute([$cursor]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $batch_count = count($rows);
-$next_offset = $offset + $batch_count;
-if ($batch_count < $limit || $next_offset >= $total) {
-    $next_offset = 0;
+$next_cursor = '';
+if ($batch_count >= $limit) {
+    $next_cursor = strval($rows[$batch_count - 1]['id_invoice']);
 }
+// فقط برای پیام دیباگ
+$offset = $cursor === '' ? '(start)' : $cursor;
+$next_offset = $next_cursor === '' ? '(start)' : $next_cursor;
 
 $do_clean = smartCronFlag('smart_clean_missing', '0');
 $do_vol = smartCronFlag('smart_warn_volume', '0');
@@ -90,8 +89,7 @@ $do_emg = smartCronFlag('smart_emergency', '0');
 
 // اگر هیچ‌کدام روشن نیست، فقط نشانگر را جلو ببر و خارج شو (بدون پیام)
 if (!$do_clean && !$do_vol && !$do_time && !$do_exp) {
-    $upd = $pdo->prepare("UPDATE PaySetting SET ValuePay = ? WHERE NamePay = 'smart_cron_cursor'");
-    $upd->execute([strval($next_offset)]);
+    saveSmartCronCursor($next_cursor);
     exit;
 }
 
@@ -234,8 +232,7 @@ foreach ($rows as $row) {
     }
 }
 
-$upd = $pdo->prepare("UPDATE PaySetting SET ValuePay = ? WHERE NamePay = 'smart_cron_cursor'");
-$upd->execute([strval($next_offset)]);
+saveSmartCronCursor($next_cursor);
 if (function_exists('smartCronDebugLog') && smartCronFlag('smart_debug', '0')) {
     smartCronDebugLog(
         "ℹ️ اجرای کرون هوشمند\n"
