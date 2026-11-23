@@ -741,7 +741,7 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 🕐 %s
 
 👥 کاربران: <code>%s</code>
-💰 موجودی کل: <code>%s</code> تومان
+👛 موجودی کیف پول کاربران: <code>%s</code> تومان
 
 🛒 <b>فروش</b>
 • امروز: <code>%s</code> عدد | <code>%s</code> تومان

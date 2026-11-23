@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.9";
+$version = "2.3.0";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -611,7 +611,7 @@ if (function_exists('cleanupExpiredUnpaidInvoices') && intval($from_id) != 0) {
 #-----------cancel receipt wait on menu navigation only------------#
 // منتظر عکس رسید: فقط دکمه‌های منو / بازگشت انتظار را کنسل می‌کنند
 // متن آزاد → step را نگه می‌داریم تا کاربر بتواند بعداً عکس بفرستد
-if (isset($user['step']) && in_array(strval($user['step']), ['cart_to_cart_user', 'crypto_receipt_user'], true)) {
+if (isset($user['step']) && in_array(strval($user['step']), ['cart_to_cart_user', 'crypto_receipt_user', 'sheba_receipt_user'], true)) {
     $__has_photo = !empty($photo);
     $__has_doc_img = false;
     if (!$__has_photo && !empty($update['message']['document'])) {
@@ -4067,13 +4067,13 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
     if ($datain == "svc_info_noop") {
     return;
 }
-if ($datain == "cart_to_offline" || $datain == "iranpay") {
+if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_offline") {
         if (function_exists('executePaymentMethod')) {
             executePaymentMethod($from_id, $datain, $message_id);
         }
     }
 
-} elseif ($user['step'] == "cart_to_cart_user" || $user['step'] == "crypto_receipt_user") {
+} elseif ($user['step'] == "cart_to_cart_user" || $user['step'] == "crypto_receipt_user" || $user['step'] == "sheba_receipt_user") {
     // قبول عکس عادی یا فایل تصویری (document با mime image/*)
     $__receipt_file_id = '';
     if (!empty($photo) && !empty($photoid)) {
@@ -4227,7 +4227,7 @@ if ($datain == "cart_to_offline" || $datain == "iranpay") {
     $dateacc = date('Y/m/d H:i:s');
     $randomString = bin2hex(random_bytes(5));
     $payment_Status = "waiting";
-    $Payment_Method = ($user['step'] == "crypto_receipt_user") ? "crypto" : "cart to cart";
+    $Payment_Method = ($user['step'] == "crypto_receipt_user") ? "crypto" : (($user['step'] == "sheba_receipt_user") ? "sheba" : "cart to cart");
     $pv_tow = strval($user['Processing_value_tow'] ?? '');
     if ($pv_tow == "getconfigafterpay") {
         $invoice = "{$user['Processing_value_tow']}|{$user['Processing_value_one']}";

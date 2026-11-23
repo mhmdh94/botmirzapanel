@@ -2105,7 +2105,7 @@ function DirectPayment($order_id)
             if (function_exists('botLogException')) { botLogException($e, 'renew'); } else { error_log('extendafterpay fail: ' . $e->getMessage()); }
         }
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
-        if ($Payment_report['Payment_Method'] == "cart to cart" && !empty($callback_query_id)) {
+        if (in_array(strval($Payment_report['Payment_Method'] ?? ''), ['cart to cart', 'sheba'], true) && !empty($callback_query_id)) {
             telegram('answerCallbackQuery', [
                 'callback_query_id' => $callback_query_id,
                 'text' => $textbotlang['users']['moeny']['acceptedcart'] ?? 'تأیید شد',
@@ -2131,7 +2131,7 @@ function DirectPayment($order_id)
             logWalletTx($uid, 'deposit', $credit_amount, $bal_now, 'واریز برای خرید حجم پنل ریسلر');
         }
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
-        if ($Payment_report['Payment_Method'] == "cart to cart" && !empty($callback_query_id)) {
+        if (in_array(strval($Payment_report['Payment_Method'] ?? ''), ['cart to cart', 'sheba'], true) && !empty($callback_query_id)) {
             telegram('answerCallbackQuery', [
                 'callback_query_id' => $callback_query_id,
                 'text' => $textbotlang['users']['moeny']['acceptedcart'] ?? 'تأیید شد',
@@ -2178,7 +2178,7 @@ function DirectPayment($order_id)
         $credit_fmt = number_format($credit_amount, 0);
         $pay_fmt = number_format(intval($Payment_report['price']), 0);
         $format_price_cart = $credit_fmt;
-        if ($Payment_report['Payment_Method'] == "cart to cart") {
+        if (in_array(strval($Payment_report['Payment_Method'] ?? ''), ['cart to cart', 'sheba'], true)) {
             telegram(
                 'answerCallbackQuery',
                 array(
@@ -2364,11 +2364,143 @@ function buildFinanceSummaryText()
     return "💳 <b>مالی و پرداخت</b>\n\n"
         . "💳 کارت به کارت: <b>" . ($card_on ? $on : $off) . "</b>\n"
         . "🔢 کارت فعلی: " . $card_disp . "\n"
+        . "🏦 واریز به شبا: <b>" . ((function_exists('isShebaPaymentEnabled') && isShebaPaymentEnabled()) ? $on : $off) . "</b>\n"
         . "💎 کریپتو: <b>" . ($digi_on ? $on : $off) . "</b>\n"
         . "🤖 تأیید خودکار رسید: <b>" . ($auto_on ? $on : $off) . "</b>\n"
         . "💰 حداقل واریز: <b>" . number_format($min) . "</b> تومان | حداکثر: <b>" . number_format($max) . "</b> تومان\n"
         . "🧾 رسیدهای در انتظار: <b>" . number_format($wait) . "</b>\n\n"
         . "برای تغییر، یکی از گزینهها را بزنید.";
+}
+
+/** نسخه 2.3.0: تبدیل ارقام فارسی/عربی به انگلیسی */
+function botNormalizeDigits($t)
+{
+    $t = strval($t);
+    $fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹','٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    $en = ['0','1','2','3','4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9'];
+    return str_replace($fa, $en, $t);
+}
+
+/** شماره کارت ۱۶ رقمی داخل متن (با فاصله/خط تیره هم) — خالی اگر نبود */
+function botExtractCardNumber($t)
+{
+    $t = botNormalizeDigits($t);
+    if (preg_match('/(?<!\d)(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})(?!\d)/u', $t, $m)) {
+        return $m[1] . $m[2] . $m[3] . $m[4];
+    }
+    return '';
+}
+
+/** اعتبار رقم کنترل کارت (Luhn) */
+function botCardLuhnOk($n)
+{
+    $n = strval($n);
+    if (!preg_match('/^\d{16}$/', $n)) {
+        return false;
+    }
+    $sum = 0;
+    for ($i = 0; $i < 16; $i++) {
+        $d = intval($n[$i]);
+        if ($i % 2 === 0) {
+            $d *= 2;
+            if ($d > 9) {
+                $d -= 9;
+            }
+        }
+        $sum += $d;
+    }
+    return $sum % 10 === 0;
+}
+
+/** شماره شبا داخل متن → IR + ۲۴ رقم (خالی اگر نبود) */
+function botExtractSheba($t)
+{
+    $t = strtoupper(botNormalizeDigits($t));
+    $t2 = preg_replace('/[\s\-]+/u', '', $t);
+    if (preg_match('/IR(\d{24})(?!\d)/', $t2, $m)) {
+        return 'IR' . $m[1];
+    }
+    if (preg_match('/(?<!\d)(\d{24})(?!\d)/', $t2, $m)) {
+        return 'IR' . $m[1];
+    }
+    return '';
+}
+
+/** اعتبار رقم کنترل شبا (IBAN mod 97) */
+function botShebaChecksumOk($iban)
+{
+    $iban = strtoupper(strval($iban));
+    if (!preg_match('/^IR\d{24}$/', $iban)) {
+        return false;
+    }
+    // I=18 , R=27
+    $r = substr($iban, 4) . '1827' . substr($iban, 2, 2);
+    $mod = 0;
+    $len = strlen($r);
+    for ($i = 0; $i < $len; $i++) {
+        $mod = ($mod * 10 + intval($r[$i])) % 97;
+    }
+    return $mod === 1;
+}
+
+/** پرداخت شبا روشن است و شبای معتبر ثبت شده؟ */
+function isShebaPaymentEnabled()
+{
+    if (!function_exists('getPaySettingValue')) {
+        return false;
+    }
+    if (strval(getPaySettingValue('shebastatus', 'offsheba')) !== 'onsheba') {
+        return false;
+    }
+    return botExtractSheba(getPaySettingValue('ShebaDescription', '')) !== '';
+}
+
+/** نسخه 2.3.0: صفحه شیشهای تنظیم کارت به کارت */
+function buildCardSettingsPage()
+{
+    $r = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
+    $txt = is_array($r) ? trim(strval($r['ValuePay'] ?? '')) : '';
+    $r = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select");
+    $on = is_array($r) && strval($r['ValuePay'] ?? '') === 'oncard';
+    $cn = botExtractCardNumber($txt);
+    $t = "💳 <b>تنظیم کارت به کارت</b>\n\n"
+        . "🔌 وضعیت: <b>" . ($on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
+        . "📝 متنی که به کاربر نشان داده میشود:\n"
+        . ($txt !== '' ? "<code>" . htmlspecialchars($txt, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده') . "\n\n";
+    if ($cn === '') {
+        $t .= "⚠️ شماره کارت ۱۶ رقمی در متن پیدا نشد؛ دکمه «کپی شماره کارت» به کاربر نشان داده نمیشود.";
+    } else {
+        $t .= "🔢 شماره کارت: <code>{$cn}</code>" . (botCardLuhnOk($cn) ? '' : "\n⚠️ رقم کنترل این شماره کارت درست نیست؛ دوباره چک کنید.");
+    }
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '✏️ تغییر شماره کارت', 'callback_data' => 'fin_card_edit']],
+        [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
+}
+
+/** نسخه 2.3.0: صفحه شیشهای تنظیم شبا */
+function buildShebaSettingsPage()
+{
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('shebastatus', 'offsheba');
+        ensurePaySetting('ShebaDescription', '');
+    }
+    $txt = trim(strval(getPaySettingValue('ShebaDescription', '')));
+    $on = strval(getPaySettingValue('shebastatus', 'offsheba')) === 'onsheba';
+    $sh = botExtractSheba($txt);
+    $t = "🏦 <b>تنظیم واریز به شبا</b>\n\n"
+        . "🔌 وضعیت: <b>" . ($on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
+        . "📝 متنی که به کاربر نشان داده میشود:\n"
+        . ($txt !== '' ? "<code>" . htmlspecialchars($txt, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده') . "\n\n"
+        . ($sh !== '' ? "🔢 شبا: <code>{$sh}</code>" : "⚠️ هنوز شبای معتبری ثبت نشده؛ تا ثبت نشود این روش به کاربر نشان داده نمیشود.") . "\n\n"
+        . "ℹ️ روشن/خاموش کردن از ردیف «🏦 واریز به شبا» در صفحه مالی است.\n"
+        . "ℹ️ رسیدهای شبا هیچوقت خودکار تأیید نمیشوند (حتی با تأیید خودکار روشن).";
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '✏️ تغییر شماره شبا', 'callback_data' => 'fin_sheba_edit']],
+        [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
 }
 
 function botShortfallLine($amount)
@@ -2648,6 +2780,8 @@ function describePaymentReport($Payment_report)
     $method_low = mb_strtolower($method_raw);
     if ($method_low === 'crypto' || strpos($method_low, 'crypto') !== false || strpos($method_low, 'iranpay') !== false || strpos($method_low, 'currency') !== false) {
         $method_label = '🪙 کریپتو';
+    } elseif ($method_low === 'sheba') {
+        $method_label = '🏦 شبا';
     } else {
         $method_label = '💳 کارت‌به‌کارت';
     }
@@ -2770,6 +2904,13 @@ function getActivePaymentMethods()
         $methods[] = [
             'id' => 'cart_to_offline',
             'label' => $textbotlang['users']['moeny']['cart_to_Cart_btn'] ?? '💳 کارت به کارت',
+        ];
+    }
+    // نسخه 2.3.0: واریز به شبا
+    if (function_exists('isShebaPaymentEnabled') && isShebaPaymentEnabled()) {
+        $methods[] = [
+            'id' => 'sheba_offline',
+            'label' => '🏦 واریز به شبا (پایا/ساتنا)',
         ];
     }
     $digi = select("PaySetting", "ValuePay", "NamePay", 'digistatus', "select");
@@ -2897,8 +3038,8 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
         preg_match_all('/\d+/', $PaySetting, $Matches);
         // نسخه 2.2.8: فقط شماره کارت ۱۶ رقمی کپی شود (نه شبا یا اعداد دیگر توضیحات)
         $card_number = '';
-        if (preg_match('/(?<!\d)(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})(?!\d)/u', $PaySetting, $__cm)) {
-            $card_number = $__cm[1] . $__cm[2] . $__cm[3] . $__cm[4];
+        if (function_exists('botExtractCardNumber') && botExtractCardNumber($PaySetting) !== '') {
+            $card_number = botExtractCardNumber($PaySetting);
         } elseif (!empty($Matches[0]) && strlen(implode('', $Matches[0])) === 16) {
             $card_number = implode('', $Matches[0]);
         }
@@ -2927,6 +3068,52 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
             sendmessage($from_id, $textcart, $KEYBOARD, 'HTML');
         }
         step('cart_to_cart_user', $from_id);
+        return true;
+    }
+
+    if ($method_id === 'sheba_offline') {
+        if (!function_exists('isShebaPaymentEnabled') || !isShebaPaymentEnabled()) {
+            $kb_off = json_encode(["inline_keyboard" => [[['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت', 'callback_data' => 'backuser']]]]);
+            $msg_off = "⛔️ واریز به شبا در حال حاضر فعال نیست. روش دیگری را انتخاب کنید.";
+            if ($message_id > 0) {
+                Editmessagetext($from_id, $message_id, $msg_off, $kb_off);
+            } else {
+                sendmessage($from_id, $msg_off, $keyboard, 'HTML');
+            }
+            step('home', $from_id);
+            return false;
+        }
+        $sheba_txt = trim(strval(getPaySettingValue('ShebaDescription', '')));
+        $sheba = botExtractSheba($sheba_txt);
+        $amount_toman = intval($user['Processing_value'] ?? 0);
+        $amount_rial = $amount_toman * 10;
+        $textsheba = "🏦 <b>واریز به شماره شبا</b>\n\n"
+            . "💰 مبلغ: <b>" . number_format($amount_toman) . "</b> تومان (" . number_format($amount_rial) . " ریال)\n\n"
+            . "🔢 شبا:\n<code>" . htmlspecialchars($sheba_txt, ENT_QUOTES, 'UTF-8') . "</code>\n\n"
+            . "⏳ واریز پایا/ساتنا ممکن است چند ساعت طول بکشد.\n"
+            . "📸 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.\n"
+            . "⏳ تا تأیید مدیریت صبر کنید.";
+        $ctx = function_exists('buildPaymentAmountContextNote') ? buildPaymentAmountContextNote($user) : '';
+        if ($ctx !== '') {
+            $textsheba = $ctx . $textsheba;
+        }
+        $KEYBOARD = json_encode([
+            "inline_keyboard" => [
+                [
+                    ['text' => '📋 کپی شماره شبا', 'copy_text' => ['text' => $sheba]],
+                    ['text' => $textbotlang['users']['moeny']['copy_price'] ?? '📋 کپی مبلغ (ریال)', 'copy_text' => ['text' => strval($amount_rial)]],
+                ],
+                [
+                    ['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت به منوی اصلی', 'callback_data' => 'backuser'],
+                ],
+            ],
+        ]);
+        if ($message_id > 0) {
+            Editmessagetext($from_id, $message_id, $textsheba, $KEYBOARD);
+        } else {
+            sendmessage($from_id, $textsheba, $KEYBOARD, 'HTML');
+        }
+        step('sheba_receipt_user', $from_id);
         return true;
     }
 
@@ -3760,11 +3947,25 @@ function buildFinanceKeyboard()
     $auto_status_txt = $auto_on
         ? ($textbotlang['Admin']['turnon'] ?? 'روشن ✅')
         : ($textbotlang['Admin']['turnoff'] ?? 'خاموش ❌');
+    // نسخه 2.3.0: شبا (پیشفرض خاموش)
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('shebastatus', 'offsheba');
+        ensurePaySetting('ShebaDescription', '');
+    }
+    $sqlstatus_sheba = (strval(getPaySettingValue('shebastatus', 'offsheba')) === 'onsheba') ? 'onsheba' : 'offsheba';
+    $status_sheba = ($sqlstatus_sheba === 'onsheba')
+        ? ($textbotlang['Admin']['turnon'] ?? 'روشن ✅')
+        : ($textbotlang['Admin']['turnoff'] ?? 'خاموش ❌');
     $rows = [
         [
             ['text' => $textbotlang['users']['moeny']['setting'] ?? '⚙️ تنظیمات', 'callback_data' => 'settingcart'],
             ['text' => $status_cart, 'callback_data' => 'editpay-cart-' . $sqlstatus_cart],
             ['text' => $textbotlang['users']['moeny']['cart_to_Cart_btn'] ?? '💳 کارت به کارت', 'callback_data' => 'none'],
+        ],
+        [
+            ['text' => $textbotlang['users']['moeny']['setting'] ?? '⚙️ تنظیمات', 'callback_data' => 'settingsheba'],
+            ['text' => $status_sheba, 'callback_data' => 'editpay-sheba-' . $sqlstatus_sheba],
+            ['text' => '🏦 واریز به شبا', 'callback_data' => 'none'],
         ],
         [
             ['text' => $textbotlang['users']['moeny']['setting'] ?? '⚙️ تنظیمات', 'callback_data' => 'setting_currency_wallets'],
@@ -6752,6 +6953,7 @@ function adminCategoriesListKeyboard()
             }
             $kb['inline_keyboard'][] = [
                 ['text' => '🗑', 'callback_data' => 'adm_cat_del_' . $id],
+                ['text' => '✏️', 'callback_data' => 'adm_cat_ren_' . $id],
                 ['text' => $remark, 'callback_data' => 'adm_noop'],
             ];
         }
@@ -6759,7 +6961,7 @@ function adminCategoriesListKeyboard()
     $kb['inline_keyboard'][] = [['text' => '➕ افزودن دسته', 'callback_data' => 'adm_cat_add']];
     $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_cat_list']];
     $kb['inline_keyboard'][] = [['text' => '🔙 بازگشت به فروشگاه', 'callback_data' => 'nav_shop']];
-    $text = "📁 <b>مدیریت دسته‌بندی محصولات</b>\nتعداد: <b>{$n}</b>\n\n🗑 = حذف دسته";
+    $text = "📁 <b>مدیریت دسته‌بندی محصولات</b>\nتعداد: <b>{$n}</b>\n\n🗑 = حذف دسته | ✏️ = تغییر نام";
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
@@ -7351,7 +7553,7 @@ function shopProductDetailKeyboard($code)
             ['text' => '📄 کپی محصول', 'callback_data' => 'shop_copy_' . $code],
         ],
         [
-            ['text' => '🗑 حذف محصول', 'callback_data' => 'shop_ep_del_' . $code],
+            ['text' => '🗑 حذف محصول', 'callback_data' => 'shop_delask_' . $code],
         ],
         [
             ['text' => '🔙 بازگشت به لیست', 'callback_data' => 'shop_list'],

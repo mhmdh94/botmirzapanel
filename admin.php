@@ -1793,6 +1793,22 @@ if (in_array($from_id, $admin_ids) && preg_match('/^shop_p_(.+)$/', strval($data
     return;
 }
 
+# نسخه 2.3.0: تأیید قبل از حذف محصول
+if (in_array($from_id, $admin_ids) && preg_match('/^shop_delask_([A-Za-z0-9]+)$/', strval($datain), $m_da)) {
+    $p = shopGetProductByCode($m_da[1]);
+    if (!$p) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'محصول یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    $__dn = htmlspecialchars(strval($p['name_product'] ?? '-'), ENT_QUOTES, 'UTF-8');
+    $__kb_da = json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، حذف شود', 'callback_data' => 'shop_ep_del_' . $m_da[1]]],
+        [['text' => '❌ خیر، بازگشت', 'callback_data' => 'shop_p_' . $m_da[1]]],
+    ]], JSON_UNESCAPED_UNICODE);
+    Editmessagetext($from_id, $message_id, "⚠️ <b>حذف محصول «{$__dn}»؟</b>\n\nاین کار برگشتپذیر نیست. سرویسهایی که قبلاً با این محصول خریده شدهاند سالم میمانند.\n\n💡 اگر فقط میخواهید موقتاً به کاربران نشان داده نشود، «🙈 مخفی کردن» را بزنید.", $__kb_da);
+    return;
+}
+
 # نسخه 2.2.9: مخفی کردن / کپی محصول
 if (in_array($from_id, $admin_ids) && preg_match('/^shop_(hide|copy)_([A-Za-z0-9]+)$/', strval($datain), $m_hc)) {
     $code = $m_hc[2];
@@ -3147,20 +3163,100 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     } elseif ($methodpay == "iranpay") {
         $value = ($status == "ondigi") ? "offdigi" : "ondigi";
         update("PaySetting", "ValuePay", $value, "NamePay", "digistatus");
+    } elseif ($methodpay == "sheba") {
+        // نسخه 2.3.0: روشن کردن فقط وقتی شبای معتبر ثبت شده باشد
+        $value = ($status == "onsheba") ? "offsheba" : "onsheba";
+        if ($value === 'onsheba' && (!function_exists('botExtractSheba') || botExtractSheba(getPaySettingValue('ShebaDescription', '')) === '')) {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '⚠️ اول از «⚙️ تنظیمات» شماره شبا را ثبت کنید.', 'show_alert' => true]);
+        } else {
+            if (function_exists('ensurePaySetting')) {
+                ensurePaySetting('shebastatus', 'offsheba');
+            }
+            update("PaySetting", "ValuePay", $value, "NamePay", "shebastatus");
+        }
     }
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
     Editmessagetext($from_id, $message_id, (function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : ($textbotlang['users']['moeny']['settingpay'] ?? '💳 تنظیمات مالی')), $keyboardmoeny);
 } elseif ($datain == "settingcart") {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $CartManage, 'HTML');
+    // نسخه 2.3.0: صفحه شیشهای کارت به کارت
+    if (function_exists('buildCardSettingsPage')) {
+        list($__ct, $__ck) = buildCardSettingsPage();
+        Editmessagetext($from_id, $message_id, $__ct, $__ck);
+    } else {
+        sendmessage($from_id, $textbotlang['users']['selectoption'], $CartManage, 'HTML');
+    }
+} elseif ($datain == "settingsheba") {
+    list($__st_t, $__st_k) = buildShebaSettingsPage();
+    Editmessagetext($from_id, $message_id, $__st_t, $__st_k);
+} elseif ($datain == "fin_card_edit") {
+    $__cd = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
+    sendmessage($from_id, sprintf($textbotlang['users']['moeny']['sendcart'], htmlspecialchars(strval(is_array($__cd) ? ($__cd['ValuePay'] ?? '') : ''), ENT_QUOTES, 'UTF-8')), $backadmin, 'HTML');
+    step('changecard', $from_id);
+} elseif ($datain == "fin_sheba_edit") {
+    $__sd = trim(strval(getPaySettingValue('ShebaDescription', '')));
+    sendmessage($from_id, "🏦 شماره شبا را بفرستید (IR + ۲۴ رقم).\nمیتوانید نام صاحب حساب و بانک را هم بنویسید.\n\nمتن فعلی: " . ($__sd !== '' ? "<code>" . htmlspecialchars($__sd, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده'), $backadmin, 'HTML');
+    step('changesheba', $from_id);
 }
 if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
     $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
     sendmessage($from_id, sprintf($textbotlang['users']['moeny']['sendcart'], $PaySetting['ValuePay']), $backadmin, 'HTML');
     step('changecard', $from_id);
 } elseif ($user['step'] == "changecard") {
-    sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['Savacard'], $CartManage, 'HTML');
-    update("PaySetting", "ValuePay", $text, "NamePay", "CartDescription");
+    // نسخه 2.3.0: اعتبارسنجی + برگشت به صفحه مالی شیشهای
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    if (!isset($text) || !is_string($text) || trim($text) === '') {
+        sendmessage($from_id, "❌ متن شماره کارت را بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__card_txt = function_exists('botNormalizeDigits') ? botNormalizeDigits(trim($text)) : trim($text);
+    update("PaySetting", "ValuePay", $__card_txt, "NamePay", "CartDescription");
     step('home', $from_id);
+    $__cn = function_exists('botExtractCardNumber') ? botExtractCardNumber($__card_txt) : '';
+    if ($__cn === '') {
+        $__cw = "\n\n⚠️ شماره کارت ۱۶ رقمی در متن پیدا نشد. ذخیره شد، ولی دکمه «کپی شماره کارت» به کاربر نشان داده نمیشود.";
+    } elseif (function_exists('botCardLuhnOk') && !botCardLuhnOk($__cn)) {
+        $__cw = "\n\n🔢 شماره کارت: <code>{$__cn}</code>\n⚠️ رقم کنترل این شماره کارت درست نیست؛ احتمالاً یک رقم اشتباه است. دوباره چک کنید.";
+    } else {
+        $__cw = "\n\n🔢 شماره کارت: <code>{$__cn}</code> ✅";
+    }
+    $__fin_t = function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : '';
+    $__fin_k = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : $CartManage;
+    sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['Savacard'] . $__cw . "\n\n" . $__fin_t, $__fin_k, 'HTML');
+}
+# نسخه 2.3.0: ثبت شماره شبا
+if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'changesheba' && empty($datain)) {
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    if (!isset($text) || !is_string($text) || trim($text) === '') {
+        sendmessage($from_id, "❌ شماره شبا را بهصورت متن بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__sh_txt = botNormalizeDigits(trim($text));
+    $__sh = botExtractSheba($__sh_txt);
+    if ($__sh === '') {
+        sendmessage($from_id, "❌ شماره شبا پیدا نشد. شبا باید <b>IR + ۲۴ رقم</b> باشد، مثل:\n<code>IR000000000000000000000000</code>\nدوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if (!botShebaChecksumOk($__sh)) {
+        sendmessage($from_id, "❌ شبای <code>{$__sh}</code> معتبر نیست (رقم کنترل اشتباه است). احتمالاً یک رقم اشتباه تایپ شده. دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if (mb_strlen($__sh_txt) > 500) {
+        sendmessage($from_id, "❌ متن خیلی طولانی است (حداکثر ۵۰۰ کاراکتر). دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    ensurePaySetting('ShebaDescription', '');
+    ensurePaySetting('shebastatus', 'offsheba');
+    update("PaySetting", "ValuePay", $__sh_txt, "NamePay", "ShebaDescription");
+    step('home', $from_id);
+    $__on_now = strval(getPaySettingValue('shebastatus', 'offsheba')) === 'onsheba';
+    sendmessage($from_id, "✅ شماره شبا ذخیره شد: <code>{$__sh}</code>" . ($__on_now ? '' : "\n\nℹ️ واریز به شبا هنوز <b>خاموش</b> است. از ردیف «🏦 واریز به شبا» روشنش کنید.") . "\n\n" . buildFinanceSummaryText(), buildFinanceKeyboard(), 'HTML');
+    return;
 }
 # نسخه 2.2.9: درگاههای NowPayments و آقای پرداخت حذف شدند
 if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain === 'nav_panel') {
@@ -5127,6 +5223,46 @@ if ($datain == "adm_noop") {
     Editmessagetext($from_id, $message_id, $msg . "\n\n" . $tx, $kb);
 }
 
+
+# نسخه 2.3.0: تغییر نام دستهبندی
+if (in_array($from_id, $admin_ids) && isset($datain) && preg_match('/^adm_cat_ren_(\d+)$/', strval($datain), $m_cr)) {
+    $__cat = select("category", "*", "id", intval($m_cr[1]), "select");
+    if (!is_array($__cat)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'دسته یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    update("user", "Processing_value", strval(intval($m_cr[1])), "id", $from_id);
+    sendmessage($from_id, "✏️ نام فعلی: <b>" . htmlspecialchars(strval($__cat['remark'] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>\n\nنام جدید دسته را بفرستید:", $backadmin, 'HTML');
+    step('adm_cat_ren', $from_id);
+    return;
+}
+if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'adm_cat_ren' && empty($datain)) {
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $__new_cn = (isset($text) && is_string($text)) ? trim($text) : '';
+    if ($__new_cn === '' || mb_strlen($__new_cn) > 100) {
+        sendmessage($from_id, "❌ یک نام بین ۱ تا ۱۰۰ کاراکتر بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__cid = intval($user['Processing_value'] ?? 0);
+    $__dup = select("category", "*", "remark", $__new_cn, "select");
+    if (is_array($__dup) && intval($__dup['id'] ?? 0) !== $__cid) {
+        sendmessage($from_id, "❌ دستهای با همین نام وجود دارد. نام دیگری بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if ($__cid <= 0 || !is_array(select("category", "*", "id", $__cid, "select"))) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ دسته پیدا نشد. دوباره از لیست دستهها شروع کنید.", $backadmin, 'HTML');
+        return;
+    }
+    update("category", "remark", $__new_cn, "id", $__cid);
+    step('home', $from_id);
+    list($tx, $kb) = adminCategoriesListKeyboard();
+    sendmessage($from_id, "✅ نام دسته عوض شد.\n\n" . $tx, $kb, 'HTML');
+    return;
+}
 
 # نسخه 2.2.9: روشن/خاموش اکانت تست و سهمیه یک کاربر — از صفحه فروشگاه
 if (in_array($from_id, $admin_ids) && isset($datain) && $datain === 'adm_ut_toggle') {
