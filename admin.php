@@ -1083,8 +1083,19 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     $on_hold = "offonhold";
     $stmt = $pdo->prepare("INSERT INTO marzban_panel (name_panel,url_panel,username_panel,password_panel,type,inboundid,sublink,configManual,MethodUsername,statusTest,status,onholdstatus) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?)");
     $stmt->execute([$userdata['name'], $userdata['url_panel'], $userdata['username_panel'], $text, $userdata['type'], $inboundid, $sublink, $config, $textbotlang['users']['customidAndRandom'], $valueteststatus, $stauts, $on_hold]);
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['addedpanel'], $backadmin, 'HTML');
-    sendmessage($from_id, "🥳", $keyboardadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['managepanel']['addedpanel'], $keyboardadmin, 'HTML');
+    // نسخه 2.3.8: صفحه شیشهای پنل جدید + تست اتصال خودکار
+    try {
+        $__np_row = select("marzban_panel", "*", "name_panel", $userdata['name'], "select");
+        if (is_array($__np_row) && function_exists('adminPanelDetailKeyboard')) {
+            update("user", "Processing_value", $__np_row['name_panel'], "id", $from_id);
+            $__np_test = function_exists('botPanelAutoTest') ? botPanelAutoTest($__np_row) : '';
+            list($__np_tx, $__np_kb) = adminPanelDetailKeyboard($__np_row, '✅ پنل اضافه شد.' . $__np_test);
+            sendmessage($from_id, $__np_tx, $__np_kb, 'HTML');
+        }
+    } catch (Throwable $e) {
+        error_log('add panel page: ' . $e->getMessage());
+    }
     if ($userdata['type'] == "x-ui_single" or $userdata['type'] == "alireza") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['notex-ui'], null, 'HTML');
     } elseif ($userdata['type'] == "pasarguard") {
@@ -1926,7 +1937,7 @@ if (in_array($from_id, $admin_ids) && $__shop_step === 'shop_change_price' && !e
         sendmessage($from_id, $textbotlang['Admin']['Product']['InvalidPrice'] ?? 'قیمت نامعتبر', $backadmin, 'HTML');
         return;
     }
-    $price = intval(preg_replace('/\D/', '', $text));
+    $price = intval(preg_replace('/\D/', '', function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text)));
     $code = strval($user['Processing_value_tow'] ?? '');
     $name = strval($user['Processing_value'] ?? '');
     $loc = strval($user['Processing_value_one'] ?? '');
@@ -3505,10 +3516,21 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain =
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel']) {
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['RemovedPanel'], $keyboardadmin, 'HTML');
-    $stmt = $pdo->prepare("DELETE FROM marzban_panel WHERE name_panel = ?");
-    $stmt->bindParam(1, $user['Processing_value']);
-    $stmt->execute();
+    // نسخه 2.3.8: دکمه قدیمی دیگر مستقیم حذف نمیکند؛ همان تأیید جدید
+    $__rp = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (!is_array($__rp) || empty($__rp['id'])) {
+        sendmessage($from_id, "❌ پنل پیدا نشد. از «✏️ مدیریت پنل» پنل را انتخاب کنید.", $keyboardadmin, 'HTML');
+    } else {
+        $__rid = intval($__rp['id']);
+        $__uc = function_exists('botPanelUsageCounts') ? botPanelUsageCounts() : [];
+        $__sv = intval($__uc[strval($__rp['name_panel'])]['svc'] ?? 0);
+        $__pr = intval($__uc[strval($__rp['name_panel'])]['prod'] ?? 0);
+        $__kb_rp = json_encode(['inline_keyboard' => [
+            [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_pan_act_del_' . $__rid]],
+            [['text' => '❌ انصراف', 'callback_data' => 'adm_pan_' . $__rid]],
+        ]], JSON_UNESCAPED_UNICODE);
+        sendmessage($from_id, "⚠️ پنل <code>" . htmlspecialchars(strval($__rp['name_panel']), ENT_QUOTES, 'UTF-8') . "</code> حذف شود؟\n\n📦 سرویس فعال: <b>{$__sv}</b> | 🛒 محصول: <b>{$__pr}</b>" . ($__sv > 0 ? "\n\n❗️ این پنل سرویس فعال دارد. بهتر است بهجای حذف، «فروش» را غیرفعال کنید." : ''), $__kb_rp, 'HTML');
+    }
 }
 if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']) {
     sendmessage($from_id, $textbotlang['users']['Extra_volume']['SetPrice'] . $setting['Extra_volume'], $backadmin, 'HTML');
@@ -5325,9 +5347,39 @@ if ($datain == "adm_noop") {
 } elseif ($datain == "adm_cat_add") {
     sendmessage($from_id, $textbotlang['Admin']['category']['getname'] ?? 'نام دسته را بفرستید:', $backadmin, 'HTML');
     step("getremarkcategory", $from_id);
-} elseif (preg_match('/^adm_cat_del_(\d+)$/', strval($datain), $m)) {
+} elseif (preg_match('/^adm_cat_(del|delok)_(\d+)$/', strval($datain), $m)) {
+    // نسخه 2.3.8: دستهای که محصول دارد حذف نمیشود؛ بقیه با تأیید
+    $__cid = intval($m[2]);
+    $__cat = select("category", "*", "id", $__cid, "select");
+    if (!is_array($__cat)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'دسته یافت نشد', 'show_alert' => true]);
+        list($tx, $kb) = adminCategoriesListKeyboard();
+        Editmessagetext($from_id, $message_id, $tx, $kb);
+        return;
+    }
+    $__np = 0;
     try {
-        $pdo->prepare("DELETE FROM category WHERE id = ?")->execute([intval($m[1])]);
+        $__st = $pdo->prepare("SELECT COUNT(*) FROM product WHERE Category = ?");
+        $__st->execute([strval($__cid)]);
+        $__np = intval($__st->fetchColumn());
+    } catch (Throwable $e) {
+    }
+    $__cn = htmlspecialchars(strval($__cat['remark'] ?? ''), ENT_QUOTES, 'UTF-8');
+    if ($__np > 0) {
+        list($tx, $kb) = adminCategoriesListKeyboard();
+        Editmessagetext($from_id, $message_id, "❌ دسته «{$__cn}» <b>{$__np}</b> محصول دارد و حذف نشد.\nاگر حذف شود، این محصولات از منوی خرید کاربران ناپدید میشوند.\n\nاول از «📦 مدیریت محصولات» دسته این محصولات را عوض کنید (دکمه «📁 دسته»)، بعد دسته را حذف کنید.\n\n" . $tx, $kb);
+        return;
+    }
+    if ($m[1] === 'del') {
+        $__kb_cd = json_encode(['inline_keyboard' => [
+            [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_cat_delok_' . $__cid]],
+            [['text' => '❌ خیر، بازگشت', 'callback_data' => 'adm_cat_list']],
+        ]], JSON_UNESCAPED_UNICODE);
+        Editmessagetext($from_id, $message_id, "⚠️ دسته «{$__cn}» حذف شود؟\n(این دسته محصولی ندارد.)", $__kb_cd);
+        return;
+    }
+    try {
+        $pdo->prepare("DELETE FROM category WHERE id = ?")->execute([$__cid]);
     } catch (Throwable $e) {}
     list($tx, $kb) = adminCategoriesListKeyboard();
     Editmessagetext($from_id, $message_id, "✅ دسته حذف شد.\n\n" . $tx, $kb);
@@ -5989,7 +6041,7 @@ if ($__rv_is_admin && $__rv_step === 'rv_add_volume' && !empty($text) && $datain
         step('home', $from_id);
         return;
     }
-    $gb = intval(preg_replace('/\D/', '', $text));
+    $gb = intval(preg_replace('/\D/', '', function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text)));
     if ($gb < 1) {
         sendmessage($from_id, '❌ حجم نامعتبر است.', $backadmin, 'HTML');
         return;
@@ -6008,7 +6060,7 @@ if ($__rv_is_admin && $__rv_step === 'rv_add_price' && !empty($text) && $datain 
     }
     global $pdo;
     $gb = intval($user['Processing_value'] ?? 0);
-    $price = intval(preg_replace('/\D/', '', $text));
+    $price = intval(preg_replace('/\D/', '', function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text)));
     if ($gb < 1 || $price < 1) {
         sendmessage($from_id, '❌ مقادیر نامعتبر.', $backadmin, 'HTML');
         return;
@@ -6053,7 +6105,7 @@ if ($__rv_is_admin && preg_match('/^rv_setprice_(\d+)$/', $__rv_step, $m_sp2) &&
         step('home', $from_id);
         return;
     }
-    $price = intval(preg_replace('/\D/', '', $text));
+    $price = intval(preg_replace('/\D/', '', function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text)));
     $pid = intval($m_sp2[1]);
     if ($price < 1) {
         sendmessage($from_id, '❌ قیمت نامعتبر.', $backadmin, 'HTML');
@@ -6078,7 +6130,7 @@ if ($__rv_is_admin && preg_match('/^rv_setvol_(\d+)$/', $__rv_step, $m_sv2) && !
         step('home', $from_id);
         return;
     }
-    $gb = intval(preg_replace('/\D/', '', $text));
+    $gb = intval(preg_replace('/\D/', '', function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text)));
     $pid = intval($m_sv2[1]);
     if ($gb < 1) {
         sendmessage($from_id, '❌ حجم نامعتبر.', $backadmin, 'HTML');
