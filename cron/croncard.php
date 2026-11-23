@@ -13,6 +13,14 @@ $ManagePanel = new ManagePanel();
 $setting = select("setting", "*");
 // فقط اگر در دیتابیس صریحاً روشن باشد اجرا شود — در غیر این صورت خروج
 // (اگر تابع نبود یا مقدار غیر از 1 بود، هیچ رسیدی تأیید نشود)
+// نسخه 2.4.0: پاکسازی ردیفهای قدیمی پیام رسید (حداکثر یکبار در ساعت)
+if (function_exists('botCleanupReceiptMsgs')) {
+    $__cl_f = __DIR__ . '/receipt_cleanup.ts';
+    if (!is_file($__cl_f) || (time() - intval(@file_get_contents($__cl_f))) > 3600) {
+        @file_put_contents($__cl_f, strval(time()));
+        botCleanupReceiptMsgs();
+    }
+}
 $__auto_cart_on = false;
 if (function_exists('isAutomaticCartConfirmEnabled')) {
     $__auto_cart_on = (bool) isAutomaticCartConfirmEnabled();
@@ -50,14 +58,6 @@ $datatextbot = array(
 foreach ($datatxtbot as $item) {
     if (isset($datatextbot[$item['id_text']])) {
         $datatextbot[$item['id_text']] = $item['text'];
-    }
-}
-// نسخه 2.4.0: پاکسازی ردیفهای قدیمی پیام رسید (حداکثر یکبار در ساعت)
-if (function_exists('botCleanupReceiptMsgs')) {
-    $__cl_f = __DIR__ . '/receipt_cleanup.ts';
-    if (!is_file($__cl_f) || (time() - intval(@file_get_contents($__cl_f))) > 3600) {
-        @file_put_contents($__cl_f, strval(time()));
-        botCleanupReceiptMsgs();
     }
 }
 // نسخه 2.3.1: تأیید خودکار شامل واریز به شبا هم میشود
