@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.3.4";
+$version = "2.3.5";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -204,6 +204,26 @@ if (isset($datain) && $datain === 'goto_buy') {
 } elseif (isset($datain) && $datain === 'goto_services') {
     $datain = '';
     $text = $datatextbot['text_Purchased_services'];
+} elseif (isset($datain) && $datain === 'dep_min_go') {
+    // نسخه 2.3.5: واریز حداقل مبلغ به کیف پول (همان مسیر عادی افزایش موجودی)
+    $datain = '';
+    if (function_exists('isDepositEnabled') && !isDepositEnabled()) {
+        sendmessage($from_id, getEditableBotText('msg_deposit_closed', $textbotlang['users']['Balance']['deposit_closed']), $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
+    $__min_dep = intval(getDepositLimits()['min']);
+    update("user", "Processing_value", strval($__min_dep), "id", $from_id);
+    update("user", "Processing_value_one", "0", "id", $from_id);
+    update("user", "Processing_value_tow", "0", "id", $from_id);
+    step('home', $from_id);
+    if (function_exists('presentPaymentMethods')) {
+        presentPaymentMethods($from_id, "💰 <b>افزایش موجودی</b>\n\nمبلغ: <b>" . number_format($__min_dep) . "</b> تومان\n\n" . ($textbotlang['users']['Balance']['selectPatment'] ?? '💵 روش پرداخت را انتخاب کنید:'), $message_id);
+    } else {
+        sendmessage($from_id, $textbotlang['users']['Balance']['selectPatment'], $step_payment, 'HTML');
+        step('get_step_payment', $from_id);
+    }
+    return;
 } elseif (isset($datain) && $datain === 'goto_usertest') {
     // نسخه 2.2.7: دکمه اکانت تست در «هنوز سرویسی ندارید»
     $datain = '';
@@ -1833,7 +1853,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         }
         $Balance_prim = $__price_ext - $__bal_now;
         if ($Balance_prim < getDepositLimits()['min']) {
-            sendmessage($from_id, msgShortfallBelowMin('extend'), $keyboard, 'HTML');
+            sendmessage($from_id, msgShortfallBelowMin('extend', $Balance_prim), (function_exists('botShortfallMinKeyboard') ? botShortfallMinKeyboard() : $keyboard), 'HTML');
             step('home', $from_id);
             return;
         }
@@ -2265,7 +2285,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             }
             $Balance_prim = $price_extra - $__bal_now;
             if ($Balance_prim < getDepositLimits()['min']) {
-                sendmessage($from_id, msgShortfallBelowMin('extra'), $keyboard, 'HTML');
+                sendmessage($from_id, msgShortfallBelowMin('extra', $Balance_prim), (function_exists('botShortfallMinKeyboard') ? botShortfallMinKeyboard() : $keyboard), 'HTML');
                 step('home', $from_id);
                 return;
             }
@@ -3475,7 +3495,7 @@ if (isset($datain) && $datain === 'product_header') {
         }
         $Balance_prim = $priceproduct - $user['Balance'];
         if ($Balance_prim < getDepositLimits()['min']) {
-            sendmessage($from_id, msgShortfallBelowMin('buy'), $keyboard, 'HTML');
+            sendmessage($from_id, msgShortfallBelowMin('buy', $Balance_prim), (function_exists('botShortfallMinKeyboard') ? botShortfallMinKeyboard() : $keyboard), 'HTML');
             step('home', $from_id);
             return;
         }
@@ -3556,7 +3576,7 @@ if (isset($datain) && $datain === 'product_header') {
         }
         $Balance_prim = $__price_buy - $__bal_before;
         if ($Balance_prim < getDepositLimits()['min']) {
-            sendmessage($from_id, msgShortfallBelowMin('buy'), $keyboard, 'HTML');
+            sendmessage($from_id, msgShortfallBelowMin('buy', $Balance_prim), (function_exists('botShortfallMinKeyboard') ? botShortfallMinKeyboard() : $keyboard), 'HTML');
             step('home', $from_id);
             return;
         }

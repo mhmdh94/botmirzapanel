@@ -5723,18 +5723,40 @@ function validateDepositAmount($amount)
 /**
  * وقتی کسری موجودی کمتر از حداقل واریز است — نمی‌توان فاکتور ساخت
  */
-function msgShortfallBelowMin($context = 'buy')
+function msgShortfallBelowMin($context = 'buy', $short = 0)
 {
     $lim = getDepositLimits();
     $minf = formatToman($lim['min']);
+    // نسخه 2.3.5: پیشنهاد مستقیم واریز حداقل مبلغ (دکمه زیر پیام)
     $map = [
-        'buy' => "سپس دوباره برای خرید سرویس اقدام نمایید.",
-        'extend' => "سپس دوباره برای تمدید اقدام نمایید.",
-        'extra' => "سپس دوباره حجم اضافه بخرید.",
-        'pay' => "لطفاً از بخش افزایش اعتبار حداقل این مبلغ را واریز کنید.",
+        'buy' => "بعد از تأیید واریز، دوباره «🛒 خرید اشتراک» را بزنید؛ مبلغ از کیف پول کم میشود.",
+        'extend' => "بعد از تأیید واریز، دوباره تمدید را بزنید؛ مبلغ از کیف پول کم میشود.",
+        'extra' => "بعد از تأیید واریز، دوباره حجم اضافه بخرید؛ مبلغ از کیف پول کم میشود.",
+        'pay' => "لطفاً از بخش افزایش موجودی حداقل این مبلغ را واریز کنید.",
     ];
     $tail = $map[$context] ?? $map['pay'];
-    return "❌ مبلغ پرداختی این خرید کمتر از {$minf} تومان است.\n\nابتدا از بخش افزایش اعتبار حداقل {$minf} تومان واریز کنید، {$tail}";
+    $short = intval($short);
+    $line = $short > 0 ? ("💳 کسری: <b>" . number_format($short) . "</b> تومان\n") : '';
+    if ($context === 'pay') {
+        return "❌ مبلغ پرداختی کمتر از حداقل واریز ({$minf} تومان) است.\n\n{$tail}";
+    }
+    return "⚠️ <b>موجودی کافی نیست</b>\n\n"
+        . $line
+        . "🔻 حداقل واریز: <b>{$minf}</b> تومان\n\n"
+        . "با دکمه زیر <b>{$minf}</b> تومان به کیف پول واریز کنید.\n"
+        . $tail . "\n"
+        . "💰 مابقی مبلغ در کیف پول شما میماند.";
+}
+
+/** نسخه 2.3.5: دکمه «واریز حداقل مبلغ» زیر پیام کسری */
+function botShortfallMinKeyboard()
+{
+    global $textbotlang;
+    $minf = formatToman(getDepositLimits()['min']);
+    return json_encode(['inline_keyboard' => [
+        [['text' => "💰 واریز {$minf} تومان", 'callback_data' => 'dep_min_go']],
+        [['text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی', 'callback_data' => 'backuser']],
+    ]], JSON_UNESCAPED_UNICODE);
 }
 
 function addFieldToTable($tableName, $fieldName, $defaultValue = null, $datatype = "VARCHAR(500)")
