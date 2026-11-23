@@ -271,23 +271,9 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         $__nav_show("📣 <b>تنظیمات کانال گزارش</b>\n\nکانال فعلی: <code>{$ch_id}</code>", $kb);
         return;
     } elseif ($datain === 'navset_chjoin') {
-        // مستقیم درخواست آیدی کانال — بدون منوی میانی reply
-        $__ch_link = '';
-        try {
-            $__ch_row = select('channels', 'link', null, null, 'select');
-            if (is_array($__ch_row)) {
-                $__ch_link = strval($__ch_row['link'] ?? '');
-            } elseif (isset($channels) && is_array($channels)) {
-                $__ch_link = strval($channels['link'] ?? '');
-            }
-        } catch (Throwable $e) {
-            if (isset($channels) && is_array($channels)) {
-                $__ch_link = strval($channels['link'] ?? '');
-            }
-        }
-        $__prompt = ($textbotlang['Admin']['channel']['changechannel'] ?? 'آیدی کانال عضویت اجباری را بدون @ بفرستید.\nکانال فعلی: @') . $__ch_link;
-        sendmessage($from_id, $__prompt, $backadmin, 'HTML');
-        step('addchannel', $from_id);
+        // نسخه 2.4.1: صفحه کانال عضویت اجباری
+        list($__tx, $__kb) = botChannelJoinPage();
+        $__nav_show($__tx, $__kb);
         return;
     } elseif ($datain === 'navset_aff') {
         if (function_exists('buildAffiliatesAdminPanel')) {
@@ -422,83 +408,211 @@ if (isset($datain) && is_string($datain) && preg_match('/^Response_(\d+)$/', $da
  elseif ($text == $textbotlang['Admin']['channel']['changechannelbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['channel']['changechannel'] . $channels['link'], $backadmin, 'HTML');
     step('addchannel', $from_id);
-} elseif ($user['step'] == "addchannel") {
-    $__after_ch_kb = function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : ($keyboardadmin ?? $backadmin);
-    sendmessage($from_id, $textbotlang['Admin']['channel']['setchannel'], $__after_ch_kb, 'HTML');
+} elseif ($user['step'] == "addchannel" && empty($datain)) {
+    // نسخه 2.4.1: اعتبارسنجی آیدی + بررسی ادمین بودن ربات (بدون تغییر ساختار جدول)
+    $__ch = botNormalizeChannelInput($text);
+    if ($__ch === '') {
+        sendmessage($from_id, "❌ آیدی کانال نامعتبر است.\nنمونه: <code>mychannel</code> یا <code>@mychannel</code> یا <code>https://t.me/mychannel</code>\n(کانال باید عمومی باشد.) دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    list($__okc, $__msgc) = botCheckBotChannelAdmin($__ch);
+    if ($__okc === false) {
+        sendmessage($from_id, "❌ " . $__msgc . "\n\nاول ربات را در کانال @{$__ch} ادمین کنید، بعد دوباره آیدی را بفرستید.", $backadmin, 'HTML');
+        return;
+    }
     step('home', $from_id);
     $channels_ch = select("channels", "link", null, null, "count");
-    $Check_filde = $connect->query("SHOW COLUMNS FROM channels LIKE 'Channel_lock'");
-    if (mysqli_num_rows($Check_filde) == 1) {
-        $connect->query("ALTER TABLE channels DROP COLUMN Channel_lock;");
-        $stmt->execute();
-    }
     if ($channels_ch == 0) {
-        $stmt = $pdo->prepare("INSERT INTO channels (link) VALUES (?)");
-        $stmt->bindParam(1, $text, PDO::PARAM_STR);
-
-        $stmt->execute();
+        $pdo->prepare("INSERT INTO channels (link) VALUES (?)")->execute([$__ch]);
     } else {
-        update("channels", "link", $text);
+        update("channels", "link", $__ch);
     }
+    list($__tx, $__kb) = botChannelJoinPage("✅ کانال @{$__ch} ثبت شد." . ($__okc === null ? "\n⚠️ " . $__msgc . " بعداً با «🔍 بررسی» دوباره امتحان کنید." : ''));
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
 }
 if ($text == $textbotlang['Admin']['Addedadmin']) {
     sendmessage($from_id, $textbotlang['Admin']['manageadmin']['getid'], $backadmin, 'HTML');
     step('addadmin', $from_id);
 }
-if ($user['step'] == "addadmin") {
-    $stmt = $pdo->prepare("INSERT INTO admin (id_admin) VALUES (?)");
-    $stmt->bindParam(1, $text);
-    $stmt->execute();
-    sendmessage($from_id, $textbotlang['Admin']['manageadmin']['addadminset'] ?? '✅ ادمین اضافه شد', null, 'HTML');
-    if (function_exists('adminAdminsListKeyboard')) {
-        list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
-    } else {
-        sendmessage($from_id, $textbotlang['Admin']['manageadmin']['addadminset'], $keyboardadmin, 'HTML');
+if ($user['step'] == "addadmin" && empty($datain)) {
+    // نسخه 2.4.1: اعتبارسنجی + تأیید قبل از افزودن ادمین
+    $__aid = botAdmInt($text, 1, 9999999999999);
+    if ($__aid === null) {
+        sendmessage($from_id, "❌ آیدی عددی معتبر بفرستید (فقط عدد، مثل <code>123456789</code>).\nبرای لغو «بازگشت» را بزنید.", $backadmin, 'HTML');
+        return;
     }
+    $__aid = strval($__aid);
+    if (in_array($__aid, array_map('strval', (array)($admin_ids ?? [])), true)) {
+        sendmessage($from_id, "⚠️ این کاربر از قبل ادمین است. آیدی دیگری بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__au = select("user", "*", "id", $__aid, "select");
     step('home', $from_id);
+    $__un = is_array($__au) ? trim(strval($__au['username'] ?? '')) : '';
+    $__info = is_array($__au)
+        ? "👤 یوزرنیم: " . (($__un !== '' && $__un !== 'none' && $__un !== 'NOT_USERNAME') ? '@' . htmlspecialchars($__un, ENT_QUOTES, 'UTF-8') : 'ندارد')
+        : "⚠️ این کاربر هنوز ربات را استارت نکرده است.";
+    $__kb = json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، ادمین شود', 'callback_data' => 'admadd_ok_' . $__aid]],
+        [['text' => '❌ انصراف', 'callback_data' => 'adm_adm_list']],
+    ]], JSON_UNESCAPED_UNICODE);
+    sendmessage($from_id, "➕ <b>افزودن ادمین</b>\n\n🆔 آیدی: <code>{$__aid}</code>\n{$__info}\n\n⚠️ ادمین به همه بخشهای مدیریت (موجودی کاربران، رسیدها، پیام همگانی) دسترسی کامل دارد.\nاضافه شود؟", $__kb, 'HTML');
+    return;
 }
 if ($text == $textbotlang['Admin']['Removeedadmin']) {
     sendmessage($from_id, $textbotlang['Admin']['manageadmin']['getid'], $backadmin, 'HTML');
     step('deleteadmin', $from_id);
-} elseif ($user['step'] == "deleteadmin") {
-    if (intval($text) == $adminnumber) {
-        sendmessage($from_id, $textbotlang['Admin']['manageadmin']['InfoAdd'], null, 'HTML');
+} elseif ($user['step'] == "deleteadmin" && empty($datain)) {
+    // نسخه 2.4.1: پیام خطا + تأیید حذف
+    $__did = botAdmInt($text, 1, 9999999999999);
+    if ($__did === null) {
+        sendmessage($from_id, "❌ آیدی عددی معتبر بفرستید. برای لغو «بازگشت» را بزنید.", $backadmin, 'HTML');
         return;
     }
-    if (!is_numeric($text) || !in_array($text, $admin_ids))
+    $__did = strval($__did);
+    if ($__did === strval($adminnumber)) {
+        sendmessage($from_id, $textbotlang['Admin']['manageadmin']['InfoAdd'], $backadmin, 'HTML');
         return;
-    sendmessage($from_id, $textbotlang['Admin']['manageadmin']['removedadmin'], $keyboardadmin, 'HTML');
-    $stmt = $pdo->prepare("DELETE FROM admin WHERE id_admin = ?");
-    $stmt->bindParam(1, $text);
-    $stmt->execute();
+    }
+    if ($__did === strval($from_id)) {
+        sendmessage($from_id, "❌ نمیتوانید خودتان را حذف کنید. آیدی دیگری بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if (!in_array($__did, array_map('strval', (array)($admin_ids ?? [])), true)) {
+        sendmessage($from_id, "❌ این آیدی در لیست ادمینها نیست. دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
     step('home', $from_id);
+    sendmessage($from_id, "⚠️ ادمین <code>{$__did}</code> حذف شود؟", json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_adm_delok_' . $__did]],
+        [['text' => '❌ انصراف', 'callback_data' => 'adm_adm_list']],
+    ]], JSON_UNESCAPED_UNICODE), 'HTML');
 } elseif (preg_match('/limitusertest_(.*)/', $datain, $dataget)) {
     $id_user = $dataget[1];
     sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['getid'], $backadmin, 'HTML');
     update("user", "Processing_value", $id_user, "id", $from_id);
     step('get_number_limit', $from_id);
-} elseif ($user['step'] == "get_number_limit") {
-    sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['setlimit'], $keyboardadmin, 'HTML');
-    $id_user_set = $text;
+} elseif ($user['step'] == "get_number_limit" && empty($datain)) {
+    // نسخه 2.4.1: فقط عدد ۰ تا ۱۰۰۰
+    $__n = botAdmInt($text, 0, 1000);
+    if ($__n === null) {
+        sendmessage($from_id, "❌ یک عدد بین ۰ تا ۱۰۰۰ بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__tu = strval($user['Processing_value'] ?? '');
     step('home', $from_id);
-    update("user", "limit_usertest", $text, "id", $user['Processing_value']);
+    if ($__tu === '' || !is_array(select("user", "*", "id", $__tu, "select"))) {
+        sendmessage($from_id, "❌ کاربر پیدا نشد.", $keyboardadmin, 'HTML');
+        return;
+    }
+    update("user", "limit_usertest", strval($__n), "id", $__tu);
+    sendmessage($from_id, "✅ سهمیه تست کاربر <code>" . htmlspecialchars($__tu, ENT_QUOTES, 'UTF-8') . "</code> روی <b>{$__n}</b> تنظیم شد.", $keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['Admin']['getlimitusertest']['setlimitallbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['limitall'], $backadmin, 'HTML');
     step('limit_usertest_allusers', $from_id);
-} elseif ($user['step'] == "limit_usertest_allusers") {
-    update("setting", "limit_usertest_all", $text);
-    update("user", "limit_usertest", $text);
-    sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['setlimitall'] ?? '✅ ثبت شد', null, 'HTML');
-    if (function_exists('adminUsertestPanel')) {
-        list($__tx, $__kb) = adminUsertestPanel();
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
+} elseif ($user['step'] == "limit_usertest_allusers" && empty($datain)) {
+    // نسخه 2.4.1: اعتبارسنجی + پیشنمایش تعداد + تأیید
+    $__n = botAdmInt($text, 0, 1000);
+    if ($__n === null) {
+        sendmessage($from_id, "❌ یک عدد بین ۰ تا ۱۰۰۰ بفرستید:", $backadmin, 'HTML');
+        return;
     }
     step('home', $from_id);
+    $__chg = 0;
+    try {
+        $__st = $pdo->prepare("SELECT COUNT(*) FROM user WHERE CAST(limit_usertest AS SIGNED) <> ?");
+        $__st->execute([$__n]);
+        $__chg = intval($__st->fetchColumn());
+    } catch (Throwable $e) {}
+    $__old = strval($setting['limit_usertest_all'] ?? '-');
+    sendmessage($from_id, "⚠️ <b>تغییر سقف تست همه کاربران</b>\n\nسقف فعلی: <b>{$__old}</b>\nسقف جدید: <b>{$__n}</b>\n👥 کاربرانی که سهمیهشان تغییر میکند: <b>" . number_format($__chg) . "</b>\n\nسهمیه باقیمانده همه کاربران روی <b>{$__n}</b> گذاشته میشود (حتی کسانی که قبلاً تست گرفتهاند).\nاعمال شود؟", json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، اعمال شود', 'callback_data' => 'utlim_ok_' . $__n]],
+        [['text' => '❌ انصراف', 'callback_data' => 'adm_ut_panel']],
+    ]], JSON_UNESCAPED_UNICODE), 'HTML');
 }
 if ($text == $textbotlang['Admin']['channel']['setting']) {
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $channelkeyboard, 'HTML');
+    list($__tx, $__kb) = botChannelJoinPage();
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
+}
+# نسخه 2.4.1: تأییدهای ادمین/سقف تست/کانال
+if (isset($datain) && preg_match('/^admadd_ok_(\d+)$/', strval($datain), $__m)) {
+    $__aid = strval($__m[1]);
+    try {
+        $__st = $pdo->prepare("SELECT COUNT(*) FROM admin WHERE id_admin = ?");
+        $__st->execute([$__aid]);
+        if (intval($__st->fetchColumn()) === 0) {
+            $pdo->prepare("INSERT INTO admin (id_admin) VALUES (?)")->execute([$__aid]);
+        }
+    } catch (Throwable $e) {
+        error_log('add admin: ' . $e->getMessage());
+    }
+    list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
+    Editmessagetext($from_id, $message_id, "✅ ادمین <code>{$__aid}</code> اضافه شد.\n\n" . $__tx, $__kb);
+    return;
+}
+if (isset($datain) && preg_match('/^adm_adm_delok_(\d+)$/', strval($datain), $__m)) {
+    $__did = strval($__m[1]);
+    if ($__did === strval($adminnumber) || $__did === strval($from_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این ادمین قابل حذف نیست', 'show_alert' => true]);
+        return;
+    }
+    try {
+        $pdo->prepare("DELETE FROM admin WHERE id_admin = ?")->execute([$__did]);
+    } catch (Throwable $e) {}
+    list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
+    Editmessagetext($from_id, $message_id, "✅ ادمین <code>{$__did}</code> حذف شد.\n\n" . $__tx, $__kb);
+    return;
+}
+if (isset($datain) && preg_match('/^utlim_ok_(\d+)$/', strval($datain), $__m)) {
+    $__n = intval($__m[1]);
+    if ($__n > 1000) {
+        return;
+    }
+    update("setting", "limit_usertest_all", strval($__n));
+    update("user", "limit_usertest", strval($__n));
+    list($__tx, $__kb) = adminUsertestPanel();
+    Editmessagetext($from_id, $message_id, "✅ سقف تست همه کاربران روی <b>{$__n}</b> تنظیم شد.\n\n" . $__tx, $__kb);
+    return;
+}
+if (isset($datain) && $datain === 'adm_ut_resetok') {
+    $settingrow = select("setting", "*", null, null, "select");
+    $lim = max(0, intval($settingrow['limit_usertest_all'] ?? 1));
+    update("user", "limit_usertest", strval($lim));
+    $msg = sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'] ?? '✅ سقف تست همه کاربران به %s ریست شد', $lim);
+    list($__tx, $__kb) = adminUsertestPanel();
+    Editmessagetext($from_id, $message_id, $msg . "\n\n" . $__tx, $__kb);
+    return;
+}
+if (isset($datain) && in_array($datain, ['chjoin_set', 'chjoin_test', 'chjoin_del', 'chjoin_delok'], true)) {
+    if ($datain === 'chjoin_set') {
+        sendmessage($from_id, "📢 آیدی کانال عمومی را بفرستید.\nنمونه: <code>mychannel</code> یا <code>@mychannel</code> یا <code>https://t.me/mychannel</code>\n\n⚠️ قبلش ربات را در کانال <b>ادمین</b> کنید.", $backadmin, 'HTML');
+        step('addchannel', $from_id);
+        return;
+    }
+    $__row = select('channels', 'link', null, null, 'select');
+    $__link = is_array($__row) ? trim(strval($__row['link'] ?? '')) : '';
+    if ($datain === 'chjoin_test') {
+        if ($__link === '') {
+            list($__tx, $__kb) = botChannelJoinPage();
+        } else {
+            list($__okc, $__msgc) = botCheckBotChannelAdmin($__link);
+            list($__tx, $__kb) = botChannelJoinPage(($__okc === true ? '✅ ' : '❌ ') . $__msgc);
+        }
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+        return;
+    }
+    if ($datain === 'chjoin_del') {
+        Editmessagetext($from_id, $message_id, "⚠️ قفل کانال برداشته شود؟\nبعد از آن کاربران بدون عضویت در کانال از ربات استفاده میکنند.", json_encode(['inline_keyboard' => [
+            [['text' => '✅ بله، برداشته شود', 'callback_data' => 'chjoin_delok']],
+            [['text' => '❌ انصراف', 'callback_data' => 'navset_chjoin']],
+        ]], JSON_UNESCAPED_UNICODE));
+        return;
+    }
+    update("channels", "link", "");
+    list($__tx, $__kb) = botChannelJoinPage("✅ قفل کانال برداشته شد.");
+    Editmessagetext($from_id, $message_id, $__tx, $__kb);
+    return;
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics'] || (isset($datain) && $datain === 'stats_refresh')) {
@@ -1029,14 +1143,8 @@ if ($text == $textbotlang['Admin']['manageadmin']['showlistbtn']) {
         sendmessage($from_id, "❌ این بخش فقط برای ادمین اصلی قابل دسترسی است.", function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel, 'HTML');
         return;
     }
-    $List_admin = null;
-    $admin_ids = array_filter($admin_ids);
-    foreach ($admin_ids as $admin) {
-        $List_admin .= "$admin\n";
-    }
-    $list_admin_text = sprintf($textbotlang['Admin']['manageadmin']['showlist'], $List_admin);
-    $kb_admin_sec = function_exists('getAdminSectionPanelKeyboard') ? getAdminSectionPanelKeyboard($from_id) : $admin_section_panel;
-    sendmessage($from_id, $list_admin_text, $kb_admin_sec, 'HTML');
+    list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['selecttypepanel'], $typepanel, 'HTML');
@@ -2178,8 +2286,9 @@ if ($datain === 'backup_back') {
     if (!in_array($from_id, $admin_ids)) {
         return;
     }
-    Editmessagetext($from_id, $message_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید.', json_encode(['inline_keyboard' => []]));
-    sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'یک گزینه را انتخاب کنید.', $setting_panel, 'HTML');
+    Editmessagetext($from_id, $message_id,
+        function_exists('buildAdminSettingsSectionText') ? buildAdminSettingsSectionText() : '⚙️ تنظیمات',
+        function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : json_encode(['inline_keyboard' => []]));
     return;
 }
 
@@ -2342,17 +2451,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['test_account_settings']) {
 }
 
 if ($text == $textbotlang['Admin']['Usertest']['reset_all_limits']) {
-    $settingrow = select("setting", "*", null, null, "select");
-    $lim = intval($settingrow['limit_usertest_all'] ?? 1);
-    if ($lim < 0) {
-        $lim = 0;
-    }
-    update("user", "limit_usertest", strval($lim));
-    sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'], $lim), null, 'HTML');
-    if (function_exists('adminUsertestPanel')) {
-        list($__tx, $__kb) = adminUsertestPanel();
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
-    }
+    list($__tx, $__kb) = botUsertestResetConfirm();
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
 }
 
 #-------------------------#
@@ -2780,35 +2880,33 @@ if ($text == $textbotlang['Admin']['Product']['edittime']) {
 if ($text == $textbotlang['Admin']['Usertest']['settimeusertest']) {
     sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['sendtimeusertest'], $setting['time_usertest']), $backadmin, 'HTML');
     step('updatetime', $from_id);
-} elseif ($user['step'] == "updatetime") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['Product']['InvalidTime'], $backadmin, 'HTML');
+} elseif ($user['step'] == "updatetime" && empty($datain)) {
+    $__n = botAdmInt($text, 1, 720);
+    if ($__n === null) {
+        sendmessage($from_id, "❌ یک عدد بین ۱ تا ۷۲۰ (ساعت) بفرستید:", $backadmin, 'HTML');
         return;
     }
-    update("setting", "time_usertest", $text);
-    sendmessage($from_id, $textbotlang['Admin']['Usertest']['TimeUpdated'], null, 'HTML');
-    if (function_exists('adminUsertestPanel')) {
-        list($__tx, $__kb) = adminUsertestPanel();
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
-    }
+    $__old = strval($setting['time_usertest'] ?? '-');
+    update("setting", "time_usertest", strval($__n));
     step('home', $from_id);
+    list($__tx, $__kb) = adminUsertestPanel();
+    sendmessage($from_id, "✅ زمان اکانت تست: <b>{$__old}</b> ← <b>{$__n}</b> ساعت\n\n" . $__tx, $__kb, 'HTML');
 }
 #-------------------------#
 if ($text == $textbotlang['Admin']['Usertest']['setvolumeusertest']) {
     sendmessage($from_id, sprintf($textbotlang['Admin']['Usertest']['sendvoluemusertest'], $setting['val_usertest']), $backadmin, 'HTML');
     step('val_usertest', $from_id);
-} elseif ($user['step'] == "val_usertest") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['Product']['Invalidvolume'], $backadmin, 'HTML');
+} elseif ($user['step'] == "val_usertest" && empty($datain)) {
+    $__n = botAdmInt($text, 1, 102400);
+    if ($__n === null) {
+        sendmessage($from_id, "❌ حجم را به مگابایت بفرستید؛ عددی بین ۱ تا ۱۰۲۴۰۰ (مثلاً ۵۰۰ یعنی ۵۰۰ مگ، ۱۰۲۴ یعنی ۱ گیگ):", $backadmin, 'HTML');
         return;
     }
-    update("setting", "val_usertest", $text);
-    sendmessage($from_id, $textbotlang['Admin']['Usertest']['VolumeUpdated'], null, 'HTML');
-    if (function_exists('adminUsertestPanel')) {
-        list($__tx, $__kb) = adminUsertestPanel();
-        sendmessage($from_id, $__tx, $__kb, 'HTML');
-    }
+    $__old = strval($setting['val_usertest'] ?? '-');
+    update("setting", "val_usertest", strval($__n));
     step('home', $from_id);
+    list($__tx, $__kb) = adminUsertestPanel();
+    sendmessage($from_id, "✅ حجم اکانت تست: <b>{$__old}</b> ← <b>{$__n}</b> مگابایت\n\n" . $__tx, $__kb, 'HTML');
 }
 #-------------------------#
 elseif (preg_match('/^(addbalanceuser|lowbalanceuser)_(\w+)$/', strval($datain), $dataget)) {
@@ -4053,14 +4151,13 @@ if ($text == $textbotlang['Admin']['cron']['test']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['test']['disable']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['test']['disabled'], null, 'HTML');
-    $currentCronJobs = shell_exec("crontab -l");
-    $url = escapeshellarg("https://$domainhosts/cron/configtest.php");
-    $jobToRemove = "*/15 * * * * curl $url";
-    $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', $currentCronJobs);
-    file_put_contents('/tmp/crontab.txt', $newCronJobs);
-    shell_exec('crontab /tmp/crontab.txt');
-    unlink('/tmp/crontab.txt');
+    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+    }
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['active']) {
     sendmessage($from_id, "⚠️ کرون حجم قدیمی حذف شده است.\nاخطار حجم از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
@@ -4070,13 +4167,13 @@ if ($text == $textbotlang['Admin']['cron']['volume']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['disable']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['test']['disabled'], null, 'HTML');
-    $currentCronJobs = shell_exec("crontab -l");
-    $jobToRemove = "*/1 * * * * curl https://$domainhosts/cron/cronvolume.php";
-    $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', $currentCronJobs);
-    file_put_contents('/tmp/crontab.txt', $newCronJobs);
-    shell_exec('crontab /tmp/crontab.txt');
-    unlink('/tmp/crontab.txt');
+    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+    }
 }
 if ($text == $textbotlang['Admin']['cron']['time']['active']) {
     sendmessage($from_id, "⚠️ کرون زمان قدیمی حذف شده است.\nاخطار زمان از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
@@ -4086,13 +4183,13 @@ if ($text == $textbotlang['Admin']['cron']['time']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['time']['disable']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['test']['disabled'], null, 'HTML');
-    $currentCronJobs = shell_exec("crontab -l");
-    $jobToRemove = "*/1 * * * * curl https://$domainhosts/cron/cronday.php";
-    $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', $currentCronJobs);
-    file_put_contents('/tmp/crontab.txt', $newCronJobs);
-    shell_exec('crontab /tmp/crontab.txt');
-    unlink('/tmp/crontab.txt');
+    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+    }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['active']) {
     sendmessage($from_id, "⚠️ کرون حذف قدیمی حذف شده است.\nحذف فاکتور غایب از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
@@ -4102,13 +4199,13 @@ if ($text == $textbotlang['Admin']['cron']['remove']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['disable']) {
-    sendmessage($from_id, $textbotlang['Admin']['cron']['test']['disabled'], null, 'HTML');
-    $currentCronJobs = shell_exec("crontab -l");
-    $jobToRemove = "*/1 * * * * curl https://$domainhosts/cron/removeexpire.php";
-    $newCronJobs = preg_replace('/' . preg_quote($jobToRemove, '/') . '/', '', $currentCronJobs);
-    file_put_contents('/tmp/crontab.txt', $newCronJobs);
-    shell_exec('crontab /tmp/crontab.txt');
-    unlink('/tmp/crontab.txt');
+    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    if (function_exists('buildSmartCronAdminKeyboard')) {
+        ensureSmartCronSettings();
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+    }
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
     // نسخه 2.3.9: جستجو با آیدی عددی، یوزرنیم تلگرام یا یوزرنیم سرویس
@@ -5558,15 +5655,13 @@ if ($datain == "adm_noop") {
     step('addadmin', $from_id);
 } elseif (preg_match('/^adm_adm_del_(\d+)$/', strval($datain), $m)) {
     $del_id = strval($m[1]);
-    global $adminnumber;
-    if (strval($adminnumber) === $del_id) {
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'ادمین اصلی قابل حذف نیست', 'show_alert' => true]);
+    if (strval($adminnumber) === $del_id || strval($from_id) === $del_id) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => (strval($adminnumber) === $del_id ? 'ادمین اصلی قابل حذف نیست' : 'نمیتوانید خودتان را حذف کنید'), 'show_alert' => true]);
     } else {
-        try {
-            $pdo->prepare("DELETE FROM admin WHERE id_admin = ?")->execute([$del_id]);
-        } catch (Throwable $e) {}
-        list($tx, $kb) = adminAdminsListKeyboard($from_id);
-        Editmessagetext($from_id, $message_id, "✅ ادمین حذف شد.\n\n" . $tx, $kb);
+        Editmessagetext($from_id, $message_id, "⚠️ ادمین <code>{$del_id}</code> حذف شود؟", json_encode(['inline_keyboard' => [
+            [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_adm_delok_' . $del_id]],
+            [['text' => '❌ انصراف', 'callback_data' => 'adm_adm_list']],
+        ]], JSON_UNESCAPED_UNICODE));
     }
 } elseif ($datain == "adm_ut_panel") {
     list($tx, $kb) = adminUsertestPanel();
@@ -5581,13 +5676,8 @@ if ($datain == "adm_noop") {
     sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['limitall'] ?? 'سقف تعداد تست برای همه کاربران را بفرستید:', $backadmin, 'HTML');
     step('limit_usertest_allusers', $from_id);
 } elseif ($datain == "adm_ut_reset") {
-    $settingrow = select("setting", "*", null, null, "select");
-    $lim = intval($settingrow['limit_usertest_all'] ?? 1);
-    if ($lim < 0) $lim = 0;
-    update("user", "limit_usertest", strval($lim));
-    $msg = sprintf($textbotlang['Admin']['Usertest']['reset_all_limits_ok'] ?? '✅ سقف تست همه کاربران به %s ریست شد', $lim);
-    list($tx, $kb) = adminUsertestPanel();
-    Editmessagetext($from_id, $message_id, $msg . "\n\n" . $tx, $kb);
+    list($__tx, $__kb) = botUsertestResetConfirm();
+    Editmessagetext($from_id, $message_id, $__tx, $__kb);
 }
 
 

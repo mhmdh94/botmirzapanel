@@ -7374,9 +7374,13 @@ function adminAdminsListKeyboard($viewer_id)
     } else {
         foreach ($ids as $aid) {
             $is_main = (strval($adminnumber) === strval($aid));
-            $label = $is_main ? "⭐ {$aid} (اصلی)" : $aid;
+            // نسخه 2.4.1: نمایش یوزرنیم کنار آیدی
+            $__au = select("user", "username", "id", $aid, "select");
+            $__un = is_array($__au) ? trim(strval($__au['username'] ?? '')) : '';
+            $__lab = $aid . (($__un !== '' && $__un !== 'none' && $__un !== 'NOT_USERNAME') ? " @{$__un}" : '');
+            $label = $is_main ? "⭐ {$__lab} (اصلی)" : $__lab;
             $row = [['text' => $label, 'callback_data' => 'adm_noop']];
-            if (!$is_main) {
+            if (!$is_main && strval($aid) !== strval($viewer_id)) {
                 $row[] = ['text' => '🗑', 'callback_data' => 'adm_adm_del_' . $aid];
             }
             $kb['inline_keyboard'][] = $row;
@@ -7386,6 +7390,88 @@ function adminAdminsListKeyboard($viewer_id)
     $kb['inline_keyboard'][] = [['text' => '🔄 بروزرسانی', 'callback_data' => 'adm_adm_list']];
     $text = "👮 <b>مدیریت ادمین‌ها</b>\nتعداد: <b>{$n}</b>\n\nادمین اصلی قابل حذف نیست.";
         return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
+}
+
+/** نسخه 2.4.1: عدد صحیح از ورودی ادمین (رقم فارسی/جداکننده) — null اگر نامعتبر */
+function botAdmInt($t, $min, $max)
+{
+    $v = str_replace([',', '٬', '،', ' '], '', botNormalizeDigits(trim(is_scalar($t) ? strval($t) : '')));
+    if ($v === '' || !ctype_digit($v) || strlen($v) > 15) {
+        return null;
+    }
+    $n = intval($v);
+    if ($n < intval($min) || $n > intval($max)) {
+        return null;
+    }
+    return $n;
+}
+
+/** نسخه 2.4.1: آیدی کانال از @name / name / t.me/name — خالی اگر نامعتبر */
+function botNormalizeChannelInput($t)
+{
+    $t = trim(is_scalar($t) ? strval($t) : '');
+    $t = preg_replace('~^(https?://)?(www\.)?(t|telegram)\.me/~i', '', $t);
+    $t = rtrim(ltrim($t, '@'), '/');
+    return preg_match('/^[A-Za-z][A-Za-z0-9_]{3,31}$/', $t) ? $t : '';
+}
+
+/** نسخه 2.4.1: [true|false|null, پیام] — null یعنی تلگرام در دسترس نبود */
+function botCheckBotChannelAdmin($ch)
+{
+    $me = telegram('getMe');
+    $bid = is_array($me) ? intval($me['result']['id'] ?? 0) : 0;
+    if ($bid <= 0) {
+        return [null, 'بررسی ادمین بودن ربات ممکن نشد (اتصال به تلگرام).'];
+    }
+    $r = telegram('getChatMember', ['chat_id' => '@' . $ch, 'user_id' => $bid]);
+    if (!is_array($r) || empty($r['ok'])) {
+        $d = is_array($r) ? strval($r['description'] ?? '') : '';
+        return [false, 'کانال پیدا نشد یا ربات در آن ادمین نیست.' . ($d !== '' ? "\n<code>" . htmlspecialchars($d, ENT_QUOTES, 'UTF-8') . '</code>' : '')];
+    }
+    $st = strval($r['result']['status'] ?? '');
+    if ($st === 'administrator' || $st === 'creator') {
+        return [true, 'ربات در کانال ادمین است.'];
+    }
+    return [false, 'ربات در کانال ادمین نیست (وضعیت: ' . htmlspecialchars($st, ENT_QUOTES, 'UTF-8') . ').'];
+}
+
+/** نسخه 2.4.1: صفحه شیشهای کانال عضویت اجباری */
+function botChannelJoinPage($note = '')
+{
+    $row = select('channels', 'link', null, null, 'select');
+    $link = is_array($row) ? trim(strval($row['link'] ?? '')) : '';
+    $t = ($note !== '' ? $note . "\n\n" : '') . "📢 <b>کانال عضویت اجباری</b>\n\n"
+        . ($link !== '' ? "کانال فعلی: @" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') : "❌ کانالی تنظیم نشده؛ کاربران بدون عضویت از ربات استفاده میکنند.");
+    $rows = [[['text' => ($link !== '' ? '✏️ تغییر کانال' : '➕ تنظیم کانال'), 'callback_data' => 'chjoin_set']]];
+    if ($link !== '') {
+        $rows[] = [
+            ['text' => '🔍 بررسی ادمین بودن ربات', 'callback_data' => 'chjoin_test'],
+            ['text' => '🗑 برداشتن قفل', 'callback_data' => 'chjoin_del'],
+        ];
+    }
+    $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
+    return [$t, json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE)];
+}
+
+/** نسخه 2.4.1: پیام تأیید ریست سقف تست همه کاربران */
+function botUsertestResetConfirm()
+{
+    global $pdo;
+    $lim = 1;
+    $chg = 0;
+    try {
+        $r = $pdo->query("SELECT limit_usertest_all FROM setting LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        $lim = max(0, intval(is_array($r) ? ($r['limit_usertest_all'] ?? 1) : 1));
+        $st = $pdo->prepare("SELECT COUNT(*) FROM user WHERE CAST(limit_usertest AS SIGNED) <> ?");
+        $st->execute([$lim]);
+        $chg = intval($st->fetchColumn());
+    } catch (Throwable $e) {}
+    $t = "⚠️ <b>ریست سقف تست همه کاربران</b>\n\nسهمیه تست همه کاربران روی <b>{$lim}</b> گذاشته میشود.\n👥 کاربرانی که تغییر میکنند: <b>" . number_format($chg) . "</b>\n\nانجام شود؟";
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، ریست شود', 'callback_data' => 'adm_ut_resetok']],
+        [['text' => '❌ انصراف', 'callback_data' => 'adm_ut_panel']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
 }
 
 function adminUsertestPanel()
@@ -7413,7 +7499,7 @@ function adminUsertestPanel()
     $text = "🧪 <b>تنظیمات اکانت تست</b>\n\n"
         . "🔌 وضعیت: <b>" . ($__ut_on ? '✅ روشن' : '❌ خاموش') . "</b>\n"
         . "⏱ زمان: <b>{$time}</b> ساعت\n"
-        . "📊 حجم: <b>{$vol}</b> گیگ\n"
+        . "📊 حجم: <b>{$vol}</b> مگابایت\n"
         . "🔢 سقف تست برای هر کاربر: <b>{$lim}</b>\n\n"
         . "برای تغییر، گزینه را بزنید:";
     $kb = json_encode([
@@ -7423,7 +7509,7 @@ function adminUsertestPanel()
             ],
             [
                 ['text' => "⏱ زمان ({$time}س)", 'callback_data' => 'adm_ut_time'],
-                ['text' => "📊 حجم ({$vol}گ)", 'callback_data' => 'adm_ut_vol'],
+                ['text' => "📊 حجم ({$vol}MB)", 'callback_data' => 'adm_ut_vol'],
             ],
             [
                 ['text' => "🔢 سقف همه ({$lim})", 'callback_data' => 'adm_ut_limit'],
