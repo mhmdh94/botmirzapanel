@@ -3567,7 +3567,23 @@ function buildBalancePackageAdminKeyboard()
 
 function buildAdminSettingsSectionText()
 {
-    return "⚙️ <b>تنظیمات</b>\n\nوضعیت قابلیت‌ها، کرون، کانال‌ها، مشارکت، متن ربات، آپدیت و پشتیبان‌گیری.";
+    // نسخه 2.4.3: خلاصه وضعیت
+    $st = select("setting", "*");
+    $st = is_array($st) ? $st : [];
+    $bot_on = strval($st['Bot_Status'] ?? '1') !== '0';
+    $buy_on = strval($st['status_buy'] ?? '1') !== '0';
+    $rc = trim(strval($st['Channel_Report'] ?? ''));
+    $jr = select('channels', 'link', null, null, 'select');
+    $jl = is_array($jr) ? trim(strval($jr['link'] ?? '')) : '';
+    $force = strval($st['force_channel'] ?? '1') !== '0';
+    $join = ($jl === '') ? '❌ تنظیم نشده' : ('@' . htmlspecialchars($jl, ENT_QUOTES, 'UTF-8') . ($force ? ' (✅ قفل روشن)' : ' (❌ قفل خاموش)'));
+    return "⚙️ <b>تنظیمات</b>\n\n"
+        . "🤖 ربات: <b>" . ($bot_on ? '✅ روشن' : '❌ خاموش') . "</b>\n"
+        . "🛒 خرید سرویس: <b>" . ($buy_on ? '✅ باز' : '❌ بسته') . "</b>\n"
+        . "⏱ کرون هوشمند: " . botSmartCronStatusLine() . "\n"
+        . "📣 کانال گزارش: " . (($rc !== '' && $rc !== '0') ? '✅ تنظیم شده' : '❌ تنظیم نشده') . "\n"
+        . "📢 کانال عضویت: " . $join . "\n\n"
+        . "یک بخش را انتخاب کنید:";
 }
 
 function buildAdminSettingsInlineKeyboard()
@@ -3586,11 +3602,15 @@ function buildAdminSettingsInlineKeyboard()
             ['text' => $textbotlang['Admin']['keyboardadmin']['affiliate_settings'] ?? '👥 مشارکت در فروش', 'callback_data' => 'navset_aff'],
             ['text' => $textbotlang['Admin']['keyboardadmin']['bot_text_settings'] ?? '📝 تنظیم متن ربات', 'callback_data' => 'navset_btxt'],
         ],
-        [
-            ['text' => $textbotlang['Admin']['keyboardadmin']['bot_update'] ?? '🔄 آپدیت ربات', 'callback_data' => 'navset_update'],
-            ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'],
-        ],
     ];
+    // نسخه 2.4.3: دکمه آپدیت فقط برای ادمین اصلی
+    global $from_id;
+    $__last = [];
+    if (!function_exists('isMainBotAdmin') || isMainBotAdmin($from_id ?? 0)) {
+        $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['bot_update'] ?? '🔄 آپدیت ربات', 'callback_data' => 'navset_update'];
+    }
+    $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'];
+    $rows[] = $__last;
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -5828,7 +5848,7 @@ function flushDeferredChannelReports()
     }
 }
 
-function buildReportChannelKeyboard()
+function buildReportChannelKeyboardBase()
 {
     global $textbotlang;
     ensureReportChannelSettings();
@@ -7720,6 +7740,280 @@ function botUsertestResetConfirm()
         [['text' => '❌ انصراف', 'callback_data' => 'adm_ut_panel']],
     ]], JSON_UNESCAPED_UNICODE);
     return [$t, $kb];
+}
+
+/** نسخه 2.4.3: کیبورد فعالیتهای گزارش + دکمه بازگشت */
+function buildReportChannelKeyboard()
+{
+    $kb = json_decode(strval(buildReportChannelKeyboardBase()), true);
+    if (!is_array($kb) || !isset($kb['inline_keyboard']) || !is_array($kb['inline_keyboard'])) {
+        $kb = ['inline_keyboard' => []];
+    }
+    $has = false;
+    foreach ($kb['inline_keyboard'] as $row) {
+        foreach ((array)$row as $b) {
+            if (is_array($b) && in_array(($b['callback_data'] ?? ''), ['rpch_menu', 'navset_chreport'], true)) {
+                $has = true;
+            }
+        }
+    }
+    if (!$has) {
+        $kb['inline_keyboard'][] = [['text' => '🔙 بازگشت به کانال گزارش', 'callback_data' => 'rpch_menu']];
+    }
+    return json_encode($kb, JSON_UNESCAPED_UNICODE);
+}
+
+/** نسخه 2.4.3: آیدی کانال گزارش (@name / t.me / -100…) — خالی اگر نامعتبر */
+function botNormalizeReportChannel($t)
+{
+    $t = trim(botNormalizeDigits(is_scalar($t) ? strval($t) : ''));
+    if (preg_match('/^-\d{6,20}$/', $t)) {
+        return $t;
+    }
+    $n = function_exists('botNormalizeChannelInput') ? botNormalizeChannelInput($t) : '';
+    return $n !== '' ? '@' . $n : '';
+}
+
+/** نسخه 2.4.3: صفحه کانال گزارش با نام کانال */
+function botReportChannelPage($note = '')
+{
+    $st = select("setting", "*", null, null, "select");
+    $ch = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
+    if ($ch === '' || $ch === '0') {
+        $info = "❌ تنظیم نشده — گزارشها جایی فرستاده نمیشوند.";
+    } else {
+        $r = telegram('getChat', ['chat_id' => $ch]);
+        if (is_array($r) && !empty($r['ok'])) {
+            $title = strval($r['result']['title'] ?? '');
+            $info = "✅ <b>" . htmlspecialchars($title !== '' ? $title : $ch, ENT_QUOTES, 'UTF-8') . "</b> (<code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code>)";
+        } else {
+            $info = "⚠️ <code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code> — ربات به این کانال دسترسی ندارد؛ گزارشها ارسال نمیشوند.";
+        }
+    }
+    $t = ($note !== '' ? $note . "\n\n" : '') . "📣 <b>کانال گزارش</b>\n\nکانال: {$info}\n\nگزارش خرید، تمدید، واریز و کارهای ادمین به این کانال فرستاده میشود.";
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
+        [['text' => '⚙️ فعالیتهای گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
+        [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test'], ['text' => '🔄 بروزرسانی', 'callback_data' => 'rpch_menu']],
+        [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
+}
+
+/** نسخه 2.4.3: لیست اعداد با کاما (رقم فارسی/«،») — '' اگر نامعتبر */
+function botParseNumList($t, $min, $max, $maxCount = 5)
+{
+    $t = botNormalizeDigits(trim(is_scalar($t) ? strval($t) : ''));
+    $t = str_replace(['،', '٬', ' ', '-'], ',', $t);
+    $out = [];
+    foreach (explode(',', $t) as $p) {
+        if ($p === '') {
+            continue;
+        }
+        if (!ctype_digit($p) || strlen($p) > 4) {
+            return '';
+        }
+        $n = intval($p);
+        if ($n < intval($min) || $n > intval($max)) {
+            return '';
+        }
+        $out[$n] = $n;
+    }
+    if (count($out) < 1 || count($out) > intval($maxCount)) {
+        return '';
+    }
+    return implode(',', array_values($out));
+}
+
+/** نسخه 2.4.3: وضعیت آخرین اجرای کرون هوشمند */
+function botSmartCronStatusLine()
+{
+    $last = intval(@file_get_contents(__DIR__ . '/cron/smart_cron.last'));
+    if ($last <= 0) {
+        return "⚠️ اجرایی ثبت نشده";
+    }
+    $ago = max(0, time() - $last);
+    $txt = $ago < 120 ? ($ago . ' ثانیه پیش') : (intval($ago / 60) < 120 ? (intval($ago / 60) . ' دقیقه پیش') : (intval($ago / 3600) . ' ساعت پیش'));
+    return ($ago > 600 ? '🔴 ' : '🟢 ') . "آخرین اجرا {$txt}";
+}
+
+function botSmartCronMenuText()
+{
+    global $textbotlang;
+    $base = strval($textbotlang['Admin']['smartcron']['menu'] ?? '🛡 کرون هوشمند');
+    $last = intval(@file_get_contents(__DIR__ . '/cron/smart_cron.last'));
+    if ($last <= 0) {
+        $warn = "⚠️ هنوز اجرای کرون هوشمند ثبت نشده. اگر چند دقیقه بعد از نصب این نسخه هم همین پیام بود، کرون روی سرور نصب نیست («📋 دستور کرون سیستم»).";
+    } elseif (time() - $last > 600) {
+        $warn = "🔴 " . botSmartCronStatusLine() . " — کرون احتمالاً کار نمیکند؛ اخطارها و حذف فاکتورهای پرداختنشده انجام نمیشود.";
+    } else {
+        $warn = botSmartCronStatusLine() . " — کرون کار میکند.";
+    }
+    return $base . "\n\n" . $warn
+        . "\n\nℹ️ <b>راهنما</b>"
+        . "\n• حذف فاکتور یوزر غایب: اگر پنل صریحاً بگوید کاربر وجود ندارد، فاکتورش از ربات حذف میشود (از پنل چیزی پاک نمیشود)."
+        . "\n• اخطار حجم / زمان / اتمام: پیام هشدار به کاربر طبق درصدها و روزهای تنظیمشده."
+        . "\n• تمدید اضطراری: تمدید یکبارمصرف برای سرویس تمامشده."
+        . "\n• دیباگ: لاگ اجرای کرون به کانال گزارش فرستاده میشود.";
+}
+
+/** نسخه 2.4.3: نسخه index.php روی گیتهاب */
+function botRemoteVersion()
+{
+    if (!function_exists('curl_init')) {
+        return '';
+    }
+    $ch = curl_init('https://raw.githubusercontent.com/mhmdh94/botmirzapanel/main/index.php');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_RANGE => '0-4000',
+        CURLOPT_USERAGENT => 'MirzaBot-VersionCheck',
+    ]);
+    $b = curl_exec($ch);
+    curl_close($ch);
+    if (is_string($b) && preg_match('/\$version\s*=\s*"([0-9][0-9.]*)"/', $b, $m)) {
+        return $m[1];
+    }
+    return '';
+}
+
+/** نسخه 2.4.3: تعریف قابلیتها [type, ستون, پیشفرض, عنوان] */
+function botFeatureGroups()
+{
+    return [
+        ['⚙️ عمومی', [
+            ['statusbot', 'Bot_Status', '1', '📡 روشن بودن ربات'],
+            ['roll_Status', 'roll_Status', '0', '📜 تأیید قوانین'],
+            ['force_channel', 'force_channel', '1', '📢 عضویت اجباری کانال'],
+            ['NotUser', 'NotUser', '0', '👤 دکمه نام کاربری'],
+            ['show_balance', 'show_balance', '0', '👛 نمایش موجودی در منو'],
+        ]],
+        ['🔐 احراز کاربر', [
+            ['get_number', 'get_number', '0', '📱 احراز شماره موبایل'],
+            ['iran_number', 'iran_number', '0', '🇮🇷 فقط شماره ایرانی'],
+            ['verify', 'status_verify', '0', '🛂 احراز هویت (تأیید ادمین)'],
+        ]],
+        ['🛒 فروش', [
+            ['status_buy', 'status_buy', '1', '🛒 خرید سرویس جدید'],
+            ['status_extend', 'status_extend', '1', '🔄 تمدید سرویس'],
+            ['status_extra_volume', 'status_extra_volume', '1', '➕ خرید حجم اضافه'],
+            ['status_deposit', 'status_deposit', '1', '💰 افزایش موجودی'],
+            ['status_usertest', 'status_usertest', '1', '🔑 اکانت تست'],
+            ['category', 'statuscategory', '0', '📁 دستهبندی محصولات'],
+            ['status_tariff_list', 'status_tariff_list', '0', '📋 لیست تعرفه'],
+            ['status_search_service', 'status_search_service', '1', '🔍 جستجوی سرویس'],
+        ]],
+        ['🤝 سایر', [
+            ['status_support', 'status_support', '1', '☎️ پشتیبانی'],
+            ['status_affiliates_btn', 'status_affiliates_btn', '1', '🤝 مشارکت در فروش'],
+            ['status_reseller_panel', 'status_reseller_panel', '0', '🏢 پنل نمایندگان'],
+            ['status_reseller_request', 'status_reseller_request', '0', '📝 درخواست نمایندگی'],
+        ]],
+    ];
+}
+
+function botFeatureValue($st, $col, $def)
+{
+    $v = is_array($st) ? strval($st[$col] ?? '') : '';
+    return ($v === '0' || $v === '1') ? $v : strval($def);
+}
+
+function botFeaturesPage()
+{
+    if (function_exists('ensureFeatureSettingsColumns')) {
+        ensureFeatureSettingsColumns();
+    }
+    if (function_exists('ensureResellerFeatureSetting')) {
+        ensureResellerFeatureSetting();
+    }
+    $st = select("setting", "*");
+    $rows = [];
+    $reseller_on = botFeatureValue($st, 'status_reseller_panel', '0') === '1';
+    foreach (botFeatureGroups() as $g) {
+        $rows[] = [['text' => '— ' . $g[0] . ' —', 'callback_data' => 'adm_noop']];
+        foreach ($g[1] as $f) {
+            if ($f[0] === 'status_reseller_request' && !$reseller_on) {
+                continue;
+            }
+            $v = botFeatureValue($st, $f[1], $f[2]);
+            $rows[] = [
+                ['text' => ($v === '1' ? '✅ ' : '❌ ') . $f[3], 'callback_data' => "editstsuts-{$f[0]}-{$v}"],
+                ['text' => 'ℹ️', 'callback_data' => "ftinfo:{$f[0]}"],
+            ];
+        }
+    }
+    $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
+    $t = "🎛 <b>روشن/خاموش قابلیتها</b>\n\nروی هر گزینه بزنید تا روشن/خاموش شود. ℹ️ توضیح همان گزینه را نشان میدهد.\nگزینههای حساس قبل از تغییر تأیید میخواهند.";
+    if (botFeatureValue($st, 'Bot_Status', '1') === '0') {
+        $t .= "\n\n🔴 <b>ربات الان برای کاربران خاموش است.</b>";
+    }
+    if (botFeatureValue($st, 'status_buy', '1') === '0') {
+        $t .= "\n🔴 <b>خرید سرویس جدید بسته است.</b>";
+    }
+    return [$t, json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE)];
+}
+
+function botFeatureInfo($type)
+{
+    $m = [
+        'statusbot' => 'اگر خاموش شود، ربات برای همه کاربران (غیر ادمین) از کار میافتد و فقط پیام «ربات خاموش است» میبینند.',
+        'roll_Status' => 'کاربر قبل از استفاده باید قوانین ربات را تأیید کند.',
+        'force_channel' => 'کاربر تا عضو کانال عضویت اجباری نشود نمیتواند از ربات استفاده کند. کانال از «📢 کانال عضویت» تنظیم میشود.',
+        'NotUser' => 'مربوط به دکمه/درخواست نام کاربری در بخش کاربر.',
+        'show_balance' => 'موجودی کیف پول کاربر روی دکمه منو نمایش داده میشود.',
+        'get_number' => 'کاربر قبل از استفاده باید شماره موبایلش را با دکمه تلگرام بفرستد.',
+        'iran_number' => 'وقتی احراز شماره روشن است، فقط شماره ایرانی (+98) پذیرفته میشود.',
+        'verify' => 'کاربران جدید تا وقتی ادمین تأییدشان نکند نمیتوانند از ربات استفاده کنند.',
+        'status_buy' => 'خرید سرویس جدید. اگر خاموش باشد، تمدید و بقیه بخشها کار میکنند.',
+        'status_extend' => 'امکان تمدید سرویس توسط کاربر.',
+        'status_extra_volume' => 'امکان خرید حجم اضافه برای سرویس.',
+        'status_deposit' => 'امکان افزایش موجودی کیف پول (واریز).',
+        'status_usertest' => 'دکمه دریافت اکانت تست در منوی کاربر.',
+        'category' => 'محصولات هنگام خرید بر اساس دستهبندی نمایش داده میشوند.',
+        'status_tariff_list' => 'دکمه لیست تعرفهها در منوی کاربر.',
+        'status_search_service' => 'امکان جستجوی سرویس توسط کاربر.',
+        'status_support' => 'دکمه پشتیبانی در منوی کاربر.',
+        'status_affiliates_btn' => 'دکمه مشارکت در فروش (لینک دعوت) در منوی کاربر.',
+        'status_reseller_panel' => 'بخش پنل نمایندگان (فروش حجمی پنل).',
+        'status_reseller_request' => 'امکان ثبت درخواست نمایندگی توسط کاربر.',
+    ];
+    return $m[$type] ?? 'توضیحی ثبت نشده است.';
+}
+
+/** نسخه 2.4.3: هشدار تغییرهای حساس — '' یعنی بدون تأیید */
+function botFeatureDangerWarning($type, $cur)
+{
+    $cur = strval($cur);
+    if ($type === 'statusbot' && $cur === '1') {
+        return "⚠️ <b>خاموش کردن ربات</b>\n\nربات برای همه کاربران (غیر ادمین) از کار میافتد: نه خرید، نه تمدید، نه دیدن سرویسها.\nخاموش شود؟";
+    }
+    if ($type === 'status_buy' && $cur === '1') {
+        return "⚠️ <b>بستن خرید سرویس جدید</b>\n\nهیچ کاربری نمیتواند سرویس جدید بخرد (تمدید طبق تنظیم خودش ادامه دارد).\nبسته شود؟";
+    }
+    if ($type === 'status_extend' && $cur === '1') {
+        return "⚠️ <b>بستن تمدید سرویس</b>\n\nکاربران نمیتوانند سرویسشان را تمدید کنند.\nبسته شود؟";
+    }
+    if ($type === 'verify' && $cur === '0') {
+        $n = function_exists('botAdmCount') ? botAdmCount("SELECT COUNT(*) FROM user WHERE COALESCE(verify, '0') IN ('0', '')") : 0;
+        return "⚠️ <b>روشن کردن احراز هویت</b>\n\nکاربرانی که تأیید نشدهاند تا تأیید ادمین نتوانند از ربات استفاده کنند.\n👥 کاربران تأییدنشده: <b>" . number_format($n) . "</b>\nروشن شود؟";
+    }
+    if ($type === 'get_number' && $cur === '0') {
+        return "⚠️ <b>روشن کردن احراز شماره</b>\n\nکاربرانی که شماره نفرستادهاند تا شماره نفرستند نمیتوانند از ربات استفاده کنند.\nروشن شود؟";
+    }
+    if ($type === 'force_channel' && $cur === '0') {
+        $jr = select('channels', 'link', null, null, 'select');
+        $jl = is_array($jr) ? trim(strval($jr['link'] ?? '')) : '';
+        if ($jl === '') {
+            return "⚠️ <b>عضویت اجباری</b>\n\nهنوز کانالی تنظیم نشده؛ تا کانال را از «📢 کانال عضویت» تنظیم نکنید این گزینه اثری ندارد.\nروشن شود؟";
+        }
+        $chk = function_exists('botCheckBotChannelAdmin') ? botCheckBotChannelAdmin($jl) : [null, ''];
+        $line = ($chk[0] === true) ? "✅ ربات در @{$jl} ادمین است." : ("❌ " . $chk[1] . "\nتا ربات ادمین نباشد، عضویت کاربران درست بررسی نمیشود.");
+        return "⚠️ <b>روشن کردن عضویت اجباری</b>\n\nکاربرانی که عضو @" . htmlspecialchars($jl, ENT_QUOTES, 'UTF-8') . " نیستند تا عضو نشوند نمیتوانند از ربات استفاده کنند.\n{$line}\nروشن شود؟";
+    }
+    return '';
 }
 
 function adminUsertestPanel()

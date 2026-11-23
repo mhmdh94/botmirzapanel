@@ -221,19 +221,14 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
     } elseif ($datain === 'navset_cron') {
         if (function_exists('ensureSmartCronSettings')) { ensureSmartCronSettings(); }
         if (function_exists('ensureSmartCronStateTable')) { ensureSmartCronStateTable(); }
-        $__tx = $textbotlang['Admin']['smartcron']['menu'] ?? '🕚 تنظیمات کرون';
+        $__tx = botSmartCronMenuText();
         $__kb = function_exists('buildSmartCronAdminKeyboard') ? buildSmartCronAdminKeyboard() : null;
         $__nav_show($__tx, $__kb);
         return;
     } elseif ($datain === 'navset_chreport') {
-        $ch_id = $setting['Channel_Report'] ?? '-';
-        $kb = json_encode(['inline_keyboard' => [
-            [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
-            [['text' => '⚙️ فعالیت‌های گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
-            [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test']],
-            [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
-        ]], JSON_UNESCAPED_UNICODE);
-        $__nav_show("📣 <b>تنظیمات کانال گزارش</b>\n\nکانال فعلی: <code>{$ch_id}</code>", $kb);
+        // نسخه 2.4.3
+        list($__tx, $__kb) = botReportChannelPage();
+        $__nav_show($__tx, $__kb);
         return;
     } elseif ($datain === 'navset_chjoin') {
         // نسخه 2.4.1: صفحه کانال عضویت اجباری
@@ -266,6 +261,20 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         $__nav_show($__tx, $__kb);
         return;
     } elseif ($datain === 'navset_update') {
+        // نسخه 2.4.3: فقط ادمین اصلی + نمایش نسخه فعلی و نسخه گیتهاب
+        if (function_exists('isMainBotAdmin') && !isMainBotAdmin($from_id)) {
+            $__nav_show("❌ آپدیت ربات فقط برای ادمین اصلی است.", json_encode(['inline_keyboard' => [[['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']]]], JSON_UNESCAPED_UNICODE));
+            return;
+        }
+        $__rv = botRemoteVersion();
+        $__cv = strval($version ?? '-');
+        if ($__rv === '') {
+            $__vs = "⚠️ دریافت نسخه گیتهاب ممکن نشد (اتصال سرور به گیتهاب).";
+        } elseif (version_compare($__rv, $__cv, '<=')) {
+            $__vs = "✅ ربات بهروز است.";
+        } else {
+            $__vs = "🆕 نسخه جدید موجود است.";
+        }
         $kb = json_encode(['inline_keyboard' => [
             [
                 ['text' => $textbotlang['Admin']['bot_update']['yes'] ?? '✅ بله', 'callback_data' => 'bot_update_yes'],
@@ -273,7 +282,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
             ],
             [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
         ]], JSON_UNESCAPED_UNICODE);
-        $__nav_show($textbotlang['Admin']['bot_update']['confirm'] ?? 'آیا از آپدیت ربات مطمئن هستید؟', $kb);
+        $__nav_show("🔄 <b>آپدیت ربات</b>\n\n🌐 منبع: <code>github.com/mhmdh94/botmirzapanel</code> (شاخه main)\n📦 نسخه فعلی: <b>" . htmlspecialchars($__cv, ENT_QUOTES, 'UTF-8') . "</b>\n🆕 نسخه گیتهاب: <b>" . ($__rv !== '' ? htmlspecialchars($__rv, ENT_QUOTES, 'UTF-8') : '?') . "</b>\n\n{$__vs}\n\nقبل از آپدیت از فایلها بکاپ گرفته میشود و config.php حفظ میشود.\nآپدیت انجام شود؟", $kb);
         return;
     } elseif ($datain === 'navset_backup') {
         if (function_exists('backupSettingsText') && function_exists('buildBackupSettingsKeyboard')) {
@@ -288,6 +297,26 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
     }
 }
 
+
+# نسخه 2.4.3: توضیح قابلیتها و تأیید تغییرهای حساس
+if (isset($datain) && is_string($datain) && in_array($from_id, $admin_ids)) {
+    if (preg_match('/^ftinfo:(\w+)$/', $datain, $__fi)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => botFeatureInfo($__fi[1]), 'show_alert' => true]);
+        return;
+    }
+    if (preg_match('/^ftok:(\w+):([01])$/', $datain, $__fo)) {
+        $datain = "editstsuts-{$__fo[1]}-{$__fo[2]}";
+    } elseif (preg_match('/^editstsuts-(\w+)-([01])$/', $datain, $__fd)) {
+        $__fw = botFeatureDangerWarning($__fd[1], $__fd[2]);
+        if ($__fw !== '') {
+            Editmessagetext($from_id, $message_id, $__fw, json_encode(['inline_keyboard' => [
+                [['text' => '✅ بله، تغییر کن', 'callback_data' => "ftok:{$__fd[1]}:{$__fd[2]}"]],
+                [['text' => '❌ انصراف', 'callback_data' => 'navset_features']],
+            ]], JSON_UNESCAPED_UNICODE));
+            return;
+        }
+    }
+}
 
 if (in_array($text, $textadmin) || $datain == "PANEL") {
     if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
@@ -1796,21 +1825,26 @@ if ($text == $textbotlang['Admin']['channel']['channelreport']) {
 
 از دکمه‌های زیر می‌توانید آیدی کانال را تنظیم کنید و مشخص کنید برای کدام فعالیت‌ها پیام ارسال شود.", $kb, 'HTML');
 } elseif ($datain == "rpch_setid") {
-    sendmessage($from_id, $textbotlang['Admin']['Channel']['ReportChannel'] . ($setting['Channel_Report'] ?? ''), $backadmin, 'HTML');
+    // نسخه 2.4.3: اعتبارسنجی + پیام تست واقعی قبل از ذخیره
+    sendmessage($from_id, "📡 آیدی کانال گزارش را بفرستید.\nنمونه: <code>@mychannel</code> یا <code>https://t.me/mychannel</code> یا آیدی عددی <code>-1001234567890</code> (برای کانال خصوصی).\n\n⚠️ اول ربات را در کانال ادمین کنید (با اجازه ارسال پیام).", $backadmin, 'HTML');
     step('addchannelid', $from_id);
-} elseif ($user['step'] == "addchannelid") {
-    sendmessage($from_id, $textbotlang['Admin']['Channel']['SetChannelReport'], $keyboardadmin, 'HTML');
-    update("setting", "Channel_Report", $text);
-    step('home', $from_id);
-    if (function_exists('sendChannelReport')) {
-        // force test regardless of toggles
-        $st = select("setting", "*", null, null, "select");
-        if ($st && !empty($st['Channel_Report'])) {
-            sendmessage($st['Channel_Report'], $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
-        }
-    } else {
-        sendmessage($text, $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
+} elseif ($user['step'] == "addchannelid" && empty($datain)) {
+    $__rc = botNormalizeReportChannel($text);
+    if ($__rc === '') {
+        sendmessage($from_id, "❌ آیدی نامعتبر است.\nنمونه: <code>@mychannel</code> یا <code>-1001234567890</code>\nدوباره بفرستید:", $backadmin, 'HTML');
+        return;
     }
+    $__r = telegram('sendmessage', ['chat_id' => $__rc, 'text' => ($textbotlang['Admin']['Channel']['TestChannel'] ?? '✅ پیام تست کانال گزارش'), 'parse_mode' => 'HTML']);
+    if (!(is_array($__r) && !empty($__r['ok']))) {
+        $__d = is_array($__r) ? strval($__r['description'] ?? '') : '';
+        sendmessage($from_id, "❌ ارسال پیام تست به این کانال ناموفق بود؛ کانال ذخیره <b>نشد</b>." . ($__d !== '' ? "\n<code>" . htmlspecialchars($__d, ENT_QUOTES, 'UTF-8') . "</code>" : '') . "\n\nربات را در کانال ادمین کنید و دوباره آیدی را بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__rc_id = strval($__r['result']['chat']['id'] ?? $__rc);
+    update("setting", "Channel_Report", $__rc_id);
+    step('home', $from_id);
+    list($__tx, $__kb) = botReportChannelPage("✅ کانال گزارش ثبت شد و پیام تست در آن ارسال شد.");
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
 } elseif ($datain == "rpch_toggles") {
     if (function_exists('ensureReportChannelSettings')) ensureReportChannelSettings();
     Editmessagetext($from_id, $message_id, "⚙️ <b>فعال/غیرفعال کردن گزارش‌ها</b>
@@ -1819,23 +1853,23 @@ if ($text == $textbotlang['Admin']['channel']['channelreport']) {
 ✅ = ارسال می‌شود
 ❌ = ارسال نمی‌شود", function_exists('buildReportChannelKeyboard') ? buildReportChannelKeyboard() : null);
 } elseif ($datain == "rpch_test") {
+    // نسخه 2.4.3: نتیجه واقعی ارسال
     $st = select("setting", "*", null, null, "select");
-    if ($st && !empty($st['Channel_Report'])) {
-        sendmessage($st['Channel_Report'], $textbotlang['Admin']['Channel']['TestChannel'], null, 'HTML');
-        telegram('answerCallbackQuery', ['callback_query_id' => ($update['callback_query']['id'] ?? ''), 'text' => 'پیام تست ارسال شد', 'show_alert' => false]);
+    $__ch = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
+    if ($__ch === '' || $__ch === '0') {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'ابتدا آیدی کانال گزارش را تنظیم کنید.', 'show_alert' => true]);
     } else {
-        telegram('answerCallbackQuery', ['callback_query_id' => ($update['callback_query']['id'] ?? ''), 'text' => 'ابتدا آیدی کانال را تنظیم کنید', 'show_alert' => true]);
+        $__r = telegram('sendmessage', ['chat_id' => $__ch, 'text' => ($textbotlang['Admin']['Channel']['TestChannel'] ?? '✅ پیام تست'), 'parse_mode' => 'HTML']);
+        if (is_array($__r) && !empty($__r['ok'])) {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '✅ پیام تست در کانال ارسال شد.', 'show_alert' => false]);
+        } else {
+            $__d = is_array($__r) ? strval($__r['description'] ?? '') : 'اتصال به تلگرام';
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '❌ ارسال ناموفق: ' . mb_substr($__d, 0, 150), 'show_alert' => true]);
+        }
     }
 } elseif ($datain == "rpch_menu") {
-    $ch_id = select("setting", "*", null, null, "select")['Channel_Report'] ?? '-';
-    $kb = json_encode(['inline_keyboard' => [
-        [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
-        [['text' => '⚙️ فعالیت‌های گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
-        [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test']],
-    ]]);
-    Editmessagetext($from_id, $message_id, "📣 <b>تنظیمات کانال گزارش</b>
-
-کانال فعلی: <code>{$ch_id}</code>", $kb);
+    list($__tx, $__kb) = botReportChannelPage();
+    Editmessagetext($from_id, $message_id, $__tx, $__kb);
 } elseif (preg_match('/^rptoggle_(rpt_[a-z_]+)$/', strval($datain), $m_rt)) {
     $key = $m_rt[1];
     if (function_exists('ensureReportChannelSettings')) ensureReportChannelSettings();
@@ -2280,7 +2314,8 @@ if ($datain === 'backup_now') {
         ? runDatabaseBackupAndSend($from_id, true)
         : (function_exists('runManualDatabaseBackupAndSend') ? runManualDatabaseBackupAndSend($from_id) : ['ok' => false, 'message' => 'تابع موجود نیست']);
     $msg = !empty($bres['ok']) ? ($bres['message'] ?? '✅ انجام شد') : ('❌ ' . strval($bres['message'] ?? 'خطا'));
-    sendmessage($from_id, $msg, function_exists('buildBackupSettingsKeyboard') ? buildBackupSettingsKeyboard() : $setting_panel, 'HTML');
+    // نسخه 2.4.3: نتیجه در همان پیام
+    Editmessagetext($from_id, $message_id, $msg . "\n\n" . (function_exists('backupSettingsText') ? backupSettingsText() : ''), function_exists('buildBackupSettingsKeyboard') ? buildBackupSettingsKeyboard() : json_encode(['inline_keyboard' => []]));
     return;
 }
 
@@ -2338,7 +2373,7 @@ if (($user['step'] ?? '') === 'backup_set_hours' && !empty($text) && empty($data
     }
     if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '') || $text === ($textbotlang['users']['backhome'] ?? '')) {
         step('home', $from_id);
-        sendmessage($from_id, $textbotlang['users']['selectoption'] ?? 'انتخاب کنید', $setting_panel, 'HTML');
+        sendmessage($from_id, function_exists('backupSettingsText') ? backupSettingsText() : '💾', function_exists('buildBackupSettingsKeyboard') ? buildBackupSettingsKeyboard() : null, 'HTML');
         return;
     }
     $h = intval(preg_replace('/\D/', '', $text));
@@ -3846,6 +3881,26 @@ if ($text == $textbotlang['Admin']['Discountsell']['remove']) {
     sendmessage($from_id, $textbotlang['Admin']['Discount']['RemovedCode'], $shopkeyboard, 'HTML');
     step('home', $from_id);
 }
+# نسخه 2.4.3: تأیید درصد پورسانت / مبلغ هدیه
+if (in_array($from_id, $admin_ids) && isset($datain) && preg_match('/^aff(pct|gift)_ok_(\d+)$/', strval($datain), $__am)) {
+    $__n = intval($__am[2]);
+    if ($__am[1] === 'pct') {
+        if ($__n > 100) {
+            return;
+        }
+        update("affiliates", "affiliatespercentage", strval($__n));
+        $__note = "✅ درصد پورسانت روی <b>{$__n}٪</b> تنظیم شد.";
+    } else {
+        if ($__n > 10000000) {
+            return;
+        }
+        update("affiliates", "price_Discount", strval($__n));
+        $__note = "✅ مبلغ هدیه استارت: <b>" . number_format($__n) . "</b> تومان";
+    }
+    list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+    Editmessagetext($from_id, $message_id, $__note . "\n\n" . $aff_txt, $aff_kb);
+    return;
+}
 if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
     // فقط صفحه اینلاین — کیبورد پایین (reply) عوض نشود
     if (function_exists('buildAffiliatesAdminPanel')) {
@@ -3910,33 +3965,37 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
 } elseif ($datain == "affpanel_set_pct") {
     sendmessage($from_id, $textbotlang['users']['affiliates']['setpercentage'], $backadmin, 'HTML');
     step('setpercentage', $from_id);
-} elseif ($user['step'] == "setpercentage") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
+} elseif ($user['step'] == "setpercentage" && empty($datain)) {
+    // نسخه 2.4.3: ۰ تا ۱۰۰ + تأیید
+    $__n = botAdmInt($text, 0, 100);
+    if ($__n === null) {
+        sendmessage($from_id, "❌ یک عدد بین ۰ تا ۱۰۰ بفرستید (درصد):", $backadmin, 'HTML');
         return;
     }
-    update("affiliates", "affiliatespercentage", $text);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpercentage'], function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : $setting_panel, 'HTML');
-    if (function_exists('buildAffiliatesAdminPanel')) {
-        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
-        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
-    }
     step('home', $from_id);
+    $__aff = select("affiliates", "*", null, null, "select");
+    $__old = intval(is_array($__aff) ? ($__aff['affiliatespercentage'] ?? 0) : 0);
+    sendmessage($from_id, "⚠️ <b>تغییر درصد پورسانت</b>\n\nفعلی: <b>{$__old}٪</b>\nجدید: <b>{$__n}٪</b>\n\nبعد از هر خرید زیرمجموعه، {$__n}٪ مبلغ به معرف پورسانت داده میشود.\nذخیره شود؟", json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، ذخیره شود', 'callback_data' => 'affpct_ok_' . $__n]],
+        [['text' => '❌ انصراف', 'callback_data' => 'affpanel_refresh']],
+    ]], JSON_UNESCAPED_UNICODE), 'HTML');
 } elseif ($datain == "affpanel_set_giftprice") {
     sendmessage($from_id, $textbotlang['users']['affiliates']['priceDiscount'], $backadmin, 'HTML');
     step('getdiscont', $from_id);
-} elseif ($user['step'] == "getdiscont") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
+} elseif ($user['step'] == "getdiscont" && empty($datain)) {
+    // نسخه 2.4.3: سقف ۱۰ میلیون + تأیید
+    $__n = botAdmInt($text, 0, 10000000);
+    if ($__n === null) {
+        sendmessage($from_id, "❌ مبلغ را به تومان بفرستید؛ عددی بین ۰ تا ۱۰٬۰۰۰٬۰۰۰:", $backadmin, 'HTML');
         return;
     }
-    update("affiliates", "price_Discount", $text);
-    sendmessage($from_id, $textbotlang['users']['affiliates']['changedpriceDiscount'], function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : $setting_panel, 'HTML');
-    if (function_exists('buildAffiliatesAdminPanel')) {
-        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
-        sendmessage($from_id, $aff_txt, $aff_kb, 'HTML');
-    }
     step('home', $from_id);
+    $__aff = select("affiliates", "*", null, null, "select");
+    $__old = intval(is_array($__aff) ? ($__aff['price_Discount'] ?? 0) : 0);
+    sendmessage($from_id, "⚠️ <b>تغییر مبلغ هدیه استارت</b>\n\nفعلی: <b>" . number_format($__old) . "</b> تومان\nجدید: <b>" . number_format($__n) . "</b> تومان\n\nذخیره شود؟", json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، ذخیره شود', 'callback_data' => 'affgift_ok_' . $__n]],
+        [['text' => '❌ انصراف', 'callback_data' => 'affpanel_refresh']],
+    ]], JSON_UNESCAPED_UNICODE), 'HTML');
 } elseif ($datain == "affpanel_set_banner") {
     sendmessage($from_id, $textbotlang['users']['affiliates']['banner'], $backadmin, 'HTML');
     step('setbanner', $from_id);
@@ -4120,13 +4179,13 @@ if ($datain == "ononhold") {
 if ($text == $textbotlang['Admin']['keyboardadmin']['settingscron']) {
     ensureSmartCronSettings();
     ensureSmartCronStateTable();
-    sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
+    sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($text == $textbotlang['Admin']['cron']['test']['active']) {
     sendmessage($from_id, "⚠️ کرون‌های قدیمی غیرفعال شده‌اند.\nاز «زمانبندیها (کرون)» فقط <b>کرون هوشمند</b> را فعال و تنظیم کنید.", null, 'HTML');
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['test']['disable']) {
@@ -4142,7 +4201,7 @@ if ($text == $textbotlang['Admin']['cron']['volume']['active']) {
     sendmessage($from_id, "⚠️ کرون حجم قدیمی حذف شده است.\nاخطار حجم از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['disable']) {
@@ -4158,7 +4217,7 @@ if ($text == $textbotlang['Admin']['cron']['time']['active']) {
     sendmessage($from_id, "⚠️ کرون زمان قدیمی حذف شده است.\nاخطار زمان از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['time']['disable']) {
@@ -4174,7 +4233,7 @@ if ($text == $textbotlang['Admin']['cron']['remove']['active']) {
     sendmessage($from_id, "⚠️ کرون حذف قدیمی حذف شده است.\nحذف فاکتور غایب از طریق <b>کرون هوشمند</b> مدیریت می‌شود.", null, 'HTML');
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, $textbotlang['Admin']['smartcron']['menu'], buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['disable']) {
@@ -4384,220 +4443,14 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     } elseif ($setting['iran_number'] == "❌ بررسی شماره ایرانی غیرفعال است") {
         update("setting", "iran_number", "0");
     }
-    if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
-        $cronstatus = 1;
-        $cronCommand = "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
-        sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
-    } else {
-        $cronCommand = "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
-        $existingCronCommands = shell_exec('crontab -l');
-        if (strpos($existingCronCommands, $cronCommand) === false) {
-            $cronstatus = 0;
-        } else {
-            $cronstatus = 1;
-        }
-    }
-    $setting = select("setting", "*");
-    $name_status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['Bot_Status']];
-    $roll_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['roll_Status']];
-    $NotUser_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['NotUser']];
-    $help_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['help_Status']];
-    $get_number_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['get_number']];
-    $get_number_iran = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['iran_number']];
-    $statusv_verify = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['status_verify']];
-    $statusv_category = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['statuscategory']];
-    $status_Automatic_confirmation = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$cronstatus];
-    $status_copy_cart = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][($setting['copy_cart'] ?? '0')];
-    // Feature flags (fork) — default ON for channel force & buy/test/search/aff if missing
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0', 'status_reseller_request' => '0'] as $_fk => $_fd) {
-        if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
-            $setting[$_fk] = $_fd;
-        }
-    }
-    $st_force_channel = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['force_channel'])];
-    $st_show_balance = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['show_balance'])];
-    $st_usertest = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_usertest'])];
-    $st_buy = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_buy'])];
-    $st_extend = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_extend'] ?? '1')];
-    $st_search = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_search_service'])];
-    $st_aff_btn = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_affiliates_btn'])];
-    $st_tariff = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_tariff_list'])];
-    $st_extra_vol = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_extra_volume'] ?? '1')];
-    $st_deposit = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_deposit'] ?? '1')];
-    $st_support = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_support'] ?? '1')];
-    if (function_exists('ensureResellerFeatureSetting')) { ensureResellerFeatureSetting(); }
-    $st_reseller = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_reseller_panel'] ?? '0')];
-    $st_reseller_req = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_reseller_request'] ?? '0')];
-    $Bot_Status = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['Admin']['Status']['statussubject'], 'callback_data' => "subjectde"],
-                ['text' => $textbotlang['Admin']['Status']['subject'], 'callback_data' => "subject"],
-            ],
-            [
-                ['text' => $name_status, 'callback_data' => "editstsuts-statusbot-{$setting['Bot_Status']}"],
-                ['text' => $textbotlang['Admin']['Status']['stautsbot'], 'callback_data' => "statusbot"],
-            ],
-            [
-                ['text' => $roll_Status, 'callback_data' => "editstsuts-roll_Status-{$setting['roll_Status']}"],
-                ['text' => $textbotlang['users']['Rulesbtn'], 'callback_data' => "roll_Status"],
-            ],
-            [
-                ['text' => $NotUser_Status, 'callback_data' => "editstsuts-NotUser-{$setting['NotUser']}"],
-                ['text' => $textbotlang['users']['maangeuser'], 'callback_data' => "NotUser"],
-            ],
-            [
-                ['text' => $help_Status, 'callback_data' => "editstsuts-help_Status-{$setting['help_Status']}"],
-                ['text' => $textbotlang['Admin']['Help']['statushelp'], 'callback_data' => "help_Status"],
-            ],
-            [
-                ['text' => $get_number_Status, 'callback_data' => "editstsuts-get_number-{$setting['get_number']}"],
-                ['text' => $textbotlang['Admin']['ManageUser']['verifynumber'], 'callback_data' => "get_number"],
-            ],
-            [
-                ['text' => $get_number_iran, 'callback_data' => "editstsuts-iran_number-{$setting['iran_number']}"],
-                ['text' => $textbotlang['Admin']['ManageUser']['verifynumberirani'], 'callback_data' => "iran_number"],
-            ],
-            [
-                ['text' => $statusv_verify, 'callback_data' => "editstsuts-verify-{$setting['status_verify']}"],
-                ['text' => $textbotlang['Admin']['ManageUser']['verify'], 'callback_data' => "status_verify"],
-            ],
-            [
-                ['text' => $statusv_category, 'callback_data' => "editstsuts-category-{$setting['statuscategory']}"],
-                ['text' => $textbotlang['Admin']['category']['status'], 'callback_data' => "statuscategory"],
-            ],
-            [
-                ['text' => $st_force_channel, 'callback_data' => "editstsuts-force_channel-{$setting['force_channel']}"],
-                ['text' => $textbotlang['Admin']['Status']['force_channel'], 'callback_data' => "force_channel"],
-            ],
-            [
-                ['text' => $st_show_balance, 'callback_data' => "editstsuts-show_balance-{$setting['show_balance']}"],
-                ['text' => $textbotlang['Admin']['Status']['show_balance'], 'callback_data' => "show_balance"],
-            ],
-            [
-                ['text' => $st_usertest, 'callback_data' => "editstsuts-status_usertest-{$setting['status_usertest']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_usertest'], 'callback_data' => "status_usertest"],
-            ],
-            [
-                ['text' => $st_buy, 'callback_data' => "editstsuts-status_buy-{$setting['status_buy']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_buy'], 'callback_data' => "status_buy"],
-            ],
-            [
-                ['text' => $st_extend, 'callback_data' => 'editstsuts-status_extend-' . strval($setting['status_extend'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_extend'], 'callback_data' => "status_extend"],
-            ],
-            [
-                ['text' => $st_search, 'callback_data' => "editstsuts-status_search_service-{$setting['status_search_service']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_search_service'], 'callback_data' => "status_search_service"],
-            ],
-            [
-                ['text' => $st_aff_btn, 'callback_data' => "editstsuts-status_affiliates_btn-{$setting['status_affiliates_btn']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_affiliates_btn'], 'callback_data' => "status_affiliates_btn"],
-            ],
-            [
-                ['text' => $st_tariff, 'callback_data' => "editstsuts-status_tariff_list-{$setting['status_tariff_list']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_tariff_list'], 'callback_data' => "status_tariff_list"],
-            ],
-            [
-                ['text' => $st_extra_vol, 'callback_data' => 'editstsuts-status_extra_volume-' . strval($setting['status_extra_volume'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_extra_volume'], 'callback_data' => "status_extra_volume"],
-            ],
-            [
-                ['text' => $st_deposit, 'callback_data' => 'editstsuts-status_deposit-' . strval($setting['status_deposit'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_deposit'], 'callback_data' => "status_deposit"],
-            ],
-            [
-                ['text' => $st_support, 'callback_data' => 'editstsuts-status_support-' . strval($setting['status_support'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_support'], 'callback_data' => "status_support"],
-            ],
-            [
-                ['text' => $st_reseller, 'callback_data' => 'editstsuts-status_reseller_panel-' . strval($setting['status_reseller_panel'] ?? '0')],
-                ['text' => $textbotlang['Admin']['Status']['status_reseller_panel'] ?? 'Reseller Panel', 'callback_data' => "status_reseller_panel"],
-            ],
-            [
-                ['text' => $st_reseller_req, 'callback_data' => 'editstsuts-status_reseller_request-' . strval($setting['status_reseller_request'] ?? '0')],
-                ['text' => $textbotlang['Admin']['Status']['status_reseller_request'] ?? 'درخواست پنل نمایندگی', 'callback_data' => "status_reseller_request"],
-            ],
-            [
-                ['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings'],
-            ],
-        ]
-    ]);
+    // نسخه 2.4.3: صفحه گروهبندیشده قابلیتها (بدون بررسی crontab)
+    list($__ftx, $__fkb) = botFeaturesPage();
     if (!empty($GLOBALS['__admin_nav_edit_mid'])) {
         $__mid_feat = intval($GLOBALS['__admin_nav_edit_mid']);
         unset($GLOBALS['__admin_nav_edit_mid']);
-        Editmessagetext($from_id, $__mid_feat, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status);
+        Editmessagetext($from_id, $__mid_feat, $__ftx, $__fkb);
     } else {
-        sendmessage($from_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status, 'HTML');
+        sendmessage($from_id, $__ftx, $__fkb, 'HTML');
     }
 } elseif (preg_match('/^editstsuts-(.*)-(.*)/', $datain, $dataget)) {
     if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColumns(); }
@@ -4732,209 +4585,8 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
         }
     }
-    $cronCommand = "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
-    if (!(function_exists('shell_exec') && is_callable('shell_exec'))) {
-        $cronstatus = 1;
-    } else {
-        $existingCronCommands = shell_exec('crontab -l');
-        if (strpos($existingCronCommands, $cronCommand) === false) {
-            $cronstatus = 0;
-        } else {
-            $cronstatus = 1;
-        }
-    }
-    $setting = select("setting", "*");
-    $name_status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['Bot_Status']];
-    $roll_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['roll_Status']];
-    $NotUser_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['NotUser']];
-    $help_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['help_Status']];
-    $get_number_Status = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['get_number']];
-    $get_number_iran = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['iran_number']];
-    $statusv_verify = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['status_verify']];
-    $statusv_category = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$setting['statuscategory']];
-    $status_Automatic_confirmation = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][$cronstatus];
-    $status_copy_cart = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][($setting['copy_cart'] ?? '0')];
-    foreach (['force_channel' => '1', 'show_balance' => '0', 'status_usertest' => '1', 'status_buy' => '1', 'status_search_service' => '1', 'status_affiliates_btn' => '1', 'status_tariff_list' => '1', 'status_extra_volume' => '1', 'status_deposit' => '1', 'status_support' => '1', 'status_extend' => '1', 'status_reseller_panel' => '0', 'status_reseller_request' => '0'] as $_fk => $_fd) {
-        if (!isset($setting[$_fk]) || $setting[$_fk] === '' || $setting[$_fk] === null) {
-            $setting[$_fk] = $_fd;
-        }
-    }
-    $st_force_channel = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['force_channel'])];
-    $st_show_balance = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['show_balance'])];
-    $st_usertest = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_usertest'])];
-    $st_buy = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_buy'])];
-    $st_extend = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_extend'] ?? '1')];
-    $st_search = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_search_service'])];
-    $st_aff_btn = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_affiliates_btn'])];
-    $st_tariff = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_tariff_list'])];
-    $st_extra_vol = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_extra_volume'] ?? '1')];
-    $st_deposit = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_deposit'] ?? '1')];
-    $st_support = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_support'] ?? '1')];
-    if (function_exists('ensureResellerFeatureSetting')) { ensureResellerFeatureSetting(); }
-    $st_reseller = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_reseller_panel'] ?? '0')];
-    $st_reseller_req = [
-        '1' => $textbotlang['Admin']['Status']['statuson'],
-        '0' => $textbotlang['Admin']['Status']['statusoff']
-    ][strval($setting['status_reseller_request'] ?? '0')];
-    $Bot_Status = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['Admin']['Status']['statussubject'], 'callback_data' => "subjectde"],
-                ['text' => $textbotlang['Admin']['Status']['subject'], 'callback_data' => "subject"],
-            ],
-            [
-                ['text' => $name_status, 'callback_data' => "editstsuts-statusbot-{$setting['Bot_Status']}"],
-                ['text' => $textbotlang['Admin']['Status']['stautsbot'], 'callback_data' => "statusbot"],
-            ],
-            [
-                ['text' => $roll_Status, 'callback_data' => "editstsuts-roll_Status-{$setting['roll_Status']}"],
-                ['text' => $textbotlang['users']['Rulesbtn'], 'callback_data' => "roll_Status"],
-            ],
-            [
-                ['text' => $NotUser_Status, 'callback_data' => "editstsuts-NotUser-{$setting['NotUser']}"],
-                ['text' => $textbotlang['users']['maangeuser'], 'callback_data' => "NotUser"],
-            ],
-            [
-                ['text' => $help_Status, 'callback_data' => "editstsuts-help_Status-{$setting['help_Status']}"],
-                ['text' => $textbotlang['Admin']['Help']['statushelp'], 'callback_data' => "help_Status"],
-            ],
-            [
-                ['text' => $get_number_Status, 'callback_data' => "editstsuts-get_number-{$setting['get_number']}"],
-                ['text' => $textbotlang['Admin']['ManageUser']['verifynumber'], 'callback_data' => "get_number"],
-            ],
-            [
-                ['text' => $get_number_iran, 'callback_data' => "editstsuts-iran_number-{$setting['iran_number']}"],
-                ['text' => $textbotlang['Admin']['ManageUser']['verifynumberirani'], 'callback_data' => "iran_number"],
-            ],
-            [
-                ['text' => $statusv_verify, 'callback_data' => "editstsuts-verify-{$setting['status_verify']}"],
-                ['text' => $textbotlang['Admin']['ManageUser']['verify'], 'callback_data' => "status_verify"],
-            ],
-            [
-                ['text' => $statusv_category, 'callback_data' => "editstsuts-category-{$setting['statuscategory']}"],
-                ['text' => $textbotlang['Admin']['category']['status'], 'callback_data' => "statuscategory"],
-            ],
-            [
-                ['text' => $st_force_channel, 'callback_data' => "editstsuts-force_channel-{$setting['force_channel']}"],
-                ['text' => $textbotlang['Admin']['Status']['force_channel'], 'callback_data' => "force_channel"],
-            ],
-            [
-                ['text' => $st_show_balance, 'callback_data' => "editstsuts-show_balance-{$setting['show_balance']}"],
-                ['text' => $textbotlang['Admin']['Status']['show_balance'], 'callback_data' => "show_balance"],
-            ],
-            [
-                ['text' => $st_usertest, 'callback_data' => "editstsuts-status_usertest-{$setting['status_usertest']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_usertest'], 'callback_data' => "status_usertest"],
-            ],
-            [
-                ['text' => $st_buy, 'callback_data' => "editstsuts-status_buy-{$setting['status_buy']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_buy'], 'callback_data' => "status_buy"],
-            ],
-            [
-                ['text' => $st_extend, 'callback_data' => 'editstsuts-status_extend-' . strval($setting['status_extend'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_extend'], 'callback_data' => "status_extend"],
-            ],
-            [
-                ['text' => $st_search, 'callback_data' => "editstsuts-status_search_service-{$setting['status_search_service']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_search_service'], 'callback_data' => "status_search_service"],
-            ],
-            [
-                ['text' => $st_aff_btn, 'callback_data' => "editstsuts-status_affiliates_btn-{$setting['status_affiliates_btn']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_affiliates_btn'], 'callback_data' => "status_affiliates_btn"],
-            ],
-            [
-                ['text' => $st_tariff, 'callback_data' => "editstsuts-status_tariff_list-{$setting['status_tariff_list']}"],
-                ['text' => $textbotlang['Admin']['Status']['status_tariff_list'], 'callback_data' => "status_tariff_list"],
-            ],
-            [
-                ['text' => $st_extra_vol, 'callback_data' => 'editstsuts-status_extra_volume-' . strval($setting['status_extra_volume'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_extra_volume'], 'callback_data' => "status_extra_volume"],
-            ],
-            [
-                ['text' => $st_deposit, 'callback_data' => 'editstsuts-status_deposit-' . strval($setting['status_deposit'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_deposit'], 'callback_data' => "status_deposit"],
-            ],
-            [
-                ['text' => $st_support, 'callback_data' => 'editstsuts-status_support-' . strval($setting['status_support'] ?? '1')],
-                ['text' => $textbotlang['Admin']['Status']['status_support'], 'callback_data' => "status_support"],
-            ],
-            [
-                ['text' => $st_reseller, 'callback_data' => 'editstsuts-status_reseller_panel-' . strval($setting['status_reseller_panel'] ?? '0')],
-                ['text' => $textbotlang['Admin']['Status']['status_reseller_panel'] ?? 'Reseller Panel', 'callback_data' => "status_reseller_panel"],
-            ],
-            [
-                ['text' => $st_reseller_req, 'callback_data' => 'editstsuts-status_reseller_request-' . strval($setting['status_reseller_request'] ?? '0')],
-                ['text' => $textbotlang['Admin']['Status']['status_reseller_request'] ?? 'درخواست پنل نمایندگی', 'callback_data' => "status_reseller_request"],
-            ],
-        ]
-    ]);
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['Status']['BotTitle'], $Bot_Status);
+    list($__ftx, $__fkb) = botFeaturesPage();
+    Editmessagetext($from_id, $message_id, $__ftx, $__fkb);
 } elseif (preg_match('/verify_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
     $userunverify = select("user", "*", "id", $iduser, "select");
@@ -5291,20 +4943,32 @@ if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg)$/', strval($data
 if ($datain == "smartcron_set_vol") {
     sendmessage($from_id, $textbotlang['Admin']['smartcron']['set_vol'], $backadmin, 'HTML');
     step('smartcron_set_vol', $from_id);
-} elseif ($user['step'] == 'smartcron_set_vol') {
+} elseif ($user['step'] == 'smartcron_set_vol' && empty($datain)) {
+    // نسخه 2.4.3: فقط درصدهای ۱ تا ۱۰۰
+    $__lv = botParseNumList($text, 1, 100, 5);
+    if ($__lv === '') {
+        sendmessage($from_id, "❌ نامعتبر است. ۱ تا ۵ عدد بین ۱ تا ۱۰۰ را با کاما بفرستید.\nمثال: <code>90,95,99</code>", $backadmin, 'HTML');
+        return;
+    }
     ensureSmartCronSettings();
-    update("PaySetting", "ValuePay", trim($text), "NamePay", "smart_vol_levels");
-    sendmessage($from_id, $textbotlang['Admin']['smartcron']['saved'], buildSmartCronAdminKeyboard(), 'HTML');
+    update("PaySetting", "ValuePay", $__lv, "NamePay", "smart_vol_levels");
     step('home', $from_id);
+    sendmessage($from_id, "✅ درصدهای اخطار حجم: <code>{$__lv}</code>\n\n" . botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($datain == "smartcron_set_time") {
     sendmessage($from_id, $textbotlang['Admin']['smartcron']['set_time'], $backadmin, 'HTML');
     step('smartcron_set_time', $from_id);
-} elseif ($user['step'] == 'smartcron_set_time') {
+} elseif ($user['step'] == 'smartcron_set_time' && empty($datain)) {
+    // نسخه 2.4.3: فقط روزهای ۱ تا ۶۰
+    $__lv = botParseNumList($text, 1, 60, 5);
+    if ($__lv === '') {
+        sendmessage($from_id, "❌ نامعتبر است. ۱ تا ۵ عدد بین ۱ تا ۶۰ (روز) را با کاما بفرستید.\nمثال: <code>7,3,1</code>", $backadmin, 'HTML');
+        return;
+    }
     ensureSmartCronSettings();
-    update("PaySetting", "ValuePay", trim($text), "NamePay", "smart_time_days");
-    sendmessage($from_id, $textbotlang['Admin']['smartcron']['saved'], buildSmartCronAdminKeyboard(), 'HTML');
+    update("PaySetting", "ValuePay", $__lv, "NamePay", "smart_time_days");
     step('home', $from_id);
+    sendmessage($from_id, "✅ روزهای اخطار زمان: <code>{$__lv}</code>\n\n" . botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($datain == "smartcron_show_cmd") {
     global $domainhosts;

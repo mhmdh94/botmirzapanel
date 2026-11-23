@@ -26,6 +26,8 @@ function saveSmartCronCursor($value)
 $ManagePanel = new ManagePanel();
 ensureSmartCronSettings();
 ensureSmartCronStateTable();
+// نسخه 2.4.3: زمان آخرین اجرا (برای نمایش در پنل)
+@file_put_contents(__DIR__ . '/smart_cron.last', strval(time()));
 
 // حذف خودکار فاکتورهای unpaid منقضی (TTL قابل تنظیم، پیش‌فرض ۴۵ دقیقه)
 if (function_exists('cleanupExpiredUnpaidInvoices')) {
