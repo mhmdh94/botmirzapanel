@@ -451,20 +451,9 @@ $textbotlang['users']['Discount']['acceptdiscount'] = "✅ کد هدیه ثبت 
 
 
 $textbotlang['users']['moeny']['cart_to_Cart_btn'] = "💳 کارت به کارت";
-$textbotlang['users']['moeny']['nowpaymentbtn'] = "💵 پرداخت nowpayments";
 $textbotlang['users']['moeny']['currency_rial_gateway'] = "💎 کریپتو";
-$textbotlang['users']['moeny']['mr_payment_gateway'] = "🔵 آقای پرداخت";
 $textbotlang['users']['moeny']['card_number_settings'] = "💳 تنظیم شماره کارت";
 $textbotlang['users']['moeny']['alsat_merchant_settings'] = "تنظیم مرچنت";
-$textbotlang['users']['moeny']['mr_payment_merchant_settings'] = "تنظیم مرچنت آقای پرداخت";
-$textbotlang['users']['moeny']['mr_payment_gateway_status'] = "وضعیت درگاه آقای پرداخت";
-$textbotlang['users']['moeny']['nowpayment_api'] = "🧩 api nowpayment";
-$textbotlang['users']['moeny']['nowpayment_gateway_status'] = "nowpayments 🔌";
-$textbotlang['users']['moeny']['nowpayments_create_link_error'] = "⭕️ خطا در ساخت لینک پرداخت nowpayment
-✍️ دلیل خطا : %s
-            
-آیدی کاربر : %s
-نام کاربری کاربر : @%s";
 $textbotlang['users']['moeny']['carttext'] = "💳 <b>واریز کارت‌به‌کارت</b>
 
 💰 مبلغ: <b>%s</b> تومان (%s ریال)
@@ -474,22 +463,6 @@ $textbotlang['users']['moeny']['carttext'] = "💳 <b>واریز کارت‌به
 
 📸 بعد از واریز، <b>عکس رسید</b> را همینجا ارسال کنید.
 ⏳ تا تأیید مدیریت صبر کنید.";
-$textbotlang['users']['moeny']['aqayepardakht'] = "
-✅ فاکتور پرداخت ایجاد شد.
-        
-🔢 شماره فاکتور : %s
-💰 مبلغ فاکتور : %s تومان
-    
-    جهت پرداخت از دکمه زیر استفاده کنید👇🏻";
-$textbotlang['users']['moeny']['nowpayment']  = "✅ <b>فاکتور NOWPayments</b>
-
-🧾 شماره: <code>%s</code>
-💰 مبلغ: <b>%s</b> تومان
-💵 نرخ دلار: %s تومان
-💲 قابل پرداخت: <b>%s</b> دلار
-
-پس از پرداخت صحیح، موجودی حداکثر تا ۱۵ دقیقه شارژ می‌شود.
-از دکمه زیر پرداخت کنید.";
 $textbotlang['users']['moeny']['iranpay'] = "💎 <b>پرداخت کریپتو</b>
 
 🧾 پیگیری: <code>%s</code>
@@ -542,12 +515,6 @@ $textbotlang['users']['moeny']['rejectresid'] = "❌ <b>پرداخت رد شد</
 
 در صورت نیاز با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['moeny']['sendcart'] = "💳 شماره کارت را بفرستید.\nمی‌توانید نام صاحب کارت را هم بنویسید.\n\nشماره کارت فعلی: <code>%s</code>";
-$textbotlang['users']['moeny']['getapinowpayment'] = "⚙️ api سایت nowpayments.io را ارسال نمایید
-    
-api nowpayment :%s";
-$textbotlang['users']['moeny']['getmarchent'] = "💳 مرچنت کد خود را ازآقای پرداخت دریافت و در این قسمت وارد کنید
-    
-مرچنت کد فعلی شما :%s";
 $textbotlang['users']['moeny']['invalidprice'] = "⚠️ مبلغ نامعتبر است.";
 $textbotlang['users']['moeny']['payment_success'] = "✅ پرداخت موفق";
 $textbotlang['users']['moeny']['payment_failed'] = "❌ پرداخت ناموفق";
@@ -775,7 +742,6 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 
 👥 کاربران: <code>%s</code>
 💰 موجودی کل: <code>%s</code> تومان
-⚙️ پینگ ربات: <code>%s</code>
 
 🛒 <b>فروش</b>
 • امروز: <code>%s</code> عدد | <code>%s</code> تومان
@@ -798,7 +764,8 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 🎁 پورسانت پرداخت‌شده: <code>%s</code> تومان
 👥 عضو از مشارکت در فروش: <code>%s</code>
 
-📦 سرویس فعال: <code>%s</code> | مبلغ: <code>%s</code> تومان
+📦 سرویس فعال: <code>%s</code>
+⏳ انقضا تا ۳ روز آینده: <code>%s</code>
 🧪 اکانت تست: <code>%s</code>
 🖥 پنل‌ها: <code>%s</code>";
 
@@ -1286,7 +1253,6 @@ $textbotlang['Admin']['AlgortimeUsername']['SaveData'] = "✅روش ساخت ن�
 
 
 $textbotlang['Admin']['SettingPayment']['Savacard'] = "✅ شماره کارت شما با موفقیت ثبت شد.";
-$textbotlang['Admin']['SettingnowPayment']['Savaapi'] = "✅ تغییرات  با موفقیت ثبت شد";
 
 
 $textbotlang['Admin']['Discountsell']['create'] = "🎁 ساخت کد تخفیف";
@@ -1510,14 +1476,6 @@ $textbotlang['Admin']['Report']['reportremovecron'] = "❌ <b>حذف سرویس 
 🔑 کانفیگ: <code>%s</code>
 
 📝 دلیل: %s";
-$textbotlang['Admin']['Report']['aqayepardakht'] = "💵 <b>پرداخت آقای پرداخت</b>
-
-🆔 <code>%s</code>
-💰 مبلغ: %s تومان";
-$textbotlang['Admin']['Report']['nowpayment'] = "💵 <b>پرداخت NowPayments</b>
-
-🆔 <code>%s</code>
-💰 مبلغ: %s تومان";
 $textbotlang['Admin']['Report']['autocart'] = "🤖 <b>تأیید خودکار رسید</b>
 
 🆔 <code>%s</code>

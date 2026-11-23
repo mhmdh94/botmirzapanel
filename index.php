@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.8";
+$version = "2.2.9";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1693,7 +1693,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (isset($user['Processing_value_tow']) && preg_match('/^[0-9]{9,}$/', strval($user['Processing_value_tow']))) {
         update("user", "Processing_value_tow", "0", "id", $from_id);
     }
-    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC");
+    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') " . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : '') . " ORDER BY CAST(Volume_constraint AS UNSIGNED) ASC, CAST(price_product AS UNSIGNED) ASC, id ASC");
     $stmt->bindValue(':Location', $nameloc['Service_location']);
     $stmt->execute();
     $productextend = ['inline_keyboard' => []];
@@ -1729,7 +1729,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
-    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product " . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : '') . " LIMIT 1");
     $stmt->bindValue(':Location', $nameloc['Service_location']);
     $stmt->bindValue(':code_product', $codeproduct);
     $stmt->execute();
@@ -3393,7 +3393,7 @@ if (isset($datain) && $datain === 'product_header') {
         return;
     }
     update("user", "Processing_value_one", $loc, "id", $from_id);
-    $stmt = $pdo->prepare("SELECT * FROM product WHERE code_product = :code_product AND (location = :loc1 OR location = '/all') LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM product WHERE code_product = :code_product AND (location = :loc1 OR location = '/all') " . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : '') . " LIMIT 1");
     $stmt->bindValue(':code_product', $loc);
     $stmt->bindValue(':loc1', $user['Processing_value']);
     $stmt->execute();

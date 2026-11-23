@@ -61,7 +61,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
     }
     if ($datain === 'navshop_vol') {
         // نیاز به ورودی عددی → پیام جدا با کیبورد بازگشت
-        sendmessage($from_id, ($textbotlang['users']['Extra_volume']['SetPrice'] ?? 'قیمت حجم اضافه: ') . ($setting['Extra_volume'] ?? ''), $backadmin, 'HTML');
+        sendmessage($from_id, "💰 <b>قیمت حجم اضافه</b>\n\nقیمت فعلی هر گیگ: <b>" . number_format(intval($setting['Extra_volume'] ?? 0)) . "</b> تومان\n\nقیمت جدید هر گیگ را به تومان بفرستید:", $backadmin, 'HTML');
         step('GetPriceExtra', $from_id);
         return;
     }
@@ -501,7 +501,7 @@ if ($text == $textbotlang['Admin']['channel']['setting']) {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $channelkeyboard, 'HTML');
 }
 #-------------------------#
-if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
+if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics'] || (isset($datain) && $datain === 'stats_refresh')) {
     global $pdo;
     $now = time();
     // بازه تقویمی به وقت تهران
@@ -762,8 +762,20 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         }
     }
 
-    $ping = function_exists('sys_getloadavg') ? sys_getloadavg() : [0];
-    $ping = number_format(floatval($ping[0] ?? 0), 2);
+    // نسخه 2.2.9: سرویس واقعاً فعال + سرویسهایی که تا ۳ روز آینده منقضی میشوند (بدون تست)
+    $svc_active = 0;
+    $svc_expiring = 0;
+    try {
+        $__st_a = $pdo->query("SELECT COUNT(*) FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'");
+        $svc_active = $__st_a ? intval($__st_a->fetchColumn()) : 0;
+        $__ts = "(CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END)";
+        $__st_e = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'
+            AND CAST(Service_time AS UNSIGNED) > 0 AND {$__ts} > 0
+            AND ({$__ts} + CAST(Service_time AS UNSIGNED) * 86400) BETWEEN ? AND ?");
+        $__st_e->execute([time(), time() + 3 * 86400]);
+        $svc_expiring = intval($__st_e->fetchColumn());
+    } catch (Throwable $e) {
+    }
     $now_label = function_exists('jdate') ? jdate('Y/m/d H:i:s') : date('Y-m-d H:i:s');
 
     $statisticsall = sprintf(
@@ -771,7 +783,6 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         $now_label,
         number_format($statistics),
         number_format($bal),
-        $ping,
         number_format($day['cnt']),
         number_format($day['sum']),
         number_format($yest['cnt']),
@@ -803,8 +814,8 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
         number_format($dep_prev_month['sum']),
         number_format($aff_paid),
         number_format($aff_joined),
-        number_format($invoice_cnt),
-        number_format($invoice_sum),
+        number_format($svc_active),
+        number_format($svc_expiring),
         number_format($count_usertest),
         number_format($sumpanel)
     );
@@ -814,9 +825,20 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics']) {
                 ['text' => '📥 اکسل این ماه', 'callback_data' => 'stats_excel_cur'],
                 ['text' => '📥 اکسل ماه قبل', 'callback_data' => 'stats_excel_prev'],
             ],
+            [
+                ['text' => '🔄 بروزرسانی', 'callback_data' => 'stats_refresh'],
+            ],
         ],
     ]);
-    sendmessage($from_id, $statisticsall, $stats_excel_kb, 'HTML');
+    if (isset($datain) && $datain === 'stats_refresh' && !empty($message_id)) {
+        try {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id ?? '', 'text' => '🔄 بروزرسانی شد', 'show_alert' => false]);
+        } catch (Throwable $e) {
+        }
+        Editmessagetext($from_id, $message_id, $statisticsall, $stats_excel_kb);
+    } else {
+        sendmessage($from_id, $statisticsall, $stats_excel_kb, 'HTML');
+    }
 }
 
 #----[ خروجی اکسل آمار ماهانه ]----#
@@ -1768,6 +1790,67 @@ if (in_array($from_id, $admin_ids) && preg_match('/^shop_p_(.+)$/', strval($data
     update("user", "Processing_value_one", strval($p['Location'] ?? ''), "id", $from_id);
     update("user", "Processing_value_tow", $code, "id", $from_id);
     Editmessagetext($from_id, $message_id, shopProductDetailText($p), shopProductDetailKeyboard($code));
+    return;
+}
+
+# نسخه 2.2.9: مخفی کردن / کپی محصول
+if (in_array($from_id, $admin_ids) && preg_match('/^shop_(hide|copy)_([A-Za-z0-9]+)$/', strval($datain), $m_hc)) {
+    $code = $m_hc[2];
+    $p = shopGetProductByCode($code);
+    if (!$p) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'محصول یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    if (!function_exists('botEnsureProductHiddenColumn') || !botEnsureProductHiddenColumn()) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '❌ امکان ساخت ستون «مخفی» در دیتابیس نبود. لاگ را چک کنید.', 'show_alert' => true]);
+        return;
+    }
+    global $pdo;
+    if ($m_hc[1] === 'hide') {
+        $new_h = (intval($p['is_hidden'] ?? 0) === 1) ? 0 : 1;
+        try {
+            $pdo->prepare("UPDATE product SET is_hidden = ? WHERE code_product = ?")->execute([$new_h, $code]);
+        } catch (Throwable $e) {
+            error_log('shop hide: ' . $e->getMessage());
+        }
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($new_h ? '🙈 محصول از کاربران مخفی شد' : '👁 محصول به کاربران نمایش داده میشود'), 'show_alert' => false]);
+        $p = shopGetProductByCode($code);
+        Editmessagetext($from_id, $message_id, shopProductDetailText($p), shopProductDetailKeyboard($code));
+        return;
+    }
+    // کپی: محصول جدید با همان مشخصات، بهصورت مخفی (تا بعد از ویرایش نمایش داده شود)
+    $new_code = '';
+    for ($__i = 0; $__i < 15; $__i++) {
+        $__c = bin2hex(random_bytes(2));
+        if (!shopGetProductByCode($__c)) {
+            $new_code = $__c;
+            break;
+        }
+    }
+    if ($new_code === '') {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '❌ ساخت کد جدید ناموفق بود، دوباره بزنید.', 'show_alert' => true]);
+        return;
+    }
+    try {
+        $pdo->prepare("INSERT INTO product (code_product, name_product, price_product, Volume_constraint, Location, Service_time, Category, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?, 1)")->execute([
+            $new_code,
+            strval($p['name_product'] ?? '') . ' (کپی)',
+            $p['price_product'] ?? null,
+            $p['Volume_constraint'] ?? null,
+            $p['Location'] ?? null,
+            $p['Service_time'] ?? null,
+            $p['Category'] ?? ($p['category'] ?? null),
+        ]);
+    } catch (Throwable $e) {
+        error_log('shop copy: ' . $e->getMessage());
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '❌ کپی محصول ناموفق بود.', 'show_alert' => true]);
+        return;
+    }
+    $np = shopGetProductByCode($new_code);
+    update("user", "Processing_value", strval($np['name_product'] ?? ''), "id", $from_id);
+    update("user", "Processing_value_one", strval($np['Location'] ?? ''), "id", $from_id);
+    update("user", "Processing_value_tow", $new_code, "id", $from_id);
+    Editmessagetext($from_id, $message_id, "📄 <b>کپی ساخته شد</b> و فعلاً از کاربران مخفی است.\nبعد از ویرایش، «👁 نمایش به کاربران» را بزنید.\n\n" . shopProductDetailText($np), shopProductDetailKeyboard($new_code));
     return;
 }
 
@@ -2930,14 +3013,25 @@ if ($text == $textbotlang['Admin']['managepanel']['methodusername']) {
 
 if ($text == $textbotlang['Admin']['keyboardadmin']['finance']) {
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : json_encode(['inline_keyboard' => []]);
-    $fin_summary = "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز، پکیج شارژ و تأیید خودکار رسید را مدیریت کنید.";
+    $fin_summary = function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : "💳 <b>تنظیمات مالی</b>";
     sendmessage($from_id, $fin_summary, $keyboardmoeny, 'HTML');
 }
 
+# نسخه 2.2.9: رسیدهای در انتظار از صفحه مالی
+if (in_array($from_id, $admin_ids) && isset($datain) && $datain === 'fin_rcpt') {
+    $res = function_exists('resendWaitingPaymentReceipts') ? resendWaitingPaymentReceipts($from_id, 40) : ['ok' => false, 'count' => 0, 'msg' => 'تابع موجود نیست'];
+    $msg = strval($res['msg'] ?? '');
+    if (intval($res['count'] ?? 0) === 0 && !empty($res['ok']) && $msg === '') {
+        $msg = 'هیچ رسید در انتظار تأییدی نیست.';
+    }
+    $kb_fr = json_encode(['inline_keyboard' => [[['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']]]], JSON_UNESCAPED_UNICODE);
+    Editmessagetext($from_id, $message_id, $msg !== '' ? $msg : '—', $kb_fr);
+    return;
+}
 #----------- finance auto cart confirm ------------#
 if ($datain == "finance_menu_back") {
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
-    Editmessagetext($from_id, $message_id, "💳 <b>تنظیمات مالی</b>\n\nاز این بخش درگاه‌ها، حداقل/حداکثر واریز، پکیج شارژ و تأیید خودکار رسید را مدیریت کنید.", $keyboardmoeny);
+    Editmessagetext($from_id, $message_id, (function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : "💳 <b>تنظیمات مالی</b>"), $keyboardmoeny);
 }
 if ($datain == "finance_auto_cart_settings") {
     $min = function_exists('getAutoCartIntervalMinutes') ? getAutoCartIntervalMinutes() : 4;
@@ -3050,18 +3144,12 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     if ($methodpay == "cart") {
         $value = ($status == "oncard") ? "offcard" : "oncard";
         update("PaySetting", "ValuePay", $value, "NamePay", "Cartstatus");
-    } elseif ($methodpay == "nowpayment") {
-        // حذف شده
-        $value = $status;
     } elseif ($methodpay == "iranpay") {
         $value = ($status == "ondigi") ? "offdigi" : "ondigi";
         update("PaySetting", "ValuePay", $value, "NamePay", "digistatus");
-    } elseif ($methodpay == "aqayepardakht") {
-        // حذف شده
-        $value = $status;
     }
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
-    Editmessagetext($from_id, $message_id, $textbotlang['users']['moeny']['settingpay'] ?? '💳 تنظیمات مالی', $keyboardmoeny);
+    Editmessagetext($from_id, $message_id, (function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : ($textbotlang['users']['moeny']['settingpay'] ?? '💳 تنظیمات مالی')), $keyboardmoeny);
 } elseif ($datain == "settingcart") {
     sendmessage($from_id, $textbotlang['users']['selectoption'], $CartManage, 'HTML');
 }
@@ -3074,30 +3162,7 @@ if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
     update("PaySetting", "ValuePay", $text, "NamePay", "CartDescription");
     step('home', $from_id);
 }
-if ($datain == "SettingnowPayment") {
-    sendmessage($from_id, 'این درگاه حذف شده است. فقط کارت به کارت و کریپتو فعال است.', isset($keyboardmoeny)?$keyboardmoeny:$keyboardadmin, 'HTML');
-}
-if ($text == $textbotlang['users']['moeny']['nowpayment_api']) {
-    $PaySetting = select("PaySetting", "ValuePay", "NamePay", "apinowpayment", "select")['ValuePay'];
-    sendmessage($from_id, sprintf($textbotlang['users']['moeny']['getapinowpayment'], $PaySetting), $backadmin, 'HTML');
-    step('apinowpayment', $from_id);
-} elseif ($user['step'] == "apinowpayment") {
-    sendmessage($from_id, $textbotlang['Admin']['SettingnowPayment']['Savaapi'], $NowPaymentsManage, 'HTML');
-    update("PaySetting", "ValuePay", $text, "NamePay", "apinowpayment");
-    step('home', $from_id);
-}
-if ($datain == "Settingaqayepardakht") {
-    sendmessage($from_id, 'این درگاه حذف شده است. فقط کارت به کارت و کریپتو فعال است.', isset($keyboardmoeny)?$keyboardmoeny:$keyboardadmin, 'HTML');
-}
-if ($text == $textbotlang['users']['moeny']['mr_payment_merchant_settings']) {
-    $PaySetting = select("PaySetting", "ValuePay", "NamePay", "merchant_id_aqayepardakht", "select");
-    sendmessage($from_id, sprintf($textbotlang['users']['moeny']['getmarchent'], $PaySetting['ValuePay']), $backadmin, 'HTML');
-    step('merchant_id_aqayepardakht', $from_id);
-} elseif ($user['step'] == "merchant_id_aqayepardakht") {
-    sendmessage($from_id, $textbotlang['Admin']['SettingnowPayment']['Savaapi'], $aqayepardakht, 'HTML');
-    update("PaySetting", "ValuePay", $text, "NamePay", "merchant_id_aqayepardakht");
-    step('home', $from_id);
-}
+# نسخه 2.2.9: درگاههای NowPayments و آقای پرداخت حذف شدند
 if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain === 'nav_panel') {
     if (function_exists('adminPanelsListKeyboard')) {
         list($__tx, $__kb) = adminPanelsListKeyboard();
@@ -3249,7 +3314,13 @@ if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume'])
         return;
     }
     update("setting", "Extra_volume", $text);
-    sendmessage($from_id, $textbotlang['users']['Extra_volume']['ChangedPrice'], $shopkeyboard, 'HTML');
+    // نسخه 2.2.9: بعد از ثبت، برگشت به صفحه شیشهای فروشگاه
+    $__ev_msg = ($textbotlang['users']['Extra_volume']['ChangedPrice'] ?? '✅ ذخیره شد.') . "\n💰 قیمت هر گیگ: <b>" . number_format(intval($text)) . "</b> تومان";
+    if (function_exists('buildAdminShopSectionText') && function_exists('buildAdminShopInlineKeyboard')) {
+        sendmessage($from_id, $__ev_msg . "\n\n" . buildAdminShopSectionText(), buildAdminShopInlineKeyboard(), 'HTML');
+    } else {
+        sendmessage($from_id, $__ev_msg, $shopkeyboard, 'HTML');
+    }
     step('home', $from_id);
 }
 #-------------------------#
@@ -5056,6 +5127,63 @@ if ($datain == "adm_noop") {
     Editmessagetext($from_id, $message_id, $msg . "\n\n" . $tx, $kb);
 }
 
+
+# نسخه 2.2.9: روشن/خاموش اکانت تست و سهمیه یک کاربر — از صفحه فروشگاه
+if (in_array($from_id, $admin_ids) && isset($datain) && $datain === 'adm_ut_toggle') {
+    $__st_ut = select("setting", "*");
+    $__cur_ut = (is_array($__st_ut) && isset($__st_ut['status_usertest']) && strval($__st_ut['status_usertest']) === '0') ? '0' : '1';
+    update("setting", "status_usertest", $__cur_ut === '1' ? '0' : '1');
+    list($tx, $kb) = adminUsertestPanel();
+    Editmessagetext($from_id, $message_id, $tx, $kb);
+    return;
+}
+if (in_array($from_id, $admin_ids) && isset($datain) && $datain === 'adm_ut_user') {
+    sendmessage($from_id, "👤 آیدی عددی کاربر را بفرستید:", $backadmin, 'HTML');
+    step('adm_ut_user_id', $from_id);
+    return;
+}
+if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'adm_ut_user_id' && isset($text) && is_string($text) && $text !== '' && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $__uid_ut = trim($text);
+    if (!ctype_digit($__uid_ut)) {
+        sendmessage($from_id, "❌ آیدی باید فقط عدد باشد. دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__u_ut = select("user", "*", "id", $__uid_ut, "select");
+    if (!is_array($__u_ut)) {
+        sendmessage($from_id, "❌ کاربری با این آیدی پیدا نشد. دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    update("user", "Processing_value", $__uid_ut, "id", $from_id);
+    sendmessage($from_id, "👤 کاربر: <code>{$__uid_ut}</code>\n🔢 سهمیه فعلی تست: <b>" . intval($__u_ut['limit_usertest'] ?? 0) . "</b>\n\nتعداد جدید را بفرستید (۰ = بدون تست):", $backadmin, 'HTML');
+    step('adm_ut_user_lim', $from_id);
+    return;
+}
+if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'adm_ut_user_lim' && isset($text) && is_string($text) && $text !== '' && empty($datain)) {
+    if ($text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $__n_ut = trim($text);
+    if (!ctype_digit($__n_ut) || intval($__n_ut) > 1000) {
+        sendmessage($from_id, "❌ یک عدد بین ۰ تا ۱۰۰۰ بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__uid_ut = strval($user['Processing_value'] ?? '');
+    if ($__uid_ut === '' || !ctype_digit($__uid_ut)) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ کاربر مشخص نیست. دوباره از «👤 سهمیه یک کاربر» شروع کنید.", $backadmin, 'HTML');
+        return;
+    }
+    update("user", "limit_usertest", strval(intval($__n_ut)), "id", $__uid_ut);
+    step('home', $from_id);
+    list($tx, $kb) = adminUsertestPanel();
+    sendmessage($from_id, "✅ سهمیه تست کاربر <code>{$__uid_ut}</code> روی <b>" . intval($__n_ut) . "</b> تنظیم شد.\n\n" . $tx, $kb, 'HTML');
+    return;
+}
 
 if ($datain == "codes_noop") {
     telegram('answerCallbackQuery', [

@@ -402,15 +402,6 @@ function buildCurrencyPaymentText($amount_toman)
     return ['ok' => true, 'text' => $header . "\n" . implode("\n\n", $lines) . $footer];
 }
 
-function nowPayments()
-{
-    return null; // NowPayments removed
-}
-function StatusPayment($paymentid)
-{
-    // NowPayments حذف شده
-    return null;
-}
 function formatBytes($bytes, $precision = 2): string
 {
     global $textbotlang;
@@ -2275,6 +2266,111 @@ function botUserCanGetTest($user_id)
     }
 }
 
+/** نسخه 2.2.9: ستون is_hidden محصول وجود دارد؟ (بدون ساختن) */
+function botProductHiddenColumnExists()
+{
+    global $pdo;
+    if (array_key_exists('__prod_hidden_col', $GLOBALS)) {
+        return $GLOBALS['__prod_hidden_col'];
+    }
+    $ok = false;
+    try {
+        $st = $pdo->query("SHOW COLUMNS FROM product LIKE 'is_hidden'");
+        $ok = ($st && $st->fetch()) ? true : false;
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+    $GLOBALS['__prod_hidden_col'] = $ok;
+    return $ok;
+}
+
+/** نسخه 2.2.9: ساخت ستون is_hidden (فقط اضافه کردن، پیشفرض ۰ = نمایش) */
+function botEnsureProductHiddenColumn()
+{
+    global $pdo;
+    if (botProductHiddenColumnExists()) {
+        return true;
+    }
+    try {
+        $pdo->exec("ALTER TABLE product ADD is_hidden TINYINT(1) NOT NULL DEFAULT 0");
+    } catch (Throwable $e) {
+        error_log('ensure is_hidden: ' . $e->getMessage());
+    }
+    unset($GLOBALS['__prod_hidden_col']);
+    return botProductHiddenColumnExists();
+}
+
+/** شرط SQL برای نمایش فقط محصولات غیرمخفی به کاربر (اگر ستون نباشد، خالی) */
+function botProductVisibleSql()
+{
+    return botProductHiddenColumnExists() ? " AND (is_hidden IS NULL OR is_hidden = 0) " : '';
+}
+
+function botProductIsHidden($code)
+{
+    if (!botProductHiddenColumnExists()) {
+        return false;
+    }
+    $p = function_exists('shopGetProductByCode') ? shopGetProductByCode($code) : null;
+    return is_array($p) && intval($p['is_hidden'] ?? 0) === 1;
+}
+
+/** تعداد رسیدهای در انتظار تأیید */
+function botCountWaitingReceipts()
+{
+    global $pdo;
+    try {
+        $st = $pdo->query("SELECT COUNT(*) FROM Payment_report WHERE payment_Status = 'waiting'");
+        return $st ? intval($st->fetchColumn()) : 0;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/** نسخه 2.2.9: خلاصه بالای صفحه مالی */
+function buildFinanceSummaryText()
+{
+    $card = '';
+    $card_on = false;
+    $digi_on = false;
+    $auto_on = false;
+    $min = 0;
+    $max = 0;
+    try {
+        $r = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
+        $card = is_array($r) ? trim(strval($r['ValuePay'] ?? '')) : '';
+        $r = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select");
+        $card_on = is_array($r) && strval($r['ValuePay'] ?? '') === 'oncard';
+        $r = select("PaySetting", "ValuePay", "NamePay", "digistatus", "select");
+        $digi_on = is_array($r) && strval($r['ValuePay'] ?? '') === 'ondigi';
+        $auto_on = function_exists('isAutomaticCartConfirmEnabled') && isAutomaticCartConfirmEnabled();
+        if (function_exists('getDepositLimits')) {
+            $lim = getDepositLimits();
+            $min = intval($lim['min'] ?? 0);
+            $max = intval($lim['max'] ?? 0);
+        }
+    } catch (Throwable $e) {}
+    $wait = botCountWaitingReceipts();
+    if ($card === '' || $card === '0') {
+        $card_disp = '❗️ ثبت نشده';
+    } else {
+        if (mb_strlen($card) > 200) {
+            $card = mb_substr($card, 0, 200) . '…';
+        }
+        $card_disp = "<code>" . htmlspecialchars($card, ENT_QUOTES, 'UTF-8') . "</code>";
+    }
+    $on = '✅ روشن';
+    $off = '❌ خاموش';
+    return "💳 <b>مالی و پرداخت</b>\n\n"
+        . "💳 کارت به کارت: <b>" . ($card_on ? $on : $off) . "</b>\n"
+        . "🔢 کارت فعلی: " . $card_disp . "\n"
+        . "💎 کریپتو: <b>" . ($digi_on ? $on : $off) . "</b>\n"
+        . "🤖 تأیید خودکار رسید: <b>" . ($auto_on ? $on : $off) . "</b>\n"
+        . "💰 حداقل واریز: <b>" . number_format($min) . "</b> تومان | حداکثر: <b>" . number_format($max) . "</b> تومان\n"
+        . "🧾 رسیدهای در انتظار: <b>" . number_format($wait) . "</b>\n\n"
+        . "برای تغییر، یکی از گزینهها را بزنید.";
+}
+
 function botShortfallLine($amount)
 {
     $amount = intval($amount);
@@ -3687,6 +3783,9 @@ function buildFinanceKeyboard()
             ['text' => $textbotlang['Admin']['balance_pkg']['menu'] ?? '🎁 پکیج افزایش موجودی', 'callback_data' => 'balance_packages_settings'],
         ],
     ];
+    // نسخه 2.2.9: میانبر رسیدهای در انتظار
+    $__wr = function_exists('botCountWaitingReceipts') ? botCountWaitingReceipts() : 0;
+    $rows[] = [['text' => '🧾 رسیدهای در انتظار' . ($__wr > 0 ? " ({$__wr})" : ''), 'callback_data' => 'fin_rcpt']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -6714,7 +6813,15 @@ function adminUsertestPanel()
             $lim = strval($row['limit_usertest_all'] ?? '-');
         }
     } catch (Throwable $e) {}
+    $__ut_on = true;
+    try {
+        $__ut_st = select("setting", "*");
+        if (is_array($__ut_st) && isset($__ut_st['status_usertest']) && strval($__ut_st['status_usertest']) === '0') {
+            $__ut_on = false;
+        }
+    } catch (Throwable $e) {}
     $text = "🧪 <b>تنظیمات اکانت تست</b>\n\n"
+        . "🔌 وضعیت: <b>" . ($__ut_on ? '✅ روشن' : '❌ خاموش') . "</b>\n"
         . "⏱ زمان: <b>{$time}</b> ساعت\n"
         . "📊 حجم: <b>{$vol}</b> گیگ\n"
         . "🔢 سقف تست برای هر کاربر: <b>{$lim}</b>\n\n"
@@ -6722,11 +6829,15 @@ function adminUsertestPanel()
     $kb = json_encode([
         'inline_keyboard' => [
             [
+                ['text' => ($__ut_on ? '❌ خاموش کردن اکانت تست' : '✅ روشن کردن اکانت تست'), 'callback_data' => 'adm_ut_toggle'],
+            ],
+            [
                 ['text' => "⏱ زمان ({$time}س)", 'callback_data' => 'adm_ut_time'],
                 ['text' => "📊 حجم ({$vol}گ)", 'callback_data' => 'adm_ut_vol'],
             ],
             [
                 ['text' => "🔢 سقف همه ({$lim})", 'callback_data' => 'adm_ut_limit'],
+                ['text' => '👤 سهمیه یک کاربر', 'callback_data' => 'adm_ut_user'],
             ],
             [
                 ['text' => '♻️ ریست سقف تست همه کاربران', 'callback_data' => 'adm_ut_reset'],
@@ -7182,6 +7293,9 @@ function shopProductListKeyboard($location = null)
             if (mb_strlen($name) > 28) {
                 $name = mb_substr($name, 0, 26) . '…';
             }
+            if (intval($p['is_hidden'] ?? 0) === 1) {
+                $name = '🙈 ' . $name;
+            }
             $price = number_format(intval($p['price_product'] ?? 0));
             $kb['inline_keyboard'][] = [
                 ['text' => $price . ' ت', 'callback_data' => 'shop_p_' . $code],
@@ -7233,6 +7347,10 @@ function shopProductDetailKeyboard($code)
             ['text' => '📁 دسته', 'callback_data' => 'shop_ep_cat_' . $code],
         ],
         [
+            ['text' => ((function_exists('botProductIsHidden') && botProductIsHidden($code)) ? '👁 نمایش به کاربران' : '🙈 مخفی کردن'), 'callback_data' => 'shop_hide_' . $code],
+            ['text' => '📄 کپی محصول', 'callback_data' => 'shop_copy_' . $code],
+        ],
+        [
             ['text' => '🗑 حذف محصول', 'callback_data' => 'shop_ep_del_' . $code],
         ],
         [
@@ -7259,7 +7377,8 @@ function shopProductDetailText($p)
         . "📊 حجم: <b>{$vol}</b> گیگ\n"
         . "⏳ زمان: <b>{$time}</b> روز\n"
         . "📍 پنل: <code>{$loc}</code>\n"
-        . "🔑 کد: <code>{$code}</code>\n\n"
+        . "🔑 کد: <code>{$code}</code>\n"
+        . "👁 وضعیت: <b>" . ((intval($p['is_hidden'] ?? 0) === 1) ? '🙈 مخفی از کاربران' : '✅ نمایش به کاربران') . "</b>\n\n"
         . "برای ویرایش یکی از گزینه‌ها را بزنید.";
 }
 

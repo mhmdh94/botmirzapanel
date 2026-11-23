@@ -107,21 +107,6 @@ $CartManage = json_encode([
     ],
     'resize_keyboard' => true
 ]);
-$aqayepardakht = json_encode([
-    'keyboard' => [
-        [['text' => $textbotlang['users']['moeny']['mr_payment_merchant_settings']]],
-        [['text' => $textbotlang['Admin']['Back-Adminment']]]
-    ],
-    'resize_keyboard' => true
-]);
-
-$NowPaymentsManage = json_encode([
-    'keyboard' => [
-        [['text' => $textbotlang['users']['moeny']['nowpayment_api']]],
-        [['text' => $textbotlang['Admin']['Back-Adminment']]]
-    ],
-    'resize_keyboard' => true
-]);
 $admin_section_panel = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['Addedadmin']], ['text' => $textbotlang['Admin']['Removeedadmin']]],
@@ -152,9 +137,7 @@ $setting_panel = json_encode([
     'resize_keyboard' => true
 ]);
 $PaySettingcard = select("PaySetting", "ValuePay", "NamePay", 'Cartstatus', "select")['ValuePay'];
-$PaySettingnow = select("PaySetting", "ValuePay", "NamePay", 'nowpaymentstatus', "select")['ValuePay'];
 $PaySettingdigi = select("PaySetting", "ValuePay", "NamePay", 'digistatus', "select")['ValuePay'];
-$PaySettingaqayepardakht = select("PaySetting", "ValuePay", "NamePay", 'statusaqayepardakht', "select")['ValuePay'];
 $step_payment = [
     'inline_keyboard' => []
 ];
@@ -634,7 +617,7 @@ function KeyboardCategorybuy($callback_data, $location)
     $stmt->execute();
     $list_category = ['inline_keyboard' => [],];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $stmts = $pdo->prepare("SELECT * FROM product WHERE (Location = :location OR Location = '/all') AND category = :category");
+        $stmts = $pdo->prepare("SELECT * FROM product WHERE (Location = :location OR Location = '/all') AND category = :category" . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : ''));
         $stmts->bindParam(':location', $location, PDO::PARAM_STR);
         $stmts->bindParam(':category', $row['id'], PDO::PARAM_STR);
         $stmts->execute();
@@ -650,7 +633,7 @@ function KeyboardCategorybuy($callback_data, $location)
 function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = null)
 {
     global $pdo, $textbotlang;
-    $query = "SELECT * FROM product WHERE (Location = :location OR Location = '/all') ";
+    $query = "SELECT * FROM product WHERE (Location = :location OR Location = '/all') " . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : '');
     if ($categoryid !== null && $categoryid !== '') {
         $query .= " AND category = :category ";
     }
