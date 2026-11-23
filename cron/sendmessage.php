@@ -28,6 +28,11 @@ $okf = function ($r) {
 };
 $batch = array_splice($userid, 0, 20);
 foreach ($batch as $row) {
+    // نسخه 2.4.2: اگر ادمین ارسال را متوقف کرد، ادامه نده
+    clearstatcache();
+    if (!is_file('info')) {
+        break;
+    }
     $uid = is_array($row) ? ($row['id'] ?? 0) : (is_object($row) ? ($row->id ?? 0) : $row);
     if (!$uid) {
         continue;
@@ -46,6 +51,13 @@ foreach ($batch as $row) {
     }
     usleep(50000);
 }
+clearstatcache();
+if (!is_file('info')) {
+    if (function_exists('botCastUpdateCancelled')) {
+        botCastUpdateCancelled($info);
+    }
+    return;
+}
 file_put_contents('users.json', json_encode(array_values($userid)));
 file_put_contents('info', json_encode($info, JSON_UNESCAPED_UNICODE));
 
@@ -58,12 +70,15 @@ $status = ($done ? "✅ <b>ارسال همگانی تمام شد</b>" : "📨 <b
     . "\n✅ ارسالشده: <b>" . number_format($sent) . "</b> | ❌ ناموفق: <b>" . number_format($fail) . "</b>"
     . ($done ? "\n\nℹ️ ناموفقها معمولاً کاربرانی هستند که ربات را بلاک کردهاند." : "\n⏳ باقیمانده: <b>" . number_format(count($userid)) . "</b>");
 if (!empty($info['progress_mid']) && $admin) {
-    $kb = $done ? json_encode(['inline_keyboard' => []]) : json_encode(['inline_keyboard' => [[['text' => 'لغو ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
+    $kb = $done ? json_encode(['inline_keyboard' => []]) : json_encode(['inline_keyboard' => [[['text' => '⏹ توقف ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
     telegram('editMessageText', ['chat_id' => $admin, 'message_id' => intval($info['progress_mid']), 'text' => $status, 'parse_mode' => 'HTML', 'reply_markup' => $kb]);
 } elseif ($done && $admin) {
     sendmessage($admin, $status, null, 'HTML');
 }
 if ($done) {
+    if (function_exists('botCastSaveLast')) {
+        botCastSaveLast($info, 'done');
+    }
     @unlink('info');
     @unlink('users.json');
 }

@@ -100,44 +100,9 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         return;
     }
     if ($datain === 'navuser_block') {
-        global $pdo;
-        try {
-            $stmt = $pdo->query("SELECT id, username, description_blocking FROM user WHERE User_Status = 'block' ORDER BY id DESC LIMIT 80");
-            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-        } catch (Exception $e) {
-            $rows = [];
-        }
-        if (empty($rows)) {
-            $__nav_show($textbotlang['Admin']['ManageUser']['blocked_empty'] ?? 'هیچ کاربر مسدودی نیست.', $User_Services);
-        } else {
-            try {
-                $total = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status = 'block'")->fetchColumn());
-            } catch (Exception $e) {
-                $total = count($rows);
-            }
-            $lines = [];
-            foreach ($rows as $r) {
-                $uid = $r['id'] ?? '-';
-                $un = !empty($r['username']) ? $r['username'] : '-';
-                $reason = trim(strval($r['description_blocking'] ?? ''));
-                if ($reason === '') {
-                    $reason = '-';
-                }
-                if (function_exists('mb_substr')) {
-                    $reason = mb_substr($reason, 0, 40);
-                } else {
-                    $reason = substr($reason, 0, 40);
-                }
-                $lines[] = "🆔 <code>{$uid}</code> | @{$un}\n📝 {$reason}";
-            }
-            $msg = "🚫 <b>مسدود شده‌ها</b> (نمایش " . count($rows) . " از {$total})\n\n" . implode("\n\n", $lines);
-            $kb_back = json_encode([
-                'inline_keyboard' => [
-                    [['text' => '🔙 بازگشت به مدیریت کاربران', 'callback_data' => 'nav_user']],
-                ],
-            ], JSON_UNESCAPED_UNICODE);
-            $__nav_show($msg, $kb_back);
-        }
+        // نسخه 2.4.2: لیست صفحهبندیشده + رفع مسدودی سریع
+        list($__tx, $__kb) = botBlockedListPage(0);
+        $__nav_show($__tx, $__kb);
         return;
     }
     if ($datain === 'navuser_rcpt') {
@@ -1271,50 +1236,71 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         sendmessage($from_id, "❌ این پیام قابل ارسال نیست؛ احتمالاً قالب HTML آن اشتباه است (مثلاً تگ بسته نشده).\nاصلاح کنید و دوباره بفرستید:", $backadmin, 'HTML');
         return;
     }
-    $__cnt = 0;
-    try {
-        $__cnt = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status = 'Active'")->fetchColumn());
-    } catch (Throwable $e) {
-    }
+    // نسخه 2.4.2: انتخاب گروه گیرندهها
+    $__sets = botCastRecipientSets();
     $__bc['cast_pending'] = 1;
     update("user", "Processing_value", json_encode($__bc, JSON_UNESCAPED_UNICODE), "id", $from_id);
     step('home', $from_id);
     $__ckb = json_encode(['inline_keyboard' => [
-        [['text' => '✅ ارسال برای همه', 'callback_data' => 'cast_ok']],
+        [['text' => '👥 همه کاربران (' . number_format(count($__sets['all'])) . ')', 'callback_data' => 'cast_ok']],
+        [['text' => '📦 دارای سرویس فعال (' . number_format(count($__sets['act'])) . ')', 'callback_data' => 'cast_ok_act']],
+        [['text' => '🆕 بدون خرید (' . number_format(count($__sets['nobuy'])) . ')', 'callback_data' => 'cast_ok_nobuy']],
+        [['text' => '⏳ انقضا تا ۷ روز آینده (' . number_format(count($__sets['exp7'])) . ')', 'callback_data' => 'cast_ok_exp7']],
         [['text' => '❌ انصراف', 'callback_data' => 'cast_no']],
     ]], JSON_UNESCAPED_UNICODE);
-    sendmessage($from_id, "👆 پیشنمایش پیام بالاست.\n\n👥 تعداد گیرندهها (کاربران فعال): <b>" . number_format($__cnt) . "</b>\n⏱ زمان تقریبی: <b>" . max(1, intval(ceil($__cnt / 20))) . "</b> دقیقه\n\nارسال شود؟", $__ckb, 'HTML');
-} elseif ($datain == "cast_ok" || $datain == "cast_no") {
+    sendmessage($from_id, "👆 پیشنمایش پیام بالاست.\n\n🎯 <b>گیرندهها را انتخاب کنید</b> (عدد داخل پرانتز = تعداد گیرنده).\nکاربران مسدود در هیچ گروهی نیستند.\n\nبا زدن هر گروه، ارسال شروع میشود.", $__ckb, 'HTML');
+} elseif (isset($datain) && preg_match('/^cast_(ok|no)(?:_(act|nobuy|exp7))?$/', strval($datain), $__cm)) {
     $__bc = json_decode(strval($user['Processing_value'] ?? ''), true);
-    if ($datain == "cast_no" || !is_array($__bc) || empty($__bc['cast_pending'])) {
+    if ($__cm[1] === 'no' || !is_array($__bc) || empty($__bc['cast_pending'])) {
         if (is_array($__bc) && !empty($__bc['cast_pending'])) {
             update("user", "Processing_value", "0", "id", $from_id);
         }
-        Editmessagetext($from_id, $message_id, ($datain == "cast_no" ? "❌ ارسال همگانی لغو شد." : "⚠️ این درخواست منقضی شده است. دوباره شروع کنید."), json_encode(['inline_keyboard' => []]));
+        Editmessagetext($from_id, $message_id, ($__cm[1] === 'no' ? "❌ ارسال همگانی لغو شد." : "⚠️ این درخواست منقضی شده است. دوباره شروع کنید."), json_encode(['inline_keyboard' => []]));
         return;
     }
     if (is_file('cron/info')) {
         Editmessagetext($from_id, $message_id, "⏳ یک ارسال همگانی دیگر در حال انجام است.", json_encode(['inline_keyboard' => []]));
         return;
     }
+    $__tg = (isset($__cm[2]) && $__cm[2] !== '') ? $__cm[2] : 'all';
+    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده'];
+    $__sets = botCastRecipientSets();
+    $result = $__sets[$__tg] ?? [];
+    if (count($result) === 0) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این گروه هیچ گیرندهای ندارد. گروه دیگری انتخاب کنید.', 'show_alert' => true]);
+        return;
+    }
     update("user", "Processing_value", "0", "id", $from_id);
     unset($__bc['cast_pending']);
-    $result = select("user", "id", "User_Status", "Active", "fetchAll");
-    $result = is_array($result) ? $result : [];
+    $__bc['target'] = $__tg;
+    $__bc['target_label'] = $__labels[$__tg];
     $__bc['total'] = count($result);
     $__bc['started'] = time();
-    $__cancel_kb = json_encode(['inline_keyboard' => [[['text' => $textbotlang['Admin']['systemsms']['cancelsend'] ?? 'لغو ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
-    $__pm = sendmessage($from_id, "📨 <b>ارسال همگانی در صف قرار گرفت</b>\n\n👥 گیرندهها: <b>" . number_format($__bc['total']) . "</b>\n✅ ارسالشده: 0 | ❌ ناموفق: 0", $__cancel_kb, 'HTML');
+    $__cancel_kb = json_encode(['inline_keyboard' => [[['text' => '⏹ توقف ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
+    $__pm = sendmessage($from_id, "📨 <b>ارسال همگانی در صف قرار گرفت</b>\n\n🎯 گروه: <b>{$__labels[$__tg]}</b>\n👥 گیرندهها: <b>" . number_format($__bc['total']) . "</b>\n✅ ارسالشده: 0 | ❌ ناموفق: 0\n\n⏳ ارسال با کرون انجام میشود و این پیام خودکار بهروز میشود.", $__cancel_kb, 'HTML');
     if (is_array($__pm) && isset($__pm['result']['message_id'])) {
         $__bc['progress_mid'] = intval($__pm['result']['message_id']);
     }
-    file_put_contents('cron/users.json', json_encode($result));
+    file_put_contents('cron/users.json', json_encode(array_values($result)));
     file_put_contents('cron/info', json_encode($__bc, JSON_UNESCAPED_UNICODE));
-    Editmessagetext($from_id, $message_id, "✅ تأیید شد.", json_encode(['inline_keyboard' => []]));
+    Editmessagetext($from_id, $message_id, "✅ تأیید شد. گروه: <b>{$__labels[$__tg]}</b>", json_encode(['inline_keyboard' => []]));
 } elseif ($datain == "cancel_sendmessage") {
-    @unlink('cron/users.json');
+    // نسخه 2.4.2: توقف + ثبت گزارش (کرون بعد از توقف فایلها را دوباره نمیسازد)
+    $__ci = is_file('cron/info') ? json_decode(strval(@file_get_contents('cron/info')), true) : null;
     @unlink('cron/info');
-    Editmessagetext($from_id, $message_id, $textbotlang['Admin']['systemsms']['canceledmessage'] ?? '📌 ارسال پیام لغو گردید.', json_encode(['inline_keyboard' => []]));
+    @unlink('cron/users.json');
+    if (is_array($__ci)) {
+        botCastSaveLast($__ci, 'cancelled');
+        $__tot = intval($__ci['total'] ?? 0);
+        $__s = intval($__ci['sent'] ?? 0);
+        $__f = intval($__ci['fail'] ?? 0);
+        $__msg = "⏹ <b>ارسال همگانی متوقف شد</b>\n\n👥 گیرندهها: <b>" . number_format($__tot) . "</b>\n✅ ارسالشده: <b>" . number_format($__s) . "</b> | ❌ ناموفق: <b>" . number_format($__f) . "</b>\n⏳ ارسالنشده: <b>" . number_format(max(0, $__tot - $__s - $__f)) . "</b>";
+    } else {
+        $__msg = "ℹ️ ارسال همگانی فعالی وجود ندارد (احتمالاً تمام شده است).";
+    }
+    Editmessagetext($from_id, $message_id, $__msg, json_encode(['inline_keyboard' => [[['text' => '📋 گزارش آخرین ارسال', 'callback_data' => 'cast_last']]]], JSON_UNESCAPED_UNICODE));
+} elseif ($datain == "cast_last") {
+    Editmessagetext($from_id, $message_id, botCastLastText(), json_encode(['inline_keyboard' => [[['text' => '🔙 بازگشت به پیام همگانی', 'callback_data' => 'nav_cast']]]], JSON_UNESCAPED_UNICODE));
 } elseif ($text == $textbotlang['Admin']['systemsms']['forwardbulkbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['ManageUser']['ForwardGetext'] ?? 'پیام را فوروارد کنید', $backadmin, 'HTML');
     step('gettextforwardMessage', $from_id);
@@ -1654,65 +1640,32 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_services'] || $datain 
 }
 
 # رسیدهای تایید نشده (waiting)
-if ($text == ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده')) {
-    sendmessage($from_id, "⏳ در حال بررسی رسیدهای در انتظار تأیید…", null, 'HTML');
+if ($text == ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '___')) {
+    // نسخه 2.4.2: همان پیام «در حال بررسی» به نتیجه تبدیل میشود
+    $__pm = sendmessage($from_id, "⏳ در حال بررسی رسیدهای در انتظار تأیید…", null, 'HTML');
     $res = function_exists('resendWaitingPaymentReceipts')
         ? resendWaitingPaymentReceipts($from_id, 40)
         : ['ok' => false, 'count' => 0, 'msg' => 'تابع موجود نیست'];
-    $msg = $res['msg'] ?? '';
-    if (intval($res['count'] ?? 0) === 0 && !empty($res['ok'])) {
-        $msg = $msg !== '' ? $msg : 'هیچ رسید در انتظار تأییدی نیست.';
+    $msg = strval($res['msg'] ?? '');
+    if ($msg === '') {
+        $msg = intval($res['count'] ?? 0) === 0 ? 'هیچ رسید در انتظار تأییدی نیست.' : '—';
     }
-    sendmessage($from_id, $msg, $User_Services, 'HTML');
+    $__kb_r = json_encode(['inline_keyboard' => [[['text' => '🔙 بازگشت به مدیریت کاربران', 'callback_data' => 'nav_user']]]], JSON_UNESCAPED_UNICODE);
+    $__mid_r = is_array($__pm) ? intval($__pm['result']['message_id'] ?? 0) : 0;
+    if ($__mid_r > 0) {
+        Editmessagetext($from_id, $__mid_r, $msg, $__kb_r);
+    } else {
+        sendmessage($from_id, $msg, $__kb_r, 'HTML');
+    }
 }
 
 
 
 #----------- list blocked users ------------#
-if ($text == ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها')) {
-    global $pdo;
-    try {
-        $stmt = $pdo->query("SELECT id, username, description_blocking FROM user WHERE User_Status = 'block' ORDER BY id DESC LIMIT 80");
-        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-    } catch (Exception $e) {
-        $rows = [];
-    }
-    if (empty($rows)) {
-        sendmessage($from_id, $textbotlang['Admin']['ManageUser']['blocked_empty'] ?? 'هیچ کاربر مسدودی نیست.', $User_Services, 'HTML');
-        return;
-    }
-    try {
-        $total = intval($pdo->query("SELECT COUNT(*) FROM user WHERE User_Status = 'block'")->fetchColumn());
-    } catch (Exception $e) {
-        $total = count($rows);
-    }
-    $lines = [];
-    foreach ($rows as $r) {
-        $uid = $r['id'] ?? '-';
-        $un = !empty($r['username']) ? $r['username'] : '-';
-        $reason = trim(strval($r['description_blocking'] ?? ''));
-        if ($reason === '') {
-            $reason = '-';
-        }
-        if (function_exists('mb_substr')) {
-            $reason = mb_substr($reason, 0, 40);
-        } else {
-            $reason = substr($reason, 0, 40);
-        }
-        $lines[] = "🆔 <code>{$uid}</code> | @{$un}\n✍️ {$reason}";
-    }
-    $msg = "🚫 <b>کاربران مسدود</b>\nتعداد کل: <b>{$total}</b>" . ($total > 80 ? " (نمایش ۸۰ مورد آخر)" : "") . "\n\n" . implode("\n\n", $lines);
-    if (strlen($msg) > 3900) {
-        $msg = substr($msg, 0, 3900) . "\n…";
-    }
-    $kb = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['Admin']['ManageUser']['unblock_all'] ?? '✅ خارج کردن همه از مسدودی', 'callback_data' => 'unblock_all_users_confirm'],
-            ],
-        ],
-    ]);
-    sendmessage($from_id, $msg, $kb, 'HTML');
+if ($text == ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '___')) {
+    // نسخه 2.4.2
+    list($__tx, $__kb) = botBlockedListPage(0);
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
 }
 #----------- users with balance > 1 toman ------------#
 if ($text == ($textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالای ۵۰۰ هزار')) {
@@ -1775,7 +1728,33 @@ if ($datain == 'unblock_all_users_confirm') {
     Editmessagetext($from_id, $message_id, $textbotlang['Admin']['ManageUser']['unblock_all_confirm'] ?? 'آیا مطمئن هستید؟', $kb);
 }
 if ($datain == 'unblock_all_users_no') {
-    Editmessagetext($from_id, $message_id, '❌ لغو شد.', null);
+    list($__tx, $__kb) = botBlockedListPage(0);
+    Editmessagetext($from_id, $message_id, $__tx, $__kb);
+}
+# نسخه 2.4.2: صفحهبندی مسدودها و رفع مسدودی سریع
+if (in_array($from_id, $admin_ids) && isset($datain) && preg_match('/^blk_(pg|ub)_(\d+)(?:_(\d+))?$/', strval($datain), $__bm)) {
+    if ($__bm[1] === 'pg') {
+        list($__tx, $__kb) = botBlockedListPage(intval($__bm[2]));
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+        return;
+    }
+    $__uid_ub = strval($__bm[2]);
+    $__pg_ub = intval($__bm[3] ?? 0);
+    $__ub = select("user", "*", "id", $__uid_ub, "select");
+    if (is_array($__ub) && strval($__ub['User_Status'] ?? '') === 'block') {
+        update("user", "User_Status", "Active", "id", $__uid_ub);
+        update("user", "description_blocking", "", "id", $__uid_ub);
+        update("user", "message_count", "0", "id", $__uid_ub);
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => "✅ کاربر {$__uid_ub} آزاد شد", 'show_alert' => false]);
+        if (function_exists('sendChannelReport') && isset($textbotlang['Admin']['Report']['unblock_user'])) {
+            sendChannelReport('rpt_unblock', sprintf($textbotlang['Admin']['Report']['unblock_user'], $from_id, $__uid_ub, strval($__ub['username'] ?? '-')));
+        }
+    } else {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این کاربر مسدود نیست', 'show_alert' => false]);
+    }
+    list($__tx, $__kb) = botBlockedListPage($__pg_ub);
+    Editmessagetext($from_id, $message_id, $__tx, $__kb);
+    return;
 }
 if ($datain == 'unblock_all_users_yes') {
     global $pdo;

@@ -1,2 +1,5 @@
 cron/sendmessage.lock
 cron/receipt_cleanup.ts
+cron/cast_last.json
+cron/info
+cron/users.json

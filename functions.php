@@ -3618,14 +3618,55 @@ function buildAdminShopInlineKeyboard()
     return json_encode($kb, JSON_UNESCAPED_UNICODE);
 }
 
+function botAdmCount($sql)
+{
+    global $pdo;
+    try {
+        $st = $pdo->query($sql);
+        return $st ? intval($st->fetchColumn()) : 0;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
 function buildAdminShopSectionText()
 {
-    return "🏬 <b>بخش فروشگاه</b>\n\nمحصول، دسته‌بندی، حجم اضافه، کد تخفیف و اکانت تست را از همین صفحه مدیریت کنید.";
+    // نسخه 2.4.2: خلاصه عددی فروشگاه
+    $prod = botAdmCount("SELECT COUNT(*) FROM product");
+    $hid = (function_exists('botProductHiddenColumnExists') && botProductHiddenColumnExists()) ? botAdmCount("SELECT COUNT(*) FROM product WHERE is_hidden = 1") : 0;
+    $cat = botAdmCount("SELECT COUNT(*) FROM category");
+    $dsc_all = botAdmCount("SELECT COUNT(*) FROM DiscountSell");
+    $dsc_act = botAdmCount("SELECT COUNT(*) FROM DiscountSell WHERE CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)");
+    $gift = botAdmCount("SELECT COUNT(*) FROM Discount");
+    $st = select("setting", "*");
+    $ut_on = !(is_array($st) && isset($st['status_usertest']) && strval($st['status_usertest']) === '0');
+    return "🏬 <b>بخش فروشگاه</b>\n\n"
+        . "📦 محصولات: <b>" . number_format($prod) . "</b> (نمایش: <b>" . number_format(max(0, $prod - $hid)) . "</b> | مخفی: <b>" . number_format($hid) . "</b>)\n"
+        . "📁 دستهبندیها: <b>" . number_format($cat) . "</b>\n"
+        . "🎟 کد تخفیف: <b>" . number_format($dsc_act) . "</b> فعال از <b>" . number_format($dsc_all) . "</b>\n"
+        . "🎁 کد هدیه: <b>" . number_format($gift) . "</b>\n"
+        . "🔑 اکانت تست: <b>" . ($ut_on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
+        . "یک بخش را انتخاب کنید:";
 }
 
+/** نسخه 2.4.2: شمارندههای صفحه مدیریت کاربران */
+function botAdminUserCounts()
+{
+    static $c = null;
+    if ($c !== null) {
+        return $c;
+    }
+    $c = [
+        'users' => botAdmCount("SELECT COUNT(*) FROM user"),
+        'blocked' => botAdmCount("SELECT COUNT(*) FROM user WHERE User_Status = 'block'"),
+        'rcpt' => botAdmCount("SELECT COUNT(*) FROM Payment_report WHERE payment_Status = 'waiting'"),
+        'rich' => botAdmCount("SELECT COUNT(*) FROM user WHERE CAST(Balance AS SIGNED) >= 500000"),
+    ];
+    return $c;
+}
 function buildAdminUserServicesInlineKeyboard()
 {
     global $textbotlang;
+    $c = botAdminUserCounts();
     $kb = [
         'inline_keyboard' => [
             [
@@ -3634,11 +3675,14 @@ function buildAdminUserServicesInlineKeyboard()
             ],
             [
                 ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll'] ?? '👥 شارژ همگانی', 'callback_data' => 'navuser_ball'],
-                ['text' => $textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها', 'callback_data' => 'navuser_block'],
+                ['text' => ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شدهها') . ' (' . number_format($c['blocked']) . ')', 'callback_data' => 'navuser_block'],
             ],
             [
-                ['text' => $textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده', 'callback_data' => 'navuser_rcpt'],
-                ['text' => $textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالا', 'callback_data' => 'navuser_rich'],
+                ['text' => ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده') . ' (' . number_format($c['rcpt']) . ')', 'callback_data' => 'navuser_rcpt'],
+                ['text' => ($textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالا') . ' (' . number_format($c['rich']) . ')', 'callback_data' => 'navuser_rich'],
+            ],
+            [
+                ['text' => '🔄 بروزرسانی', 'callback_data' => 'nav_user'],
             ],
         ],
     ];
@@ -3647,26 +3691,230 @@ function buildAdminUserServicesInlineKeyboard()
 
 function buildAdminUserServicesText()
 {
-    return "👤 <b>خدمات کاربر</b>\n\nجستجو و حذف سرویس، شارژ همگانی، مسدودها، رسیدهای در انتظار و موجودی بالا.";
+    $c = botAdminUserCounts();
+    return "👥 <b>مدیریت کاربران</b>\n\n"
+        . "👤 کل کاربران: <b>" . number_format($c['users']) . "</b>\n"
+        . "🚫 مسدود: <b>" . number_format($c['blocked']) . "</b>\n"
+        . "🧾 رسید در انتظار تأیید: <b>" . number_format($c['rcpt']) . "</b>\n"
+        . "💰 موجودی بالای ۵۰۰ هزار تومان: <b>" . number_format($c['rich']) . "</b>\n\n"
+        . "برای پیدا کردن یک کاربر از «🔍 جستجوی کاربر» در منوی مدیریت استفاده کنید.";
 }
 
 function buildAdminBroadcastInlineKeyboard()
 {
     global $textbotlang;
-    $kb = [
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['Admin']['systemsms']['sendbulkbtn'] ?? '✉️ ارسال همگانی', 'callback_data' => 'navcast_text'],
-                ['text' => $textbotlang['Admin']['systemsms']['forwardbulkbtn'] ?? '📤 فوروارد همگانی', 'callback_data' => 'navcast_fwd'],
-            ],
-        ],
+    $rows = [[
+        ['text' => $textbotlang['Admin']['systemsms']['sendbulkbtn'] ?? '✉️ ارسال همگانی', 'callback_data' => 'navcast_text'],
+        ['text' => $textbotlang['Admin']['systemsms']['forwardbulkbtn'] ?? '📤 فوروارد همگانی', 'callback_data' => 'navcast_fwd'],
+    ]];
+    if (is_file(__DIR__ . '/cron/info')) {
+        $rows[] = [['text' => '⏹ توقف ارسال در حال اجرا', 'callback_data' => 'cancel_sendmessage']];
+    }
+    $rows[] = [
+        ['text' => '📋 گزارش آخرین ارسال', 'callback_data' => 'cast_last'],
+        ['text' => '🔄 بروزرسانی', 'callback_data' => 'nav_cast'],
     ];
-    return json_encode($kb, JSON_UNESCAPED_UNICODE);
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
 function buildAdminBroadcastText()
 {
-    return "📨 <b>ارسال پیام همگانی</b>\n\nارسال متن به همه کاربران فعال، یا فوروارد یک پیام.";
+    $t = "📨 <b>ارسال پیام همگانی</b>\n\nمتن، عکس با کپشن یا فوروارد. بعد از پیشنمایش، گروه گیرندهها (همه / دارای سرویس فعال / بدون خرید / انقضا تا ۷ روز) را انتخاب میکنید.";
+    $fi = __DIR__ . '/cron/info';
+    if (is_file($fi)) {
+        $i = json_decode(strval(@file_get_contents($fi)), true);
+        if (is_array($i)) {
+            $t .= "\n\n📨 <b>در حال ارسال</b> — " . htmlspecialchars(strval($i['target_label'] ?? 'همه کاربران'), ENT_QUOTES, 'UTF-8')
+                . "\n✅ " . number_format(intval($i['sent'] ?? 0)) . " | ❌ " . number_format(intval($i['fail'] ?? 0)) . " از " . number_format(intval($i['total'] ?? 0));
+        }
+    } else {
+        $d = botCastLastData();
+        if (is_array($d)) {
+            $t .= "\n\n📋 آخرین ارسال: " . botCastFmtTime(intval($d['ended'] ?? 0)) . " — ✅ " . number_format(intval($d['sent'] ?? 0)) . " | ❌ " . number_format(intval($d['fail'] ?? 0));
+        }
+    }
+    return $t;
+}
+
+/** نسخه 2.4.2: گیرندههای پیام همگانی بر اساس گروه — فقط کاربران فعال (غیر مسدود) */
+function botCastRecipientSets()
+{
+    global $pdo;
+    $out = ['all' => [], 'act' => [], 'nobuy' => [], 'exp7' => []];
+    $active = [];
+    try {
+        $st = $pdo->query("SELECT id FROM user WHERE User_Status = 'Active'");
+        while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
+            $active[] = strval($r['id']);
+        }
+    } catch (Throwable $e) {
+        return $out;
+    }
+    $inv_ok = true;
+    $buyers = [];
+    $act = [];
+    $exp = [];
+    $ts = "(CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END)";
+    try {
+        $st = $pdo->query("SELECT DISTINCT id_user FROM invoice WHERE name_product != 'usertest'");
+        while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
+            $buyers[strval($r['id_user'])] = 1;
+        }
+        $st = $pdo->query("SELECT DISTINCT id_user FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'");
+        while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
+            $act[strval($r['id_user'])] = 1;
+        }
+        $st = $pdo->prepare("SELECT DISTINCT id_user FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'
+            AND CAST(Service_time AS UNSIGNED) > 0 AND {$ts} > 0
+            AND ({$ts} + CAST(Service_time AS UNSIGNED) * 86400) BETWEEN ? AND ?");
+        $st->execute([time(), time() + 7 * 86400]);
+        while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+            $exp[strval($r['id_user'])] = 1;
+        }
+    } catch (Throwable $e) {
+        error_log('cast recipients: ' . $e->getMessage());
+        $inv_ok = false;
+    }
+    foreach ($active as $id) {
+        $row = ['id' => $id];
+        $out['all'][] = $row;
+        if (!$inv_ok) {
+            continue;
+        }
+        if (isset($act[$id])) {
+            $out['act'][] = $row;
+        }
+        if (!isset($buyers[$id])) {
+            $out['nobuy'][] = $row;
+        }
+        if (isset($exp[$id])) {
+            $out['exp7'][] = $row;
+        }
+    }
+    return $out;
+}
+
+function botCastFmtTime($t)
+{
+    $t = intval($t);
+    if ($t <= 0) {
+        return '-';
+    }
+    return function_exists('jdate') ? jdate('Y/m/d H:i', $t) : date('Y-m-d H:i', $t);
+}
+
+function botCastLastData()
+{
+    $f = __DIR__ . '/cron/cast_last.json';
+    if (!is_file($f)) {
+        return null;
+    }
+    $d = json_decode(strval(@file_get_contents($f)), true);
+    return is_array($d) ? $d : null;
+}
+
+function botCastSaveLast($info, $status)
+{
+    if (!is_array($info)) {
+        return;
+    }
+    $d = [
+        'status' => $status,
+        'type' => strval($info['type'] ?? 'text'),
+        'target_label' => strval($info['target_label'] ?? 'همه کاربران'),
+        'total' => intval($info['total'] ?? 0),
+        'sent' => intval($info['sent'] ?? 0),
+        'fail' => intval($info['fail'] ?? 0),
+        'started' => intval($info['started'] ?? 0),
+        'ended' => time(),
+    ];
+    @file_put_contents(__DIR__ . '/cron/cast_last.json', json_encode($d, JSON_UNESCAPED_UNICODE));
+}
+
+/** کرون بعد از توقف: آمار دسته آخر را به گزارش اضافه میکند */
+function botCastUpdateCancelled($info)
+{
+    $d = botCastLastData();
+    if (!is_array($d) || !is_array($info) || ($d['status'] ?? '') !== 'cancelled' || intval($d['started'] ?? 0) !== intval($info['started'] ?? -1)) {
+        return;
+    }
+    $d['sent'] = max(intval($d['sent'] ?? 0), intval($info['sent'] ?? 0));
+    $d['fail'] = max(intval($d['fail'] ?? 0), intval($info['fail'] ?? 0));
+    @file_put_contents(__DIR__ . '/cron/cast_last.json', json_encode($d, JSON_UNESCAPED_UNICODE));
+}
+
+function botCastLastText()
+{
+    $d = botCastLastData();
+    if (!is_array($d)) {
+        return "📋 <b>گزارش آخرین ارسال همگانی</b>\n\nهنوز گزارشی ثبت نشده است.";
+    }
+    $types = ['text' => 'متن', 'photo' => 'عکس', 'forward' => 'فوروارد'];
+    $tot = intval($d['total'] ?? 0);
+    $s = intval($d['sent'] ?? 0);
+    $f = intval($d['fail'] ?? 0);
+    $rem = max(0, $tot - $s - $f);
+    return "📋 <b>گزارش آخرین ارسال همگانی</b>\n\n"
+        . "📌 وضعیت: " . ((($d['status'] ?? '') === 'done') ? '✅ کامل ارسال شد' : '⏹ توسط ادمین متوقف شد') . "\n"
+        . "📝 نوع: " . ($types[$d['type'] ?? 'text'] ?? 'متن') . "\n"
+        . "🎯 گروه: " . htmlspecialchars(strval($d['target_label'] ?? '-'), ENT_QUOTES, 'UTF-8') . "\n"
+        . "👥 گیرندهها: <b>" . number_format($tot) . "</b>\n"
+        . "✅ ارسالشده: <b>" . number_format($s) . "</b>\n"
+        . "❌ ناموفق: <b>" . number_format($f) . "</b>\n"
+        . ($rem > 0 ? "⏳ ارسالنشده: <b>" . number_format($rem) . "</b>\n" : '')
+        . "\n🕐 شروع: " . botCastFmtTime(intval($d['started'] ?? 0)) . "\n🏁 پایان: " . botCastFmtTime(intval($d['ended'] ?? 0))
+        . "\n\nℹ️ ناموفقها معمولاً کاربرانی هستند که ربات را بلاک کردهاند.";
+}
+
+/** نسخه 2.4.2: لیست صفحهبندیشده کاربران مسدود با رفع مسدودی سریع */
+function botBlockedListPage($page = 0)
+{
+    global $pdo;
+    $per = 10;
+    $total = botAdmCount("SELECT COUNT(*) FROM user WHERE User_Status = 'block'");
+    $pages = max(1, intval(ceil($total / $per)));
+    $page = max(0, min(intval($page), $pages - 1));
+    $back = [['text' => '🔙 بازگشت به مدیریت کاربران', 'callback_data' => 'nav_user']];
+    if ($total === 0) {
+        return ["✅ هیچ کاربر مسدودی نیست.", json_encode(['inline_keyboard' => [$back]], JSON_UNESCAPED_UNICODE)];
+    }
+    $rows = [];
+    try {
+        $st = $pdo->query("SELECT id, username, description_blocking FROM user WHERE User_Status = 'block' ORDER BY id DESC LIMIT " . intval($per) . " OFFSET " . intval($page * $per));
+        $rows = $st ? ($st->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    } catch (Throwable $e) {
+    }
+    $lines = [];
+    $kb = [];
+    $i = $page * $per;
+    foreach ($rows as $r) {
+        $i++;
+        $uid = strval($r['id'] ?? '');
+        $un = trim(strval($r['username'] ?? ''));
+        $un_s = ($un !== '' && $un !== 'none' && $un !== 'NOT_USERNAME') ? '@' . htmlspecialchars($un, ENT_QUOTES, 'UTF-8') : '—';
+        $reason = trim(strval($r['description_blocking'] ?? ''));
+        if ($reason === '') {
+            $reason = '-';
+        }
+        $reason = htmlspecialchars(function_exists('mb_substr') ? mb_substr($reason, 0, 60) : substr($reason, 0, 60), ENT_QUOTES, 'UTF-8');
+        $lines[] = "{$i}. 🆔 <code>" . htmlspecialchars($uid, ENT_QUOTES, 'UTF-8') . "</code> | {$un_s}\n✍️ {$reason}";
+        if (ctype_digit($uid)) {
+            $kb[] = [['text' => "✅ رفع مسدودی {$i} ({$uid})", 'callback_data' => "blk_ub_{$uid}_{$page}"]];
+        }
+    }
+    $nav = [];
+    if ($page > 0) {
+        $nav[] = ['text' => '◀️ قبلی', 'callback_data' => 'blk_pg_' . ($page - 1)];
+    }
+    $nav[] = ['text' => 'صفحه ' . ($page + 1) . ' از ' . $pages, 'callback_data' => 'adm_noop'];
+    if ($page < $pages - 1) {
+        $nav[] = ['text' => 'بعدی ▶️', 'callback_data' => 'blk_pg_' . ($page + 1)];
+    }
+    $kb[] = $nav;
+    $kb[] = [['text' => '✅ خارج کردن همه از مسدودی', 'callback_data' => 'unblock_all_users_confirm']];
+    $kb[] = $back;
+    $t = "🚫 <b>کاربران مسدود</b>\nتعداد کل: <b>" . number_format($total) . "</b>\n\n" . implode("\n\n", $lines);
+    return [$t, json_encode(['inline_keyboard' => $kb], JSON_UNESCAPED_UNICODE)];
 }
 
 function buildAffiliatesAdminPanel()
