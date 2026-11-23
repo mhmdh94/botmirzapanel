@@ -880,14 +880,21 @@ function serviceListButtonLabel(array $row)
     if ($emoji === '🔴') {
         return $label;
     }
-    $days = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
+    $amount = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
+    // اکانت تست: Service_time به «ساعت» ذخیره میشود (time_usertest)، نه روز
+    $is_test = (strval($row['name_product'] ?? '') === 'usertest');
+    $seconds = $is_test ? ($amount * 3600) : ($amount * 86400);
     $ts_raw = $row['time_sell'] ?? '';
-    if ($days > 0 && $ts_raw !== '' && $ts_raw !== null) {
+    if ($amount > 0 && $ts_raw !== '' && $ts_raw !== null) {
         $start = (is_numeric($ts_raw) && intval($ts_raw) > 100000) ? intval($ts_raw) : strtotime(strval($ts_raw));
         if ($start && $start > 0) {
-            $left = ($start + ($days * 86400)) - time();
+            $left = ($start + $seconds) - time();
             if ($left > 0) {
-                $label .= " | " . intval(ceil($left / 86400)) . " روز";
+                if ($left < 86400) {
+                    $label .= " | " . intval(ceil($left / 3600)) . " ساعت";
+                } else {
+                    $label .= " | " . intval(ceil($left / 86400)) . " روز";
+                }
             }
         }
     }
