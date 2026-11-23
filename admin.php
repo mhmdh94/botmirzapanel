@@ -2705,9 +2705,7 @@ elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
         $__ded = atomicDeductBalance($__uid_bal, $__amt);
         if ($__ded === false || $__ded === null) {
             // موجودی کافی نبود یا خطا — همچنان کم می‌کنیم تا رفتار قبلی حفظ شود
-            $Balance_user = select("user", "*", "id", $__uid_bal, "select");
-            $Balance_Low_user = intval($Balance_user['Balance'] ?? 0) - $__amt;
-            update("user", "Balance", $Balance_Low_user, "id", $__uid_bal);
+            $Balance_Low_user = atomicAdjustBalance($__uid_bal, -$__amt);
         } else {
             $Balance_Low_user = intval($__ded);
         }
@@ -3556,9 +3554,7 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['acceptrequest'], $user['Processing_value']), null, 'HTML');
     $pricecancel = number_format(intval($text));
     if (intval($text) != 0) {
-        $Balance_id_cancel = select("user", "*", "id", $nameloc['id_user'], "select");
-        $Balance_id_cancel_fee = intval($Balance_id_cancel['Balance']) + intval($text);
-        update("user", "Balance", $Balance_id_cancel_fee, "id", $nameloc['id_user']);
+        $Balance_id_cancel_fee = atomicAdjustBalance($nameloc['id_user'], intval($text));
         sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel), null, 'HTML');
     }
     if (function_exists('sendChannelReport')) {

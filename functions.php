@@ -624,6 +624,51 @@ function atomicAddBalance($user_id, $amount)
     return $amount;
 }
 
+/**
+ * تغییر اتمیک موجودی (+ یا -) در یک دستور SQL — بدون «خواندن، محاسبه، نوشتن».
+ * دو درخواست همزمان هر دو اعمال میشوند و هیچکدام گم نمیشود. موجودی جدید را برمیگرداند.
+ */
+function atomicAdjustBalance($user_id, $delta)
+{
+    global $pdo;
+    $delta = intval($delta);
+    if ($delta !== 0) {
+        $st = $pdo->prepare("UPDATE user SET Balance = CAST(Balance AS SIGNED) + :d WHERE id = :id");
+        $st->execute([':d' => $delta, ':id' => $user_id]);
+    }
+    $row = select("user", "Balance", "id", $user_id, "select");
+    return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
+}
+
+/** کسر اتمیک با کف صفر (موجودی منفی نمیشود). موجودی جدید را برمیگرداند. */
+function atomicDeductBalanceFloorZero($user_id, $amount)
+{
+    global $pdo;
+    $amount = intval($amount);
+    if ($amount > 0) {
+        $st = $pdo->prepare("UPDATE user SET Balance = GREATEST(CAST(Balance AS SIGNED) - :p, 0) WHERE id = :id");
+        $st->execute([':p' => $amount, ':id' => $user_id]);
+    }
+    $row = select("user", "Balance", "id", $user_id, "select");
+    return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
+}
+
+/**
+ * قفل MySQL برای جلوگیری از اجرای همزمان یک عملیات (مثلاً دو بار ثبت کد هدیه).
+ * در پایان درخواست خودکار آزاد میشود. نام با دیتابیس پیشوند میخورد تا رباتهای مختلف تداخل نکنند.
+ */
+function walletLock($name, $timeout = 10)
+{
+    global $pdo, $dbname;
+    try {
+        $st = $pdo->prepare("SELECT GET_LOCK(?, ?)");
+        $st->execute([substr(strval($dbname) . ':' . strval($name), 0, 64), intval($timeout)]);
+        return intval($st->fetchColumn()) === 1;
+    } catch (Throwable $e) {
+        return true; // اگر قفل در دسترس نبود، ربات متوقف نشود
+    }
+}
+
 
 
 /**
@@ -952,11 +997,11 @@ function refundBalanceIfDeducted($user_id, $amount, $balance_before = null)
         if ($need <= 0) {
             return 0;
         }
-        update("user", "Balance", $current + $need, "id", $user_id);
+        atomicAdjustBalance($user_id, $need);
         return $need;
     }
     // بدون balance_before: فرض بر این است که caller مطمئن است باید برگردد
-    update("user", "Balance", $current + $amount, "id", $user_id);
+    atomicAdjustBalance($user_id, $amount);
     return $amount;
 }
 
@@ -1271,16 +1316,8 @@ function DirectPayment($order_id)
             $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
             $Balance_id = select("user", "*", "id", $uid, "select");
             $bal_before = intval(is_array($Balance_id) ? ($Balance_id['Balance'] ?? 0) : 0);
-            if (function_exists('atomicAddBalance')) {
-                $bal_now = atomicAddBalance($uid, $credit_amount);
-                if ($bal_now === false) {
-                    $bal_now = $bal_before + $credit_amount;
-                    update("user", "Balance", $bal_now, "id", $uid);
-                }
-            } else {
-                $bal_now = $bal_before + $credit_amount;
-                update("user", "Balance", $bal_now, "id", $uid);
-            }
+            // قبلاً اینجا مبلغ واریز به جای موجودی جدید در لاگ ثبت میشد
+            $bal_now = atomicAdjustBalance($uid, $credit_amount);
             if (function_exists('logWalletTx')) {
                 logWalletTx($uid, 'deposit', $credit_amount, intval($bal_now), 'واریز پس از خرید (فاکتور unpaid یافت نشد): ' . $uname_try);
             }
@@ -1586,10 +1623,7 @@ function DirectPayment($order_id)
                 }
             }
         }
-        $Balance_prims = intval($Balance_id['Balance']) - intval($get_invoice['price_product']);
-        if ($Balance_prims <= 0)
-            $Balance_prims = 0;
-        update("user", "Balance", $Balance_prims, "id", $Balance_id['id']);
+        $Balance_prims = atomicDeductBalanceFloorZero($Balance_id['id'], intval($get_invoice['price_product']));
         $balanceformatsell = number_format($Balance_prims, 0);
         if (function_exists('logWalletTx')) {
             logWalletTx($Balance_id['id'], 'buy', intval($get_invoice['price_product']), $Balance_prims, 'خرید سرویس: ' . ($get_invoice['username'] ?? ''));
@@ -1638,9 +1672,8 @@ function DirectPayment($order_id)
         $uid = intval($Payment_report['id_user']);
         $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
         // ۱) واریز مبلغ پرداختی
+        $bal_now = atomicAdjustBalance($uid, $credit_amount);
         $Balance_id = select("user", "*", "id", $uid, "select");
-        $bal_now = intval($Balance_id['Balance'] ?? 0) + $credit_amount;
-        update("user", "Balance", $bal_now, "id", $uid);
         if (function_exists('logWalletTx')) {
             logWalletTx($uid, 'deposit', $credit_amount, $bal_now, 'واریز برای تمدید سرویس: ' . $ext_username);
         }
@@ -1767,9 +1800,8 @@ function DirectPayment($order_id)
             $admin_name = null;
         }
         $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
+        $bal_now = atomicAdjustBalance($uid, $credit_amount);
         $Balance_id = select("user", "*", "id", $uid, "select");
-        $bal_now = intval($Balance_id['Balance'] ?? 0) + $credit_amount;
-        update("user", "Balance", $bal_now, "id", $uid);
         if (function_exists('logWalletTx')) {
             logWalletTx($uid, 'deposit', $credit_amount, $bal_now, 'واریز برای خرید حجم پنل ریسلر');
         }
@@ -1813,8 +1845,7 @@ function DirectPayment($order_id)
         update("user", "Processing_value", "0", "id", $uid);
     } else {
         $credit_amount = getPaymentCreditAmount($Payment_report);
-        $Balance_confrim = intval($Balance_id['Balance']) + intval($credit_amount);
-        update("user", "Balance", $Balance_confrim, "id", $Payment_report['id_user']);
+        $Balance_confrim = atomicAdjustBalance($Payment_report['id_user'], intval($credit_amount));
         if (function_exists('logWalletTx')) {
             logWalletTx($Payment_report['id_user'], 'deposit', intval($credit_amount), $Balance_confrim, 'شارژ کیف پول');
         }

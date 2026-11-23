@@ -442,8 +442,7 @@ if (strpos($text, "/start ") !== false) {
         if ($marzbanDiscountaffiliates['Discount'] == "onDiscountaffiliates") {
             $marzbanDiscountaffiliates = select("affiliates", "*", null, null, "select");
             $Balance_user = select("user", "*", "id", $affiliatesid, "select");
-            $Balance_add_user = $Balance_user['Balance'] + $marzbanDiscountaffiliates['price_Discount'];
-            update("user", "Balance", $Balance_add_user, "id", $affiliatesid);
+            $Balance_add_user = atomicAdjustBalance($affiliatesid, intval($marzbanDiscountaffiliates['price_Discount']));
             $addbalancediscount = number_format($marzbanDiscountaffiliates['price_Discount'], 0);
             sendmessage($affiliatesid, sprintf($textbotlang['users']['affiliates']['giftuser'], $addbalancediscount, $from_id), null, 'html');
         }
@@ -1216,6 +1215,34 @@ if ($user['step'] == "getusernameinfo") {
     sendmessage($from_id, $textbotlang['users']['status']['info'], $keyboardinfo, 'html');
     sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'html');
     step('home', $from_id);
+}
+#-----------ownership guard: کاربر فقط سرویس خودش را ببیند/تغییر دهد------------#
+// قبلاً چند دکمه (product_ / config_ / subscriptionurl_ / extend_ / changelink_ / confirmchange_ / removebyuser-)
+// مالکیت را چک نمیکردند؛ با callback دستساز میشد لینک یا سرویس کاربر دیگری را دید یا تغییر داد.
+if (is_string($datain) && $datain !== '' && !in_array($from_id, $admin_ids)) {
+    $__own_patterns = [
+        '/product_(\w+)/', '/qrcode_(\w+)/', '/subscriptionurl_(\w+)/', '/config_(\w+)/',
+        '/extend_(\w+)/', '/changelink_(\w+)/', '/confirmchange_(\w+)/', '/toggleserv_(\w+)/',
+        '/Extra_volume_(\w+)/', '/removeserviceuserco-(\w+)/', '/removebyuser-(\w+)/',
+        '/confirmremoveservices-(\w+)/',
+    ];
+    foreach ($__own_patterns as $__own_re) {
+        if (preg_match($__own_re, $datain, $__own_m)) {
+            $__own_inv = select("invoice", "id_user", "username", $__own_m[1], "select");
+            if (is_array($__own_inv) && strval($__own_inv['id_user'] ?? '') !== strval($from_id)) {
+                botLog('security', 'blocked access to another user service', ['callback' => $datain], 'WARN');
+                if (!empty($callback_query_id)) {
+                    telegram('answerCallbackQuery', [
+                        'callback_query_id' => $callback_query_id,
+                        'text' => '❌ این سرویس متعلق به شما نیست.',
+                        'show_alert' => true,
+                    ]);
+                }
+                return;
+            }
+            break;
+        }
+    }
 }
 if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
@@ -4320,6 +4347,11 @@ if ($datain == "Discount") {
     sendmessage($from_id, $textbotlang['users']['Discount']['getcode'], $backuser, 'HTML');
     step('get_code_user', $from_id);
 } elseif ($user['step'] == "get_code_user") {
+    // جلوگیری از ثبت همزمان یک کد هدیه (دو پیام پشت سر هم = دو بار شارژ)
+    if (!walletLock('gift_' . $from_id)) {
+        sendmessage($from_id, $textbotlang['users']['busy_or_balance'] ?? "⏳ لطفاً چند ثانیه دیگر دوباره تلاش کنید.", $keyboard, 'HTML');
+        return;
+    }
     if (!in_array($text, $code_Discount)) {
         sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], null, 'HTML');
         return;
@@ -4341,8 +4373,7 @@ if ($datain == "Discount") {
     $stmt->bindParam(':code', $text, PDO::PARAM_STR);
     $stmt->execute();
     $get_codesql = $stmt->fetch(PDO::FETCH_ASSOC);
-    $balance_user = $user['Balance'] + $get_codesql['price'];
-    update("user", "Balance", $balance_user, "id", $from_id);
+    $balance_user = atomicAdjustBalance($from_id, intval($get_codesql['price']));
     if (function_exists('logWalletTx')) {
         logWalletTx($from_id, 'deposit', intval($get_codesql['price']), $balance_user, 'کد هدیه / اعتبار');
     }
