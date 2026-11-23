@@ -2799,9 +2799,14 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
             $textcart = $ctx . $textcart;
         }
         preg_match_all('/\d+/', $PaySetting, $Matches);
-        // نسخه 2.2.4: دکمه کپی همیشه (اگر شماره کارت پیدا شد)
-        if (!empty($Matches[0])) {
+        // نسخه 2.2.8: فقط شماره کارت ۱۶ رقمی کپی شود (نه شبا یا اعداد دیگر توضیحات)
+        $card_number = '';
+        if (preg_match('/(?<!\d)(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})(?!\d)/u', $PaySetting, $__cm)) {
+            $card_number = $__cm[1] . $__cm[2] . $__cm[3] . $__cm[4];
+        } elseif (!empty($Matches[0]) && strlen(implode('', $Matches[0])) === 16) {
             $card_number = implode('', $Matches[0]);
+        }
+        if ($card_number !== '') {
             $KEYBOARD = json_encode([
                 "inline_keyboard" => [
                     [
