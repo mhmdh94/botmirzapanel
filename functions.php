@@ -2372,6 +2372,118 @@ function buildFinanceSummaryText()
         . "برای تغییر، یکی از گزینهها را بزنید.";
 }
 
+/** نسخه 2.3.3: نگهداری پیامهای رسید نزد ادمینها، تا بعد از تأیید/رد همه ویرایش شوند */
+function botEnsureReceiptMsgsTable()
+{
+    global $pdo;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS receipt_msgs (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            id_order VARCHAR(64) NOT NULL,
+            chat_id VARCHAR(64) NOT NULL,
+            message_id BIGINT NOT NULL,
+            kind VARCHAR(10) NOT NULL DEFAULT 'photo',
+            caption TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL,
+            INDEX (id_order)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin");
+        $ok = true;
+    } catch (Throwable $e) {
+        error_log('receipt_msgs table: ' . $e->getMessage());
+        $ok = false;
+    }
+    return $ok;
+}
+
+function botSaveReceiptMsgs($order, $msgs, $kind = 'photo', $caption = '')
+{
+    global $pdo;
+    if (!is_array($msgs) || !$msgs || !botEnsureReceiptMsgsTable()) {
+        return;
+    }
+    try {
+        $st = $pdo->prepare("INSERT INTO receipt_msgs (id_order, chat_id, message_id, kind, caption) VALUES (?, ?, ?, ?, ?)");
+        foreach ($msgs as $chat => $mid) {
+            if (intval($mid) > 0) {
+                $st->execute([strval($order), strval($chat), intval($mid), $kind === 'text' ? 'text' : 'photo', strval($caption)]);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('receipt_msgs save: ' . $e->getMessage());
+    }
+}
+
+/**
+ * همه نسخههای پیام رسید را ویرایش کن (وضعیت + برداشتن دکمههای تأیید/رد).
+ * $skip_chat/$skip_mid: پیامی که خود ادمین روی آن کلیک کرده (جدا ویرایش میشود).
+ */
+function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid = 0)
+{
+    global $pdo;
+    if (!botEnsureReceiptMsgsTable()) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare("SELECT * FROM receipt_msgs WHERE id_order = ?");
+        $st->execute([strval($order)]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+        return 0;
+    }
+    $rows_kb = [[['text' => $note, 'callback_data' => 'none']]];
+    if (intval($uid) > 0) {
+        $rows_kb[] = [['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . intval($uid)]];
+    }
+    $kb = json_encode(['inline_keyboard' => $rows_kb], JSON_UNESCAPED_UNICODE);
+    $done = 0;
+    foreach ($rows as $r) {
+        $chat = strval($r['chat_id']);
+        $mid = intval($r['message_id']);
+        if ($mid <= 0 || ($chat === strval($skip_chat) && $mid === intval($skip_mid))) {
+            continue;
+        }
+        $cap = strval($r['caption'] ?? '');
+        $max = ($r['kind'] === 'text') ? 4000 : 1000;
+        $new = $cap !== '' ? ($cap . "\n\n<b>" . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . "</b>") : '';
+        $ok = false;
+        if ($new !== '' && mb_strlen($new) <= $max) {
+            $res = ($r['kind'] === 'text')
+                ? telegram('editMessageText', ['chat_id' => $chat, 'message_id' => $mid, 'text' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb, 'disable_web_page_preview' => true])
+                : telegram('editMessageCaption', ['chat_id' => $chat, 'message_id' => $mid, 'caption' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb]);
+            $ok = is_array($res) && !empty($res['ok']);
+        }
+        if (!$ok) {
+            // متن بلند بود یا ویرایش نشد → فقط دکمهها عوض شوند
+            telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb]);
+        }
+        $done++;
+    }
+    try {
+        $pdo->prepare("DELETE FROM receipt_msgs WHERE id_order = ?")->execute([strval($order)]);
+    } catch (Throwable $e) {
+    }
+    return $done;
+}
+
+/** نسخه 2.3.3: صفحه شیشهای حداقل/حداکثر واریز */
+function buildDepositLimitsPage($prefix = '')
+{
+    $lim = getDepositLimits();
+    $t = ($prefix !== '' ? $prefix . "\n\n" : '')
+        . "💰 <b>حداقل / حداکثر واریز</b>\n\n"
+        . "🔻 حداقل: <b>" . number_format(intval($lim['min'])) . "</b> تومان\n"
+        . "🔺 حداکثر: <b>" . number_format(intval($lim['max'])) . "</b> تومان\n\n"
+        . "این محدوده برای افزایش موجودی و کسری خرید/تمدید اعمال میشود.";
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '✏️ تغییر حداقل', 'callback_data' => 'dep_set_min'], ['text' => '✏️ تغییر حداکثر', 'callback_data' => 'dep_set_max']],
+        [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
+}
+
 /** نسخه 2.3.2: لیست کارتها (JSON در PaySetting.card_list)؛ اگر خالی بود همان CartDescription قدیمی */
 function botGetCardList()
 {
@@ -2902,7 +3014,10 @@ function resendWaitingPaymentReceipts($admin_id, $limit = 40)
         ], JSON_UNESCAPED_UNICODE);
 
         try {
-            sendmessage($admin_id, $text, $kb, 'HTML');
+            $__rs = sendmessage($admin_id, $text, $kb, 'HTML');
+            if (function_exists('botSaveReceiptMsgs') && is_array($__rs) && isset($__rs['result']['message_id'])) {
+                botSaveReceiptMsgs($order, [$admin_id => intval($__rs['result']['message_id'])], 'text', $text);
+            }
             $sent++;
             // کمی فاصله برای جلوگیری از flood تلگرام
             if ($sent % 5 === 0) {

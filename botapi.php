@@ -340,6 +340,7 @@ function notifyAdmins($method, $payload, $admins = null)
     $ok = 0;
     $fail = 0;
     $results = [];
+    $msgs = [];
     foreach ($admins as $aid) {
         if ($aid <= 0) {
             continue;
@@ -349,6 +350,9 @@ function notifyAdmins($method, $payload, $admins = null)
         $res = telegramRetry($method, $data, 3);
         if (telegramOk($res)) {
             $ok++;
+            if (is_array($res) && isset($res['result']['message_id'])) {
+                $msgs[$aid] = intval($res['result']['message_id']);
+            }
         } else {
             $fail++;
             $results[$aid] = is_array($res) ? ($res['description'] ?? 'fail') : 'false';
@@ -357,7 +361,7 @@ function notifyAdmins($method, $payload, $admins = null)
     if ($ok === 0 && $fail > 0) {
         if (function_exists('botErrorLog')) { botErrorLog('notifyAdmins all failed', ['method' => $method, 'errs' => $results], 'ERROR', 'admin'); } else { error_log('notifyAdmins all failed method=' . $method); }
     }
-    return ['ok' => $ok, 'fail' => $fail, 'results' => $results];
+    return ['ok' => $ok, 'fail' => $fail, 'results' => $results, 'msgs' => $msgs];
 }
 
 function sendmessage($chat_id, $text, $keyboard, $parse_mode)

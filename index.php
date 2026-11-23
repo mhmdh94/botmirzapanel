@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.3.2";
+$version = "2.3.3";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4364,10 +4364,16 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
     if (function_exists('notifyAdmins')) {
         $__nr = notifyAdmins('sendphoto', $__adm_photo, $admin_ids);
         $__admin_ok = intval($__nr['ok'] ?? 0);
+        if (function_exists('botSaveReceiptMsgs')) {
+            botSaveReceiptMsgs($randomString, $__nr['msgs'] ?? [], 'photo', $textsendrasid);
+        }
         if ($__admin_ok === 0 && !empty($setting['Channel_Report'])) {
             $ch = telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $setting['Channel_Report']]), 2);
             if (function_exists('telegramOk') && telegramOk($ch)) {
                 $__admin_ok = 1;
+                if (function_exists('botSaveReceiptMsgs') && isset($ch['result']['message_id'])) {
+                    botSaveReceiptMsgs($randomString, [$setting['Channel_Report'] => intval($ch['result']['message_id'])], 'photo', $textsendrasid);
+                }
             }
             telegramRetry('sendmessage', [
                 'chat_id' => $setting['Channel_Report'],
@@ -4381,6 +4387,9 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
             $r = telegramRetry('sendphoto', array_merge($__adm_photo, ['chat_id' => $id_admin]), 2);
             if (function_exists('telegramOk') && telegramOk($r)) {
                 $__admin_ok++;
+                if (function_exists('botSaveReceiptMsgs') && isset($r['result']['message_id'])) {
+                    botSaveReceiptMsgs($randomString, [$id_admin => intval($r['result']['message_id'])], 'photo', $textsendrasid);
+                }
             }
         }
     }

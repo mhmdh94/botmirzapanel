@@ -2386,6 +2386,10 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         'caption' => $caption,
         'reply_markup' => $keyboard_accept
     ]);
+    // نسخه 2.3.3: نسخه همین رسید نزد ادمینهای دیگر هم «تأیید شد» شود
+    if (function_exists('botMarkReceiptMsgs')) {
+        botMarkReceiptMsgs($order_id, '✅ تأیید شد (ادمین ' . $from_id . ')', $from_id, $message_id, intval($id_user_pay));
+    }
     if (is_array($Balance_id)) {
         update("user", "Processing_value", "0", "id", $Balance_id['id']);
         update("user", "Processing_value_one", "0", "id", $Balance_id['id']);
@@ -2562,6 +2566,9 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
         if (!$__cap_ok) {
             Editmessagetext($from_id, $__mid, $__final, $__empty_kb);
         }
+    }
+    if ($rj_order !== '' && function_exists('botMarkReceiptMsgs')) {
+        botMarkReceiptMsgs($rj_order, '❌ رد شد (ادمین ' . $from_id . ')', $from_id, intval($rj_msgid), intval($rj_uid));
     }
     $__rj_show = htmlspecialchars(strval($rj_order), ENT_QUOTES, 'UTF-8');
     $__rj_uid_show = htmlspecialchars(strval($rj_uid), ENT_QUOTES, 'UTF-8');
@@ -4770,44 +4777,52 @@ if ($text == $textbotlang['users']['status']['manageService']) {
 
 #----------------[ Deposit min/max ]------------------#
 if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_limits_settings") {
+    // نسخه 2.3.3: صفحه شیشهای
     ensurePaySetting('min_deposit', '100000');
     ensurePaySetting('max_deposit', '10000000');
-    $lim = getDepositLimits();
-    sendmessage($from_id, sprintf(
-        $textbotlang['Admin']['deposit']['current'],
-        formatToman($lim['min']),
-        formatToman($lim['max'])
-    ), $backadmin, 'HTML');
-    step('deposit_set_min', $from_id);
-} elseif ($user['step'] == 'deposit_set_min') {
-    if (!is_numeric($text) || intval($text) < 1000) {
-        sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'], $backadmin, 'HTML');
-        return;
-    }
-    ensurePaySetting('min_deposit', '100000');
-    update("PaySetting", "ValuePay", strval(intval($text)), "NamePay", "min_deposit");
-    sendmessage($from_id, sprintf($textbotlang['Admin']['deposit']['getmax'], formatToman(intval($text))), $backadmin, 'HTML');
-    step('deposit_set_max', $from_id);
-} elseif ($user['step'] == 'deposit_set_max') {
-    if (!is_numeric($text) || intval($text) < 1000) {
-        sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'], $backadmin, 'HTML');
-        return;
-    }
-    $min = intval(getPaySettingValue('min_deposit', '100000'));
-    $max = intval($text);
-    if ($max < $min) {
-        sendmessage($from_id, $textbotlang['Admin']['deposit']['invalid'] . "\nحداکثر باید بزرگ‌تر یا مساوی حداقل باشد.", $backadmin, 'HTML');
-        return;
-    }
-    ensurePaySetting('max_deposit', '10000000');
-    update("PaySetting", "ValuePay", strval($max), "NamePay", "max_deposit");
-    $lim = getDepositLimits();
-    sendmessage($from_id, sprintf(
-        $textbotlang['Admin']['deposit']['saved'],
-        formatToman($lim['min']),
-        formatToman($lim['max'])
-    ), function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : $keyboardadmin, 'HTML');
     step('home', $from_id);
+    list($__dt, $__dk) = buildDepositLimitsPage();
+    if ($datain == "deposit_limits_settings" && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__dt, $__dk);
+    } else {
+        sendmessage($from_id, $__dt, $__dk, 'HTML');
+    }
+} elseif ($datain == 'dep_set_min' || $datain == 'dep_set_max') {
+    $lim = getDepositLimits();
+    $__is_min = ($datain == 'dep_set_min');
+    sendmessage($from_id, ($__is_min ? "🔻 حداقل واریز فعلی: <b>" . number_format(intval($lim['min'])) . "</b> تومان\n\nحداقل جدید را به تومان بفرستید (فقط عدد):" : "🔺 حداکثر واریز فعلی: <b>" . number_format(intval($lim['max'])) . "</b> تومان\n\nحداکثر جدید را به تومان بفرستید (فقط عدد):"), $backadmin, 'HTML');
+    step($__is_min ? 'deposit_set_min' : 'deposit_set_max', $from_id);
+} elseif ($user['step'] == 'deposit_set_min' || $user['step'] == 'deposit_set_max') {
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $__v_raw = function_exists('botNormalizeDigits') ? botNormalizeDigits(strval($text)) : strval($text);
+    $__v_raw = str_replace([',', '٬', '،', ' '], '', trim($__v_raw));
+    if (!ctype_digit($__v_raw) || intval($__v_raw) < 1000 || intval($__v_raw) > 1000000000) {
+        sendmessage($from_id, "❌ یک عدد بین ۱,۰۰۰ تا ۱,۰۰۰,۰۰۰,۰۰۰ تومان بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__v = intval($__v_raw);
+    $lim = getDepositLimits();
+    if ($user['step'] == 'deposit_set_min') {
+        if ($__v > intval($lim['max'])) {
+            sendmessage($from_id, "❌ حداقل نمیتواند از حداکثر فعلی (" . number_format(intval($lim['max'])) . " تومان) بیشتر باشد. دوباره بفرستید:", $backadmin, 'HTML');
+            return;
+        }
+        ensurePaySetting('min_deposit', '100000');
+        update("PaySetting", "ValuePay", strval($__v), "NamePay", "min_deposit");
+    } else {
+        if ($__v < intval($lim['min'])) {
+            sendmessage($from_id, "❌ حداکثر نمیتواند از حداقل فعلی (" . number_format(intval($lim['min'])) . " تومان) کمتر باشد. دوباره بفرستید:", $backadmin, 'HTML');
+            return;
+        }
+        ensurePaySetting('max_deposit', '10000000');
+        update("PaySetting", "ValuePay", strval($__v), "NamePay", "max_deposit");
+    }
+    step('home', $from_id);
+    list($__dt, $__dk) = buildDepositLimitsPage("✅ ذخیره شد.");
+    sendmessage($from_id, $__dt, $__dk, 'HTML');
 }
 
 

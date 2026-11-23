@@ -83,6 +83,10 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $GLOBALS['deferred_channel_reports'] = [];
     $GLOBALS['payment_user_notified'] = false;
     DirectPayment($Payment_report['id_order']);
+    // نسخه 2.3.3: پیام رسید نزد ادمینها → «تأیید خودکار شد»
+    if (function_exists('botMarkReceiptMsgs')) {
+        botMarkReceiptMsgs($Payment_report['id_order'], '🤖 تأیید خودکار شد', 0, 0, intval($Payment_report['id_user'] ?? 0));
+    }
     if (function_exists('notifyUserReceiptAccepted')) {
         notifyUserReceiptAccepted(
             $Payment_report['id_user'],
