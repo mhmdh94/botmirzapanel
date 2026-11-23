@@ -1253,7 +1253,7 @@ $textbotlang['Admin']['Balance']['AddBalanceUser'] = "✅ مبلغ به موجو
 $textbotlang['Admin']['Balance']['NegativeBalanceUser'] = "✅ مبلغ از موجودی کاربر کسر شد";
 $textbotlang['Admin']['Balance']['addallbalance'] = "📌 مبلغ را برای شارژ همگانی ارسال نمایید";
 $textbotlang['Admin']['Balance']['maxpricebalance'] = "حداکثر ۱۰۰ میلیون تومان می‌باشد";
-$textbotlang['Admin']['Balance']['AddedBalance'] = "💎 مبلغ %s تومان به موجودی کیف پول شما اضافه شد.";
+$textbotlang['Admin']['Balance']['AddedBalance'] = "💎 مبلغ %s تومان به موجودی کیف پول شما اضافه شد.\n👛 موجودی فعلی: <b>%s</b> تومان";
 $textbotlang['Admin']['Balance']['ReduceBalance'] = "❌ مبلغ %s تومان از موجودی کیف پول شما کسر شد.";
 $textbotlang['Admin']['Balance']['SendBalanceAll'] = "👥 شارژ همگانی";
 

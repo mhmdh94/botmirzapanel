@@ -2671,7 +2671,7 @@ elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
         . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
         . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
     sendmessage($from_id, $__msg_admin_add, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt), null, 'HTML');
+    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt, $__bal_fmt), null, 'HTML');
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_admin_balance', "💰 <b>افزایش موجودی توسط ادمین</b>
 
