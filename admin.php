@@ -5222,13 +5222,6 @@ if ($datain == "adm_noop") {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['decmthodusername'] ?? 'روش ساخت نام کاربری را انتخاب کنید:', $MethodUsername, 'HTML');
         step('updatemethodusername', $from_id);
     }
-} elseif (preg_match('/^adm_pan_act_full_(\d+)$/', strval($datain), $m_af)) {
-    $panel = adminPanelGetById($m_af[1]);
-    if ($panel) {
-        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
-        outtypepanel($panel['type'] ?? '', $textbotlang['users']['selectoption'] ?? 'انتخاب کنید:');
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'منوی کامل باز شد', 'show_alert' => false]);
-    }
 } elseif (preg_match('/^adm_pan_act_name_(\d+)$/', strval($datain), $m)) {
     $panel = adminPanelGetById($m[1]);
     if ($panel) {

@@ -7163,7 +7163,6 @@ function adminPanelDetailKeyboard($panel, $extra_msg = '')
         ],
         [
             ['text' => '🔤 روش نام کاربری', 'callback_data' => 'adm_pan_act_method_' . $id],
-            ['text' => '⚙️ سایر تنظیمات', 'callback_data' => 'adm_pan_act_full_' . $id],
         ],
         [
             ['text' => '🗑 حذف پنل', 'callback_data' => 'adm_pan_act_delask_' . $id],
@@ -7188,6 +7187,12 @@ function adminPanelTestConnectionText($panel)
 
     try {
         if ($type === 'marzban' || $type === 'pasarguard') {
+            // نسخه 2.3.7: آیا توکن از کش است؟ (کمتر از ۱ ساعت قبل گرفته شده)
+            $__tok_cached = false;
+            $__dl = json_decode(strval($panel['datelogin'] ?? ''), true);
+            if (is_array($__dl) && !empty($__dl['time']) && (time() - strtotime($__dl['time'])) <= 3600) {
+                $__tok_cached = true;
+            }
             $t0 = microtime(true);
             $Check_token = function_exists('token_panel') ? token_panel($panel['id']) : null;
             $ms_token = (int) round((microtime(true) - $t0) * 1000);
@@ -7206,9 +7211,22 @@ function adminPanelTestConnectionText($panel)
                 } catch (Throwable $e) {}
                 $lines[] = "✅ <b>اتصال موفق</b>";
                 $lines[] = "نسخه: <code>{$ver}</code>";
-                $lines[] = "کاربران: <b>{$active}</b> فعال از <b>{$total}</b>";
-                $lines[] = "گروه‌ها: <b>{$g_count}</b>";
-                $lines[] = "⏱ توکن {$ms_token}ms · آمار {$ms_stats}ms";
+                $lines[] = "👥 کاربران پنل: <b>{$active}</b> فعال از <b>{$total}</b>";
+                // نسخه 2.3.7: جزئیات بیشتر (اگر پنل برگرداند)
+                $__extra = [];
+                foreach ([['online_users', '🟢 آنلاین'], ['on_hold_users', '⏳ متصلنشده'], ['expired_users', '🔚 منقضی'], ['limited_users', '🚫 پایان حجم'], ['disabled_users', '⛔ غیرفعال']] as $__f) {
+                    if (is_array($System_Stats) && isset($System_Stats[$__f[0]]) && is_numeric($System_Stats[$__f[0]])) {
+                        $__extra[] = $__f[1] . ' ' . number_format(intval($System_Stats[$__f[0]]));
+                    }
+                }
+                if ($__extra) {
+                    $lines[] = implode(' | ', $__extra);
+                }
+                $__uc = function_exists('botPanelUsageCounts') ? botPanelUsageCounts() : [];
+                $lines[] = "🤖 سرویس فعال ثبتشده در ربات: <b>" . number_format(intval($__uc[strval($name)]['svc'] ?? 0)) . "</b>";
+                $lines[] = "📂 گروهها: <b>{$g_count}</b>";
+                $lines[] = "⏱ " . ($__tok_cached ? "توکن از کش" : "ورود {$ms_token}ms") . " · آمار {$ms_stats}ms";
+                $lines[] = "ℹ️ عدد پنل شامل کاربرانی هم هست که بیرون از ربات ساخته شدهاند؛ عدد ربات فقط فروشهای ربات (بدون تست) است.";
             } elseif (is_array($Check_token) && (($Check_token['detail'] ?? '') == 'Incorrect username or password' || stripos(strval($Check_token['detail'] ?? ''), 'password') !== false)) {
                 $lines[] = "❌ یوزرنیم یا پسورد اشتباه است.";
             } else {
