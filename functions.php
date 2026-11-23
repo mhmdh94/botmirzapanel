@@ -1006,7 +1006,7 @@ function ensureEditableStatusTexts()
         'msg_support_disabled' => $textbotlang['users']['support']['disabled'] ?? "⛔️ پشتیبانی فعلاً در دسترس نیست.\nلطفاً بعداً تلاش کنید.",
         'msg_support_prompt' => $textbotlang['users']['support']['sendmessageuser'] ?? "📨 پیام خود را برای پشتیبانی بنویسید و ارسال کنید.\nدر صورتی که اختلال در اتصال دارید لطفا اینترنتی که استفاده می‌کنید + شهر را هم به پشتیبانی اعلام کنید.",
         'msg_support_sent' => $textbotlang['users']['support']['sendmessageadmin'] ?? "✅ پیام شما برای پشتیبانی ارسال شد.\nبه‌زودی از همین ربات پاسخ می‌گیرید.",
-        'msg_receipt_sent' => $textbotlang['users']['Balance']['Send-receipt'] ?? "🚀 رسید ارسال شد\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nفقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدید.",
+        'msg_receipt_sent' => $textbotlang['users']['Balance']['Send-receipt'] ?? "🚀 رسید ارسال شد\n\nپس از تأیید مدیریت، مبلغ به کیف پول واریز می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nاگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.",
         'msg_receipt_need_photo' => "📸 لطفاً <b>عکس رسید</b> را ارسال کنید.\nمتن پذیرفته نمی‌شود؛ فقط تصویر رسید را بفرستید.",
     
         'msg_reseller_request_info' => $textbotlang['users']['reseller_request']['info'] ?? "📋 درخواست پنل نمایندگی — در صورت بیش از ۱۰۰ کاربر فعال ماهانه می‌توانید درخواست دهید.",
@@ -1803,7 +1803,7 @@ function DirectPayment($order_id)
                 $__sent_cfg = function_exists('telegramOk') ? telegramOk($r) : (is_array($r) && !empty($r['ok']));
             }
             if ($__sent_cfg && isset($keyboard)) {
-                sendmessage($uid_buyer, $textbotlang['users']['selectoption'] ?? 'منوی اصلی', $keyboard, 'HTML');
+                sendmessage($uid_buyer, $textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی', $keyboard, 'HTML');
             }
         } else {
             if (($marzban_list_get['configManual'] ?? '') == "onconfig" && !empty($configqr)) {
@@ -2199,7 +2199,7 @@ function DirectPayment($order_id)
         if ($__kb_after) {
             sendmessage($Payment_report['id_user'], $textpay, $__kb_after, 'HTML');
             if ($__menu_bal) {
-                sendmessage($Payment_report['id_user'], $textbotlang['users']['selectoption'] ?? '🏠 منوی اصلی', $__menu_bal, 'HTML');
+                sendmessage($Payment_report['id_user'], $textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی', $__menu_bal, 'HTML');
             }
         } else {
             sendmessage($Payment_report['id_user'], $textpay, $__menu_bal, 'HTML');
@@ -2798,12 +2798,17 @@ function botMigrateEditableDefaults()
     $done = true;
     try {
         $new = strval($textbotlang['users']['Balance']['Send-receipt'] ?? '');
-        $old = str_replace('عدم تأیید', 'عدم تایید', $new);
-        if ($new === '' || $old === $new) {
+        if ($new === '') {
             return;
         }
+        // نسخه 2.3.4: پیشفرضهای قدیمی → متن جدید (فقط اگر ادمین متن را عوض نکرده باشد)
+        $__nl = 'اگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.';
+        $__legacy = [
+            str_replace($__nl, 'فقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدید.', $new),
+            str_replace($__nl, 'فقط در صورت عدم تایید تا یک ساعت، به پشتیبانی پیام بدید.', $new),
+        ];
         $cur = select("textbot", "text", "id_text", "msg_receipt_sent", "select");
-        if (is_array($cur) && strval($cur['text'] ?? '') === $old) {
+        if (is_array($cur) && strval($cur['text'] ?? '') !== $new && in_array(strval($cur['text'] ?? ''), $__legacy, true)) {
             update("textbot", "text", $new, "id_text", "msg_receipt_sent");
         }
     } catch (Throwable $e) {

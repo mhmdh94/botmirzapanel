@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.3.3";
+$version = "2.3.4";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1241,7 +1241,7 @@ if ($user['step'] == "getusernameinfo") {
         ]
     ]);
     sendmessage($from_id, $textbotlang['users']['status']['info'], $keyboardinfo, 'html');
-    sendmessage($from_id, $textbotlang['users']['selectoption'], $keyboard, 'html');
+    sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), $keyboard, 'html');
     step('home', $from_id);
 }
 #-----------ownership guard: کاربر فقط سرویس خودش را ببیند/تغییر دهد------------#
@@ -2204,7 +2204,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     sendmessage($from_id, sprintf($textbotlang['users']['Extra_volume']['VolumeValue'], $setting['Extra_volume']), $backuser, 'HTML');
     step('getvolumeextra', $from_id);
 } elseif ($user['step'] == "getvolumeextra") {
-    if (!ctype_digit($text)) {
+    // نسخه 2.3.4: ارقام فارسی/عربی قبول شود
+    if (isset($text) && is_string($text) && function_exists('botNormalizeDigits')) {
+        $text = trim(botNormalizeDigits($text));
+    }
+    if (!is_string($text) || !ctype_digit($text)) {
         sendmessage($from_id, $textbotlang['Admin']['Product']['Invalidvolume'], $backuser, 'HTML');
         return;
     }
@@ -2779,11 +2783,11 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
             sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
             unlink($urlimage);
         }
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $__menu_after_test, 'HTML');
+        sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), $__menu_after_test, 'HTML');
         unlink($urlimage);
     } else {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], $__menu_after_test, 'HTML');
+        sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), $__menu_after_test, 'HTML');
     }
     step('home', $from_id);
     step('home', $from_id);
@@ -3764,7 +3768,7 @@ if (isset($datain) && $datain === 'product_header') {
     }
     if ($marzban_list_get['type'] == "mikrotik") {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-        sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
+        sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
     } else {
         if ($marzban_list_get['sublink'] == "onsublink") {
             $urlimage = "$from_id$randomString.png";
@@ -3808,7 +3812,7 @@ if (isset($datain) && $datain === 'product_header') {
                 sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
                 @unlink($urldocs);
             }
-            sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
+            sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         } elseif ($marzban_list_get['config'] == "onconfig") {
             if (count($dataoutput['configs']) == 1) {
                 $urlimage = "$from_id$randomString.png";
@@ -3834,7 +3838,7 @@ if (isset($datain) && $datain === 'product_header') {
             }
         } else {
             sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
-            sendmessage($from_id, $textbotlang['users']['selectoption'], (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
+            sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         }
     }
     // موجودی قبلاً اتمیک کسر شده — فقط لاگ و آزادسازی قفل
@@ -4038,8 +4042,12 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
         step('home', $from_id);
         return;
     }
-    if (!is_numeric($text))
-        return sendmessage($from_id, $textbotlang['users']['Balance']['errorprice'], null, 'HTML');
+    // نسخه 2.3.4: ارقام فارسی/عربی و جداکننده قبول شود
+    if (isset($text) && is_string($text)) {
+        $text = str_replace([',', '٬', '،', ' '], '', function_exists('botNormalizeDigits') ? botNormalizeDigits(trim($text)) : trim($text));
+    }
+    if (!is_string($text) || $text === '' || !ctype_digit($text))
+        return sendmessage($from_id, $textbotlang['users']['Balance']['errorprice'], $backuser, 'HTML');
     $depLim = getDepositLimits();
     if (intval($text) > $depLim['max'] || intval($text) < $depLim['min']) {
         return sendmessage($from_id, sprintf($textbotlang['users']['Balance']['errorpricelimit'], formatToman($depLim['min']), formatToman($depLim['max'])), null, 'HTML');
