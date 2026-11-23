@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.4";
+$version = "2.2.5";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -730,7 +730,7 @@ if ($text == "/status") {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -872,7 +872,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -937,7 +937,7 @@ if ($datain == 'next_page') {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -988,7 +988,7 @@ if ($datain == 'next_page') {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -1109,7 +1109,7 @@ if ($user['step'] == "search_myservice") {
     $stmt->execute();
     $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$invoice) {
-        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND username LIKE :username AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT 10");
+        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND username LIKE :username AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) > 0 AND CAST(Service_time AS UNSIGNED) > 0 THEN (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT 10");
         $like = '%' . $username . '%';
         $stmt->bindParam(':id_user', $from_id);
         $stmt->bindParam(':username', $like);
