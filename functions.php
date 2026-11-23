@@ -2468,6 +2468,25 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
     return $done;
 }
 
+/** نسخه 2.4.0: پاکسازی ردیفهای قدیمی receipt_msgs (رسیدهای بررسیشده یا قدیمیتر از ۷ روز) */
+function botCleanupReceiptMsgs()
+{
+    global $pdo;
+    if (!function_exists('botEnsureReceiptMsgsTable') || !botEnsureReceiptMsgsTable()) {
+        return 0;
+    }
+    $n = 0;
+    try {
+        // رسیدهایی که دیگر در انتظار نیستند یا گزارششان پاک شده
+        $n += intval($pdo->exec("DELETE r FROM receipt_msgs r LEFT JOIN Payment_report p ON p.id_order = r.id_order WHERE p.id_order IS NULL OR p.payment_Status != 'waiting'"));
+        // رسیدهای در انتظار که بیش از ۷ روز از ثبتشان گذشته
+        $n += intval($pdo->exec("DELETE r FROM receipt_msgs r JOIN Payment_report p ON p.id_order = r.id_order WHERE COALESCE(STR_TO_DATE(p.`time`, '%Y/%m/%d %H:%i:%s'), STR_TO_DATE(p.`time`, '%Y-%m-%d %H:%i:%s')) < (NOW() - INTERVAL 7 DAY)"));
+    } catch (Throwable $e) {
+        error_log('receipt_msgs cleanup: ' . $e->getMessage());
+    }
+    return $n;
+}
+
 /** نسخه 2.3.3: صفحه شیشهای حداقل/حداکثر واریز */
 function buildDepositLimitsPage($prefix = '')
 {

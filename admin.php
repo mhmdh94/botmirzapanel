@@ -1438,18 +1438,30 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockedUser'], $backadmin, 'HTML');
         return;
     }
+    // نسخه 2.4.0: اول دلیل، بعد مسدود (انصراف = مسدود نمیشود)
     update("user", "Processing_value", $iduser, "id", $from_id);
-    update("user", "User_Status", "block", "id", $iduser);
-    // دلیل موقت تا ادمین دلیل نهایی را بنویسد (نباید پیام اسپم نشان دهد)
-    update("user", "description_blocking", "مسدود توسط مدیریت", "id", $iduser);
-    sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockUser'], $backadmin, 'HTML');
+    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['BlockUser'] ?? 'دلیل مسدودی را بفرستید:') . "\n\nℹ️ کاربر هنوز مسدود نشده؛ بعد از فرستادن دلیل مسدود میشود. برای دلیل پیشفرض <code>-</code> بفرستید. با «بازگشت» لغو میشود.", $backadmin, 'HTML');
     step('adddecriptionblock', $from_id);
 } elseif ($user['step'] == "adddecriptionblock") {
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ مسدود کردن لغو شد. کاربر مسدود نشد.", $keyboardadmin, 'HTML');
+        return;
+    }
     $blocked_id = $user['Processing_value'];
+    if (in_array(strval($blocked_id), array_map('strval', (array)($admin_ids ?? [])), true) || !is_array(select("user", "*", "id", $blocked_id, "select"))) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ این کاربر قابل مسدود کردن نیست.", $keyboardadmin, 'HTML');
+        return;
+    }
     $reason_text = is_string($text) ? trim($text) : '';
-    if ($reason_text === '') {
+    if ($reason_text === '' || $reason_text === '-') {
         $reason_text = 'مسدود توسط مدیریت';
     }
+    if (mb_strlen($reason_text) > 500) {
+        $reason_text = mb_substr($reason_text, 0, 500);
+    }
+    update("user", "User_Status", "block", "id", $blocked_id);
     update("user", "description_blocking", $reason_text, "id", $blocked_id);
     $__blk_id = htmlspecialchars(strval($blocked_id), ENT_QUOTES, 'UTF-8');
     $__blk_reason = htmlspecialchars($reason_text, ENT_QUOTES, 'UTF-8');
@@ -2799,106 +2811,119 @@ if ($text == $textbotlang['Admin']['Usertest']['setvolumeusertest']) {
     step('home', $from_id);
 }
 #-------------------------#
-elseif (preg_match('/addbalanceuser_(\w+)/', $datain, $dataget)) {
-    $iduser = $dataget[1];
-    update("user", "Processing_value", $iduser, "id", $from_id);
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['PriceBalance'], $backadmin, 'HTML');
-    step('get_price_add', $from_id);
-} elseif ($user['step'] == "get_price_add") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['Invalidprice'], $backadmin, 'HTML');
+elseif (preg_match('/^(addbalanceuser|lowbalanceuser)_(\w+)$/', strval($datain), $dataget)) {
+    // نسخه 2.4.0: افزایش/کاهش موجودی با پیشنمایش و تأیید
+    $__op = ($dataget[1] === 'addbalanceuser') ? 'add' : 'low';
+    $__u0 = select("user", "*", "id", $dataget[2], "select");
+    if (!is_array($__u0)) {
+        sendmessage($from_id, "❌ کاربر پیدا نشد.", $backadmin, 'HTML');
         return;
     }
-    if (intval($text) > 100000000) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'], $backadmin, 'HTML');
+    update("user", "Processing_value", json_encode(['bal_op' => $__op, 'uid' => strval($dataget[2])]), "id", $from_id);
+    sendmessage($from_id, ($__op === 'add' ? ($textbotlang['Admin']['Balance']['PriceBalance'] ?? 'مبلغ افزایش را بفرستید:') : ($textbotlang['Admin']['Balance']['PriceBalancek'] ?? 'مبلغ کاهش را بفرستید:')) . "\n\n👛 موجودی فعلی: <b>" . number_format(intval($__u0['Balance'] ?? 0)) . "</b> تومان", $backadmin, 'HTML');
+    step($__op === 'add' ? 'get_price_add' : 'get_price_Negative', $from_id);
+} elseif ($user['step'] == "get_price_add" || $user['step'] == "get_price_Negative") {
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
         return;
     }
-    $__uid_bal = $user['Processing_value'];
-    $__amt = intval($text);
-    if (function_exists('atomicAddBalance')) {
-        atomicAddBalance($__uid_bal, $__amt);
-    } else {
-        $Balance_user = select("user", "*", "id", $__uid_bal, "select");
-        update("user", "Balance", intval($Balance_user['Balance'] ?? 0) + $__amt, "id", $__uid_bal);
+    $__pv = json_decode(strval($user['Processing_value'] ?? ''), true);
+    if (!is_array($__pv) || empty($__pv['uid'])) {
+        // سازگاری: Processing_value قدیمی فقط آیدی بود
+        $__pv = ['bal_op' => ($user['step'] == "get_price_add" ? 'add' : 'low'), 'uid' => strval($user['Processing_value'] ?? '')];
     }
-    $Balance_user = select("user", "*", "id", $__uid_bal, "select");
-    $Balance_add_user = intval(is_array($Balance_user) ? ($Balance_user['Balance'] ?? 0) : 0);
-    if (function_exists('logWalletTx')) {
-        logWalletTx($__uid_bal, 'admin_add', $__amt, $Balance_add_user, 'افزایش موجودی توسط ادمین');
+    $__op = ($user['step'] == "get_price_add") ? 'add' : 'low';
+    $__v = str_replace([',', '٬', '،', ' '], '', function_exists('botNormalizeDigits') ? botNormalizeDigits(trim(strval($text))) : trim(strval($text)));
+    if (!ctype_digit($__v) || intval($__v) < 1) {
+        sendmessage($from_id, $textbotlang['Admin']['Balance']['Invalidprice'] ?? '❌ مبلغ نامعتبر است.', $backadmin, 'HTML');
+        return;
     }
-    $amt_fmt = number_format($__amt);
-    $__bal_fmt = number_format($Balance_add_user);
-    $__uid_show = htmlspecialchars(strval($__uid_bal), ENT_QUOTES, 'UTF-8');
-    $__msg_admin_add = ($textbotlang['Admin']['Balance']['AddBalanceUser'] ?? '✅ مبلغ به موجودی کاربر اضافه شد')
-        . "\n🆔 کاربر: <code>{$__uid_show}</code>"
-        . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
-        . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
-    sendmessage($from_id, $__msg_admin_add, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt, $__bal_fmt), botMenuForBalance($__uid_bal), 'HTML');
-    if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_admin_balance', "💰 <b>افزایش موجودی توسط ادمین</b>
-
-👨‍💼 ادمین: <code>{$from_id}</code>
-🆔 کاربر: <code>{$__uid_bal}</code>
-
-➕ مبلغ: {$amt_fmt} تومان
-💳 موجودی جدید: " . number_format(intval($Balance_add_user)) . " تومان");
+    if (intval($__v) > 100000000) {
+        sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'] ?? '❌ مبلغ بیش از حد مجاز است.', $backadmin, 'HTML');
+        return;
     }
+    $__amt = intval($__v);
+    $__u0 = select("user", "*", "id", $__pv['uid'], "select");
+    if (!is_array($__u0)) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ کاربر پیدا نشد.", $keyboardadmin, 'HTML');
+        return;
+    }
+    $__cur = intval($__u0['Balance'] ?? 0);
+    $__after = ($__op === 'add') ? ($__cur + $__amt) : ($__cur - $__amt);
+    update("user", "Processing_value", json_encode(['bal_op' => $__op, 'uid' => strval($__pv['uid']), 'amt' => $__amt, 'ts' => time(), 'confirm' => 1]), "id", $from_id);
     step('home', $from_id);
-    return;
+    $__kb = json_encode(['inline_keyboard' => [
+        [['text' => '✅ بله، اعمال شود', 'callback_data' => 'balc_ok']],
+        [['text' => '❌ انصراف', 'callback_data' => 'balc_no']],
+    ]], JSON_UNESCAPED_UNICODE);
+    $__nm = htmlspecialchars(strval($__u0['username'] ?? '-'), ENT_QUOTES, 'UTF-8');
+    sendmessage($from_id, "⚠️ <b>تأیید " . ($__op === 'add' ? 'افزایش' : 'کاهش') . " موجودی</b>\n\n🆔 کاربر: <code>" . htmlspecialchars(strval($__pv['uid']), ENT_QUOTES, 'UTF-8') . "</code> (@{$__nm})\n👛 موجودی فعلی: <b>" . number_format($__cur) . "</b> تومان\n" . ($__op === 'add' ? '➕' : '➖') . " مبلغ: <b>" . number_format($__amt) . "</b> تومان\n💳 موجودی بعد از تغییر: <b>" . number_format($__after) . "</b> تومان" . ($__after < 0 ? "\n\n❗️ <b>موجودی کاربر منفی میشود.</b>" : '') . "\n\nاعمال شود؟", $__kb, 'HTML');
 }
-#-------------------------#
-elseif (preg_match('/lowbalanceuser_(\w+)/', $datain, $dataget)) {
-    $iduser = $dataget[1];
-    update("user", "Processing_value", $iduser, "id", $from_id);
-    sendmessage($from_id, $textbotlang['Admin']['Balance']['PriceBalancek'], $backadmin, 'HTML');
-    step('get_price_Negative', $from_id);
-} elseif ($user['step'] == "get_price_Negative") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['Invalidprice'], $backadmin, 'HTML');
-        return;
-    }
-    if (intval($text) > 100000000) {
-        sendmessage($from_id, $textbotlang['Admin']['Balance']['maxpricebalance'], $backadmin, 'HTML');
-        return;
-    }
-    $__uid_bal = $user['Processing_value'];
-    $__amt = intval($text);
-    if (function_exists('atomicDeductBalance')) {
-        $__ded = atomicDeductBalance($__uid_bal, $__amt);
-        if ($__ded === false || $__ded === null) {
-            // موجودی کافی نبود یا خطا — همچنان کم می‌کنیم تا رفتار قبلی حفظ شود
-            $Balance_Low_user = atomicAdjustBalance($__uid_bal, -$__amt);
-        } else {
-            $Balance_Low_user = intval($__ded);
+if (isset($datain) && ($datain === 'balc_ok' || $datain === 'balc_no')) {
+    $__raw = strval($user['Processing_value'] ?? '');
+    $__pv = json_decode($__raw, true);
+    $__valid = is_array($__pv) && !empty($__pv['confirm']) && !empty($__pv['uid']) && intval($__pv['amt'] ?? 0) > 0 && (time() - intval($__pv['ts'] ?? 0)) <= 1800;
+    if ($datain === 'balc_no' || !$__valid) {
+        if (is_array($__pv) && !empty($__pv['confirm'])) {
+            update("user", "Processing_value", "0", "id", $from_id);
         }
-    } else {
+        Editmessagetext($from_id, $message_id, ($datain === 'balc_no' ? "❌ تغییر موجودی لغو شد." : "⚠️ این درخواست منقضی شده یا قبلاً انجام شده است."), json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    $__claim = $pdo->prepare("UPDATE user SET Processing_value = '0' WHERE id = ? AND Processing_value = ?");
+    $__claim->execute([strval($from_id), $__raw]);
+    if ($__claim->rowCount() < 1) {
+        Editmessagetext($from_id, $message_id, "⚠️ این تغییر قبلاً انجام شده است.", json_encode(['inline_keyboard' => []]));
+        return;
+    }
+    $__uid_bal = strval($__pv['uid']);
+    $__amt = intval($__pv['amt']);
+    $__is_add = ($__pv['bal_op'] === 'add');
+    if ($__is_add) {
+        if (function_exists('atomicAddBalance')) {
+            atomicAddBalance($__uid_bal, $__amt);
+        } else {
+            $Balance_user = select("user", "*", "id", $__uid_bal, "select");
+            update("user", "Balance", intval($Balance_user['Balance'] ?? 0) + $__amt, "id", $__uid_bal);
+        }
         $Balance_user = select("user", "*", "id", $__uid_bal, "select");
-        $Balance_Low_user = intval($Balance_user['Balance'] ?? 0) - $__amt;
-        update("user", "Balance", $Balance_Low_user, "id", $__uid_bal);
+        $__new = intval(is_array($Balance_user) ? ($Balance_user['Balance'] ?? 0) : 0);
+    } else {
+        if (function_exists('atomicDeductBalance')) {
+            $__ded = atomicDeductBalance($__uid_bal, $__amt);
+            if ($__ded === false || $__ded === null) {
+                // موجودی کافی نبود — ادمین هشدار منفی شدن را دیده و تأیید کرده
+                $__new = atomicAdjustBalance($__uid_bal, -$__amt);
+            } else {
+                $__new = intval($__ded);
+            }
+        } else {
+            $Balance_user = select("user", "*", "id", $__uid_bal, "select");
+            $__new = intval($Balance_user['Balance'] ?? 0) - $__amt;
+            update("user", "Balance", $__new, "id", $__uid_bal);
+        }
+        $__new = intval($__new);
     }
     if (function_exists('logWalletTx')) {
-        logWalletTx($__uid_bal, 'admin_low', $__amt, $Balance_Low_user, 'کاهش موجودی توسط ادمین');
+        logWalletTx($__uid_bal, $__is_add ? 'admin_add' : 'admin_low', $__amt, $__new, $__is_add ? 'افزایش موجودی توسط ادمین' : 'کاهش موجودی توسط ادمین');
     }
     $amt_fmt = number_format($__amt);
-    $__bal_fmt = number_format(intval($Balance_Low_user ?? 0));
-    $__uid_show = htmlspecialchars(strval($__uid_bal), ENT_QUOTES, 'UTF-8');
-    $__msg_admin_neg = ($textbotlang['Admin']['Balance']['NegativeBalanceUser'] ?? '✅ مبلغ از موجودی کاربر کسر شد')
+    $__bal_fmt = number_format($__new);
+    $__uid_show = htmlspecialchars($__uid_bal, ENT_QUOTES, 'UTF-8');
+    $__msg = ($__is_add ? ($textbotlang['Admin']['Balance']['AddBalanceUser'] ?? '✅ مبلغ به موجودی کاربر اضافه شد') : ($textbotlang['Admin']['Balance']['NegativeBalanceUser'] ?? '✅ مبلغ از موجودی کاربر کسر شد'))
         . "\n🆔 کاربر: <code>{$__uid_show}</code>"
         . "\n💰 مبلغ: <b>{$amt_fmt}</b> تومان"
         . "\n👛 موجودی جدید: <b>{$__bal_fmt}</b> تومان";
-    sendmessage($from_id, $__msg_admin_neg, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
-    sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt) . botBalanceLine($Balance_Low_user), botMenuForBalance($__uid_bal), 'HTML');
-    if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_admin_balance', "💰 <b>کاهش موجودی توسط ادمین</b>
-
-👨‍💼 ادمین: <code>{$from_id}</code>
-🆔 کاربر: <code>{$__uid_bal}</code>
-
-➖ مبلغ: {$amt_fmt} تومان
-💳 موجودی جدید: " . number_format(intval($Balance_Low_user)) . " تومان");
+    Editmessagetext($from_id, $message_id, $__msg, json_encode(['inline_keyboard' => []]));
+    if ($__is_add) {
+        sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['AddedBalance'], $amt_fmt, $__bal_fmt), botMenuForBalance($__uid_bal), 'HTML');
+    } else {
+        sendmessage($__uid_bal, sprintf($textbotlang['Admin']['Balance']['ReduceBalance'], $amt_fmt) . botBalanceLine($__new), botMenuForBalance($__uid_bal), 'HTML');
     }
-    step('home', $from_id);
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_admin_balance', "💰 <b>" . ($__is_add ? 'افزایش' : 'کاهش') . " موجودی توسط ادمین</b>\n\n👨💼 ادمین: <code>{$from_id}</code>\n🆔 کاربر: <code>{$__uid_show}</code>\n\n" . ($__is_add ? '➕' : '➖') . " مبلغ: {$amt_fmt} تومان\n💳 موجودی جدید: {$__bal_fmt} تومان");
+    }
     return;
 }
 #-------------------------#

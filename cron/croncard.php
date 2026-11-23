@@ -52,6 +52,14 @@ foreach ($datatxtbot as $item) {
         $datatextbot[$item['id_text']] = $item['text'];
     }
 }
+// نسخه 2.4.0: پاکسازی ردیفهای قدیمی پیام رسید (حداکثر یکبار در ساعت)
+if (function_exists('botCleanupReceiptMsgs')) {
+    $__cl_f = __DIR__ . '/receipt_cleanup.ts';
+    if (!is_file($__cl_f) || (time() - intval(@file_get_contents($__cl_f))) > 3600) {
+        @file_put_contents($__cl_f, strval(time()));
+        botCleanupReceiptMsgs();
+    }
+}
 // نسخه 2.3.1: تأیید خودکار شامل واریز به شبا هم میشود
 $stmt = $pdo->prepare("SELECT * FROM Payment_report WHERE payment_Status = 'waiting' AND Payment_Method IN ('cart to cart', 'sheba')");
 $stmt->execute();
