@@ -2507,22 +2507,32 @@ function countUserActiveServices($user_id)
 /**
  * کیبورد اطلاعات سرویس: زمان و حجم (بدون دکمه‌های اضافه)
  */
-function serviceInfoKeyboard($time_label, $volume_label)
+function serviceInfoKeyboard($time_label, $volume_label, $with_buy = false)
 {
+    global $datatextbot, $textbotlang;
     $time_label = strval($time_label);
     $volume_label = strval($volume_label);
-    return json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $time_label, 'callback_data' => 'svc_info_noop'],
-                ['text' => '⏳ زمان اشتراک', 'callback_data' => 'svc_info_noop'],
-            ],
-            [
-                ['text' => $volume_label, 'callback_data' => 'svc_info_noop'],
-                ['text' => '🌐 حجم سرویس', 'callback_data' => 'svc_info_noop'],
-            ],
+    $rows = [
+        [
+            ['text' => $time_label, 'callback_data' => 'svc_info_noop'],
+            ['text' => '⏳ زمان اشتراک', 'callback_data' => 'svc_info_noop'],
         ],
-    ], JSON_UNESCAPED_UNICODE);
+        [
+            ['text' => $volume_label, 'callback_data' => 'svc_info_noop'],
+            ['text' => '🌐 حجم سرویس', 'callback_data' => 'svc_info_noop'],
+        ],
+    ];
+    // نسخه 2.2.3: زیر پیام اکانت تست دکمه خرید (اگر خرید روشن باشد)
+    global $setting;
+    $__buy_on = !(is_array($setting) && isset($setting['status_buy']) && strval($setting['status_buy']) === '0');
+    if ($with_buy && $__buy_on) {
+        $lbl = strval($datatextbot['text_sell'] ?? '');
+        if ($lbl === '') {
+            $lbl = $textbotlang['users']['buybtn'] ?? '🛒 خرید اشتراک';
+        }
+        $rows[] = [['text' => $lbl, 'callback_data' => 'buy_fromtest']];
+    }
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
 function getActivePaymentMethods()
@@ -5716,7 +5726,9 @@ function serviceListEmojiFromInvoice(array $row)
             $start = strtotime(strval($ts_raw));
         }
         if ($start && $start > 0) {
-            $left = ($start + ($days * 86400)) - time();
+            // اکانت تست: Service_time به ساعت است
+            $__mul = (strval($row['name_product'] ?? '') === 'usertest') ? 3600 : 86400;
+            $left = ($start + ($days * $__mul)) - time();
         }
     }
 

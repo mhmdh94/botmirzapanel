@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.2";
+$version = "2.2.3";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -186,6 +186,11 @@ if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts();
 if (isset($text) && is_string($text) && function_exists('botAliasLegacyMenuText')
     && !(isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0)) {
     $text = botAliasLegacyMenuText($text, $datatextbot);
+}
+// نسخه 2.2.3: دکمه خرید زیر پیام اکانت تست — پیام تست (لینک) ویرایش نشود، منوی خرید در پیام جدید
+if (isset($datain) && $datain === 'buy_fromtest') {
+    $datain = '';
+    $text = $datatextbot['text_sell'];
 }
 
 #----- ادمین در حال ویرایش متن / پاسخ به کاربر: منوی کاربر قورت ندهد -----
@@ -716,7 +721,7 @@ if ($text == "/status") {
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -858,7 +863,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     $page = 1;
     $items_per_page = 10;
     $start_index = ($page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -923,7 +928,7 @@ if ($datain == 'next_page') {
         $next_page = $page + 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -974,7 +979,7 @@ if ($datain == 'next_page') {
         $next_page = $page - 1;
     }
     $start_index = ($next_page - 1) * $items_per_page;
-    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT $start_index, $items_per_page");
+    $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT $start_index, $items_per_page");
     $stmt->bindParam(':id_user', $from_id);
     $stmt->execute();
     $keyboardlists = [
@@ -1095,7 +1100,7 @@ if ($user['step'] == "search_myservice") {
     $stmt->execute();
     $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$invoice) {
-        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND username LIKE :username AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY time_sell DESC LIMIT 10");
+        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE id_user = :id_user AND username LIKE :username AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn') ORDER BY (CASE WHEN status IN ('end_of_time','end_of_volume') THEN 1 ELSE 0 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN 0 ELSE 1 END), (CASE WHEN time_sell REGEXP '^[0-9]{9,}$' AND CAST(Service_time AS UNSIGNED) > 0 THEN CAST(time_sell AS UNSIGNED) + CAST(Service_time AS UNSIGNED) * (CASE WHEN name_product = 'usertest' THEN 3600 ELSE 86400 END) ELSE 0 END), time_sell DESC LIMIT 10");
         $like = '%' . $username . '%';
         $stmt->bindParam(':id_user', $from_id);
         $stmt->bindParam(':username', $like);
@@ -1407,6 +1412,23 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         // حجم اضافه | بازگشت وجه
         // لیست سرویس‌ها
         $keyboardsetting = ['inline_keyboard' => []];
+        // نسخه 2.2.3: سرویس فعالی که ≤۳ روز وقت یا ≥۹۰٪ مصرف دارد → «تمدید» تمامعرض در ردیف اول
+        $__urgent = false;
+        $__exp_ts = intval($DataUserOut['expire'] ?? 0);
+        if ($__exp_ts > 0 && ($__exp_ts - time()) <= 3 * 86400) {
+            $__urgent = true;
+        }
+        $__lim_b = floatval($DataUserOut['data_limit'] ?? 0);
+        if ($__lim_b > 0 && (floatval($DataUserOut['used_traffic'] ?? 0) / $__lim_b) >= 0.9) {
+            $__urgent = true;
+        }
+        if ($__urgent && isset($keyboarddate['extend'])) {
+            $keyboardsetting['inline_keyboard'][] = [[
+                'text' => $keyboarddate['extend']['text'],
+                'callback_data' => $keyboarddate['extend']['callback_data'] . $username,
+            ]];
+            unset($keyboarddate['extend']);
+        }
         if (isset($keyboarddate['qrcode'])) {
             $q = $keyboarddate['qrcode'];
             $keyboardsetting['inline_keyboard'][] = [[
@@ -2701,13 +2723,13 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     $Shoppinginfo = null; // دکمه آموزش استفاده حذف شد
     if ($marzban_list_get['type'] == "wgdashboard") {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewg'], $username_ac);
-        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت', true) : null;
     } elseif ($marzban_list_get['type'] == "mikrotik") {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservice_mikrotik_test'], $username_ac, $dataoutput['subscription_url']);
-        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت', true) : null;
     } else {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservicetest'], $username_ac, $output_config_link, $text_config);
-        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت') : null;
+        $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($setting['time_usertest'] ?? 0) . ' ساعت', intval($setting['val_usertest'] ?? 0) . ' مگابایت', true) : null;
     }
     // نسخه 2.2.2: کم کردن سهمیه تست قبل از ارسال منو، تا منوی بعدی دکمه تست را (در صورت صفر شدن) نشان ندهد
     $limit_usertest = $user['limit_usertest'] - 1;
