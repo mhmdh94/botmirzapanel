@@ -7027,6 +7027,7 @@ function adminPanelsListKeyboard()
     }
     $kb = ['inline_keyboard' => []];
     $n = count($rows);
+    $__uc = function_exists('botPanelUsageCounts') ? botPanelUsageCounts() : [];
     if (!$rows) {
         $kb['inline_keyboard'][] = [['text' => 'هنوز پنلی ثبت نشده', 'callback_data' => 'adm_noop']];
     } else {
@@ -7040,8 +7041,9 @@ function adminPanelsListKeyboard()
             $st = strval($p['status'] ?? '');
             $icon = ($st === 'activepanel' || $st === 'active' || $st === '') ? '🟢' : '🔴';
             $type_lbl = $type !== '' ? $type : 'panel';
+            $__svc_n = intval(($__uc[strval($p['name_panel'] ?? '')]['svc'] ?? 0));
             $kb['inline_keyboard'][] = [[
-                'text' => "{$icon} {$name} ({$type_lbl})",
+                'text' => "{$icon} {$name} ({$type_lbl}) · 📦 {$__svc_n}",
                 'callback_data' => 'adm_pan_' . $id,
             ]];
         }
@@ -7071,34 +7073,85 @@ function adminPanelGetById($id)
     }
 }
 
+/** نسخه 2.3.6: تعداد سرویس فعال و محصول هر پنل (بر اساس نام پنل) */
+function botPanelUsageCounts()
+{
+    global $pdo;
+    $out = [];
+    try {
+        $st = $pdo->query("SELECT Service_location AS loc, COUNT(*) AS c FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest' GROUP BY Service_location");
+        foreach (($st ? $st->fetchAll(PDO::FETCH_ASSOC) : []) as $r) {
+            $out[strval($r['loc'])]['svc'] = intval($r['c']);
+        }
+        $st = $pdo->query("SELECT Location AS loc, COUNT(*) AS c FROM product GROUP BY Location");
+        foreach (($st ? $st->fetchAll(PDO::FETCH_ASSOC) : []) as $r) {
+            $out[strval($r['loc'])]['prod'] = intval($r['c']);
+        }
+    } catch (Throwable $e) {
+    }
+    return $out;
+}
+
+/** نسخه 2.3.6: بعد از تغییر آدرس/یوزر/پسورد، توکن کششده پاک و اتصال تست شود */
+function botPanelAutoTest($panel)
+{
+    global $pdo;
+    if (!is_array($panel) || empty($panel['id'])) {
+        return '';
+    }
+    try {
+        $pdo->prepare("UPDATE marzban_panel SET datelogin = NULL WHERE id = ?")->execute([intval($panel['id'])]);
+    } catch (Throwable $e) {
+    }
+    $fresh = function_exists('adminPanelGetById') ? adminPanelGetById($panel['id']) : $panel;
+    if (!function_exists('adminPanelTestConnectionText') || !is_array($fresh)) {
+        return '';
+    }
+    return "\n\n" . adminPanelTestConnectionText($fresh)
+        . "\n\nℹ️ اگر یوزرنیم و پسورد هر دو را عوض میکنید، بعد از ثبت هر دو دوباره «🔗 تست اتصال» را بزنید.";
+}
+
 function adminPanelDetailKeyboard($panel, $extra_msg = '')
 {
     $id = intval($panel['id'] ?? 0);
-    $name = htmlspecialchars(strval($panel['name_panel'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $raw_name = strval($panel['name_panel'] ?? '');
+    $name = htmlspecialchars($raw_name, ENT_QUOTES, 'UTF-8');
     $type = htmlspecialchars(strval($panel['type'] ?? ''), ENT_QUOTES, 'UTF-8');
     $url = htmlspecialchars(strval($panel['url_panel'] ?? ''), ENT_QUOTES, 'UTF-8');
     $status = strval($panel['status'] ?? '');
-    $st_lbl = ($status === 'disablepanel' || $status === 'inactive') ? '🔴 غیرفعال' : '🟢 فعال';
-    $text = "🖥 <b>پنل:</b> <code>{$name}</code>
-"
-        . "نوع: <b>{$type}</b>
-"
-        . "وضعیت: {$st_lbl}
-"
-        . "آدرس: <code>{$url}</code>";
+    $is_on = !($status === 'disablepanel' || $status === 'inactive');
+    $test_on = strval($panel['statusTest'] ?? '') === 'ontestshowpanel';
+    $sub_on = strval($panel['sublink'] ?? '') === 'onsublink';
+    $cfg_on = strval($panel['configManual'] ?? '') === 'onconfig';
+    $method = htmlspecialchars(strval($panel['MethodUsername'] ?? '-'), ENT_QUOTES, 'UTF-8');
+    $uc = botPanelUsageCounts();
+    $svc = intval($uc[$raw_name]['svc'] ?? 0);
+    $prod = intval($uc[$raw_name]['prod'] ?? 0);
+    $text = "🖥 <b>پنل:</b> <code>{$name}</code>\n"
+        . "نوع: <b>{$type}</b>\n"
+        . "آدرس: <code>{$url}</code>\n\n"
+        . "🔌 وضعیت فروش: " . ($is_on ? '🟢 فعال' : '🔴 غیرفعال') . "\n"
+        . "🧪 نمایش در اکانت تست: " . ($test_on ? '✅' : '❌') . "\n"
+        . "🔗 لینک اشتراک: " . ($sub_on ? '✅' : '❌') . " | 📄 کانفیگ دستی: " . ($cfg_on ? '✅' : '❌') . "\n"
+        . "🔤 ساخت نام کاربری: {$method}\n\n"
+        . "📦 سرویس فعال: <b>{$svc}</b> | 🛒 محصول: <b>{$prod}</b>";
     if ($extra_msg !== '') {
-        $text .= "
-
-" . $extra_msg;
+        $text .= "\n\n" . $extra_msg;
     } else {
-        $text .= "
-
-یک گزینه را انتخاب کنید:";
+        $text .= "\n\nیک گزینه را انتخاب کنید:";
     }
     $kb = ['inline_keyboard' => [
         [
+            ['text' => ($is_on ? '🟢 فروش: فعال' : '🔴 فروش: غیرفعال'), 'callback_data' => 'adm_pan_tg_status_' . $id],
+            ['text' => ($test_on ? '🧪 تست: روشن' : '🧪 تست: خاموش'), 'callback_data' => 'adm_pan_tg_test_' . $id],
+        ],
+        [
+            ['text' => ($sub_on ? '🔗 لینک: روشن' : '🔗 لینک: خاموش'), 'callback_data' => 'adm_pan_tg_sub_' . $id],
+            ['text' => ($cfg_on ? '📄 کانفیگ: روشن' : '📄 کانفیگ: خاموش'), 'callback_data' => 'adm_pan_tg_cfg_' . $id],
+        ],
+        [
             ['text' => '🔗 تست اتصال', 'callback_data' => 'adm_pan_act_connect_' . $id],
-            ['text' => '📂 گروه‌ها', 'callback_data' => 'adm_pan_act_groups_' . $id],
+            ['text' => '📂 گروهها', 'callback_data' => 'adm_pan_act_groups_' . $id],
         ],
         [
             ['text' => '✏️ نام', 'callback_data' => 'adm_pan_act_name_' . $id],
@@ -7109,10 +7162,14 @@ function adminPanelDetailKeyboard($panel, $extra_msg = '')
             ['text' => '🔑 پسورد', 'callback_data' => 'adm_pan_act_pass_' . $id],
         ],
         [
+            ['text' => '🔤 روش نام کاربری', 'callback_data' => 'adm_pan_act_method_' . $id],
+            ['text' => '⚙️ سایر تنظیمات', 'callback_data' => 'adm_pan_act_full_' . $id],
+        ],
+        [
             ['text' => '🗑 حذف پنل', 'callback_data' => 'adm_pan_act_delask_' . $id],
         ],
         [
-            ['text' => '🔙 لیست پنل‌ها', 'callback_data' => 'adm_pan_list'],
+            ['text' => '🔙 لیست پنلها', 'callback_data' => 'adm_pan_list'],
         ],
     ]];
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];

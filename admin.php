@@ -3368,6 +3368,31 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain =
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['GetNameNew'], $backadmin, 'HTML');
     step('GetNameNew', $from_id);
 } elseif ($user['step'] == "GetNameNew") {
+    // نسخه 2.3.6: اعتبارسنجی نام جدید پنل
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $__nn = (isset($text) && is_string($text)) ? trim($text) : '';
+    if ($__nn === '' || mb_strlen($__nn) > 100) {
+        sendmessage($from_id, "❌ یک نام بین ۱ تا ۱۰۰ کاراکتر بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__old_name = strval($user['Processing_value'] ?? '');
+    if (!is_array(select("marzban_panel", "*", "name_panel", $__old_name, "select"))) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ پنل پیدا نشد. دوباره از «✏️ مدیریت پنل» شروع کنید.", $backadmin, 'HTML');
+        return;
+    }
+    if ($__nn === $__old_name) {
+        sendmessage($from_id, "ℹ️ این همان نام فعلی است. نام دیگری بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if (is_array(select("marzban_panel", "*", "name_panel", $__nn, "select"))) {
+        sendmessage($from_id, "❌ پنل دیگری با همین نام وجود دارد. نام دیگری بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $text = $__nn;
     $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     update("marzban_panel", "name_panel", $text, "name_panel", $user['Processing_value']);
     update("invoice", "Service_location", $text, "Service_location", $user['Processing_value']);
@@ -3392,7 +3417,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain =
     update("marzban_panel", "url_panel", $text, "name_panel", $user['Processing_value']);
     $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
-        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedurlPanel'] ?? '✅ آدرس به‌روز شد');
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, ($textbotlang['Admin']['managepanel']['ChangedurlPanel'] ?? '✅ آدرس به‌روز شد') . (function_exists('botPanelAutoTest') ? botPanelAutoTest($typepanel) : ''));
         sendmessage($from_id, $tx, $kb, 'HTML');
     } else {
         outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedurlPanel']);
@@ -3405,7 +3430,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain =
     update("marzban_panel", "username_panel", $text, "name_panel", $user['Processing_value']);
     $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
-        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedusernamePanel'] ?? '✅ یوزرنیم به‌روز شد');
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, ($textbotlang['Admin']['managepanel']['ChangedusernamePanel'] ?? '✅ یوزرنیم به‌روز شد') . (function_exists('botPanelAutoTest') ? botPanelAutoTest($typepanel) : ''));
         sendmessage($from_id, $tx, $kb, 'HTML');
     } else {
         outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedusernamePanel']);
@@ -3418,7 +3443,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain =
     update("marzban_panel", "password_panel", $text, "name_panel", $user['Processing_value']);
     $typepanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if (is_array($typepanel) && function_exists('adminPanelDetailKeyboard')) {
-        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, $textbotlang['Admin']['managepanel']['ChangedpasswordPanel'] ?? '✅ پسورد به‌روز شد');
+        list($tx, $kb) = adminPanelDetailKeyboard($typepanel, ($textbotlang['Admin']['managepanel']['ChangedpasswordPanel'] ?? '✅ پسورد به‌روز شد') . (function_exists('botPanelAutoTest') ? botPanelAutoTest($typepanel) : ''));
         sendmessage($from_id, $tx, $kb, 'HTML');
     } else {
         outtypepanel($typepanel['type'] ?? '', $textbotlang['Admin']['managepanel']['ChangedpasswordPanel']);
@@ -5148,6 +5173,55 @@ if ($datain == "adm_noop") {
     } else {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پنل یافت نشد', 'show_alert' => true]);
     }
+} elseif (preg_match('/^adm_pan_tg_(status|test|sub|cfg)_(\d+)$/', strval($datain), $m_tg)) {
+    // نسخه 2.3.6: روشن/خاموش تنظیمات پنل از صفحه شیشهای
+    $panel = adminPanelGetById($m_tg[2]);
+    if (!$panel) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پنل یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    $__pid = intval($m_tg[2]);
+    $__col = null;
+    $__val = null;
+    if ($m_tg[1] === 'status') {
+        $__col = 'status';
+        $__val = (strval($panel['status'] ?? '') === 'disablepanel') ? 'activepanel' : 'disablepanel';
+    } elseif ($m_tg[1] === 'test') {
+        $__col = 'statusTest';
+        $__val = (strval($panel['statusTest'] ?? '') === 'ontestshowpanel') ? 'offtestshowpanel' : 'ontestshowpanel';
+    } elseif ($m_tg[1] === 'sub') {
+        if (strval($panel['configManual'] ?? '') === 'onconfig') {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '⚠️ اول «کانفیگ دستی» را خاموش کنید.', 'show_alert' => true]);
+            return;
+        }
+        $__col = 'sublink';
+        $__val = (strval($panel['sublink'] ?? '') === 'onsublink') ? 'offsublink' : 'onsublink';
+    } elseif ($m_tg[1] === 'cfg') {
+        if (strval($panel['sublink'] ?? '') === 'onsublink') {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '⚠️ اول «لینک اشتراک» را خاموش کنید.', 'show_alert' => true]);
+            return;
+        }
+        $__col = 'configManual';
+        $__val = (strval($panel['configManual'] ?? '') === 'onconfig') ? 'offconfig' : 'onconfig';
+    }
+    if ($__col !== null) {
+        try {
+            $pdo->prepare("UPDATE marzban_panel SET {$__col} = ? WHERE id = ?")->execute([$__val, $__pid]);
+        } catch (Throwable $e) {
+            error_log('panel toggle: ' . $e->getMessage());
+        }
+    }
+    $panel = adminPanelGetById($__pid);
+    update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+    list($tx, $kb) = adminPanelDetailKeyboard($panel, '✅ ذخیره شد.');
+    Editmessagetext($from_id, $message_id, $tx, $kb);
+} elseif (preg_match('/^adm_pan_act_method_(\d+)$/', strval($datain), $m_mt)) {
+    $panel = adminPanelGetById($m_mt[1]);
+    if ($panel) {
+        update("user", "Processing_value", $panel['name_panel'], "id", $from_id);
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['decmthodusername'] ?? 'روش ساخت نام کاربری را انتخاب کنید:', $MethodUsername, 'HTML');
+        step('updatemethodusername', $from_id);
+    }
 } elseif (preg_match('/^adm_pan_act_full_(\d+)$/', strval($datain), $m_af)) {
     $panel = adminPanelGetById($m_af[1]);
     if ($panel) {
@@ -5706,7 +5780,7 @@ if ($__rv_is_admin && function_exists('isResellerFeatureEnabled') && isResellerF
         $kb = json_encode(['inline_keyboard' => [
             [['text' => '✏️ تغییر قیمت', 'callback_data' => 'rv_setprice_' . $pid], ['text' => '📊 تغییر حجم', 'callback_data' => 'rv_setvol_' . $pid]],
             [['text' => (intval($plan['status'] ?? 1) === 1 ? '🔴 غیرفعال کردن' : '🟢 فعال کردن'), 'callback_data' => 'rv_toggle_' . $pid]],
-            [['text' => '🗑 حذف پلن', 'callback_data' => 'rv_del_' . $pid]],
+            [['text' => '🗑 حذف پلن', 'callback_data' => 'rv_delask_' . $pid]],
             [['text' => '🔙 بازگشت به لیست', 'callback_data' => 'rv_admin_plans']],
         ]]);
         Editmessagetext($from_id, $message_id, "📦 <b>ویرایش پلن</b>\n\n📊 حجم: <b>{$gb_label}</b>\n💵 قیمت: <b>{$pr}</b> تومان\nوضعیت: {$st}", $kb);
@@ -5737,10 +5811,27 @@ if ($__rv_is_admin && function_exists('isResellerFeatureEnabled') && isResellerF
         $kb = json_encode(['inline_keyboard' => [
             [['text' => '✏️ تغییر قیمت', 'callback_data' => 'rv_setprice_' . $pid], ['text' => '📊 تغییر حجم', 'callback_data' => 'rv_setvol_' . $pid]],
             [['text' => (intval($plan['status'] ?? 1) === 1 ? '🔴 غیرفعال کردن' : '🟢 فعال کردن'), 'callback_data' => 'rv_toggle_' . $pid]],
-            [['text' => '🗑 حذف پلن', 'callback_data' => 'rv_del_' . $pid]],
+            [['text' => '🗑 حذف پلن', 'callback_data' => 'rv_delask_' . $pid]],
             [['text' => '🔙 بازگشت به لیست', 'callback_data' => 'rv_admin_plans']],
         ]]);
         Editmessagetext($from_id, $message_id, "📦 <b>ویرایش پلن</b>\n\n📊 حجم: <b>{$gb_label}</b>\n💵 قیمت: <b>{$pr}</b> تومان\nوضعیت: {$st}", $kb);
+        return;
+    }
+
+    // نسخه 2.3.6: تأیید قبل از حذف پلن ریسلر
+    if (preg_match('/^rv_delask_(\d+)$/', strval($datain), $m_da)) {
+        $__rv_load();
+        $__pl = function_exists('resellerGetPlan') ? resellerGetPlan(intval($m_da[1])) : null;
+        if (!$__pl) {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پلن یافت نشد', 'show_alert' => true]);
+            return;
+        }
+        $__gbl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel(intval($__pl['volume_gb'] ?? 0)) : (number_format(intval($__pl['volume_gb'] ?? 0)) . ' گیگ');
+        $kb = json_encode(['inline_keyboard' => [
+            [['text' => '✅ بله، حذف شود', 'callback_data' => 'rv_del_' . intval($__pl['id'])]],
+            [['text' => '❌ خیر، بازگشت', 'callback_data' => 'rv_edit_' . intval($__pl['id'])]],
+        ]], JSON_UNESCAPED_UNICODE);
+        Editmessagetext($from_id, $message_id, "⚠️ <b>حذف پلن {$__gbl} — " . number_format(intval($__pl['price'] ?? 0)) . " تومان؟</b>\n\nاین کار برگشتپذیر نیست.\n💡 اگر فقط نمیخواهید فعلاً فروخته شود، «🔴 غیرفعال کردن» را بزنید.", $kb);
         return;
     }
 
@@ -5831,9 +5922,9 @@ if ($__rv_is_admin && $__rv_step === 'rv_panel_url' && !empty($text) && $datain 
         step('home', $from_id);
         return;
     }
-    $url = trim($text);
-    if (!preg_match('#^https?://#i', $url)) {
-        sendmessage($from_id, '❌ آدرس باید با http:// یا https:// شروع شود.', $backadmin, 'HTML');
+    $url = rtrim(trim($text), '/');
+    if (!preg_match('#^https?://#i', $url) || !filter_var($url, FILTER_VALIDATE_URL) || !parse_url($url, PHP_URL_HOST)) {
+        sendmessage($from_id, '❌ آدرس معتبر نیست. باید با http:// یا https:// شروع شود، مثل: <code>https://panel.example.com</code>', $backadmin, 'HTML');
         return;
     }
     update("user", "Processing_value", $url, "id", $from_id);
@@ -5879,8 +5970,24 @@ if ($__rv_is_admin && $__rv_step === 'rv_panel_pass' && !empty($text) && $datain
     $url_s = strval($res['url'] ?? $url);
     $f = __DIR__ . '/reseller_volume.php';
     if (is_file($f)) { require_once $f; }
+    // نسخه 2.3.6: تست اتصال بعد از ذخیره
+    $__rv_test = '';
+    try {
+        if (!function_exists('token_reseller_standalone') && is_file(__DIR__ . '/pasarguard.php')) {
+            require_once __DIR__ . '/pasarguard.php';
+        }
+        $__rp = function_exists('getResellerPanel') ? getResellerPanel() : null;
+        if (is_array($__rp) && function_exists('token_reseller_standalone')) {
+            $__tk = token_reseller_standalone($__rp);
+            $__rv_test = (is_array($__tk) && !empty($__tk['access_token']))
+                ? "\n\n🔗 تست اتصال: ✅ ورود به پنل موفق بود."
+                : "\n\n🔗 تست اتصال: ❌ ورود ناموفق. آدرس، یوزرنیم یا رمز را دوباره چک کنید.";
+        }
+    } catch (Throwable $e) {
+        $__rv_test = "\n\n🔗 تست اتصال: ❌ خطا در اتصال به پنل.";
+    }
     $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
-    sendmessage($from_id, "✅ اطلاعات پنل ریسلر ذخیره شد.\n\n🖥 <code>" . htmlspecialchars($url_s, ENT_QUOTES, 'UTF-8') . "</code>\n👤 <code>" . htmlspecialchars($uname, ENT_QUOTES, 'UTF-8') . "</code>\n\n🛠 <b>مدیریت پنل نمایندگان</b>", $kb ?: $keyboardadmin, 'HTML');
+    sendmessage($from_id, "✅ اطلاعات پنل ریسلر ذخیره شد.\n\n🖥 <code>" . htmlspecialchars($url_s, ENT_QUOTES, 'UTF-8') . "</code>\n👤 <code>" . htmlspecialchars($uname, ENT_QUOTES, 'UTF-8') . "</code>" . $__rv_test . "\n\n🛠 <b>مدیریت پنل نمایندگان</b>", $kb ?: $keyboardadmin, 'HTML');
     return;
 }
 
