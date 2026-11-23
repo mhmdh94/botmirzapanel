@@ -1,0 +1,4 @@
+# Block web access to logs and sensitive files
+<FilesMatch "(^error_log$|\.(log|sql|sh|bak|zip)$)">
+    Require all denied
+</FilesMatch>
