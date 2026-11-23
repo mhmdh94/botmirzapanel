@@ -430,7 +430,7 @@ $textbotlang['users']['status']['acceptrequestnote'] = "✅ ثبت شد.";
 $textbotlang['users']['status']['rejectsendtouser'] = "❌ درخواست حذف سرویس <code>%s</code> پذیرفته نشد.
 ✍️ دلیل: %s";
 $textbotlang['users']['status']['getpriceforadd'] = "💰 مبلغ بازگشت به کیف پول کاربر را به تومان بفرستید:";
-$textbotlang['users']['status']['addedbalanceremove'] = "💰 مبلغ <b>%s</b> تومان به موجودی شما اضافه شد.";
+$textbotlang['users']['status']['addedbalanceremove'] = "💰 مبلغ <b>%s</b> تومان به موجودی شما اضافه شد.\n👛 موجودی فعلی: <b>%s</b> تومان";
 $textbotlang['users']['status']['acceptrequest'] = "✅ درخواست حذف سرویس <code>%s</code> تأیید شد.";
 $textbotlang['users']['status']['rejectrequest'] = "دلیل رد را بفرستید:";
 

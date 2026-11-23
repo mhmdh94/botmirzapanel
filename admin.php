@@ -3555,7 +3555,7 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     $pricecancel = number_format(intval($text));
     if (intval($text) != 0) {
         $Balance_id_cancel_fee = atomicAdjustBalance($nameloc['id_user'], intval($text));
-        sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel), null, 'HTML');
+        sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel, number_format(intval($Balance_id_cancel_fee))), null, 'HTML');
     }
     if (function_exists('sendChannelReport')) {
         // کانفیگ = نام کاربری سرویس (نه یوزرنیم تلگرام ادمین/کاربر)
