@@ -2363,13 +2363,146 @@ function buildFinanceSummaryText()
     $off = '❌ خاموش';
     return "💳 <b>مالی و پرداخت</b>\n\n"
         . "💳 کارت به کارت: <b>" . ($card_on ? $on : $off) . "</b>\n"
-        . "🔢 کارت فعلی: " . $card_disp . "\n"
+        . ((function_exists('botGetCardList') && count(botGetCardList()) > 1) ? ("🔢 کارتها: <b>" . count(botGetCardList()) . "</b> عدد (نوبتی)\n") : ("🔢 کارت فعلی: " . $card_disp . "\n"))
         . "🏦 واریز به شبا: <b>" . ((function_exists('isShebaPaymentEnabled') && isShebaPaymentEnabled()) ? $on : $off) . "</b>\n"
         . "💎 کریپتو: <b>" . ($digi_on ? $on : $off) . "</b>\n"
         . "🤖 تأیید خودکار رسید: <b>" . ($auto_on ? $on : $off) . "</b>\n"
         . "💰 حداقل واریز: <b>" . number_format($min) . "</b> تومان | حداکثر: <b>" . number_format($max) . "</b> تومان\n"
         . "🧾 رسیدهای در انتظار: <b>" . number_format($wait) . "</b>\n\n"
         . "برای تغییر، یکی از گزینهها را بزنید.";
+}
+
+/** نسخه 2.3.2: لیست کارتها (JSON در PaySetting.card_list)؛ اگر خالی بود همان CartDescription قدیمی */
+function botGetCardList()
+{
+    $list = [];
+    try {
+        $raw = function_exists('getPaySettingValue') ? strval(getPaySettingValue('card_list', '')) : '';
+        if ($raw !== '') {
+            $j = json_decode($raw, true);
+            if (is_array($j)) {
+                foreach ($j as $c) {
+                    $c = trim(strval($c));
+                    if ($c !== '') {
+                        $list[] = $c;
+                    }
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        $list = [];
+    }
+    if (!$list) {
+        $r = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
+        $d = is_array($r) ? trim(strval($r['ValuePay'] ?? '')) : '';
+        if ($d !== '') {
+            $list[] = $d;
+        }
+    }
+    return $list;
+}
+
+/** ذخیره لیست کارتها + همگامسازی CartDescription با کارت اول (برای سازگاری) */
+function botSaveCardList(array $list)
+{
+    $clean = [];
+    foreach ($list as $c) {
+        $c = trim(strval($c));
+        if ($c !== '') {
+            $clean[] = $c;
+        }
+    }
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('card_list', '');
+    }
+    update("PaySetting", "ValuePay", json_encode(array_values($clean), JSON_UNESCAPED_UNICODE), "NamePay", "card_list");
+    if ($clean) {
+        update("PaySetting", "ValuePay", $clean[0], "NamePay", "CartDescription");
+    }
+    return $clean;
+}
+
+function botEnsureCardShownTable()
+{
+    global $pdo;
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS card_shown (
+            id_user VARCHAR(64) NOT NULL PRIMARY KEY,
+            card TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL,
+            ts INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin");
+        $done = true;
+    } catch (Throwable $e) {
+        error_log('card_shown table: ' . $e->getMessage());
+    }
+    return $done;
+}
+
+/** نسخه 2.3.2: انتخاب کارت برای کاربر (چرخشی اگر بیش از یک کارت باشد) */
+function botPickCardForUser($user_id)
+{
+    global $pdo;
+    $list = botGetCardList();
+    $n = count($list);
+    if ($n === 0) {
+        return '';
+    }
+    if ($n === 1) {
+        return $list[0];
+    }
+    $idx = intval(getPaySettingValue('card_rr_idx', '0'));
+    if ($idx < 0) {
+        $idx = 0;
+    }
+    $pick = $list[$idx % $n];
+    if (function_exists('setPaySettingValue')) {
+        setPaySettingValue('card_rr_idx', strval(($idx + 1) % 1000000));
+    }
+    if (botEnsureCardShownTable()) {
+        try {
+            $st = $pdo->prepare("INSERT INTO card_shown (id_user, card, ts) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE card = VALUES(card), ts = VALUES(ts)");
+            $st->execute([strval($user_id), $pick, time()]);
+        } catch (Throwable $e) {
+            error_log('card_shown save: ' . $e->getMessage());
+        }
+    }
+    return $pick;
+}
+
+/** کارتی که آخرین بار به کاربر نشان داده شد (فقط وقتی چند کارت فعال است) */
+function botGetCardShownForUser($user_id)
+{
+    global $pdo;
+    if (count(botGetCardList()) <= 1) {
+        return '';
+    }
+    if (!botEnsureCardShownTable()) {
+        return '';
+    }
+    try {
+        $st = $pdo->prepare("SELECT card FROM card_shown WHERE id_user = ? LIMIT 1");
+        $st->execute([strval($user_id)]);
+        $v = $st->fetchColumn();
+        return $v === false ? '' : strval($v);
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+/** نسخه 2.3.2: دلیلهای آماده رد رسید */
+function botRejectReasons()
+{
+    return [
+        1 => 'مبلغ واریزی با مبلغ فاکتور یکسان نیست.',
+        2 => 'این رسید تکراری است و قبلاً ثبت شده.',
+        3 => 'رسید ناخوانا یا ناقص است؛ عکس واضح و کامل بفرستید.',
+        4 => 'واریزی به حساب ما نرسیده است.',
+        5 => 'رسید مربوط به کارت/حساب ما نیست.',
+    ];
 }
 
 /** نسخه 2.3.0: تبدیل ارقام فارسی/عربی به انگلیسی */
@@ -2455,28 +2588,40 @@ function isShebaPaymentEnabled()
     return botExtractSheba(getPaySettingValue('ShebaDescription', '')) !== '';
 }
 
-/** نسخه 2.3.0: صفحه شیشهای تنظیم کارت به کارت */
+/** نسخه 2.3.2: صفحه شیشهای تنظیم کارت به کارت (چند کارت) */
 function buildCardSettingsPage()
 {
-    $r = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
-    $txt = is_array($r) ? trim(strval($r['ValuePay'] ?? '')) : '';
     $r = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select");
     $on = is_array($r) && strval($r['ValuePay'] ?? '') === 'oncard';
-    $cn = botExtractCardNumber($txt);
+    $list = botGetCardList();
+    $n = count($list);
     $t = "💳 <b>تنظیم کارت به کارت</b>\n\n"
-        . "🔌 وضعیت: <b>" . ($on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
-        . "📝 متنی که به کاربر نشان داده میشود:\n"
-        . ($txt !== '' ? "<code>" . htmlspecialchars($txt, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده') . "\n\n";
-    if ($cn === '') {
-        $t .= "⚠️ شماره کارت ۱۶ رقمی در متن پیدا نشد؛ دکمه «کپی شماره کارت» به کاربر نشان داده نمیشود.";
-    } else {
-        $t .= "🔢 شماره کارت: <code>{$cn}</code>" . (botCardLuhnOk($cn) ? '' : "\n⚠️ رقم کنترل این شماره کارت درست نیست؛ دوباره چک کنید.");
+        . "🔌 وضعیت: <b>" . ($on ? '✅ روشن' : '❌ خاموش') . "</b>\n"
+        . "🔢 تعداد کارت: <b>{$n}</b>" . ($n > 1 ? " (به نوبت به کاربران نشان داده میشوند)" : '') . "\n\n";
+    $kb = ['inline_keyboard' => []];
+    if ($n === 0) {
+        $t .= "❗️ هنوز کارتی ثبت نشده.";
     }
-    $kb = json_encode(['inline_keyboard' => [
-        [['text' => '✏️ تغییر شماره کارت', 'callback_data' => 'fin_card_edit']],
-        [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']],
-    ]], JSON_UNESCAPED_UNICODE);
-    return [$t, $kb];
+    foreach ($list as $i => $c) {
+        $cn = botExtractCardNumber($c);
+        $t .= ($i + 1) . ") <code>" . htmlspecialchars($c, ENT_QUOTES, 'UTF-8') . "</code>\n";
+        if ($cn === '') {
+            $t .= "   ⚠️ شماره ۱۶ رقمی پیدا نشد؛ دکمه کپی نمایش داده نمیشود.\n";
+        } elseif (!botCardLuhnOk($cn)) {
+            $t .= "   ⚠️ رقم کنترل این کارت درست نیست؛ دوباره چک کنید.\n";
+        }
+        $label = $cn !== '' ? ('💳 ' . substr($cn, 0, 4) . '…' . substr($cn, -4)) : ('💳 کارت ' . ($i + 1));
+        $kb['inline_keyboard'][] = [
+            ['text' => '🗑', 'callback_data' => 'fin_card_del_' . $i],
+            ['text' => $label, 'callback_data' => 'adm_noop'],
+        ];
+    }
+    if ($n < 10) {
+        $kb['inline_keyboard'][] = [['text' => '➕ افزودن کارت', 'callback_data' => 'fin_card_edit']];
+    }
+    $kb['inline_keyboard'][] = [['text' => '♻️ جایگزینی همه با یک کارت', 'callback_data' => 'fin_card_replace']];
+    $kb['inline_keyboard'][] = [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']];
+    return [$t, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
 /** نسخه 2.3.0: صفحه شیشهای تنظیم شبا */
@@ -3026,6 +3171,13 @@ function executePaymentMethod($from_id, $method_id, $message_id = null)
     if ($method_id === 'cart_to_offline') {
         $PaySetting = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
         $PaySetting = is_array($PaySetting) ? ($PaySetting['ValuePay'] ?? '') : '';
+        // نسخه 2.3.2: چند کارت → به نوبت
+        if (function_exists('botPickCardForUser')) {
+            $__picked = botPickCardForUser($from_id);
+            if ($__picked !== '') {
+                $PaySetting = $__picked;
+            }
+        }
         $amount_toman = intval($user['Processing_value'] ?? 0);
         $amount_rial = $amount_toman * 10;
         $Processing_value = number_format($amount_toman);

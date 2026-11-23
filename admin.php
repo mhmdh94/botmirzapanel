@@ -2437,6 +2437,21 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
     }
 }
 #-------------------------#
+# نسخه 2.3.2: انتخاب دلیل آماده رد رسید
+if (in_array($from_id, $admin_ids) && isset($datain) && preg_match('/^rjr_(\d+)$/', strval($datain), $__m_rjr)) {
+    $__rr_all = function_exists('botRejectReasons') ? botRejectReasons() : [];
+    $__rr_n = intval($__m_rjr[1]);
+    if (strval($user['step'] ?? '') !== 'reject-dec' || !isset($__rr_all[$__rr_n])) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این رسید قبلاً بررسی شده یا دلیل نامعتبر است.', 'show_alert' => true]);
+        return;
+    }
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '✅ ثبت شد', 'show_alert' => false]);
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, "✅ دلیل انتخاب شد:\n" . htmlspecialchars($__rr_all[$__rr_n], ENT_QUOTES, 'UTF-8'), json_encode(['inline_keyboard' => []]));
+    }
+    $text = $__rr_all[$__rr_n];
+    $datain = '';
+}
 if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     $id_order = $datagetr[1];
     $Payment_report = select("Payment_report", "*", "id_order", $id_order, "select");
@@ -2484,7 +2499,12 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     if (!empty($message_id)) {
         update("user", "Processing_value_tow", strval($message_id), "id", $from_id);
     }
-    sendmessage($from_id, $textbotlang['Admin']['Payment']['Reasonrejecting'], $backadmin, 'HTML');
+    // نسخه 2.3.2: دلیلهای آماده (یا تایپ دلیل دلخواه)
+    $__rr_kb = ['inline_keyboard' => []];
+    foreach ((function_exists('botRejectReasons') ? botRejectReasons() : []) as $__rr_i => $__rr_t) {
+        $__rr_kb['inline_keyboard'][] = [['text' => $__rr_t, 'callback_data' => 'rjr_' . $__rr_i]];
+    }
+    sendmessage($from_id, "❌ <b>دلیل رد رسید</b>\n\nیکی از دلیلهای زیر را بزنید، یا دلیل دلخواه را تایپ کنید:", $__rr_kb['inline_keyboard'] ? json_encode($__rr_kb, JSON_UNESCAPED_UNICODE) : $backadmin, 'HTML');
     step('reject-dec', $from_id);
     // رسید معمولاً عکس است — text خالی است و editMessageText خطای "message text is empty" می‌دهد
     $__rj_note = "❌ <b>در حال رد پرداخت</b>\nکد: <code>" . htmlspecialchars(strval($id_order), ENT_QUOTES, 'UTF-8') . "</code>\nمنتظر دلیل رد...";
@@ -3189,9 +3209,26 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     list($__st_t, $__st_k) = buildShebaSettingsPage();
     Editmessagetext($from_id, $message_id, $__st_t, $__st_k);
 } elseif ($datain == "fin_card_edit") {
+    // نسخه 2.3.2: افزودن کارت جدید به لیست
+    sendmessage($from_id, "➕ <b>افزودن کارت</b>\n\nشماره کارت ۱۶ رقمی را بفرستید.\nمیتوانید نام صاحب کارت و بانک را هم بنویسید.", $backadmin, 'HTML');
+    step('addcard', $from_id);
+} elseif ($datain == "fin_card_replace") {
     $__cd = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
-    sendmessage($from_id, sprintf($textbotlang['users']['moeny']['sendcart'], htmlspecialchars(strval(is_array($__cd) ? ($__cd['ValuePay'] ?? '') : ''), ENT_QUOTES, 'UTF-8')), $backadmin, 'HTML');
+    sendmessage($from_id, "♻️ <b>جایگزینی همه کارتها</b>\n\nهمه کارتهای فعلی حذف و فقط کارتی که میفرستید ثبت میشود.\n\n" . sprintf($textbotlang['users']['moeny']['sendcart'], htmlspecialchars(strval(is_array($__cd) ? ($__cd['ValuePay'] ?? '') : ''), ENT_QUOTES, 'UTF-8')), $backadmin, 'HTML');
     step('changecard', $from_id);
+} elseif (preg_match('/^fin_card_del_(\d+)$/', strval($datain), $__m_cdel)) {
+    $__cl = botGetCardList();
+    $__ci = intval($__m_cdel[1]);
+    if (!isset($__cl[$__ci])) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'کارت پیدا نشد؛ صفحه را تازه کنید.', 'show_alert' => true]);
+    } elseif (count($__cl) <= 1) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '⚠️ حداقل یک کارت لازم است. برای عوض کردن از «♻️ جایگزینی» استفاده کنید.', 'show_alert' => true]);
+    } else {
+        array_splice($__cl, $__ci, 1);
+        botSaveCardList($__cl);
+        list($__ct, $__ck) = buildCardSettingsPage();
+        Editmessagetext($from_id, $message_id, "🗑 کارت حذف شد.\n\n" . $__ct, $__ck);
+    }
 } elseif ($datain == "fin_sheba_edit") {
     $__sd = trim(strval(getPaySettingValue('ShebaDescription', '')));
     sendmessage($from_id, "🏦 شماره شبا را بفرستید (IR + ۲۴ رقم).\nمیتوانید نام صاحب حساب و بانک را هم بنویسید.\n\nمتن فعلی: " . ($__sd !== '' ? "<code>" . htmlspecialchars($__sd, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده'), $backadmin, 'HTML');
@@ -3212,7 +3249,11 @@ if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
         return;
     }
     $__card_txt = function_exists('botNormalizeDigits') ? botNormalizeDigits(trim($text)) : trim($text);
-    update("PaySetting", "ValuePay", $__card_txt, "NamePay", "CartDescription");
+    if (function_exists('botSaveCardList')) {
+        botSaveCardList([$__card_txt]);
+    } else {
+        update("PaySetting", "ValuePay", $__card_txt, "NamePay", "CartDescription");
+    }
     step('home', $from_id);
     $__cn = function_exists('botExtractCardNumber') ? botExtractCardNumber($__card_txt) : '';
     if ($__cn === '') {
@@ -3225,6 +3266,42 @@ if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
     $__fin_t = function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : '';
     $__fin_k = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : $CartManage;
     sendmessage($from_id, $textbotlang['Admin']['SettingPayment']['Savacard'] . $__cw . "\n\n" . $__fin_t, $__fin_k, 'HTML');
+}
+# نسخه 2.3.2: افزودن کارت به لیست
+if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'addcard' && empty($datain)) {
+    if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
+        step('home', $from_id);
+        return;
+    }
+    $__ac = (isset($text) && is_string($text)) ? botNormalizeDigits(trim($text)) : '';
+    $__acn = botExtractCardNumber($__ac);
+    if ($__acn === '') {
+        sendmessage($from_id, "❌ شماره کارت ۱۶ رقمی در متن پیدا نشد. دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    if (mb_strlen($__ac) > 300) {
+        sendmessage($from_id, "❌ متن خیلی طولانی است (حداکثر ۳۰۰ کاراکتر). دوباره بفرستید:", $backadmin, 'HTML');
+        return;
+    }
+    $__cl = botGetCardList();
+    foreach ($__cl as $__c) {
+        if (botExtractCardNumber($__c) === $__acn) {
+            sendmessage($from_id, "❌ این کارت قبلاً ثبت شده. کارت دیگری بفرستید:", $backadmin, 'HTML');
+            return;
+        }
+    }
+    if (count($__cl) >= 10) {
+        step('home', $from_id);
+        sendmessage($from_id, "❌ حداکثر ۱۰ کارت میشود ثبت کرد.", $backadmin, 'HTML');
+        return;
+    }
+    $__cl[] = $__ac;
+    botSaveCardList($__cl);
+    step('home', $from_id);
+    $__warn = botCardLuhnOk($__acn) ? '' : "\n⚠️ رقم کنترل این کارت درست نیست؛ احتمالاً یک رقم اشتباه است. اگر اشتباه است حذفش کنید.";
+    list($__ct, $__ck) = buildCardSettingsPage();
+    sendmessage($from_id, "✅ کارت <code>{$__acn}</code> اضافه شد." . $__warn . "\n\n" . $__ct, $__ck, 'HTML');
+    return;
 }
 # نسخه 2.3.0: ثبت شماره شبا
 if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'changesheba' && empty($datain)) {
@@ -4170,10 +4247,6 @@ if ($text == $textbotlang['users']['status']['manageService']) {
                 ['text' => $textbotlang['Admin']['category']['status'], 'callback_data' => "statuscategory"],
             ],
             [
-                ['text' => $status_copy_cart, 'callback_data' => "editstsuts-copycart-{$setting['copy_cart']}"],
-                ['text' => $textbotlang['users']['moeny']['copy_cart_status'], 'callback_data' => "copycart"],
-            ],
-            [
                 ['text' => $st_force_channel, 'callback_data' => "editstsuts-force_channel-{$setting['force_channel']}"],
                 ['text' => $textbotlang['Admin']['Status']['force_channel'], 'callback_data' => "force_channel"],
             ],
@@ -4517,10 +4590,6 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             [
                 ['text' => $statusv_category, 'callback_data' => "editstsuts-category-{$setting['statuscategory']}"],
                 ['text' => $textbotlang['Admin']['category']['status'], 'callback_data' => "statuscategory"],
-            ],
-            [
-                ['text' => $status_copy_cart, 'callback_data' => "editstsuts-copycart-{$setting['copy_cart']}"],
-                ['text' => $textbotlang['users']['moeny']['copy_cart_status'], 'callback_data' => "copycart"],
             ],
             [
                 ['text' => $st_force_channel, 'callback_data' => "editstsuts-force_channel-{$setting['force_channel']}"],

@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.3.1";
+$version = "2.3.2";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4313,6 +4313,14 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
         $pay_note = 'افزایش موجودی (مبلغ دلخواه)';
         if (!empty($caption)) {
             $pay_note .= "\n" . $caption;
+        }
+    }
+    // نسخه 2.3.2: وقتی چند کارت فعال است، کارتی که به این کاربر نشان داده شد
+    if ($Payment_Method === 'cart to cart' && function_exists('botGetCardShownForUser')) {
+        $__shown = botGetCardShownForUser($from_id);
+        $__shown_n = ($__shown !== '' && function_exists('botExtractCardNumber')) ? botExtractCardNumber($__shown) : '';
+        if ($__shown !== '') {
+            $pay_note .= "\n💳 کارت مقصد: <code>" . htmlspecialchars($__shown_n !== '' ? $__shown_n : mb_substr($__shown, 0, 60), ENT_QUOTES, 'UTF-8') . "</code>";
         }
     }
     // اگر تأیید خودکار کلی روشن است ولی برای این کاربر خاموش شده، زیر رسید به ادمین هشدار بده
