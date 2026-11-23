@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.5";
+$version = "2.2.6";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -927,7 +927,7 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     }
 }
 if ($datain == 'next_page') {
-    $numpage = select("invoice", "id_user", "id_user", $from_id, "count");
+    $numpage = (function_exists('botCountListedServices') ? botCountListedServices($from_id) : select("invoice", "id_user", "id_user", $from_id, "count"));
     $page = $user['pagenumber'];
     $items_per_page = 10;
     $sum = $user['pagenumber'] * $items_per_page;
@@ -1718,7 +1718,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $codeproduct = $dataget[1];
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
     $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product LIMIT 1");
@@ -1727,13 +1727,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->execute();
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($product == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
-    update("invoice", "name_product", $product['name_product'], "username", $user['Processing_value']);
-    update("invoice", "Service_time", $product['Service_time'], "username", $user['Processing_value']);
-    update("invoice", "Volume", $product['Volume_constraint'], "username", $user['Processing_value']);
-    update("invoice", "price_product", $product['price_product'], "username", $user['Processing_value']);
+    // نسخه 2.2.6: اطلاعات فاکتور فقط بعد از پرداخت موفق تمدید عوض میشود (نه هنگام انتخاب پلن)
     update("user", "Processing_value_one", $codeproduct, "id", $from_id);
     $keyboardextend = json_encode([
         'inline_keyboard' => [
@@ -1758,12 +1755,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     // پیام پیش‌فاکتور تمدید را حذف نکن — اگر موجودی کم باشد همان پیام باید به صفحه پرداخت تبدیل شود
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     if ($marzban_list_get == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
     $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product LIMIT 1");
@@ -1772,7 +1769,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->execute();
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($product == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
 
@@ -2011,6 +2008,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         update("invoice", "time_sell", $__ts_now, "id_invoice", $nameloc['id_invoice']);
         if (!empty($product['Service_time'])) {
             update("invoice", "Service_time", $product['Service_time'], "id_invoice", $nameloc['id_invoice']);
+        }
+        if (!empty($product['name_product'])) {
+            update("invoice", "name_product", $product['name_product'], "id_invoice", $nameloc['id_invoice']);
+        }
+        if (isset($product['price_product']) && $product['price_product'] !== '') {
+            update("invoice", "price_product", $product['price_product'], "id_invoice", $nameloc['id_invoice']);
         }
         if (!empty($product['Volume_constraint'])) {
             update("invoice", "Volume", $product['Volume_constraint'], "id_invoice", $nameloc['id_invoice']);

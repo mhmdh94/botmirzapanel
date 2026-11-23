@@ -2059,6 +2059,9 @@ function DirectPayment($order_id)
             update("invoice", "Service_time", $product['Service_time'], "username", $ext_username);
             update("invoice", "Volume", $product['Volume_constraint'], "username", $ext_username);
             update("invoice", "price_product", $product['price_product'], "username", $ext_username);
+            if (!empty($product['name_product'])) {
+                update("invoice", "name_product", $product['name_product'], "username", $ext_username);
+            }
             if (function_exists('resetSmartCronWarnings')) {
                 resetSmartCronWarnings($ext_username, $nameloc['Service_location']);
             }
@@ -2207,6 +2210,19 @@ function DirectPayment($order_id)
 }
 
 /** نسخه 2.2.4: خط «کسری» در پیام موجودی ناکافی */
+/** نسخه 2.2.6: تعداد سرویسهایی که در «سرویسهای من» نمایش داده میشوند (برای صفحهبندی) */
+function botCountListedServices($user_id)
+{
+    global $pdo;
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = :u AND (status = 'active' OR status = 'end_of_time' OR status = 'end_of_volume' OR status = 'sendedwarn')");
+        $st->execute([':u' => strval($user_id)]);
+        return intval($st->fetchColumn());
+    } catch (Throwable $e) {
+        return intval(select("invoice", "id_user", "id_user", $user_id, "count"));
+    }
+}
+
 function botShortfallLine($amount)
 {
     $amount = intval($amount);
