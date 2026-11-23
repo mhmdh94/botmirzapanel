@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.2.6";
+$version = "2.2.7";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -188,6 +188,10 @@ if (isset($text) && is_string($text) && function_exists('botAliasLegacyMenuText'
     && !(isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0)) {
     $text = botAliasLegacyMenuText($text, $datatextbot);
 }
+// نسخه 2.2.7: دکمه «سرویسهای من (N)»
+if (isset($text) && is_string($text) && function_exists('botStripServiceCount')) {
+    $text = botStripServiceCount($text, $datatextbot);
+}
 // نسخه 2.2.3: دکمه خرید زیر پیام اکانت تست — پیام تست (لینک) ویرایش نشود، منوی خرید در پیام جدید
 if (isset($datain) && $datain === 'buy_fromtest') {
     $datain = '';
@@ -200,6 +204,10 @@ if (isset($datain) && $datain === 'goto_buy') {
 } elseif (isset($datain) && $datain === 'goto_services') {
     $datain = '';
     $text = $datatextbot['text_Purchased_services'];
+} elseif (isset($datain) && $datain === 'goto_usertest') {
+    // نسخه 2.2.7: دکمه اکانت تست در «هنوز سرویسی ندارید»
+    $datain = '';
+    $text = $datatextbot['text_usertest'];
 }
 
 #----- ادمین در حال ویرایش متن / پاسخ به کاربر: منوی کاربر قورت ندهد -----

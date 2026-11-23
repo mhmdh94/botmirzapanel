@@ -832,7 +832,15 @@ if (!empty($row1)) {
     $keyboard_rows[] = $row1;
 }
 // ردیف: سرویس‌های من (+ افزایش موجودی در صورت فعال بودن واریز)
-$row_svc = [['text' => $datatextbot['text_Purchased_services']]];
+// نسخه 2.2.7: تعداد سرویسهای فعال کنار دکمه «سرویسهای من»
+$__svc_label = $datatextbot['text_Purchased_services'];
+if (isset($from_id) && intval($from_id) > 0 && function_exists('botCountActiveServices')) {
+    $__svc_n = botCountActiveServices($from_id);
+    if ($__svc_n > 0) {
+        $__svc_label .= " (" . $__svc_n . ")";
+    }
+}
+$row_svc = [['text' => $__svc_label]];
 $__dep_on = true;
 if (isset($setting['status_deposit']) && ($setting['status_deposit'] == '0' || $setting['status_deposit'] === 0)) {
     $__dep_on = false;
@@ -2220,6 +2228,50 @@ function botCountListedServices($user_id)
         return intval($st->fetchColumn());
     } catch (Throwable $e) {
         return intval(select("invoice", "id_user", "id_user", $user_id, "count"));
+    }
+}
+
+/** نسخه 2.2.7: تعداد سرویسهای فعال کاربر (برای دکمه منو) */
+function botCountActiveServices($user_id)
+{
+    global $pdo;
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = :u AND (status = 'active' OR status = 'sendedwarn')");
+        $st->execute([':u' => strval($user_id)]);
+        return intval($st->fetchColumn());
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/** نسخه 2.2.7: «🛍 سرویسهای من (3)» → متن اصلی دکمه، تا هندلرها درست کار کنند */
+function botStripServiceCount($text, $datatextbot)
+{
+    if (!is_string($text) || $text === '') {
+        return $text;
+    }
+    $base = strval($datatextbot['text_Purchased_services'] ?? '');
+    if ($base === '' || $text === $base) {
+        return $text;
+    }
+    if (strpos($text, $base) === 0 && preg_match('/^\s*\(\d+\)\s*$/u', substr($text, strlen($base)))) {
+        return $base;
+    }
+    return $text;
+}
+
+/** نسخه 2.2.7: آیا کاربر میتواند اکانت تست بگیرد (تست روشن + سهمیه > 0) */
+function botUserCanGetTest($user_id)
+{
+    try {
+        $st = select("setting", "*");
+        if (is_array($st) && isset($st['status_usertest']) && strval($st['status_usertest']) === '0') {
+            return false;
+        }
+        $u = select("user", "limit_usertest", "id", $user_id, "select");
+        return is_array($u) && intval($u['limit_usertest'] ?? 0) > 0;
+    } catch (Throwable $e) {
+        return false;
     }
 }
 
@@ -5875,6 +5927,15 @@ function emptyServicesKeyboard()
         // اگر خرید خاموش است دکمه را نگذار
     } else {
         $rows[] = [['text' => $buy_label, 'callback_data' => 'buy']];
+    }
+    // نسخه 2.2.7: اگر کاربر سهمیه تست دارد، دکمه اکانت تست هم باشد
+    global $from_id;
+    if (isset($from_id) && intval($from_id) > 0 && function_exists('botUserCanGetTest') && botUserCanGetTest($from_id)) {
+        $test_label = strval($datatextbot['text_usertest'] ?? '');
+        if ($test_label === '') {
+            $test_label = $textbotlang['users']['usertest']['usertestbtn'] ?? '🔑 اکانت تست';
+        }
+        $rows[] = [['text' => $test_label, 'callback_data' => 'goto_usertest']];
     }
     if (($setting['NotUser'] ?? '') == "1" || ($setting['NotUser'] ?? '') === 1) {
         $rows[] = [[
