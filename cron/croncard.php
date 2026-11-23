@@ -52,7 +52,8 @@ foreach ($datatxtbot as $item) {
         $datatextbot[$item['id_text']] = $item['text'];
     }
 }
-$stmt = $pdo->prepare("SELECT * FROM Payment_report WHERE payment_Status = 'waiting' AND Payment_Method = 'cart to cart'");
+// نسخه 2.3.1: تأیید خودکار شامل واریز به شبا هم میشود
+$stmt = $pdo->prepare("SELECT * FROM Payment_report WHERE payment_Status = 'waiting' AND Payment_Method IN ('cart to cart', 'sheba')");
 $stmt->execute();
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $since_start = time() - strtotime($row['time']);
