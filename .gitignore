@@ -4,3 +4,7 @@ cron/cast_last.json
 cron/info
 cron/users.json
 cron/smart_cron.last
+cron/daily_report.date
+cron/daily_users.json
+cron/watchdog.ts
+cron/watchdog_alert.ts

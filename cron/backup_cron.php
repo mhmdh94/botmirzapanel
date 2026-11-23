@@ -32,4 +32,7 @@ if (!function_exists('runDatabaseBackupAndSend')) {
 $res = runDatabaseBackupAndSend(null, false);
 if (empty($res['ok'])) {
     error_log('backup_cron: ' . strval($res['message'] ?? 'fail'));
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_tech_error', "🚨 <b>بکاپ خودکار ناموفق بود</b>\n\n" . htmlspecialchars(mb_substr(strval($res['message'] ?? 'خطای نامشخص'), 0, 500), ENT_QUOTES, 'UTF-8'));
+    }
 }

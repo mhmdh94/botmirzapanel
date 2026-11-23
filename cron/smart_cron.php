@@ -28,6 +28,14 @@ ensureSmartCronSettings();
 ensureSmartCronStateTable();
 // نسخه 2.4.3: زمان آخرین اجرا (برای نمایش در پنل)
 @file_put_contents(__DIR__ . '/smart_cron.last', strval(time()));
+// نسخه 2.4.4: خلاصه روزانه کانال گزارش
+if (function_exists('botDailySummaryTick')) {
+    try {
+        botDailySummaryTick();
+    } catch (Throwable $e) {
+        error_log('daily summary: ' . $e->getMessage());
+    }
+}
 
 // حذف خودکار فاکتورهای unpaid منقضی (TTL قابل تنظیم، پیش‌فرض ۴۵ دقیقه)
 if (function_exists('cleanupExpiredUnpaidInvoices')) {

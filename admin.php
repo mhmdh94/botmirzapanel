@@ -541,6 +541,7 @@ if (isset($datain) && preg_match('/^admadd_ok_(\d+)$/', strval($datain), $__m)) 
     } catch (Throwable $e) {
         error_log('add admin: ' . $e->getMessage());
     }
+    botAdminActionReport('افزودن ادمین', "🆔 ادمین جدید: <code>{$__aid}</code>");
     list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
     Editmessagetext($from_id, $message_id, "✅ ادمین <code>{$__aid}</code> اضافه شد.\n\n" . $__tx, $__kb);
     return;
@@ -554,6 +555,7 @@ if (isset($datain) && preg_match('/^adm_adm_delok_(\d+)$/', strval($datain), $__
     try {
         $pdo->prepare("DELETE FROM admin WHERE id_admin = ?")->execute([$__did]);
     } catch (Throwable $e) {}
+    botAdminActionReport('حذف ادمین', "🆔 ادمین حذفشده: <code>{$__did}</code>");
     list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
     Editmessagetext($from_id, $message_id, "✅ ادمین <code>{$__did}</code> حذف شد.\n\n" . $__tx, $__kb);
     return;
@@ -1312,6 +1314,10 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
     }
     file_put_contents('cron/users.json', json_encode(array_values($result)));
     file_put_contents('cron/info', json_encode($__bc, JSON_UNESCAPED_UNICODE));
+    if (function_exists('sendChannelReport')) {
+        $__tn = ['text' => 'متن', 'photo' => 'عکس', 'forward' => 'فوروارد'];
+        sendChannelReport('rpt_broadcast', "📨 <b>شروع پیام همگانی</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n📝 نوع: " . ($__tn[$__bc['type'] ?? 'text'] ?? 'متن') . "\n🎯 گروه: {$__labels[$__tg]}\n👥 گیرندهها: " . number_format($__bc['total']));
+    }
     Editmessagetext($from_id, $message_id, "✅ تأیید شد. گروه: <b>{$__labels[$__tg]}</b>", json_encode(['inline_keyboard' => []]));
 } elseif ($datain == "cancel_sendmessage") {
     // نسخه 2.4.2: توقف + ثبت گزارش (کرون بعد از توقف فایلها را دوباره نمیسازد)
@@ -1320,6 +1326,9 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
     @unlink('cron/users.json');
     if (is_array($__ci)) {
         botCastSaveLast($__ci, 'cancelled');
+        if (function_exists('sendChannelReport')) {
+            sendChannelReport('rpt_broadcast', "⏹ <b>پیام همگانی متوقف شد</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n👥 گیرندهها: " . number_format(intval($__ci['total'] ?? 0)) . "\n✅ ارسالشده: " . number_format(intval($__ci['sent'] ?? 0)) . " | ❌ ناموفق: " . number_format(intval($__ci['fail'] ?? 0)));
+        }
         $__tot = intval($__ci['total'] ?? 0);
         $__s = intval($__ci['sent'] ?? 0);
         $__f = intval($__ci['fail'] ?? 0);
@@ -2056,6 +2065,7 @@ if (in_array($from_id, $admin_ids) && preg_match('/^shop_ep_(price|vol|time|name
         global $pdo;
         try {
             $pdo->prepare("DELETE FROM product WHERE code_product = ?")->execute([$code]);
+            botAdminActionReport('حذف محصول', '📦 ' . htmlspecialchars(strval($p['name_product'] ?? '-'), ENT_QUOTES, 'UTF-8') . ' | 💵 ' . number_format(intval($p['price_product'] ?? 0)) . ' تومان | 📍 ' . htmlspecialchars(strval($p['Location'] ?? '-'), ENT_QUOTES, 'UTF-8'));
         } catch (Throwable $e) {
             error_log('shop del: ' . $e->getMessage());
         }
@@ -3389,6 +3399,7 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     if ($methodpay == "cart") {
         $value = ($status == "oncard") ? "offcard" : "oncard";
         update("PaySetting", "ValuePay", $value, "NamePay", "Cartstatus");
+        botAdminActionReport('درگاه کارت به کارت', 'وضعیت: <b>' . ($value === 'oncard' ? '✅ روشن' : '❌ خاموش') . '</b>');
     } elseif ($methodpay == "iranpay") {
         $value = ($status == "ondigi") ? "offdigi" : "ondigi";
         update("PaySetting", "ValuePay", $value, "NamePay", "digistatus");
@@ -3402,6 +3413,7 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
                 ensurePaySetting('shebastatus', 'offsheba');
             }
             update("PaySetting", "ValuePay", $value, "NamePay", "shebastatus");
+            botAdminActionReport('درگاه واریز به شبا', 'وضعیت: <b>' . ($value === 'onsheba' ? '✅ روشن' : '❌ خاموش') . '</b>');
         }
     }
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
@@ -3539,6 +3551,7 @@ if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'changeshe
     ensurePaySetting('ShebaDescription', '');
     ensurePaySetting('shebastatus', 'offsheba');
     update("PaySetting", "ValuePay", $__sh_txt, "NamePay", "ShebaDescription");
+    botAdminActionReport('تغییر شماره شبا', '🏦 شبا: <code>' . botMaskTail(function_exists('botExtractSheba') ? botExtractSheba($__sh_txt) : $__sh_txt) . '</code>');
     step('home', $from_id);
     $__on_now = strval(getPaySettingValue('shebastatus', 'offsheba')) === 'onsheba';
     sendmessage($from_id, "✅ شماره شبا ذخیره شد: <code>{$__sh}</code>" . ($__on_now ? '' : "\n\nℹ️ واریز به شبا هنوز <b>خاموش</b> است. از ردیف «🏦 واریز به شبا» روشنش کنید.") . "\n\n" . buildFinanceSummaryText(), buildFinanceKeyboard(), 'HTML');
@@ -4584,6 +4597,9 @@ if ($text == $textbotlang['users']['status']['manageService']) {
             $cronCommand = function_exists('getAutoCartCronCommand') ? getAutoCartCronCommand() : "*/4 * * * * curl https://$domainhosts/cron/croncard.php";
             sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_card'], $cronCommand), null, 'HTML');
         }
+    }
+    if (function_exists('botFeatureToggleReport') && isset($type)) {
+        botFeatureToggleReport(strval($type), isset($valuenew) ? strval($valuenew) : null);
     }
     list($__ftx, $__fkb) = botFeaturesPage();
     Editmessagetext($from_id, $message_id, $__ftx, $__fkb);

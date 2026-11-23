@@ -79,6 +79,9 @@ if ($done) {
     if (function_exists('botCastSaveLast')) {
         botCastSaveLast($info, 'done');
     }
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_broadcast', "✅ <b>پیام همگانی تمام شد</b>\n\n🎯 گروه: " . htmlspecialchars(strval($info['target_label'] ?? 'همه کاربران'), ENT_QUOTES, 'UTF-8') . "\n👥 گیرندهها: " . number_format($total) . "\n✅ ارسالشده: " . number_format($sent) . " | ❌ ناموفق: " . number_format($fail));
+    }
     @unlink('info');
     @unlink('users.json');
 }

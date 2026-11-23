@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.4.3";
+$version = "2.4.4";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -86,6 +86,10 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
     }
     foreach ($admin_ids as $admin) {
         sendmessage($admin, $newuser, $Response, 'html');
+    }
+    // نسخه 2.4.4: گزارش کاربر جدید در کانال (کلید rpt_newuser، پیشفرض خاموش)
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_newuser', $newuser);
     }
     // گزارش استارت کاربر جدید در کانال گزارش ارسال نمی‌شود (فقط به ادمین)
 }
@@ -573,6 +577,13 @@ if (($setting['Bot_Status'] ?? '') == "✅  ربات روشن است" && !in_arr
         sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعالسازی به منوی تنظیمات عمومی > روشن/خاموش قابلیتها بروید تا رباتتان فعال شود.", null, 'html');
     }
     return;
+}
+// نسخه 2.4.4: هشدار اجرا نشدن کرون (حداکثر هر ۳۰ دقیقه)
+if (function_exists('botWatchdogTick')) {
+    try {
+        botWatchdogTick();
+    } catch (Throwable $e) {
+    }
 }
 #-----------Channel------------#
 $force_channel_on = !isset($setting['force_channel']) || $setting['force_channel'] == '1' || $setting['force_channel'] === 1;

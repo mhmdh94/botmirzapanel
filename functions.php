@@ -2547,6 +2547,9 @@ function botSaveCardList(array $list)
         ensurePaySetting('card_list', '');
     }
     update("PaySetting", "ValuePay", json_encode(array_values($clean), JSON_UNESCAPED_UNICODE), "NamePay", "card_list");
+    if (function_exists('botAdminActionReport')) {
+        botAdminActionReport('تغییر کارتهای مقصد', '💳 تعداد کارت: <b>' . count($clean) . '</b>' . ($clean ? "\n" . implode('، ', array_map('botMaskTail', $clean)) : ''));
+    }
     if ($clean) {
         update("PaySetting", "ValuePay", $clean[0], "NamePay", "CartDescription");
     }
@@ -5235,10 +5238,8 @@ function reportChannelTypes()
         'rpt_reject' => '❌ رد رسید',
         'rpt_remove' => '🗑 حذف سرویس + بازگشت وجه',
         'rpt_remove_user' => '🗑 حذف سرویس توسط کاربر',
-        'rpt_remove_cron' => '⏰ حذف سرویس (کرون)',
         'rpt_emergency' => '🚨 تمدید اضطراری',
         'rpt_admin_balance' => '💰 تغییر موجودی توسط ادمین',
-        'rpt_new_user' => '👤 کاربر جدید / استارت',
         'rpt_smart_debug' => '🛠 دیباگ کرون هوشمند',
         'rpt_block' => '🔒 مسدودسازی کاربر',
         'rpt_unblock' => '🔓 رفع مسدودی',
@@ -5246,15 +5247,179 @@ function reportChannelTypes()
         'rpt_create_error' => '⚠️ خطای ساخت سرویس',
         'rpt_reseller_warn' => '⚠️ هشدار حجم پنل ریسلر',
         'rpt_reseller_volume' => '📦 خرید حجم پنل ریسلر',
+        'rpt_newuser' => '👤 کاربر جدید (پیشفرض خاموش)',
+        'rpt_admin_action' => '🛡 تغییرات حساس ادمین',
+        'rpt_broadcast' => '📨 پیام همگانی',
+        'rpt_tech_error' => '🚨 خطاهای فنی',
+        'rpt_daily' => '📊 خلاصه روزانه',
     ];
 }
 
 function ensureReportChannelSettings()
 {
+    // نسخه 2.4.4: فقط یکبار در هر درخواست + پیشفرض جدا برای کلیدهای پرحجم
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    $defaults = ['rpt_newuser' => '0'];
     foreach (array_keys(reportChannelTypes()) as $k) {
         if (function_exists('ensurePaySetting')) {
-            ensurePaySetting($k, '1');
+            ensurePaySetting($k, $defaults[$k] ?? '1');
         }
+    }
+}
+
+/** نسخه 2.4.4: ارسال واقعی گزارش + زمان + ثبت خطا */
+function botReportSend($key, $text)
+{
+    static $ch = null;
+    if ($ch === null) {
+        $st = select("setting", "*", null, null, "select");
+        $ch = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
+    }
+    if ($ch === '' || $ch === '0') {
+        return false;
+    }
+    $text = strval($text);
+    if (mb_strpos($text, '🕐') === false) {
+        $text .= "\n\n🕐 " . (function_exists('jdate') ? jdate('Y/m/d H:i') : date('Y-m-d H:i'));
+    }
+    if (mb_strlen($text) > 4000) {
+        $text = mb_substr($text, 0, 3990) . '…';
+    }
+    $r = telegram('sendmessage', ['chat_id' => $ch, 'text' => $text, 'parse_mode' => 'HTML', 'disable_web_page_preview' => true]);
+    if (is_array($r) && !empty($r['ok'])) {
+        return true;
+    }
+    $d = is_array($r) ? strval($r['description'] ?? '') : 'no response';
+    error_log('channel report fail [' . $key . ']: ' . $d);
+    if (stripos($d, "can't parse") !== false) {
+        // HTML خراب: نسخه ساده ارسال شود تا گزارش گم نشود
+        $r2 = telegram('sendmessage', ['chat_id' => $ch, 'text' => strip_tags($text), 'disable_web_page_preview' => true]);
+        return is_array($r2) && !empty($r2['ok']);
+    }
+    return false;
+}
+
+/** نسخه 2.4.4: گزارش کارهای حساس ادمین */
+function botAdminActionReport($title, $body = '')
+{
+    global $from_id, $username;
+    if (!function_exists('sendChannelReport')) {
+        return;
+    }
+    $un = trim(strval($username ?? ''));
+    $u = ($un !== '' && $un !== 'none') ? ' (@' . htmlspecialchars($un, ENT_QUOTES, 'UTF-8') . ')' : '';
+    sendChannelReport('rpt_admin_action', "🛡 <b>" . $title . "</b>\n\n👨‍💼 ادمین: <code>" . htmlspecialchars(strval($from_id ?? '-'), ENT_QUOTES, 'UTF-8') . "</code>{$u}" . ($body !== '' ? "\n" . $body : ''));
+}
+
+/** نسخه 2.4.4: گزارش تغییر قابلیتهای حساس */
+function botFeatureToggleReport($type, $newval)
+{
+    $sens = ['statusbot', 'status_buy', 'status_extend', 'status_deposit', 'status_extra_volume', 'force_channel', 'verify', 'get_number', 'iran_number', 'roll_Status', 'status_usertest'];
+    if (!in_array(strval($type), $sens, true) || ($newval !== '0' && $newval !== '1')) {
+        return;
+    }
+    $label = $type;
+    if (function_exists('botFeatureGroups')) {
+        foreach (botFeatureGroups() as $g) {
+            foreach ($g[1] as $f) {
+                if ($f[0] === $type) {
+                    $label = $f[3];
+                }
+            }
+        }
+    }
+    botAdminActionReport('تغییر قابلیت', $label . ': <b>' . ($newval === '1' ? '✅ روشن' : '❌ خاموش') . '</b>');
+}
+
+/** نسخه 2.4.4: ۴ رقم آخر کارت/شبا برای گزارش */
+function botMaskTail($t)
+{
+    $d = preg_replace('/\D/', '', botNormalizeDigits(strval($t)));
+    return strlen($d) >= 4 ? '…' . substr($d, -4) : '-';
+}
+
+/** نسخه 2.4.4: هشدار اجرا نشدن کرون هوشمند (از وبهوک، حداکثر هر ۳۰ دقیقه بررسی) */
+function botWatchdogTick()
+{
+    $dir = __DIR__ . '/cron';
+    $tf = $dir . '/watchdog.ts';
+    if (is_file($tf) && (time() - intval(@file_get_contents($tf))) < 1800) {
+        return;
+    }
+    @file_put_contents($tf, strval(time()));
+    $last = intval(@file_get_contents($dir . '/smart_cron.last'));
+    if ($last <= 0 || (time() - $last) < 1200) {
+        return;
+    }
+    $af = $dir . '/watchdog_alert.ts';
+    if (is_file($af) && (time() - intval(@file_get_contents($af))) < 21600) {
+        return;
+    }
+    @file_put_contents($af, strval(time()));
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_tech_error', "🚨 <b>کرون هوشمند اجرا نمیشود</b>\n\nآخرین اجرا: " . intval((time() - $last) / 60) . " دقیقه پیش\nاخطار حجم/زمان و حذف فاکتورهای پرداختنشده انجام نمیشود.\nکرون سرور را بررسی کنید (تنظیمات ← کرون ← «📋 دستور کرون سیستم»).");
+    }
+}
+
+/** نسخه 2.4.4: خلاصه روزانه (از کرون هوشمند، ۲۳:۵۵ به بعد، روزی یکبار) */
+function botDailySummaryTick()
+{
+    global $pdo;
+    try {
+        $tz = new DateTimeZone('Asia/Tehran');
+        $now = new DateTime('now', $tz);
+    } catch (Throwable $e) {
+        return;
+    }
+    if (intval($now->format('H')) !== 23 || intval($now->format('i')) < 55) {
+        return;
+    }
+    $dir = __DIR__ . '/cron';
+    $today = $now->format('Y-m-d');
+    $df = $dir . '/daily_report.date';
+    if (trim(strval(@file_get_contents($df))) === $today) {
+        return;
+    }
+    @file_put_contents($df, $today);
+    $day0 = (clone $now)->setTime(0, 0, 0)->getTimestamp() - 1;
+    $mon0 = (clone $now)->modify('first day of this month')->setTime(0, 0, 0)->getTimestamp() - 1;
+    $sd = ['cnt' => 0, 'sum' => 0];
+    $sm = ['cnt' => 0, 'sum' => 0];
+    try {
+        if (function_exists('salesLedgerSum')) {
+            $sd = salesLedgerSum($day0);
+            $sm = salesLedgerSum($mon0);
+        }
+    } catch (Throwable $e) {
+    }
+    $users = botAdmCount("SELECT COUNT(*) FROM user");
+    $uf = $dir . '/daily_users.json';
+    $prev = json_decode(strval(@file_get_contents($uf)), true);
+    $new_line = (is_array($prev) && isset($prev['total'])) ? number_format(max(0, $users - intval($prev['total']))) : '— (از فردا محاسبه میشود)';
+    @file_put_contents($uf, json_encode(['date' => $today, 'total' => $users]));
+    $wait_c = 0;
+    $wait_s = 0;
+    try {
+        $r = $pdo->query("SELECT COUNT(*) AS c, COALESCE(SUM(CAST(price AS UNSIGNED)),0) AS s FROM Payment_report WHERE payment_Status = 'waiting'")->fetch(PDO::FETCH_ASSOC);
+        $wait_c = intval($r['c'] ?? 0);
+        $wait_s = intval($r['s'] ?? 0);
+    } catch (Throwable $e) {
+    }
+    $act = botAdmCount("SELECT COUNT(*) FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'");
+    $bal = botAdmCount("SELECT COALESCE(SUM(CAST(Balance AS SIGNED)),0) FROM user");
+    $title = function_exists('jdate') ? jdate('Y/m/d') : $today;
+    if (function_exists('sendChannelReport')) {
+        sendChannelReport('rpt_daily', "📊 <b>خلاصه روز {$title}</b>\n\n"
+            . "🛒 فروش امروز: <b>" . number_format(intval($sd['cnt'] ?? 0)) . "</b> عدد | <b>" . number_format(intval($sd['sum'] ?? 0)) . "</b> تومان\n"
+            . "📅 فروش این ماه: <b>" . number_format(intval($sm['cnt'] ?? 0)) . "</b> عدد | <b>" . number_format(intval($sm['sum'] ?? 0)) . "</b> تومان\n"
+            . "👤 کاربران جدید امروز: <b>{$new_line}</b> (کل: " . number_format($users) . ")\n"
+            . "📦 سرویس فعال: <b>" . number_format($act) . "</b>\n"
+            . "🧾 رسید در انتظار: <b>" . number_format($wait_c) . "</b> (" . number_format($wait_s) . " تومان)\n"
+            . "👛 موجودی کیف پول کاربران: <b>" . number_format($bal) . "</b> تومان");
     }
 }
 
@@ -5819,7 +5984,7 @@ function sendChannelReport($key, $text)
     if (!$setting || empty($setting['Channel_Report'])) {
         return;
     }
-    sendmessage($setting['Channel_Report'], $text, null, 'HTML');
+    botReportSend($key, $text);
 }
 
 /** ارسال گزارش‌های به‌تعویق‌افتاده خرید بعد از پیام تأیید رسید */
@@ -5844,7 +6009,9 @@ function flushDeferredChannelReports()
         if (!$setting || empty($setting['Channel_Report'])) {
             continue;
         }
-        sendmessage($setting['Channel_Report'], $item['text'], null, 'HTML');
+        if (isReportChannelEnabled(strval($item['key'] ?? ''))) {
+            botReportSend(strval($item['key'] ?? ''), $item['text']);
+        }
     }
 }
 
