@@ -813,7 +813,9 @@ $textbotlang['Admin']['turnoff'] = "❌ خاموش";
 
 
 
-$textbotlang['Admin']['channel']['changechannel'] = "آیدی کانال عضویت اجباری را بدون @ بفرستید.\nکانال فعلی: @";
+$textbotlang['Admin']['channel']['changechannel'] = "✍️ <b>آیدی کانال عضویت اجباری را بدون @ بفرستید</b>
+
+کانال فعلی: @";
 $textbotlang['Admin']['channel']['setchannel'] = "🔰 کانال با موفقیت تنظیم گردید.
 ❌❌  برای کار کردن  عضویت اجباری ربات باید ادمین کانال باشد.";
 $textbotlang['Admin']['channel']['setting'] = "📯 تنظیمات کانال";
@@ -855,7 +857,7 @@ $textbotlang['Admin']['Statistics']['info'] = "📊 <b>آمار ربات</b>
 
 
 
-$textbotlang['Admin']['manageadmin']['getid'] = "آیدی عددی ادمین را بفرستید:";
+$textbotlang['Admin']['manageadmin']['getid'] = "✍️ <b>آیدی عددی ادمین را بفرستید</b>";
 $textbotlang['Admin']['manageadmin']['addadminset'] ="🥳 ادمین با موفقیت اضافه شد";
 $textbotlang['Admin']['manageadmin']['setrule'] ="⭕️ سطح دسترسی ادمین را ارسال کنید
 سطح دسترسی administrator به تمامی بخش ها دسترسی دارد
@@ -872,7 +874,7 @@ $textbotlang['Admin']['manageusertest']['getidlimit'] = " ⚜️ آیدی عدد
 توضیحات: در این بخش می‌توانید محدودیت ساخت اکانت تست را برای کاربر تغییر دهید. بطور پیش‌فرض محدودیت ساخت عدد 1 است.";
 $textbotlang['Admin']['getlimitusertest']['getid'] = "آیدی عددی دریافت شد لطفاً تعداد ساخت اکانت تست را ارسال کنید";
 $textbotlang['Admin']['getlimitusertest']['setlimit'] = "محدودیت برای کاربر تنظیم گردید.";
-$textbotlang['Admin']['getlimitusertest']['limitall'] = "تعداد ساخت اکانت تست را وارد نمایید.";
+$textbotlang['Admin']['getlimitusertest']['limitall'] = "📌 <b>تعداد ساخت اکانت تست را وارد نمایید</b>";
 $textbotlang['Admin']['getlimitusertest']['setlimitall'] = "محدودیت ساخت اکانت برای تمام کاربران تنظیم شد";
 $textbotlang['Admin']['getlimitusertest']['setlimitallbtn'] = "➕ محدودیت ساخت اکانت تست برای همه";
 $textbotlang['Admin']['getlimitusertest']['setlimitbtn'] = "➕ محدودیت ساخت اکانت تست";
@@ -888,11 +890,11 @@ $textbotlang['Admin']['sumporoduct'] = "🛍 جمع کل سفارشات";
 $textbotlang['Admin']['accept'] = "تایید";
 
 $textbotlang['Admin']['managepanel']['selectpanel'] = "پنل خود را انتخاب کنید";
-$textbotlang['Admin']['managepanel']['paneldeactive'] = "❌ پنل در حال حاضر فعال نمی‌باشد.";
+$textbotlang['Admin']['managepanel']['paneldeactive'] = "❌ <b>پنل در حال حاضر فعال نمی‌باشد</b>";
 $textbotlang['Admin']['managepanel']['notsetlinksub'] = "❌ پنل زیر فعال نیست. برای فعال‌سازی باید حتما لینک ساب را از پنل ثنایی فعال و داخل ربات تنظیم کنید سپس در صورتی که می‌خواهید کانفیگ دهید یا لینک ساب از مدیریت پنل می‌توانید تنظیم نمایید.
 نام پنل : %s";
-$textbotlang['Admin']['managepanel']['connectx-ui'] = "✅ پنل متصل است";
-$textbotlang['Admin']['managepanel']['notconnect'] = "❌ پنل متصل نیست";
+$textbotlang['Admin']['managepanel']['connectx-ui'] = "✅ <b>پنل متصل است</b>";
+$textbotlang['Admin']['managepanel']['notconnect'] = "❌ <b>پنل متصل نیست</b>";
 $textbotlang['Admin']['managepanel']['errorstatuspanel'] = "امکان اتصال به پنل  وجود ندارد
             
 ⭕️ در صورت وارد کردن دامنه طبق شرایط اعلام شده  این خطا بدلیل  بسته بودن خروجی پورت پنل روی هاست ربات اتفاق می افتد.
@@ -903,32 +905,36 @@ $textbotlang['Admin']['managepanel']['errorstatuspanel'] = "امکان اتصا�
 $textbotlang['Admin']['managepanel']['addpanelname']= "برای اضافه کردن پنل  به ربات ابتدا یک نام برای پنل خود ارسال کنید
                 
 ⚠️ توجه: نام پنل نامی است که  در هنگام انجام عملیات جستجو  نشان داده می‌شود.";
-$textbotlang['Admin']['managepanel']['addpanelurl'] = "🔗 نام پنل ذخیره شد حالا آدرس پنل خود ارسال کنید
-    ⚠️ توجه:
-    🔸 آدرس پنل باید بدون dashboard ارسال شود.
-    🔹 در صورتی که پورت پنل 443 است پورت را نباید وارد کنید.  ( گاهی حتما با پورت باید وارد کنید)
-    🔸 آخر آدرس نباید / داشته باشد
-    🔹 در صورت وارد کردن آی‌پی حتما http یا https باید داشته باشد";
-$textbotlang['Admin']['managepanel']['Invalid-domain'] = "🔗 آدرس دامنه نامعتبر است";
-$textbotlang['Admin']['managepanel']['usernameset'] ="👤 آدرس پنل ذخیره شد حالا نام کاربری  را ارسال کنید";
-$textbotlang['Admin']['managepanel']['getpassword'] = "🔑  رمز عبور پنل  خود را وارد نمایید";
-$textbotlang['Admin']['managepanel']['addedpanel'] = "تبریک پنل شما با موفقیت اضافه شد";
+$textbotlang['Admin']['managepanel']['addpanelurl'] = "✅ <b>نام پنل ذخیره شد</b>
+
+حالا آدرس پنل خود را ارسال کنید
+⚠️ توجه:
+🔸 آدرس پنل باید بدون dashboard ارسال شود.
+🔹 در صورتی که پورت پنل 443 است پورت را نباید وارد کنید. ( گاهی حتما با پورت باید وارد کنید)
+🔸 آخر آدرس نباید / داشته باشد
+🔹 در صورت وارد کردن آی‌پی حتما http یا https باید داشته باشد";
+$textbotlang['Admin']['managepanel']['Invalid-domain'] = "🔗 <b>آدرس دامنه نامعتبر است</b>";
+$textbotlang['Admin']['managepanel']['usernameset'] ="✅ <b>آدرس پنل ذخیره شد</b>
+
+حالا نام کاربری را ارسال کنید";
+$textbotlang['Admin']['managepanel']['getpassword'] = "🔑 <b>رمز عبور پنل خود را وارد نمایید</b>";
+$textbotlang['Admin']['managepanel']['addedpanel'] = "✅ <b>تبریک پنل شما با موفقیت اضافه شد</b>";
 $textbotlang['Admin']['managepanel']['GetRemoveNamePanel'] = "پنلی که می‌خواهید حذف کنید را انتخاب کنید.";
 $textbotlang['Admin']['managepanel']['RemovedPanel'] = "پنل با موفقیت حذف شد";
 $textbotlang['Admin']['managepanel']['nullpanel'] = "⭕️ موقعیتی یافت نشد برای رفع مشکل با پشتیبانی در ارتباط باشید";
 $textbotlang['Admin']['managepanel']['nullpaneladmin'] = "پنل تعریف نشده است ابتدا پنل را تعریف کنید سپس محصول اضافه کنید";
-$textbotlang['Admin']['managepanel']['getloc'] = "برای ویرایش پنل نام پنل را ارسال کنید";
-$textbotlang['Admin']['managepanel']['GetNameNew'] = "نام جدید پنل را  ارسال کنید";
+$textbotlang['Admin']['managepanel']['getloc'] = "✍️ <b>برای ویرایش پنل نام پنل را ارسال کنید</b>";
+$textbotlang['Admin']['managepanel']['GetNameNew'] = "✍️ <b>نام جدید پنل را ارسال کنید</b>";
 $textbotlang['Admin']['managepanel']['ChangedNmaePanel'] = "✅ نام پنل با موفقیت تغییر کرد.";
-$textbotlang['Admin']['managepanel']['geturlnew'] = " آدرس جدید پنل را  ارسال کنید";
+$textbotlang['Admin']['managepanel']['geturlnew'] = "✍️ <b>آدرس جدید پنل را ارسال کنید</b>";
 $textbotlang['Admin']['managepanel']['ChangedurlPanel'] = "✅ آدرس پنل با موفقیت تغییر کرد.";
-$textbotlang['Admin']['managepanel']['Repeatpanel'] = "❌ نام پنل از قبل ثبت شده دوباره نمی‌توانید ثبت کنید";
-$textbotlang['Admin']['managepanel']['customnamesend'] = "متن دلخواه خود را ارسال کنید";
-$textbotlang['Admin']['managepanel']['invalidname'] = "نام نامعتبر است";
+$textbotlang['Admin']['managepanel']['Repeatpanel'] = "❌ <b>نام پنل از قبل ثبت شده دوباره نمی‌توانید ثبت کنید</b>";
+$textbotlang['Admin']['managepanel']['customnamesend'] = "✍️ <b>متن دلخواه خود را ارسال کنید</b>";
+$textbotlang['Admin']['managepanel']['invalidname'] = "❌ <b>نام نامعتبر است</b>";
 $textbotlang['Admin']['managepanel']['savedname'] = "✅ نام  با موفقیت ذخیره شد";
-$textbotlang['Admin']['managepanel']['getusernamenew'] = " نام کاربری جدید پنل را  ارسال کنید";
+$textbotlang['Admin']['managepanel']['getusernamenew'] = "✍️ <b>نام کاربری جدید پنل را ارسال کنید</b>";
 $textbotlang['Admin']['managepanel']['ChangedusernamePanel'] = "✅ نام کاربری پنل با موفقیت تغییر کرد.";
-$textbotlang['Admin']['managepanel']['getpasswordnew'] = "رمز عبور جدید پنل را ارسال کنید";
+$textbotlang['Admin']['managepanel']['getpasswordnew'] = "✍️ <b>رمز عبور جدید پنل را ارسال کنید</b>";
 $textbotlang['Admin']['managepanel']['ChangedpasswordPanel'] = "✅ رمز عبور پنل با موفقیت تغییر کرد.";
 $textbotlang['Admin']['managepanel']['btnshowconnect'] = "🔌 وضعیت اتصال پنل";
 $textbotlang['Admin']['managepanel']['show_groups'] = "📂 گروه‌های پنل";
@@ -951,29 +957,35 @@ $textbotlang['Admin']['managepanel']['selecttypepanel'] = "📌 نوع پنل ر
     
 ⚠️ در صورت انتخاب پنل ثنایی پس از اضافه کردن پنل به بخش ویرایش پنل > تنظیم شناسه اینباند رفته و شناسه اینباند را ثبت کنید";
 $textbotlang['Admin']['managepanel']['settoken'] = "📌 توکن  را از پنل s-ui یا wgdashboard منوی ادمین ساخته و ارسال نمایید.";
-$textbotlang['Admin']['managepanel']['notex-ui'] = "📌 نکات بعد اضافه کردن پنل :‌
+$textbotlang['Admin']['managepanel']['notex-ui'] = "📌 <b>نکات بعد اضافه کردن پنل :‌</b>
 
-۱ - از مدیریت پنل > تنظیم شناسه اینباند  شناسه اینباندی که می‌خواهید ساخته شود را تنظیم نمایید";
-$textbotlang['Admin']['managepanel']['notemarzban_inbound'] = "📌 نکات بعد از افزودن پنل مرزبان:\n1) از مدیریت پنل، «تنظیم پروتکل و اینباند» را بزنید.\n2) یک یوزر نمونه در پنل بسازید و نامش را بفرستید تا اینباند/پروتکل ذخیره شود.\n3) تست اتصال را بزنید.";
-$textbotlang['Admin']['managepanel']['notemarzban'] = "📌 نکات بعد اضافه کردن پنل پاسارگارد:
+۱ - از مدیریت پنل > تنظیم شناسه اینباند شناسه اینباندی که می‌خواهید ساخته شود را تنظیم نمایید";
+$textbotlang['Admin']['managepanel']['notemarzban_inbound'] = "📌 <b>نکات بعد از افزودن پنل مرزبان</b>
+
+1) از مدیریت پنل، «تنظیم پروتکل و اینباند» را بزنید.
+2) یک یوزر نمونه در پنل بسازید و نامش را بفرستید تا اینباند/پروتکل ذخیره شود.
+3) تست اتصال را بزنید.";
+$textbotlang['Admin']['managepanel']['notemarzban'] = "📌 <b>نکات بعد اضافه کردن پنل پاسارگارد</b>
 
 ۱) از «وضعیت اتصال پنل» اتصال و گروه‌ها را چک کنید.
 ۲) اینباند/پروتکل لازم نیست — از گروه‌های پنل خوانده می‌شود.
 ۳) روش ساخت نام کاربری را در مدیریت پنل تنظیم کنید.";
-$textbotlang['Admin']['managepanel']['wgdashboard'] = "❌ نکته :
-برای فعال‌سازی پنل باید به منوی مدیریت پنل  رفته و گزینه های 
+$textbotlang['Admin']['managepanel']['wgdashboard'] = "❌ <b>نکته</b>
+
+برای فعال‌سازی پنل باید به منوی مدیریت پنل رفته و گزینه های
 منوی تنظیم شناسه اینباند رفته و نام کانفیگ را تنظیم نمایید در غیراینصورت ربات هیچ کانفیگی نمی‌سازد";
 $textbotlang['Admin']['managepanel']['showpanelbtn'] = "👁‍🗨 وضعیت نمایش پنل";
-$textbotlang['Admin']['managepanel']['mikrotik'] = "❌ نکات :
+$textbotlang['Admin']['managepanel']['mikrotik'] = "❌ <b>نکات</b>
+
 ۱ - به مدیریت پنل > نام گروه رفته و نام گروهی که می‌خواهید بسته از آن ساخته شود را ارسال کنید.";
 $textbotlang['Admin']['managepanel']['showpaneltestbtn'] = "🎁 وضعیت اکانت تست";
 $textbotlang['Admin']['managepanel']['showpaneltestdec'] = "📌 در این بخش می‌توانید مشخص نمایید  که پنل در بخش خرید برای کاربر در دسترس باشد یا خیر";
 $textbotlang['Admin']['managepanel']['showpaneldec'] = "📌 در این بخش می‌توانید مشخص نمایید  که پنل در بخش اکانت تس برای کاربر در دسترس باشد یا خیر در صورت روشن کردن این قابلیت باید وضعیت نمایش پنل را خاموش کنید";
-$textbotlang['Admin']['managepanel']['offpanel'] = "خاموش گردید.";
-$textbotlang['Admin']['managepanel']['onpanel'] = "روشن گردید.";
+$textbotlang['Admin']['managepanel']['offpanel'] = "📌 <b>خاموش گردید</b>";
+$textbotlang['Admin']['managepanel']['onpanel'] = "📌 <b>روشن گردید</b>";
 $textbotlang['Admin']['managepanel']['sublinkstatus'] = "🔗 ارسال لینک سابسکرایبشن";
 $textbotlang['Admin']['managepanel']['configstatus'] = "⚙️ارسال کانفیگ";
-$textbotlang['Admin']['managepanel']['checkoffconfig'] = "ابتدا  ارسال کانفیگ را خاموش کنید";
+$textbotlang['Admin']['managepanel']['checkoffconfig'] = "📌 <b>ابتدا ارسال کانفیگ را خاموش کنید</b>";
 $textbotlang['Admin']['managepanel']['methodusername'] = "💡 روش ساخت نام کاربری";
 $textbotlang['Admin']['managepanel']['decmthodusername'] = "⭕️ روش ساخت نام کاربری برای اکانت ها را از دکمه زیر انتخاب نمایید.
     
@@ -988,21 +1000,21 @@ $textbotlang['Admin']['managepanel']['keyboardpanel']['editinound'] = "💎 تن
 $textbotlang['Admin']['managepanel']['keyboardpanel']['getidinbound'] = "📌 شناسه اینباندی که می‌خواهید کانفیگ از آن ساخته شود را ارسال نمایید.
 
 ❌ در صورتی که پنل wgdashboard هستید باید نام کانفیگ را ارسال کنید";
-$textbotlang['Admin']['managepanel']['keyboardpanel']['getgroup'] = "📌 نام گروه را ارسال کنید";
+$textbotlang['Admin']['managepanel']['keyboardpanel']['getgroup'] = "📌 <b>نام گروه را ارسال کنید</b>";
 $textbotlang['Admin']['managepanel']['keyboardpanel']['setinbound'] = "✅ شناسه اینباند با موفقیت ذخیره گردید";
 $textbotlang['Admin']['managepanel']['keyboardpanel']['linksub'] = "🔗 دامنه لینک ساب";
 $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel'] = "❌ حذف پنل";
 $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume'] = "➕ تنظیم قیمت حجم اضافه";
 $textbotlang['Admin']['managepanel']['keyboardpanel']['on_hold_status'] = "⏳ قابلیت اولین اتصال";
-$textbotlang['Admin']['managepanel']['keyboardpanel']['usernotfount'] = "کاربر در پنل وجود ندارد";
-$textbotlang['Admin']['managepanel']['setsetting'] = "✅ اطلاعات با موفقیت تنظیم گردید";
+$textbotlang['Admin']['managepanel']['keyboardpanel']['usernotfount'] = "❌ <b>کاربر در پنل وجود ندارد</b>";
+$textbotlang['Admin']['managepanel']['setsetting'] = "✅ <b>اطلاعات با موفقیت تنظیم گردید</b>";
 $textbotlang['Admin']['managepanel']['setinbound'] = "⚙️ تنظیم پروتکل و اینباند";
 $textbotlang['Admin']['managepanel']['setgroup'] = "⚙️ تنظیم گروه";
 $textbotlang['Admin']['managepanel']['setinbounddec'] = "📌 برای تنظیم اینباند  و پروتکل باید یک کانفیگ در پنل خود ساخته و  پروتکل و اینباند هایی که می‌خواهید فعال باشند. را داخل پنل فعال کرده و نام کاربری کانفیگ را ارسال نمایید";
-$textbotlang['Admin']['managepanel']['setedinbound'] = "✅ اینباند و پروتکل های شما با موفقیت تنظیم گردیدند.";
-$textbotlang['Admin']['managepanel']['notoffsublink'] = "ابتدا لینک اشتراک را خاموش کنید";
-$textbotlang['Admin']['managepanel']['subinvalidDomain'] = "لینک ساب فعال نمی‌باشد";
-$textbotlang['Admin']['managepanel']['subinvalid'] = "لینک ساب معتبر نمی‌باشد";
+$textbotlang['Admin']['managepanel']['setedinbound'] = "✅ <b>اینباند و پروتکل های شما با موفقیت تنظیم گردیدند</b>";
+$textbotlang['Admin']['managepanel']['notoffsublink'] = "📌 <b>ابتدا لینک اشتراک را خاموش کنید</b>";
+$textbotlang['Admin']['managepanel']['subinvalidDomain'] = "📌 <b>لینک ساب فعال نمی‌باشد</b>";
+$textbotlang['Admin']['managepanel']['subinvalid'] = "📌 <b>لینک ساب معتبر نمی‌باشد</b>";
 $textbotlang['Admin']['managepanel']['type']['pasarguard'] = "پاسارگارد";
 $textbotlang['Admin']['managepanel']['type']['marzban'] = "مرزبان";
 $textbotlang['Admin']['managepanel']['type']['marzneshin'] = "مرزنشین";
@@ -1185,7 +1197,7 @@ $textbotlang['Admin']['changetext']['ruletext'] = "⚖️ متن قانون";
 $textbotlang['Admin']['Help']['titlebtn'] = "📚 بخش آموزش";
 $textbotlang['Admin']['Help']['addhelp'] = "📚 اضافه کردن آموزش";
 $textbotlang['Admin']['Help']['edithelp'] = "✏️ ویرایش آموزش";
-$textbotlang['Admin']['Help']['selecthelpforedit'] = "📌 یک آموزش را انتخاب کنید.";
+$textbotlang['Admin']['Help']['selecthelpforedit'] = "📌 <b>یک آموزش را انتخاب کنید</b>";
 $textbotlang['Admin']['Help']['removehelpbtn'] = "❌ حذف آموزش";
 $textbotlang['Admin']['Help']['GetAddNameHelp'] ="برای اضافه کردن آموزش یک نام ارسال کنید 
 ⚠️ توجه: نام آموزش نامی است که کاربر در لیست مشاهده می کند.";
@@ -1197,13 +1209,13 @@ $textbotlang['Admin']['Help']['SelectName'] = "نام آموزش را انتخا
 $textbotlang['Admin']['Help']['RemoveHelp'] = "✅ آموزش حذف شد.";
 $textbotlang['Admin']['Help']['statushelp'] = "💡 وضعیت بخش آموزش";
 $textbotlang['Admin']['Help']['change']['name'] = "ویرایش نام";
-$textbotlang['Admin']['Help']['change']['sendnewname'] = "نام جدید را ارسال کنید";
-$textbotlang['Admin']['Help']['change']['namemax'] = "❌ نام آموزش باید کمتر از 150 کاراکتر باشد";
-$textbotlang['Admin']['Help']['change']['updated'] = "✅ آموزش بروزرسانی شد";
+$textbotlang['Admin']['Help']['change']['sendnewname'] = "✍️ <b>نام جدید را ارسال کنید</b>";
+$textbotlang['Admin']['Help']['change']['namemax'] = "❌ <b>نام آموزش باید کمتر از 150 کاراکتر باشد</b>";
+$textbotlang['Admin']['Help']['change']['updated'] = "✅ <b>آموزش بروزرسانی شد</b>";
 $textbotlang['Admin']['Help']['change']['dec'] = "ویرایش توضیحات";
-$textbotlang['Admin']['Help']['change']['newdec'] = "توضیحات جدید را ارسال کنید";
+$textbotlang['Admin']['Help']['change']['newdec'] = "✍️ <b>توضیحات جدید را ارسال کنید</b>";
 $textbotlang['Admin']['Help']['change']['editmedia'] = "ویرایش رسانه";
-$textbotlang['Admin']['Help']['change']['editmedianew'] = "تصویر یا فیلم جدید را ارسال کنید";
+$textbotlang['Admin']['Help']['change']['editmedianew'] = "✍️ <b>تصویر یا فیلم جدید را ارسال کنید</b>";
 
 
 
@@ -1217,15 +1229,19 @@ $textbotlang['Admin']['Status']['statuson'] = "✅ روشن";
 $textbotlang['Admin']['Status']['statusoff'] = "❌ خاموش";
 $textbotlang['Admin']['Status']['BotTitle'] = "📌  در این بخش می‌توانید مشخص کنید که قابلیت‌های زیر فعال باشند یا خیر.";
 $textbotlang['Admin']['Status']['stautsbot'] = "📡 وضعیت ربات";
-$textbotlang['Admin']['Status']['onhold'] = "وضعیت قابلیت اولین اتصال سرویس";
-$textbotlang['Admin']['Status']['onstatus'] = "روشن شد";
-$textbotlang['Admin']['Status']['offstatus'] = "خاموش شد";
+$textbotlang['Admin']['Status']['onhold'] = "📌 <b>وضعیت قابلیت اولین اتصال سرویس</b>";
+$textbotlang['Admin']['Status']['onstatus'] = "📌 <b>روشن شد</b>";
+$textbotlang['Admin']['Status']['offstatus'] = "📌 <b>خاموش شد</b>";
 $textbotlang['Admin']['Status']['subTitle'] = "در این قسمت می‌توانید تنظیم کنید که کاربر بعد از خرید لینک سابسکرایبشن دریافت کند یا نه";
 $textbotlang['Admin']['Status']['subStatusOff'] = "⭕️ ارسال لینک اشتراک غیرفعال شد. از این پس کاربر پس از خرید لینک سابسکرایب دریافت نخواهد کرد.";
-$textbotlang['Admin']['Status']['subStatuson'] = "لینک سابسکرایب فعال شد. از این پس کاربر پس خرید لینک سابسکرایب دریافت خواهد کرد";
+$textbotlang['Admin']['Status']['subStatuson'] = "✅ <b>لینک سابسکرایب فعال شد.</b>
+
+از این پس کاربر پس خرید لینک سابسکرایب دریافت خواهد کرد";
 $textbotlang['Admin']['Status']['configTitle'] = "در این قسمت می‌توانید تعیین کنید که بعد از خرید کاربر کانفیگ‌های دستی دریافت کند یا خیر";
 $textbotlang['Admin']['Status']['configStatusOff'] = "⭕️ ارسال کانفیگ دستی غیرفعال شد. از این پس کاربر پس از خرید  کانفیگ دستی دریافت نخواهد کرد.";
-$textbotlang['Admin']['Status']['configStatuson'] = "ارسال کانفیگ بعد خرید فعال شد از این پس کاربران کانفیگ دستی هم دریافت خواهند کرد";
+$textbotlang['Admin']['Status']['configStatuson'] = "✅ <b>ارسال کانفیگ بعد خرید فعال شد</b>
+
+از این پس کاربران کانفیگ دستی هم دریافت خواهند کرد";
 $textbotlang['Admin']['Status']['affiliates'] = "📌 در این بخش می‌توانید قابلیت مشارکت در فروش در ربات را خاموش یا روشن کنید";
 $textbotlang['Admin']['Status']['affiliatesStatusOff'] = "قابلیت مشارکت در فروش غیرفعال شد";
 $textbotlang['Admin']['Status']['affiliatesStatuson'] = "قابلیت مشارکت در فروش روشن شد";
@@ -1255,15 +1271,17 @@ $textbotlang['Admin']['Channel']['TestChannel'] = "تست ارسال کانال 
 
 
 $textbotlang['Admin']['Product']['addproduct'] = "🛍 اضافه کردن محصول";
-$textbotlang['Admin']['Product']['Service_location'] ="📌 موقعیت محصول خود را انتخاب کنید
- ⭕️ برای تعریف محصول در همه موقعیت ها دستور /all را ارسال کنید";
+$textbotlang['Admin']['Product']['Service_location'] ="📌 <b>موقعیت محصول خود را انتخاب کنید</b>
+
+⭕️ برای تعریف محصول در همه موقعیت ها دستور /all را ارسال کنید";
 $textbotlang['Admin']['Product']['nullpProduct']   = "⭕️ محصولی یافت نشد برای رفع مشکل با پشتیبانی در ارتباط باشید";
-$textbotlang['Admin']['Product']['Rmove_location'] ="📌 موقعیت محصول خود را انتخاب کنید";
-$textbotlang['Admin']['Product']['selectRemoveProduct'] ="محصولی که می‌خوای حذف کنی ر و انتخاب کن";
-$textbotlang['Admin']['Product']['selectEditProduct'] ="محصولی که می‌خوای ویرایش کنی رو انتخاب کن";
-$textbotlang['Admin']['Product']['selectfieldProduct'] ="فیلدی که مخیواهید ویرایش کنید را انتخاب کنید";
-$textbotlang['Admin']['Product']['RemoveedProduct'] ="✅ محصول با موفقیت حذف شد.";
-$textbotlang['Admin']['Product']['AddProductStepOne'] = " ابتدا نام اشتراک خود را ارسال نمایید
+$textbotlang['Admin']['Product']['Rmove_location'] ="📌 <b>موقعیت محصول خود را انتخاب کنید</b>";
+$textbotlang['Admin']['Product']['selectRemoveProduct'] ="📌 <b>محصولی که می‌خوای حذف کنی ر و انتخاب کن</b>";
+$textbotlang['Admin']['Product']['selectEditProduct'] ="📌 <b>محصولی که می‌خوای ویرایش کنی رو انتخاب کن</b>";
+$textbotlang['Admin']['Product']['selectfieldProduct'] ="✍️ <b>فیلدی که مخیواهید ویرایش کنید را انتخاب کنید</b>";
+$textbotlang['Admin']['Product']['RemoveedProduct'] ="✅ <b>محصول با موفقیت حذف شد</b>";
+$textbotlang['Admin']['Product']['AddProductStepOne'] = "✍️ <b>ابتدا نام اشتراک خود را ارسال نمایید</b>
+
 ⚠️ نکات هنگام وارد کردن ام محصول:
 • در کنار نام اشتراک حتما قیمت اشتراک را هم وارد کنید.
 • در کنار نام اشتراک حتما زمان اشتراک را هم وارد کنید.";
@@ -1271,34 +1289,34 @@ $textbotlang['Admin']['Product']['GetLimit'] = "حجم اشتراک را ارس�
 
 اگر می‌خواهید حجم نامحدود باشد عدد 0 ارسال کنید";
 $textbotlang['Admin']['Product']['Getcategory'] = "دسته‌بندی محصول را انتخاب کنید";
-$textbotlang['Admin']['Product']['Invalidvolume'] = "حجم نامعتبر است";
+$textbotlang['Admin']['Product']['Invalidvolume'] = "❌ <b>حجم نامعتبر است</b>";
 $textbotlang['Admin']['Product']['GettIime'] = "
 زمان اشتراک را وارد نمایید توجه زمان واحد زمان اشتراک روز است
 اگر می‌خواهید زمان نامحدود باشد عدد 0 را ارسال کنید";
-$textbotlang['Admin']['Product']['InvalidTime'] = "زمان نامعتبر است";
-$textbotlang['Admin']['Product']['GetPrice'] = "
-قمیت اشتراک  را ارسال کنید.
-توجه: 
+$textbotlang['Admin']['Product']['InvalidTime'] = "❌ <b>زمان نامعتبر است</b>";
+$textbotlang['Admin']['Product']['GetPrice'] = "✍️ <b>قمیت اشتراک را ارسال کنید</b>
+
+توجه:
 محصول براساس تومان است و قیمت را بدون هیچ کاراکتر اضافی ارسال نمایید.";
-$textbotlang['Admin']['Product']['InvalidPrice'] = "قیمت نامعتبر است";
-$textbotlang['Admin']['Product']['SaveProduct'] = "محصول با موفقیت ذخیره شد 🥳🎉";
-$textbotlang['Admin']['Product']['TimeUpdated'] = "✅ زمان محصول بروزرسانی شد";
+$textbotlang['Admin']['Product']['InvalidPrice'] = "❌ <b>قیمت نامعتبر است</b>";
+$textbotlang['Admin']['Product']['SaveProduct'] = "✅ <b>محصول با موفقیت ذخیره شد 🥳🎉</b>";
+$textbotlang['Admin']['Product']['TimeUpdated'] = "✅ <b>زمان محصول بروزرسانی شد</b>";
 $textbotlang['Admin']['Product']['NewTime'] = "زمان جدید را ارسال کنید";
-$textbotlang['Admin']['Product']['invalidcategory'] = "دسته‌بندی نامعتبر";
+$textbotlang['Admin']['Product']['invalidcategory'] = "❌ <b>دسته‌بندی نامعتبر</b>";
 $textbotlang['Admin']['Product']['titlebtnremove'] = "❌ حذف محصول";
 $textbotlang['Admin']['Product']['titlebtnedit'] = "✏️ ویرایش محصول";
 $textbotlang['Admin']['Product']['editprice'] = "قیمت";
 $textbotlang['Admin']['Product']['sendnewprice'] = "قیمت جدید را ارسال کنید";
-$textbotlang['Admin']['Product']['updatedprice'] = "✅ قیمت محصول بروزرسانی شد";
+$textbotlang['Admin']['Product']['updatedprice'] = "✅ <b>قیمت محصول بروزرسانی شد</b>";
 $textbotlang['Admin']['Product']['editcategory'] = "دسته‌بندی";
-$textbotlang['Admin']['Product']['sendnewcategory'] = "دسته‌بندی جدید را ارسال کنید";
-$textbotlang['Admin']['Product']['updatedcategory'] = "✅ دسته‌بندی محصول بروزرسانی شد";
+$textbotlang['Admin']['Product']['sendnewcategory'] = "✍️ <b>دسته‌بندی جدید را ارسال کنید</b>";
+$textbotlang['Admin']['Product']['updatedcategory'] = "✅ <b>دسته‌بندی محصول بروزرسانی شد</b>";
 $textbotlang['Admin']['Product']['editname'] = "نام محصول";
 $textbotlang['Admin']['Product']['sendnewname'] = "نام جدید را ارسال کنید";
-$textbotlang['Admin']['Product']['updatedname'] = "✅نام محصول بروزرسانی شد";
+$textbotlang['Admin']['Product']['updatedname'] = "✅نام <b>محصول بروزرسانی شد</b>";
 $textbotlang['Admin']['Product']['editvolume'] = "حجم";
 $textbotlang['Admin']['Product']['sendnewvolume'] = "حجم جدید را ارسال کنید";
-$textbotlang['Admin']['Product']['updatedvolume'] = "✅حجم محصول بروزرسانی شد";
+$textbotlang['Admin']['Product']['updatedvolume'] = "✅حجم <b>محصول بروزرسانی شد</b>";
 $textbotlang['Admin']['Product']['edittime'] = "زمان";
 
 $textbotlang['Admin']['Payment']['reviewedpayment'] = "❌ این پرداخت قبلا توسط ادمین دیگری بررسی شده است";
@@ -1308,10 +1326,12 @@ $textbotlang['Admin']['Payment']['Rejected'] = "⭕️ پرداخت با موف�
 
 $textbotlang['Admin']['Usertest']['settimeusertest'] = "⏳ زمان سرویس تست";
 $textbotlang['Admin']['Usertest']['setvolumeusertest'] = "💾 حجم اکانت تست";
-$textbotlang['Admin']['Usertest']['sendtimeusertest'] = "🕰 مدت زمان سرویس تست را ارسال کنید.
+$textbotlang['Admin']['Usertest']['sendtimeusertest'] = "🕰 <b>مدت زمان سرویس تست را ارسال کنید</b>
+
 زمان فعلی: %s ساعت
 ⚠️ زمان بر حسب ساعت است.";
-$textbotlang['Admin']['Usertest']['sendvoluemusertest'] = "حجم سرویس تست را ارسال کنید.
+$textbotlang['Admin']['Usertest']['sendvoluemusertest'] = "✍️ <b>حجم سرویس تست را ارسال کنید</b>
+
 حجم فعلی: %s مگابایت
 ⚠️ حجم بر حسب مگابایت است.";
 $textbotlang['Admin']['Usertest']['TimeUpdated'] = "✅ زمان سرویس تست بروزرسانی شد";
@@ -1351,23 +1371,24 @@ $textbotlang['Admin']['Balance']['SendBalanceAll'] = "👥 شارژ همگانی
 
 $textbotlang['Admin']['Discount']['titlebtn'] ="🎁 ساخت کد هدیه";
 $textbotlang['Admin']['Discount']['titlebtnremove'] ="❌ حذف کد هدیه";
-$textbotlang['Admin']['Discount']['GetCode'] ="کدی را برای کدهدیه ارسال کنید";
+$textbotlang['Admin']['Discount']['GetCode'] ="✍️ <b>کدی را برای کدهدیه ارسال کنید</b>";
 $textbotlang['Admin']['Discount']['ErrorCode'] ="کد نامعتبر است کد باید حتما انگلیسی بدون کاراکتر اضافی باشد";
-$textbotlang['Admin']['Discount']['PriceCode'] ="کد دریافت شد حالا مبلغ کد  رو بفرست";
-$textbotlang['Admin']['Discount']['SaveCode'] ="✅  کد با موفقیت ثبت شد";
-$textbotlang['Admin']['Discount']['RemoveCode'] ="کد که می‌خوای حذف کنی رو انتخاب کن";
-$textbotlang['Admin']['Discount']['RemovedCode'] ="✅ کد  با موفقیت حذف شد.";
-$textbotlang['Admin']['Discount']['NotCode'] = "❌ خطا 
+$textbotlang['Admin']['Discount']['PriceCode'] ="📌 <b>کد دریافت شد حالا مبلغ کد رو بفرستید</b>";
+$textbotlang['Admin']['Discount']['SaveCode'] ="✅ <b>کد با موفقیت ثبت شد</b>";
+$textbotlang['Admin']['Discount']['RemoveCode'] ="📌 <b>کد که می‌خوای حذف کنی رو انتخاب کن</b>";
+$textbotlang['Admin']['Discount']['RemovedCode'] ="✅ <b>کد با موفقیت حذف شد</b>";
+$textbotlang['Admin']['Discount']['NotCode'] = "❌ <b>خطا</b>
+
 📝 کد هدیه انتخابی وجود ندارد";
 
 
 $textbotlang['Admin']['addorder']['onestep'] = "📌 جهت اضافه کردن سفارش به حساب کاربر نام کاربری سرویس را ارسال کنید.
 
 توجه داشته باشید این بخش سرویس را داخل پنل اضافه نمی کند و فقط داخل ربات اضافه می کند";
-$textbotlang['Admin']['addorder']['user_exits'] = "❌ این نام کاربری از قبل داخل ربات وجود دارد.";
-$textbotlang['Admin']['addorder']['getname_panel'] = "📌 پنل خود را انتخاب کنید";
-$textbotlang['Admin']['addorder']['get_product'] = "📌 محصول را انتخاب نمایید";
-$textbotlang['Admin']['addorder']['added_order'] = "✅ سفارش با موفقیت به لیست سرویس‌های کاربر اضافه شد.";
+$textbotlang['Admin']['addorder']['user_exits'] = "❌ <b>این نام کاربری از قبل داخل ربات وجود دارد</b>";
+$textbotlang['Admin']['addorder']['getname_panel'] = "📌 <b>پنل خود را انتخاب کنید</b>";
+$textbotlang['Admin']['addorder']['get_product'] = "📌 <b>محصول را انتخاب نمایید</b>";
+$textbotlang['Admin']['addorder']['added_order'] = "✅ <b>سفارش با موفقیت به لیست سرویس‌های کاربر اضافه شد</b>";
 
 $textbotlang['Admin']['AlgortimeUsername']['SaveData'] = "✅روش ساخت نام کاربری با موفقیت آپدیت شد";
 
@@ -1378,14 +1399,17 @@ $textbotlang['Admin']['SettingPayment']['Savacard'] = "✅ شماره کارت �
 
 $textbotlang['Admin']['Discountsell']['create'] = "🎁 ساخت کد تخفیف";
 $textbotlang['Admin']['Discountsell']['remove'] = "❌ حذف کد تخفیف";
-$textbotlang['Admin']['Discountsell']['GetCode'] ="کدی را برای کد تخفیف ارسال کنید";
-$textbotlang['Admin']['Discountsell']['getlimit'] ="محدودیت استفاده برای کاربر را ارسال کنید";
-$textbotlang['Admin']['Discount']['PriceCodesell'] ="کد دریافت شد حالا درصد کد  را بفرست";
-$textbotlang['Admin']['Discount']['invalidcodedis'] ="❌  کد تخفیف نامعتبر است";
+$textbotlang['Admin']['Discountsell']['GetCode'] ="✍️ <b>کدی را برای کد تخفیف ارسال کنید</b>";
+$textbotlang['Admin']['Discountsell']['getlimit'] ="✍️ <b>محدودیت استفاده برای کاربر را ارسال کنید</b>";
+$textbotlang['Admin']['Discount']['PriceCodesell'] ="✅ <b>کد دریافت شد</b>
+
+حالا درصد تخفیف کد را بفرستید:";
+$textbotlang['Admin']['Discount']['invalidcodedis'] ="❌ <b>کد تخفیف نامعتبر است</b>";
 $textbotlang['Admin']['Discount']['Discountused'] = "❌ این کد تخفیف وجود دارد لطفاً از کد تخفیف دیگری استفاده کنید";
-$textbotlang['Admin']['Discount']['typediscount'] = "📌 کد تخفیف برای خرید اول باشد یا همه خرید ها
-    0 : همه خرید ها
-    1 : خرید اول ";
+$textbotlang['Admin']['Discount']['typediscount'] = "📌 <b>کد تخفیف برای خرید اول باشد یا همه خرید ها</b>
+
+0 : همه خرید ها
+ 1 : خرید اول";
 
 
 $textbotlang['Admin']['mesage']['nottextmessage'] ="❌  در ارسال همگانی فقط متن می‌توانید ارسال نمایید.";
@@ -1408,7 +1432,7 @@ $textbotlang['Admin']['keyboardadmin']['settings'] = "⚙️ تنظیمات";
 
 $textbotlang['Admin']['keyboardadmin']['bot_update'] = "🔄 آپدیت ربات";
 $textbotlang['Admin']['keyboardadmin']['db_backup'] = "💾 پشتیبان‌گیری";
-$textbotlang['Admin']['bot_update']['confirm'] = "⚠️ آپدیت ربات از گیتهاب فورک
+$textbotlang['Admin']['bot_update']['confirm'] = "⚠️ <b>آپدیت ربات از گیتهاب فورک</b>
 
 با تأیید، آخرین فایل‌های کد از گیتهاب دانلود و جایگزین می‌شوند.
 
@@ -1419,20 +1443,21 @@ $textbotlang['Admin']['bot_update']['confirm'] = "⚠️ آپدیت ربات ا�
 ادامه می‌دهید؟";
 $textbotlang['Admin']['bot_update']['yes'] = "✅ بله، آپدیت کن";
 $textbotlang['Admin']['bot_update']['no'] = "❌ انصراف";
-$textbotlang['Admin']['bot_update']['start'] = "⏳ در حال دانلود و آپدیت... لطفاً صبر کنید.";
-$textbotlang['Admin']['bot_update']['only_admin'] = "❌ فقط ادمین اصلی می‌تواند آپدیت کند.";
+$textbotlang['Admin']['bot_update']['start'] = "⏳ <b>در حال دانلود و آپدیت... لطفاً صبر کنید</b>";
+$textbotlang['Admin']['bot_update']['only_admin'] = "❌ <b>فقط ادمین اصلی می‌تواند آپدیت کند</b>";
 
 $textbotlang['Admin']['bot_update']['success'] = "✅ آپدیت با موفقیت انجام شد.
 
 📁 تعداد فایل به‌روز شده: %s
 🔒 فایل‌های حساس (config و …) حفظ شدند.
 ♻️ ربات آماده استفاده است.";
-$textbotlang['Admin']['bot_update']['fail'] = "❌ آپدیت ناموفق بود.
+$textbotlang['Admin']['bot_update']['fail'] = "❌ <b>آپدیت ناموفق بود</b>
+
 %s
 
 هیچ فایل حیاتی نباید آسیب دیده باشد. در صورت مشکل از بک‌آپ سرور استفاده کنید.";
 $textbotlang['Admin']['bot_update']['busy'] = "⏳ یک آپدیت دیگر در حال اجراست. چند دقیقه دیگر تلاش کنید.";
-$textbotlang['Admin']['bot_update']['cancelled'] = "❌ آپدیت لغو شد.";
+$textbotlang['Admin']['bot_update']['cancelled'] = "❌ <b>آپدیت لغو شد</b>";
 $textbotlang['Admin']['bot_update']['no_zip'] = "❌ امکان ZipArchive یا دانلود در سرور فعال نیست.";
 
 
@@ -1466,8 +1491,8 @@ $textbotlang['Admin']['cron']['remove']['timeset'] = "زمان حذف اکانت
 $textbotlang['Admin']['cron']['remove']['dectime'] = "زمان خود را برای حذف اکانت های اکسپایر شده ارسال کنید.
 نکته : این بخش سرویس‌هایی که x روز از زمان انقضا شان گذشته باشد حذف می کند. 
  واحد براساس روز می‌باشد";
-$textbotlang['Admin']['cron']['remove']['invalidtime'] = "زمان ناعمتبر است";
-$textbotlang['Admin']['cron']['remove']['timeseted'] = "زمان با موفقیت تنظیم شد";
+$textbotlang['Admin']['cron']['remove']['invalidtime'] = "📌 <b>زمان ناعمتبر است</b>";
+$textbotlang['Admin']['cron']['remove']['timeseted'] = "✅ <b>زمان با موفقیت تنظیم شد</b>";
 $textbotlang['Admin']['cron']['active_manual'] = "📝 بدلیل غیرفعال بودن تابع shell_exec باید کرون ها بطور دستی  فعال نمایید می‌توانید از هاست یا سایت های که کار کرون انجام می دهند این کار را انجام دهید.
 
 کامند‌های زیر هر کدام که نیاز داشتید می‌توانید فعال کنید
@@ -1502,7 +1527,7 @@ $textbotlang['Admin']['Automatic_confirmation']['title'] = "🤖 تایید خو
 $textbotlang['Admin']['Automatic_confirmation']['interval_btn'] = "⏱ فاصله تأیید خودکار";
 $textbotlang['Admin']['Automatic_confirmation']['interval_prompt'] = "⏱ هر چند دقیقه یک‌بار رسیدهای در انتظار به‌صورت خودکار تأیید شوند؟\n\nعددی بین <b>1</b> تا <b>60</b> بفرستید.\nمقدار فعلی: <b>%s</b> دقیقه";
 $textbotlang['Admin']['Automatic_confirmation']['interval_saved'] = "✅ فاصله تأیید خودکار روی <b>%s</b> دقیقه تنظیم شد.";
-$textbotlang['Admin']['Automatic_confirmation']['interval_invalid'] = "❌ عدد نامعتبر. بین 1 تا 60 بفرستید.";
+$textbotlang['Admin']['Automatic_confirmation']['interval_invalid'] = "❌ <b>عدد نامعتبر. بین 1 تا 60 بفرستید</b>";
 $textbotlang['Admin']['Automatic_confirmation']['finance_line'] = "🤖 تأیید خودکار بدون بررسی";
 
 
@@ -1697,11 +1722,12 @@ $textbotlang['Admin']['currency']['set_tron'] = "🔶 آدرس TRON (TRX)";
 $textbotlang['Admin']['currency']['set_gram'] = "💎 آدرس GRAM (گرام)";
 $textbotlang['Admin']['currency']['set_usdt'] = "🟢 آدرس USDT (BEP20)";
 $textbotlang['Admin']['currency']['set_bnb'] = "🟡 آدرس BNB (BEP20)";
-$textbotlang['Admin']['currency']['get_address'] = "📌 آدرس فعلی:
+$textbotlang['Admin']['currency']['get_address'] = "📌 <b>آدرس فعلی</b>
+
 <code>%s</code>
 
 آدرس جدید را ارسال کنید (یا - برای پاک کردن):";
-$textbotlang['Admin']['currency']['saved'] = "✅ آدرس ذخیره شد.";
+$textbotlang['Admin']['currency']['saved'] = "✅ <b>آدرس ذخیره شد</b>";
 $textbotlang['Admin']['currency']['menu'] = "💎 تنظیم پرداخت کریپتو";
 $textbotlang['users']['moeny']['currency_text'] = "برای افزایش موجودی معادل <b>%s</b> تومان، یکی از ارزهای زیر را واریز کنید.
 :
@@ -1743,7 +1769,8 @@ $textbotlang['users']['moeny']['currency_text_header_discount'] = "🎁 با پ�
 
 یکی از ارزهای زیر را واریز کنید:
 ";
-$textbotlang['Admin']['currency']['discount_get'] = "🎁 درصد تخفیف پرداخت کریپتو را ارسال کنید (مثلاً 10)
+$textbotlang['Admin']['currency']['discount_get'] = "🎁 <b>درصد تخفیف پرداخت کریپتو را ارسال کنید (مثلاً 10)</b>
+
 مقدار فعلی: <code>%s</code>";
 $textbotlang['Admin']['currency']['discount_saved'] = "✅ درصد تخفیف ذخیره شد: <code>%s٪</code>";
 
@@ -1773,9 +1800,10 @@ $textbotlang['Admin']['balance_pkg']['list'] = "📦 پکیج‌های افزا�
 روی هر پکیج بزنید تا حذف شود.
 ➕ برای افزودن پکیج جدید.";
 $textbotlang['Admin']['balance_pkg']['get_amount'] = "مبلغ اعتبار پکیج را به تومان بفرستید (مثلاً 2000000):";
-$textbotlang['Admin']['balance_pkg']['get_discount'] = "درصد تخفیف این پکیج را بفرستید (مثلاً 15):
+$textbotlang['Admin']['balance_pkg']['get_discount'] = "✍️ <b>درصد تخفیف این پکیج را بفرستید (مثلاً 15)</b>
+
 کاربر این درصد کمتر پرداخت می‌کند و همان مبلغ اعتبار را می‌گیرد.";
-$textbotlang['Admin']['balance_pkg']['saved'] = "✅ پکیج ذخیره شد.";
+$textbotlang['Admin']['balance_pkg']['saved'] = "✅ <b>پکیج ذخیره شد</b>";
 $textbotlang['Admin']['balance_pkg']['deleted'] = "✅ پکیج حذف شد.";
 $textbotlang['Admin']['balance_pkg']['empty'] = "هنوز پکیجی تعریف نشده.";
 
@@ -1792,7 +1820,7 @@ $textbotlang['Admin']['smartcron']['cmd'] = "برای فعال‌سازی روی
 کرون‌های قدیمی volume/time/remove را می‌توانید غیرفعال کنید.";
 $textbotlang['Admin']['smartcron']['reset_test_ok'] = "✅ محدودیت اکانت تست برای همه کاربران به مقدار پیش‌فرض ریست شد.";
 $textbotlang['Admin']['smartcron']['set_vol'] = "درصدهای اخطار حجم را با کاما بفرستید (مثلاً 90,95,99):";
-$textbotlang['Admin']['smartcron']['set_time'] = "روزهای اخطار زمان را با کاما بفرستید (مثلاً 7,3,1):";
+$textbotlang['Admin']['smartcron']['set_time'] = "❌ <b>روزهای اخطار زمان را با کاما بفرستید (مثلاً 7,3,1)</b>";
 $textbotlang['Admin']['smartcron']['saved'] = "✅ ذخیره شد.";
 $textbotlang['Admin']['smartcron']['install_crontab_btn'] = "🛠 نصب خودکار کرون در سرور";
 $textbotlang['users']['cron']['warn_time'] = "⏰ از زمان سرویس <code>%s</code> حدود <b>%s</b> روز باقی مانده است.
