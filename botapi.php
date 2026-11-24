@@ -155,6 +155,96 @@ if (!function_exists('botTableExists')) {
     }
 }
 
+/** نسخه 2.4.8: روشن بودن دکمههای رنگی (PaySetting: button_colors، پیشفرض روشن) */
+function botButtonColorsOn($reset = false)
+{
+    static $v = null;
+    if ($reset) {
+        $v = null;
+    }
+    if ($v !== null) {
+        return $v;
+    }
+    $v = true;
+    if (function_exists('getPaySettingValue')) {
+        try {
+            $v = strval(getPaySettingValue('button_colors', '1')) !== '0';
+        } catch (Throwable $e) {
+            $v = true;
+        }
+    }
+    return $v;
+}
+
+/** نسخه 2.4.8: رنگ هر دکمه بر اساس متن — success=سبز، danger=قرمز، primary=آبی */
+function botButtonStyleFor($t)
+{
+    $t = trim(strval($t));
+    if ($t === '') {
+        return '';
+    }
+    $starts = function ($pfx) use ($t) {
+        foreach ((array)$pfx as $p) {
+            if (strpos($t, $p) === 0) {
+                return true;
+            }
+        }
+        return false;
+    };
+    $has = function ($arr) use ($t) {
+        foreach ((array)$arr as $w) {
+            if (strpos($t, $w) !== false) {
+                return true;
+            }
+        }
+        return false;
+    };
+    if ($starts(['❌', '🗑', '⛔', '⏹', '🚫', '🔴']) || $has(['حذف', 'لغو ارسال', 'مسدود کردن'])) {
+        return 'danger';
+    }
+    if ($starts(['✅', '🟢', '🛒']) || $has(['خرید', 'تمدید', 'واریز', 'افزایش موجودی', 'تأیید', 'تایید', 'پرداخت'])) {
+        return 'success';
+    }
+    if ($starts(['🛍', '🔑', '📲', '🎁']) || $has(['اکانت تست', 'لینک اشتراک', 'QR', 'سرویسهای من', 'سرویس‌های من'])) {
+        return 'primary';
+    }
+    return '';
+}
+
+/** نسخه 2.4.8: افزودن style به دکمههای inline و reply */
+function botStyleMarkup($rm)
+{
+    if (!is_string($rm) || $rm === '' || strpos($rm, 'keyboard') === false) {
+        return $rm;
+    }
+    $d = json_decode($rm, true);
+    if (!is_array($d)) {
+        return $rm;
+    }
+    $changed = false;
+    foreach (['inline_keyboard', 'keyboard'] as $k) {
+        if (empty($d[$k]) || !is_array($d[$k])) {
+            continue;
+        }
+        foreach ($d[$k] as $i => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            foreach ($row as $j => $b) {
+                if (!is_array($b) || isset($b['style']) || !isset($b['text'])) {
+                    continue;
+                }
+                $st = botButtonStyleFor($b['text']);
+                if ($st !== '') {
+                    $d[$k][$i][$j]['style'] = $st;
+                    $changed = true;
+                }
+            }
+        }
+    }
+    return $changed ? json_encode($d, JSON_UNESCAPED_UNICODE) : $rm;
+}
+
 /** لاگ سریع با بخش مشخص */
 function botLog($section, $message, array $ctx = [], $level = 'INFO')
 {
@@ -186,6 +276,17 @@ function telegram($method, $datas = [])
 {
     global $APIKEY;
     $method = strval($method);
+    // نسخه 2.4.8: رنگ خودکار دکمهها (style) + برگشت بدون رنگ اگر تلگرام نپذیرفت
+    $__styled = false;
+    $__orig = $datas;
+    if (empty($GLOBALS['__bot_nostyle']) && is_array($datas) && isset($datas['reply_markup']) && is_string($datas['reply_markup'])
+        && function_exists('botButtonColorsOn') && botButtonColorsOn()) {
+        $__nm = botStyleMarkup($datas['reply_markup']);
+        if ($__nm !== $datas['reply_markup']) {
+            $datas['reply_markup'] = $__nm;
+            $__styled = true;
+        }
+    }
     $url = "https://api.telegram.org/bot" . $APIKEY . "/" . $method;
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -244,6 +345,11 @@ function telegram($method, $datas = [])
 
     if (empty($res['ok'])) {
         $desc = isset($res['description']) ? (string) $res['description'] : '';
+        if ($__styled && preg_match('/style|button|keyboard/i', $desc)) {
+            $GLOBALS['__bot_nostyle'] = true;
+            @error_log('button style rejected by telegram, retry without colors: ' . $desc);
+            return telegram($method, $__orig);
+        }
         $ignore = [
             'chat not found',
             'bot was blocked by the user',

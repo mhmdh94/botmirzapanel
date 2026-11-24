@@ -3676,7 +3676,10 @@ function buildAdminSettingsInlineKeyboard()
     }
     $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'];
     $rows[] = $__last;
-    $rows[] = [['text' => '🩺 سلامت ربات', 'callback_data' => 'bothealth']];
+    $rows[] = [
+        ['text' => '🩺 سلامت ربات', 'callback_data' => 'bothealth'],
+        ['text' => (function_exists('botButtonColorsOn') && botButtonColorsOn() ? '🎨 دکمه رنگی: روشن' : '🎨 دکمه رنگی: خاموش'), 'callback_data' => 'btncolor_tg'],
+    ];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 

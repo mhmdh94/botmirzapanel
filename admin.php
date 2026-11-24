@@ -298,6 +298,25 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
 }
 
 
+# نسخه 2.4.8: روشن/خاموش دکمههای رنگی
+if (isset($datain) && $datain === 'btncolor_tg' && in_array($from_id, $admin_ids)) {
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('button_colors', '1');
+    }
+    $__bc_new = (function_exists('botButtonColorsOn') && botButtonColorsOn()) ? '0' : '1';
+    update("PaySetting", "ValuePay", $__bc_new, "NamePay", "button_colors");
+    if (function_exists('botButtonColorsOn')) {
+        botButtonColorsOn(true);
+    }
+    if (function_exists('botAdminActionReport')) {
+        botAdminActionReport('دکمههای رنگی', 'وضعیت: <b>' . ($__bc_new === '1' ? '✅ روشن' : '❌ خاموش') . '</b>');
+    }
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__bc_new === '1' ? '🎨 دکمههای رنگی روشن شد' : 'دکمههای رنگی خاموش شد'), 'show_alert' => false]);
+    Editmessagetext($from_id, $message_id,
+        function_exists('buildAdminSettingsSectionText') ? buildAdminSettingsSectionText() : '⚙️ تنظیمات',
+        function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : json_encode(['inline_keyboard' => []]));
+    return;
+}
 # نسخه 2.4.6: صفحه سلامت ربات + دریافت لاگ (فقط ادمین اصلی)
 if (isset($datain) && ($datain === 'bothealth' || $datain === 'bothealth_log') && in_array($from_id, $admin_ids)) {
     if ($datain === 'bothealth') {
