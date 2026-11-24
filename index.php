@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.1";
+$version = "2.6.2";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -3935,6 +3935,11 @@ if (isset($datain) && $datain === 'product_header') {
     }
     step('home', $from_id);
 } elseif ($datain == "aptdc") {
+    // دکمه قدیمی روی پیشفاکتورهای قبلی: اگر کد تخفیفی نمانده، فقط اطلاع بده
+    if (empty($__has_sell_discount)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'در حال حاضر کد تخفیف فعالی وجود ندارد.', 'show_alert' => true]);
+        return;
+    }
     sendmessage($from_id, $textbotlang['users']['Discount']['getcodesell'], $backuser, 'HTML');
     step('getcodesellDiscount', $from_id);
     deletemessage($from_id, $message_id);

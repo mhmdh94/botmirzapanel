@@ -407,13 +407,21 @@ if ($table_exists) {
     }
     $json_list_Discount_list_admin_sell = json_encode($list_Discountsell);
 }
-$payment = json_encode([
-    'inline_keyboard' => [
-        [['text' => $textbotlang['users']['buy']['payandGet'], 'callback_data' => "confirmandgetservice"]],
-        [['text' => $textbotlang['users']['buy']['discount'], 'callback_data' => "aptdc"]],
-        [['text' => $textbotlang['users']['buy']['cancel'] ?? '❌ انصراف', 'callback_data' => "backuser"]]
-    ]
-]);
+// نسخه 2.6.2: دکمه «ثبت کد تخفیف» فقط وقتی هست که حداقل یک کد تخفیف با ظرفیت باقیمانده تعریف شده باشد
+$__has_sell_discount = false;
+if ($table_exists) {
+    try {
+        $__has_sell_discount = intval($pdo->query("SELECT COUNT(*) FROM DiscountSell WHERE CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)")->fetchColumn()) > 0;
+    } catch (Throwable $e) {
+        $__has_sell_discount = !empty($DiscountSell);
+    }
+}
+$__payment_rows = [[['text' => $textbotlang['users']['buy']['payandGet'], 'callback_data' => "confirmandgetservice"]]];
+if ($__has_sell_discount) {
+    $__payment_rows[] = [['text' => $textbotlang['users']['buy']['discount'], 'callback_data' => "aptdc"]];
+}
+$__payment_rows[] = [['text' => $textbotlang['users']['buy']['cancel'] ?? '❌ انصراف', 'callback_data' => "backuser"]];
+$payment = json_encode(['inline_keyboard' => $__payment_rows]);
 $change_product = json_encode([
     'keyboard' => [
         [['text' => $textbotlang['Admin']['Product']['editprice']], ['text' => $textbotlang['Admin']['Product']['editvolume']], ['text' => $textbotlang['Admin']['Product']['edittime']]],
