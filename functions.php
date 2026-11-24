@@ -5418,7 +5418,7 @@ function reportChannelTypes()
         'rpt_affiliate_buy' => '🤝 پورسانت خرید (مشارکت)',
         'rpt_cart_accept' => '✅ تأیید رسید (ادمین)',
         'rpt_cart_auto' => '🤖 تأیید خودکار رسید',
-        'rpt_reject' => '❌ رد رسید',
+        'rpt_reject' => '🚫 رد رسید',
         'rpt_remove' => '🗑 حذف سرویس + بازگشت وجه',
         'rpt_remove_user' => '🗑 حذف سرویس توسط کاربر',
         'rpt_emergency' => '🚨 تمدید اضطراری',
@@ -5430,7 +5430,7 @@ function reportChannelTypes()
         'rpt_create_error' => '⚠️ خطای ساخت سرویس',
         'rpt_reseller_warn' => '⚠️ هشدار حجم پنل ریسلر',
         'rpt_reseller_volume' => '📦 خرید حجم پنل ریسلر',
-        'rpt_newuser' => '👤 کاربر جدید (پیش‌فرض خاموش)',
+        'rpt_newuser' => '👤 کاربر جدید',
         'rpt_admin_action' => '🛡 تغییرات حساس ادمین',
         'rpt_broadcast' => '📨 پیام همگانی',
         'rpt_tech_error' => '🚨 خطاهای فنی',
@@ -6522,6 +6522,11 @@ function buildReportChannelKeyboardBase()
     ensureReportChannelSettings();
     $types = reportChannelTypes();
     $rows = [];
+    // نسخه 2.6.26: روشن/خاموش کردن همه با یک دکمه
+    $rows[] = [
+        ['text' => '✅ همه روشن', 'callback_data' => 'rptall_1'],
+        ['text' => '❌ همه خاموش', 'callback_data' => 'rptall_0'],
+    ];
     foreach ($types as $key => $label) {
         $on = isReportChannelEnabled($key);
         $mark = $on ? '✅' : '❌';
@@ -6610,15 +6615,24 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
-        [['text' => '⚙️ درصد حجم Reseller: ' . getPaySettingValue('smart_reseller_vol_levels', '80,90,95'), 'callback_data' => 'smartcron_set_reseller_vol']],
-        [['text' => '🔢 تعداد هر اجرا: ' . getPaySettingValue('smart_batch_limit', '20'), 'callback_data' => 'smartcron_set_limit']],
-        [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90,95,99'), 'callback_data' => 'smartcron_set_vol']],
-        [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '7,3,1'), 'callback_data' => 'smartcron_set_time']],
-        [['text' => '📋 دستور کرون سیستم', 'callback_data' => 'smartcron_show_cmd']],
-        [['text' => '🛠 نصب خودکار کرون در سرور', 'callback_data' => 'smartcron_install_crontab']],
-        [['text' => '🗑 حذف کرون‌های ربات از سرور', 'callback_data' => 'smartcron_remove_crontab']],
-        [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
     ];
+    // نسخه 2.6.26: تنظیم هر اخطار فقط وقتی همان اخطار روشن است
+    if (smartCronFlag('smart_reseller_warn', '0')) {
+        $rows[] = [['text' => '⚙️ درصد حجم Reseller: ' . getPaySettingValue('smart_reseller_vol_levels', '80,90,95'), 'callback_data' => 'smartcron_set_reseller_vol']];
+    }
+    $rows[] = [['text' => '🔢 تعداد هر اجرا: ' . getPaySettingValue('smart_batch_limit', '20'), 'callback_data' => 'smartcron_set_limit']];
+    if (smartCronFlag('smart_warn_volume', '0')) {
+        $rows[] = [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90,95,99'), 'callback_data' => 'smartcron_set_vol']];
+    }
+    if (smartCronFlag('smart_warn_time', '0')) {
+        $rows[] = [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '7,3,1'), 'callback_data' => 'smartcron_set_time']];
+    }
+    $rows[] = [
+        ['text' => '📋 دستور کرون', 'callback_data' => 'smartcron_show_cmd'],
+        ['text' => '🛠 نصب کرون', 'callback_data' => 'smartcron_install_crontab'],
+        ['text' => '🗑 حذف کرون', 'callback_data' => 'smartcron_remove_crontab'],
+    ];
+    $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -8515,22 +8529,27 @@ function botSmartCronStatusLine()
 
 function botSmartCronMenuText()
 {
-    global $textbotlang;
-    $base = strval($textbotlang['Admin']['smartcron']['menu'] ?? '🛡 کرون هوشمند');
+    // نسخه 2.6.26: متن کوتاه‌تر + هشدار یادآوری کرون
     $last = intval(@file_get_contents(__DIR__ . '/cron/smart_cron.last'));
     if ($last <= 0) {
-        $warn = "⚠️ هنوز اجرای کرون هوشمند ثبت نشده. اگر چند دقیقه بعد از نصب این نسخه هم همین پیام بود، کرون روی سرور نصب نیست («📋 دستور کرون سیستم»).";
+        $st = "⚠️ هنوز اجرای کرون هوشمند ثبت نشده؛ کرون روی سرور نصب نیست.";
     } elseif (time() - $last > 7200) {
-        $warn = "🔴 " . botSmartCronStatusLine() . " — کرون احتمالاً کار نمی‌کند؛ اخطارها و حذف فاکتورهای پرداخت‌نشده انجام نمی‌شود.";
+        $st = "🔴 " . botSmartCronStatusLine() . " — کرون احتمالاً کار نمی‌کند.";
     } else {
-        $warn = botSmartCronStatusLine() . " — کرون کار می‌کند.";
+        $st = botSmartCronStatusLine() . " — کرون کار می‌کند.";
     }
-    return $base . "\n\n" . $warn
-        . "\n\nℹ️ <b>راهنما</b>"
-        . "\n• حذف فاکتور یوزر غایب: اگر پنل صریحاً بگوید کاربر وجود ندارد، فاکتورش از ربات حذف می‌شود (از پنل چیزی پاک نمی‌شود)."
-        . "\n• اخطار حجم / زمان / اتمام: پیام هشدار به کاربر طبق درصدها و روزهای تنظیم‌شده."
-        . "\n• تمدید اضطراری: تمدید یک‌بارمصرف برای سرویس تمام‌شده."
-        . "\n• دیباگ: لاگ اجرای کرون به کانال گزارش فرستاده می‌شود.";
+    $iss_t = '';
+    foreach ((function_exists('botCronReminderIssues') ? botCronReminderIssues() : []) as $__i) {
+        if (strpos($__i, 'smart') !== false || strpos($__i, '🛡') === 0) {
+            continue; // همان خط وضعیت بالا
+        }
+        $iss_t .= "\n⚠️ " . $__i;
+    }
+    return "🛡 <b>کرون هوشمند</b>\n\n"
+        . "اخطارهای کاربر و پاکسازی فاکتورها. هیچ کاربری از پنل حذف نمی‌شود و هر گزینه جدا روشن می‌شود.\n\n"
+        . $st . $iss_t
+        . "\n\nℹ️ <b>حذف فاکتور یوزر غایب:</b> فقط وقتی پنل صریحاً بگوید کاربر وجود ندارد، فاکتور از ربات حذف می‌شود."
+        . "\nℹ️ <b>اخطارها:</b> طبق درصدها و روزهای تنظیم‌شده فرستاده می‌شوند؛ تنظیم هر اخطار وقتی روشن شود زیر آن می‌آید.";
 }
 
 /** نسخه 2.4.3: نسخه index.php روی گیتهاب */
@@ -8614,10 +8633,13 @@ function botFeaturesPage()
             if ($f[0] === 'status_reseller_request' && !$reseller_on) {
                 continue;
             }
+            // نسخه 2.6.26: «فقط شماره ایرانی» فقط وقتی احراز شماره روشن است
+            if ($f[0] === 'iran_number' && botFeatureValue($st, 'get_number', '0') !== '1') {
+                continue;
+            }
             $v = botFeatureValue($st, $f[1], $f[2]);
             $rows[] = [
                 ['text' => ($v === '1' ? '✅ ' : '❌ ') . $f[3], 'callback_data' => "editstsuts-{$f[0]}-{$v}"],
-                ['text' => 'ℹ️', 'callback_data' => "ftinfo:{$f[0]}"],
             ];
         }
     }
@@ -8626,8 +8648,8 @@ function botFeaturesPage()
     $rows[] = [['text' => '— 🎨 ظاهر —', 'callback_data' => 'adm_noop']];
     $rows[] = [
         ['text' => ($__bc_on ? '✅ ' : '❌ ') . '🎨 دکمه‌های رنگی', 'callback_data' => 'btncolor_tgf'],
-        ['text' => 'ℹ️', 'callback_data' => 'ftinfo:btncolor'],
     ];
+    $rows[] = [['text' => 'ℹ️ راهنمای همه گزینه‌ها', 'callback_data' => 'ftinfo_all']];
     $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
     $t = "🎛 <b>روشن/خاموش قابلیت‌ها</b>\n\nروی هر گزینه بزنید تا روشن/خاموش شود. ℹ️ توضیح همان گزینه را نشان می‌دهد.\nگزینه‌های حساس قبل از تغییر تأیید می‌خواهند.";
     if (botFeatureValue($st, 'Bot_Status', '1') === '0') {
@@ -8637,6 +8659,26 @@ function botFeaturesPage()
         $t .= "\n🔴 <b>خرید سرویس جدید بسته است.</b>";
     }
     return [$t, json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE)];
+}
+
+/** نسخه 2.6.26: راهنمای همه قابلیت‌ها در یک صفحه */
+function botFeaturesHelpPage()
+{
+    $t = "ℹ️ <b>راهنمای قابلیت‌ها</b>\n";
+    foreach (botFeatureGroups() as $g) {
+        $t .= "\n<b>" . $g[0] . "</b>\n";
+        foreach ($g[1] as $f) {
+            $t .= "• <b>" . $f[3] . ":</b> " . botFeatureInfo($f[0]) . "\n";
+        }
+    }
+    $t .= "\n<b>🎨 ظاهر</b>\n• <b>🎨 دکمه‌های رنگی:</b> " . botFeatureInfo('btncolor');
+    if (function_exists('mb_strlen') && mb_strlen($t, 'UTF-8') > 4000) {
+        $t = mb_substr($t, 0, 3990, 'UTF-8') . '…';
+    }
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '🔙 بازگشت به قابلیت‌ها', 'callback_data' => 'navset_features']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
 }
 
 function botFeatureInfo($type)

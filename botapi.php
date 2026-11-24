@@ -209,6 +209,13 @@ function botButtonStyleFor($t)
         }
         return false;
     };
+    // نسخه 2.6.26: دکمه‌های روشن/خاموش فقط بر اساس وضعیت رنگ می‌گیرند
+    if ($starts(['✅'])) {
+        return 'success';
+    }
+    if ($starts(['❌'])) {
+        return 'danger';
+    }
     if ($starts(['❌', '🗑', '⛔', '⏹', '🚫', '🔴']) || $has(['حذف', 'لغو ارسال', 'مسدود کردن', 'افزایش موجودی'])) {
         return 'danger';
     }
@@ -242,6 +249,10 @@ function botStyleMarkup($rm)
             }
             foreach ($row as $j => $b) {
                 if (!is_array($b) || isset($b['style']) || !isset($b['text'])) {
+                    continue;
+                }
+                // نسخه 2.6.26: دکمه‌های صفحه تنظیم متن ربات بی‌رنگ می‌مانند
+                if (strpos(strval($b['callback_data'] ?? ''), 'btxt_') === 0) {
                     continue;
                 }
                 $st = botButtonStyleFor($b['text']);

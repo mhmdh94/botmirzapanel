@@ -364,6 +364,11 @@ if (isset($datain) && ($datain === 'bothealth' || $datain === 'bothealth_log') &
 }
 # نسخه 2.4.3: توضیح قابلیت‌ها و تأیید تغییرهای حساس
 if (isset($datain) && is_string($datain) && in_array($from_id, $admin_ids)) {
+    if ($datain === 'ftinfo_all' && function_exists('botFeaturesHelpPage')) {
+        list($__ht, $__hk) = botFeaturesHelpPage();
+        Editmessagetext($from_id, $message_id, $__ht, $__hk);
+        return;
+    }
     if (preg_match('/^ftinfo:(\w+)$/', $datain, $__fi)) {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => botFeatureInfo($__fi[1]), 'show_alert' => true]);
         return;
@@ -1951,6 +1956,18 @@ if ($text == $textbotlang['Admin']['channel']['channelreport']) {
 } elseif ($datain == "rpch_menu") {
     list($__tx, $__kb) = botReportChannelPage();
     Editmessagetext($from_id, $message_id, $__tx, $__kb);
+} elseif (preg_match('/^rptall_([01])$/', strval($datain), $m_ra) && in_array($from_id, $admin_ids)) {
+    // نسخه 2.6.26: همه گزارش‌ها روشن یا خاموش
+    if (function_exists('ensureReportChannelSettings')) ensureReportChannelSettings();
+    foreach (array_keys(function_exists('reportChannelTypes') ? reportChannelTypes() : []) as $__rk) {
+        update("PaySetting", "ValuePay", $m_ra[1], "NamePay", $__rk);
+    }
+    telegram('answerCallbackQuery', [
+        'callback_query_id' => ($update['callback_query']['id'] ?? ''),
+        'text' => ($m_ra[1] === '1' ? 'همه گزارش‌ها فعال شد' : 'همه گزارش‌ها غیرفعال شد'),
+        'show_alert' => false
+    ]);
+    Editmessagetext($from_id, $message_id, "⚙️ <b>فعال/غیرفعال کردن گزارش‌ها</b>\n\n✅ = ارسال می‌شود\n❌ = ارسال نمی‌شود", function_exists('buildReportChannelKeyboard') ? buildReportChannelKeyboard() : null);
 } elseif (preg_match('/^rptoggle_(rpt_[a-z_]+)$/', strval($datain), $m_rt)) {
     $key = $m_rt[1];
     if (function_exists('ensureReportChannelSettings')) ensureReportChannelSettings();
