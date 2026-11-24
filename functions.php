@@ -3871,8 +3871,9 @@ function buildAdminUserServicesInlineKeyboard()
     $kb = [
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang['Admin']['ManageUser']['searchorder'] ?? '🛍 جستجو سفارش', 'callback_data' => 'navuser_search'],
-                ['text' => $textbotlang['Admin']['ManageUser']['removeorderbtn'] ?? '❌ حذف سرویس', 'callback_data' => 'navuser_del'],
+                // نسخه 2.6.39: متن کوتاهتر و روشنتر (callback همان قبلی)
+                ['text' => '🔎 جستجوی سفارش', 'callback_data' => 'navuser_search'],
+                ['text' => '🗑 حذف سرویس کاربر', 'callback_data' => 'navuser_del'],
             ],
             [
                 ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll'] ?? '👥 شارژ همگانی', 'callback_data' => 'navuser_ball'],
@@ -3880,7 +3881,7 @@ function buildAdminUserServicesInlineKeyboard()
             ],
             [
                 ['text' => ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده') . ' (' . number_format($c['rcpt']) . ')', 'callback_data' => 'navuser_rcpt'],
-                ['text' => ($textbotlang['Admin']['ManageUser']['list_balance_gt1'] ?? '💰 موجودی بالا') . ' (' . number_format($c['rich']) . ')', 'callback_data' => 'navuser_rich'],
+                ['text' => '💰 موجودی بالای 500 هزار (' . number_format($c['rich']) . ')', 'callback_data' => 'navuser_rich'],
             ],
             [
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'nav_user'],
@@ -3897,7 +3898,7 @@ function buildAdminUserServicesText()
         . "👤 کل کاربران: <b>" . number_format($c['users']) . "</b>\n"
         . "🚫 مسدود: <b>" . number_format($c['blocked']) . "</b>\n"
         . "🧾 رسید در انتظار تأیید: <b>" . number_format($c['rcpt']) . "</b>\n"
-        . "💰 موجودی بالای ۵۰۰ هزار تومان: <b>" . number_format($c['rich']) . "</b>\n\n"
+        . "💰 موجودی بالای 500 هزار تومان: <b>" . number_format($c['rich']) . "</b>\n\n"
         . "برای پیدا کردن یک کاربر از «🔍 جستجوی کاربر» در منوی مدیریت استفاده کنید.";
 }
 

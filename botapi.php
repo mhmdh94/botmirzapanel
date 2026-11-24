@@ -266,6 +266,13 @@ function botStyleMarkup($rm)
                 // نسخه 2.6.38: دکمههای صفحه «اطلاعات کاربر» (ادمین) بیرنگ؛ فقط مسدود کردن قرمز و دکمههای روشن/خاموش طبق وضعیت
                 $__cb = strval($b['callback_data'] ?? '');
                 $__plain = false;
+                // نسخه 2.6.39: صفحه «مدیریت کاربران» هم بیرنگ (فقط حذف سرویس قرمز میماند)
+                if (strpos($__cb, 'navuser_') === 0 && $__cb !== 'navuser_del') {
+                    continue;
+                }
+                if ($__cb === 'nav_user' && strpos(strval($b['text']), '🔄') === 0) {
+                    continue;
+                }
                 foreach (['addbalanceuser_', 'lowbalanceuser_', 'unbanuserr_', 'confirmnumber_', 'limitusertest_', 'verify_', 'verifyun_', 'vieworderall_', 'addordermanual', 'Response_', 'set_panel_admin_user_'] as $__pfx) {
                     if (strpos($__cb, $__pfx) === 0) {
                         $__plain = true;
