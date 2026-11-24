@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.11";
+$version = "2.6.12";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4638,7 +4638,10 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
 
     // پیام کاربر بعد از تلاش ارسال به ادمین
     if ($user['Processing_value_tow'] == "getconfigafterpay") {
-        sendmessage($from_id, $textbotlang['users']['Balance']['Send-receip-buy'], $keyboard, 'HTML');
+        $__rsb = sendmessage($from_id, $textbotlang['users']['Balance']['Send-receip-buy'], $keyboard, 'HTML');
+        if (function_exists('botSaveReceiptUserMsg')) {
+            botSaveReceiptUserMsg($randomString, $from_id, $__rsb);
+        }
     } else {
         $__rs_res = sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
         if (function_exists('botSaveReceiptUserMsg') && strpos(strval($user['Processing_value_tow'] ?? ''), '|') === false) {

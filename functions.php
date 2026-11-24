@@ -1809,6 +1809,8 @@ function DirectPayment($order_id)
             }
         }
         $__svc_kb = null;
+        // نسخه 2.6.12: serviceInfoKeyboard لینک کپی را از $dataoutput سراسری میخواند
+        $GLOBALS['dataoutput'] = $dataoutput;
         if (($marzban_list_get['type'] ?? '') == "wgdashboard") {
             $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $dataoutput['username'], $get_invoice['name_product']);
             $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
@@ -1844,6 +1846,13 @@ function DirectPayment($order_id)
                 $qr_payload = $configqr;
             } elseif (($marzban_list_get['sublink'] ?? '') == "onsublink" && $output_config_link !== '') {
                 $qr_payload = $output_config_link;
+            }
+            // نسخه 2.6.12: پیام «رسید ارسال شد» قبلی حذف شود تا با پیام سرویس تناقض نداشته باشد
+            if (function_exists('botTakeReceiptUserMsg')) {
+                $__rm = botTakeReceiptUserMsg($Payment_report['id_order'] ?? '');
+                if ($__rm && strval($__rm['chat_id']) === strval($uid_buyer)) {
+                    deletemessage($uid_buyer, intval($__rm['message_id']));
+                }
             }
             if (function_exists('deliverServiceConfigToUser')) {
                 $__sent_cfg = deliverServiceConfigToUser($uid_buyer, $textcreatuser, $__svc_kb ?? null, $qr_payload !== '' ? $qr_payload : null);
@@ -2286,6 +2295,10 @@ function DirectPayment($order_id)
         if ($__rcpt_msg && strval($__rcpt_msg['chat_id']) === strval($Payment_report['id_user'])) {
             $__er = Editmessagetext($Payment_report['id_user'], intval($__rcpt_msg['message_id']), $textpay, $__kb_after ?: json_encode(['inline_keyboard' => []]));
             $__rcpt_edited = is_array($__er) && !empty($__er['ok']);
+            if (!$__rcpt_edited) {
+                // نسخه 2.6.12: ویرایش ممکن نشد (مثلاً پیام با کیبورد اصلی فرستاده شده) → پیام قبلی حذف و پیام جدید ارسال شود
+                deletemessage($Payment_report['id_user'], intval($__rcpt_msg['message_id']));
+            }
         }
         if ($__rcpt_edited) {
             if ($__menu_bal) {
