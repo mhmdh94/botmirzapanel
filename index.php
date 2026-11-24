@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.15";
+$version = "2.6.16";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4671,8 +4671,14 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
             botSaveReceiptUserMsg($randomString, $from_id, $__rsb);
         }
     } else {
-        $__rs_res = sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
-        if (function_exists('botSaveReceiptUserMsg') && strpos(strval($user['Processing_value_tow'] ?? ''), '|') === false) {
+        $__pvt_r = strval($user['Processing_value_tow'] ?? '');
+        if (strpos($__pvt_r, 'extendafterpay|') === 0) {
+            // نسخه 2.6.16: رسید تمدید — متن مخصوص تمدید
+            $__rs_res = sendmessage($from_id, "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، سرویس شما <b>خودکار تمدید</b> میشود و نتیجه همینجا اعلام میشود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nاگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.", $keyboard, 'HTML');
+        } else {
+            $__rs_res = sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
+        }
+        if (function_exists('botSaveReceiptUserMsg') && (strpos($__pvt_r, '|') === false || strpos($__pvt_r, 'extendafterpay|') === 0)) {
             botSaveReceiptUserMsg($randomString, $from_id, $__rs_res);
         }
     }

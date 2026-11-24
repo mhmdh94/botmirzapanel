@@ -2151,6 +2151,13 @@ function DirectPayment($order_id)
                     [['text' => $textbotlang['users']['status']['backservice'] ?? 'جزئیات سرویس', 'callback_data' => 'product_' . $ext_username]],
                 ]
             ]);
+            // نسخه 2.6.16: پیام «رسید ارسال شد» تمدید حذف شود
+            if (function_exists('botTakeReceiptUserMsg')) {
+                $__rm_x = botTakeReceiptUserMsg($Payment_report['id_order'] ?? '');
+                if ($__rm_x && strval($__rm_x['chat_id']) === strval($uid)) {
+                    deletemessage($uid, intval($__rm_x['message_id']));
+                }
+            }
             sendmessage($uid, function_exists('botRenewDoneText') ? botRenewDoneText($ext_username, $product, $price_ext, $bal_after ?? null, (!empty($__xd_used) ? $__xd_code : '')) : ($textbotlang['users']['extend']['thanks'] ?? '✅ تمدید با موفقیت انجام شد.'), $keyb, 'HTML');
             $GLOBALS['payment_user_notified'] = true;
             $tg_name = $Balance_id['username'] ?? '-';
