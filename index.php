@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.8";
+$version = "2.6.9";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -2053,7 +2053,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     try {
         $__ded = $pdo->prepare("UPDATE user SET Balance = Balance - :p WHERE id = :id AND CAST(Balance AS SIGNED) >= :p2");
         $__ded->execute([':p' => $__price_ext, ':id' => $from_id, ':p2' => $__price_ext]);
-        if ($__ded->rowCount() < 1) {
+        // نسخه 2.6.9: تمدید رایگان (کد تخفیف ۱۰۰٪) — UPDATE با مبلغ صفر ردیفی تغییر نمیدهد و rowCount صفر است
+        if ($__price_ext > 0 && $__ded->rowCount() < 1) {
             $__ext_dc_release();
             @flock($__lock_fp, LOCK_UN);
             @fclose($__lock_fp);
