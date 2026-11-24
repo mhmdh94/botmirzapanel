@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.5.2";
+$version = "2.5.3";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1759,10 +1759,17 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $cb = "serviceextendselect_" . $result['code_product'];
         $name = strval($result['name_product'] ?? '');
         $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
-        $productextend['inline_keyboard'][] = [
-            ['text' => $price, 'callback_data' => $cb],
-            ['text' => $name, 'callback_data' => $cb],
-        ];
+        // نسخه 2.5.3: محصول پیشنهادی در لیست تمدید (ستاره + دکمه سبز)
+        $__b1 = ['text' => $price, 'callback_data' => $cb];
+        $__b2 = ['text' => $name, 'callback_data' => $cb];
+        if (function_exists('botFeaturedProductCode') && botFeaturedProductCode() !== '' && botFeaturedProductCode() === strval($result['code_product'] ?? '')) {
+            $__b2['text'] = '⭐ ' . $name;
+            if (function_exists('botButtonColorsOn') && botButtonColorsOn()) {
+                $__b1['style'] = 'success';
+                $__b2['style'] = 'success';
+            }
+        }
+        $productextend['inline_keyboard'][] = [$__b1, $__b2];
     }
     $productextend['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backorder'], 'callback_data' => "product_" . $username]
