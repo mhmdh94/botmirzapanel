@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.5.6";
+$version = "2.5.7";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1526,6 +1526,14 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         }
         if (count($tempArray) > 0) {
             $keyboardsetting['inline_keyboard'][] = $tempArray;
+        }
+        // نسخه 2.5.7: کپی لینک اشتراک با یک لمس + راهنمای اتصال
+        $__sl = trim(strval($DataUserOut['subscription_url'] ?? ''));
+        if ($__sl !== '' && preg_match('~^https?://~i', $__sl) && strlen($__sl) <= 256 && ($marzban_list_get['type'] ?? '') !== 'wgdashboard') {
+            $keyboardsetting['inline_keyboard'][] = [
+                ['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $__sl]],
+                ['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu'],
+            ];
         }
         $keyboardsetting['inline_keyboard'][] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
         $keyboardsetting = json_encode($keyboardsetting);
@@ -4013,7 +4021,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
         return;
     $pkgs = getBalancePackages();
     if (count($pkgs) > 0) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['choose_package'] ?? "یک پکیج انتخاب کنید یا مبلغ دلخواه وارد کنید:", buildBalancePackageUserKeyboard(), 'HTML');
+        botShowMsg($from_id, $textbotlang['users']['Balance']['choose_package'] ?? "یک پکیج انتخاب کنید یا مبلغ دلخواه وارد کنید:", buildBalancePackageUserKeyboard(), 'HTML');
         step('home', $from_id);
     } else {
         $depLim = getDepositLimits();

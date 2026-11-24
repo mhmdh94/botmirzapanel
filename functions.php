@@ -3242,6 +3242,12 @@ function serviceInfoKeyboard($time_label, $volume_label, $with_buy = false)
     // نسخه 2.2.3: زیر پیام اکانت تست دکمه خرید (اگر خرید روشن باشد)
     global $setting;
     $__buy_on = !(is_array($setting) && isset($setting['status_buy']) && strval($setting['status_buy']) === '0');
+    // نسخه 2.5.7: کپی لینک اشتراک با یک لمس
+    global $dataoutput;
+    $__cl = is_array($dataoutput ?? null) ? trim(strval($dataoutput['subscription_url'] ?? '')) : '';
+    if ($__cl !== '' && preg_match('~^https?://~i', $__cl) && strlen($__cl) <= 256) {
+        $rows[] = [['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $__cl]]];
+    }
     // نسخه 2.5.0: دکمه راهنمای اتصال زیر پیام ساخت سرویس/اکانت تست
     $rows[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
     if ($with_buy && $__buy_on) {
@@ -5375,6 +5381,11 @@ function botReportSend($key, $text)
     if ($__bn !== '' && strpos($__bn, '{') === false) {
         $__bn = ltrim($__bn, '@');
         if (mb_stripos($text, '@' . $__bn) === false) {
+            // نسخه 2.5.7: قالب یکدست — جداکننده زیر عنوان گزارش
+            $__lines = explode("\n", $text, 2);
+            if (count($__lines) === 2 && mb_strpos($__lines[1], '━━') === false) {
+                $text = $__lines[0] . "\n━━━━━━━━━━\n" . ltrim($__lines[1], "\n");
+            }
             $text = "🤖 <b>@" . htmlspecialchars($__bn, ENT_QUOTES, 'UTF-8') . "</b>\n" . $text;
         }
     }
@@ -8704,6 +8715,20 @@ if (!function_exists('token_panelm')) {
     {
         return ['error' => 'unsupported_panel', 'detail' => 'این نوع پنل در این نسخه ربات پشتیبانی نمی‌شود', 'access_token' => null];
     }
+}
+
+/** نسخه 2.5.7: اگر از دکمه شیشهای آمده، همان پیام ویرایش شود؛ وگرنه (یا اگر ویرایش نشد) پیام جدید */
+function botShowMsg($chat, $text, $kb, $pm = 'HTML')
+{
+    global $datain, $message_id, $update;
+    $is_text_msg = isset($update['callback_query']['message']['text']);
+    if (!empty($datain) && !empty($message_id) && $is_text_msg && (is_string($kb) || $kb === null) && (is_null($kb) || strpos(strval($kb), 'inline_keyboard') !== false)) {
+        $r = Editmessagetext($chat, $message_id, $text, $kb, $pm);
+        if (is_array($r) && (!empty($r['ok']) || stripos(strval($r['description'] ?? ''), 'not modified') !== false)) {
+            return $r;
+        }
+    }
+    return sendmessage($chat, $text, $kb, $pm);
 }
 
 function adminUsertestPanel()

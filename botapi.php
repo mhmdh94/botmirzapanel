@@ -355,6 +355,26 @@ function telegram($method, $datas = [])
 
     if (empty($res['ok'])) {
         $desc = isset($res['description']) ? (string) $res['description'] : '';
+        if (($__styled || (is_array($__orig) && strpos(strval($__orig['reply_markup'] ?? ''), 'copy_text') !== false)) && preg_match('/style|button|keyboard|copy/i', $desc)) {
+            // نسخه 2.5.7: اگر دکمه کپی رد شد، بدون آن دوباره ارسال شود
+            if (is_array($__orig) && strpos(strval($__orig['reply_markup'] ?? ''), 'copy_text') !== false && empty($GLOBALS['__bot_nocopy'])) {
+                $GLOBALS['__bot_nocopy'] = true;
+                $__o2 = $__orig;
+                $__d = json_decode(strval($__o2['reply_markup']), true);
+                if (is_array($__d) && isset($__d['inline_keyboard'])) {
+                    foreach ($__d['inline_keyboard'] as $__i => $__row) {
+                        $__d['inline_keyboard'][$__i] = array_values(array_filter((array)$__row, function ($b) { return !(is_array($b) && isset($b['copy_text'])); }));
+                        if (!$__d['inline_keyboard'][$__i]) {
+                            unset($__d['inline_keyboard'][$__i]);
+                        }
+                    }
+                    $__d['inline_keyboard'] = array_values($__d['inline_keyboard']);
+                    $__o2['reply_markup'] = json_encode($__d, JSON_UNESCAPED_UNICODE);
+                    @error_log('copy_text button rejected, retry without it: ' . $desc);
+                    return telegram($method, $__o2);
+                }
+            }
+        }
         if ($__styled && preg_match('/style|button|keyboard/i', $desc)) {
             $GLOBALS['__bot_nostyle'] = true;
             // نسخه 2.5.4: تا ۲۴ ساعت دیگر رنگ امتحان نشود (هر پیام دوبار ارسال نشود)
