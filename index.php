@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.32";
+$version = "2.6.33";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1368,6 +1368,17 @@ if ($user['step'] == "getusernameinfo") {
     sendmessage($from_id, $textbotlang['users']['status']['info'], $keyboardinfo, 'html');
     sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), $keyboard, 'html');
     step('home', $from_id);
+}
+#-----------product list header (noop) — نسخه 2.6.33: قبل از هندلر product_ تا خطای «سرویس پیدا نشد» ندهد------------#
+if (is_string($datain) && ($datain === 'prodlist_header' || $datain === 'product_header')) {
+    if (!empty($callback_query_id)) {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => '👇 یک محصول از لیست زیر انتخاب کنید',
+            'show_alert' => false,
+        ]);
+    }
+    return;
 }
 #-----------ownership guard: کاربر فقط سرویس خودش را ببیند/تغییر دهد------------#
 // قبلاً چند دکمه (product_ / config_ / subscriptionurl_ / extend_ / changelink_ / confirmchange_ / removebyuser-)
