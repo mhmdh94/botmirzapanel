@@ -3764,10 +3764,7 @@ function buildAdminSettingsInlineKeyboard()
     }
     $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'];
     $rows[] = $__last;
-    $rows[] = [
-        ['text' => '🩺 سلامت ربات', 'callback_data' => 'bothealth'],
-        ['text' => (function_exists('botButtonColorsOn') && botButtonColorsOn() ? '🎨 دکمه رنگی: روشن' : '🎨 دکمه رنگی: خاموش'), 'callback_data' => 'btncolor_tg'],
-    ];
+    // نسخه 2.6.27: دکمه رنگی فقط در «روشن/خاموش قابلیتها»؛ سلامت ربات کنار آمار ربات
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -8913,6 +8910,74 @@ function botAgoText($ts)
 }
 
 /** نسخه 2.4.6: صفحه سلامت ربات */
+/** نسخه 2.6.27: بخش وبهوک، دیتابیس و سرور در صفحه سلامت (فقط خواندنی) */
+function botHealthExtraSection()
+{
+    global $pdo, $version;
+    $t = '';
+    // وبهوک تلگرام
+    $t .= "\n🌐 <b>وبهوک تلگرام</b>\n";
+    try {
+        $w = telegram('getWebhookInfo', []);
+        $wr = (is_array($w) && !empty($w['ok']) && is_array($w['result'] ?? null)) ? $w['result'] : null;
+        if ($wr === null) {
+            $t .= "• ⚠️ اطلاعات وبهوک دریافت نشد\n";
+        } else {
+            $url = strval($wr['url'] ?? '');
+            $t .= "• وضعیت: " . ($url !== '' ? '🟢 تنظیم شده' : '🔴 تنظیم نشده') . "\n";
+            $pend = intval($wr['pending_update_count'] ?? 0);
+            $t .= "• پیامهای در صف: " . ($pend > 100 ? '🔴 ' : ($pend > 20 ? '🟡 ' : '🟢 ')) . number_format($pend) . "\n";
+            $le = intval($wr['last_error_date'] ?? 0);
+            if ($le > 0 && time() - $le < 86400) {
+                $msg = htmlspecialchars(mb_substr(strval($wr['last_error_message'] ?? ''), 0, 120, 'UTF-8'), ENT_QUOTES, 'UTF-8');
+                $t .= "• آخرین خطا: 🔴 " . botAgoText($le) . " — <code>{$msg}</code>\n";
+            } else {
+                $t .= "• آخرین خطا: 🟢 در ۲۴ ساعت اخیر خطایی نبوده\n";
+            }
+        }
+    } catch (Throwable $e) {
+        $t .= "• ⚠️ خطا در بررسی وبهوک\n";
+    }
+    // دیتابیس
+    $t .= "\n🗄 <b>دیتابیس</b>\n";
+    try {
+        $t0 = microtime(true);
+        $pdo->query("SELECT 1")->fetchColumn();
+        $ms = intval(round((microtime(true) - $t0) * 1000));
+        $t .= "• اتصال: " . ($ms > 200 ? '🟡 ' : '🟢 ') . "{$ms} میلیثانیه\n";
+        $sz = $pdo->query("SELECT COALESCE(SUM(data_length + index_length),0) FROM information_schema.TABLES WHERE table_schema = DATABASE()")->fetchColumn();
+        $t .= "• حجم: " . botFmtSize(intval($sz)) . "\n";
+        $uc = intval($pdo->query("SELECT COUNT(*) FROM user")->fetchColumn());
+        $ic = intval($pdo->query("SELECT COUNT(*) FROM invoice")->fetchColumn());
+        $t .= "• کاربران: " . number_format($uc) . " | فاکتورها: " . number_format($ic) . "\n";
+    } catch (Throwable $e) {
+        $t .= "• 🔴 خطا: <code>" . htmlspecialchars(mb_substr($e->getMessage(), 0, 120, 'UTF-8'), ENT_QUOTES, 'UTF-8') . "</code>\n";
+    }
+    // سرور
+    $t .= "\n🖥 <b>سرور</b>\n";
+    $t .= "• نسخه ربات: <code>" . htmlspecialchars(strval($version ?? '-'), ENT_QUOTES, 'UTF-8') . "</code> | PHP: <code>" . PHP_VERSION . "</code>\n";
+    $free = @disk_free_space(__DIR__);
+    $tot = @disk_total_space(__DIR__);
+    if ($free !== false && $tot) {
+        $pct = intval(round(100 * (1 - $free / $tot)));
+        $t .= "• دیسک: " . ($pct >= 90 ? '🔴 ' : ($pct >= 80 ? '🟡 ' : '🟢 ')) . "{$pct}٪ پر (" . botFmtSize(intval($free)) . " خالی)\n";
+    }
+    $la = function_exists('sys_getloadavg') ? @sys_getloadavg() : false;
+    if (is_array($la) && isset($la[0])) {
+        $t .= "• بار پردازنده (۱/۵/۱۵ دقیقه): " . implode(' / ', array_map(function ($x) { return number_format($x, 2); }, array_slice($la, 0, 3))) . "\n";
+    }
+    $mi = @file_get_contents('/proc/meminfo');
+    if (is_string($mi) && preg_match('/MemTotal:\s+(\d+)/', $mi, $m1) && preg_match('/MemAvailable:\s+(\d+)/', $mi, $m2) && intval($m1[1]) > 0) {
+        $mp = intval(round(100 * (1 - intval($m2[1]) / intval($m1[1]))));
+        $t .= "• رم: " . ($mp >= 90 ? '🔴 ' : ($mp >= 80 ? '🟡 ' : '🟢 ')) . "{$mp}٪ مصرف (" . botFmtSize(intval($m2[1]) * 1024) . " آزاد)\n";
+    }
+    $sh = function_exists('botCronShellAvailable') ? botCronShellAvailable() : false;
+    $cu = function_exists('getBotCronShellUser') ? getBotCronShellUser() : '';
+    $t .= "• shell_exec: " . ($sh ? '🟢 فعال' : '🟡 غیرفعال (نصب خودکار کرون ممکن نیست)') . ($cu !== '' ? " | کاربر: <code>" . htmlspecialchars($cu, ENT_QUOTES, 'UTF-8') . "</code>" : '') . "\n";
+    $t .= "• ساعت سرور: " . (function_exists('jdate') ? jdate('Y/m/d H:i') : date('Y-m-d H:i')) . "\n";
+    return $t;
+}
+
 function botHealthPage($note = '')
 {
     $dir = __DIR__ . '/cron';
@@ -8949,6 +9014,8 @@ function botHealthPage($note = '')
     $bk_on = function_exists('getPaySettingValue') && getPaySettingValue('backup_cron_enabled', '0') === '1';
     $t .= "• آخرین بکاپ موفق: " . botAgoText($bk) . ($bk_on ? '' : ' (بکاپ خودکار خاموش)') . "\n";
     $t .= "• پیام همگانی: " . (is_file($dir . '/info') ? '📨 در حال ارسال' : '—') . "\n";
+    // نسخه 2.6.27: وبهوک تلگرام، دیتابیس و سرور
+    $t .= botHealthExtraSection();
     // کانال گزارش
     $st = select("setting", "*", null, null, "select");
     $rc = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
@@ -8961,7 +9028,7 @@ function botHealthPage($note = '')
     $t .= "• حجم: ربات " . botFmtSize($l1['size']) . " | کرون " . botFmtSize($l2['size']) . " (بالای ۵ مگ خودکار جابه‌جا می‌شود)";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '📄 ۵۰ خط آخر لاگ', 'callback_data' => 'bothealth_log'], ['text' => '🔄 بروزرسانی', 'callback_data' => 'bothealth']],
-        [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
+        [['text' => '🔙 بازگشت به آمار ربات', 'callback_data' => 'stats_refresh']],
     ]], JSON_UNESCAPED_UNICODE);
     return [$t, $kb];
 }

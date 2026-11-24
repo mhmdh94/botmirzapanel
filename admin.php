@@ -1011,6 +1011,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics'] || (isset(
                 ['text' => '📥 اکسل ماه قبل', 'callback_data' => 'stats_excel_prev'],
             ],
             [
+                ['text' => '🩺 سلامت ربات', 'callback_data' => 'bothealth'],
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'stats_refresh'],
             ],
         ],
