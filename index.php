@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.10";
+$version = "2.6.11";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -3797,6 +3797,16 @@ if (isset($datain) && $datain === 'product_header') {
         return;
     }
     $__buy_deducted = $__price_buy;
+    // نسخه 2.6.11: موجودی بعد از خرید (برای پیام سرویس) + بستن پیشفاکتور تا دوباره زده نشود
+    $__bal_after_buy = intval($Balance_prim);
+    if (!empty($message_id) && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) {
+        Editmessagetext($from_id, $message_id,
+            "🧾 <b>پیشفاکتور خرید</b> — ✅ <b>پرداخت شد</b>\n\n"
+            . "📦 محصول: " . htmlspecialchars(strval($info_product['name_product'] ?? ''), ENT_QUOTES, 'UTF-8') . "\n"
+            . "💰 مبلغ: <b>" . number_format($__buy_deducted) . "</b> تومان\n\n"
+            . "⏳ در حال ساخت سرویس…",
+            json_encode(['inline_keyboard' => []]));
+    }
 
     if (in_array($randomString, $id_invoice)) {
         $random_number = random_int(1000000, 9999999);
@@ -3977,6 +3987,13 @@ if (isset($datain) && $datain === 'product_header') {
     } else {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $username_ac, $info_product['name_product'], $text_config, $link_config);
         $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($info_product['Service_time'] ?? 0) . ' روز', intval($info_product['Volume_constraint'] ?? 0) . ' گیگابایت') : null;
+    }
+    // نسخه 2.6.11: مبلغ کسرشده و موجودی فعلی زیر پیام «سرویس فعال شد»
+    if (isset($__bal_after_buy)) {
+        $textcreatuser .= "\n\n" . (intval($__buy_deducted ?? 0) > 0
+            ? "💰 مبلغ کسرشده: <b>" . number_format(intval($__buy_deducted)) . "</b> تومان"
+            : "🎁 با کد تخفیف رایگان")
+            . "\n👛 موجودی فعلی: <b>" . number_format($__bal_after_buy) . "</b> تومان";
     }
     if ($marzban_list_get['type'] == "mikrotik") {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
@@ -4623,7 +4640,10 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
     if ($user['Processing_value_tow'] == "getconfigafterpay") {
         sendmessage($from_id, $textbotlang['users']['Balance']['Send-receip-buy'], $keyboard, 'HTML');
     } else {
-        sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
+        $__rs_res = sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
+        if (function_exists('botSaveReceiptUserMsg') && strpos(strval($user['Processing_value_tow'] ?? ''), '|') === false) {
+            botSaveReceiptUserMsg($randomString, $from_id, $__rs_res);
+        }
     }
     if ($__admin_ok === 0) {
         // فقط لاگ؛ به کاربر پیام اضافه نده که گیج نشود

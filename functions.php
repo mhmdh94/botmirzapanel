@@ -2268,14 +2268,30 @@ function DirectPayment($order_id)
                 )
             );
         }
-        $textpay = sprintf($textbotlang['users']['moeny']['Charged.'], $credit_fmt, $Payment_report['id_order']) . botBalanceLine($Balance_confrim);
+        // نسخه 2.6.11: ترتیب: مبلغ، (هدیه پکیج)، موجودی فعلی، کد پیگیری، تشکر
+        $textpay = sprintf($textbotlang['users']['moeny']['Charged.'], $credit_fmt, $Payment_report['id_order']);
+        $__ins = '';
         if ($credit_amount > intval($Payment_report['price'])) {
-            $textpay .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
+            $__ins .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
         }
+        $__ins .= botBalanceLine($Balance_confrim);
+        $__pos = strpos($textpay, "\n🧾");
+        $textpay = ($__pos !== false) ? (substr($textpay, 0, $__pos) . $__ins . substr($textpay, $__pos)) : ($textpay . $__ins);
         // نسخه 2.2.4: پیام تأیید با دکمه خرید / سرویس‌های من؛ منوی به‌روز (موجودی) جدا
         $__kb_after = function_exists('botAfterDepositKeyboard') ? botAfterDepositKeyboard() : null;
         $__menu_bal = botMenuForBalance($Payment_report['id_user']);
-        if ($__kb_after) {
+        // نسخه 2.6.11: اگر پیام «رسید ارسال شد» تازه است (مثلاً تأیید خودکار)، همان پیام به «شارژ انجام شد» تبدیل شود
+        $__rcpt_msg = function_exists('botTakeReceiptUserMsg') ? botTakeReceiptUserMsg($Payment_report['id_order']) : null;
+        $__rcpt_edited = false;
+        if ($__rcpt_msg && strval($__rcpt_msg['chat_id']) === strval($Payment_report['id_user'])) {
+            $__er = Editmessagetext($Payment_report['id_user'], intval($__rcpt_msg['message_id']), $textpay, $__kb_after ?: json_encode(['inline_keyboard' => []]));
+            $__rcpt_edited = is_array($__er) && !empty($__er['ok']);
+        }
+        if ($__rcpt_edited) {
+            if ($__menu_bal) {
+                sendmessage($Payment_report['id_user'], $textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی', $__menu_bal, 'HTML');
+            }
+        } elseif ($__kb_after) {
             sendmessage($Payment_report['id_user'], $textpay, $__kb_after, 'HTML');
             if ($__menu_bal) {
                 sendmessage($Payment_report['id_user'], $textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی', $__menu_bal, 'HTML');
@@ -10375,5 +10391,63 @@ function botRenewDoneText($username, $product, $paid, $balance_after, $discount_
     }
     $t .= "\nبرای مشاهده سرویس یا بازگشت به لیست، از دکمههای زیر استفاده کنید.";
     return $t;
+}
+
+/** نسخه 2.6.11: پیام «رسید ارسال شد» کاربر را نگه دار تا بعد از تأیید همان پیام به «شارژ انجام شد» تبدیل شود */
+function botReceiptUserMsgTable()
+{
+    global $pdo;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS receipt_user_msg (
+            id_order VARCHAR(64) NOT NULL PRIMARY KEY,
+            chat_id VARCHAR(64) NOT NULL,
+            message_id BIGINT NOT NULL,
+            created_at INT NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $ok = true;
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+function botSaveReceiptUserMsg($order, $chat_id, $res)
+{
+    global $pdo;
+    $mid = (is_array($res) && isset($res['result']['message_id'])) ? intval($res['result']['message_id']) : 0;
+    if ($mid <= 0 || strval($order) === '' || !botReceiptUserMsgTable()) {
+        return;
+    }
+    try {
+        $pdo->prepare("REPLACE INTO receipt_user_msg (id_order, chat_id, message_id, created_at) VALUES (?, ?, ?, ?)")
+            ->execute([strval($order), strval($chat_id), $mid, time()]);
+        $pdo->prepare("DELETE FROM receipt_user_msg WHERE created_at < ?")->execute([time() - 7 * 86400]);
+    } catch (Throwable $e) {
+    }
+}
+
+/** پیام ذخیرهشده را برمیگرداند و حذف میکند؛ فقط اگر جوانتر از $max_age ثانیه باشد */
+function botTakeReceiptUserMsg($order, $max_age = 900)
+{
+    global $pdo;
+    if (strval($order) === '' || !botReceiptUserMsgTable()) {
+        return null;
+    }
+    try {
+        $st = $pdo->prepare("SELECT chat_id, message_id, created_at FROM receipt_user_msg WHERE id_order = ? LIMIT 1");
+        $st->execute([strval($order)]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        $pdo->prepare("DELETE FROM receipt_user_msg WHERE id_order = ?")->execute([strval($order)]);
+        if (!$r || (time() - intval($r['created_at'])) > $max_age) {
+            return null;
+        }
+        return $r;
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
