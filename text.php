@@ -90,18 +90,25 @@ $textbotlang['users']['sell']['service_sell'] = "🛍 <b>سرویس‌های م�
 
 ⚠️ سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور و این لیست حذف می‌شود.";
 $textbotlang['users']['sell']['service_empty_hint'] = "برای خرید اشتراک جدید از منوی اصلی استفاده کنید.";
-$textbotlang['users']['sell']['Service-select'] = "🛒 لوکیشن انتخاب شد.
-سرویس مورد نظر را انتخاب کنید:";
-$textbotlang['users']['sell']['Service-Location'] = "⚠️ لوکیشن انتخاب‌شده معتبر نیست.
-لطفاً دوباره از منو شروع کنید.";
-$textbotlang['users']['sell']['error-product'] = "⚠️ این محصول در دسترس نیست.";
+$textbotlang['users']['sell']['Service-select'] = "🛒 <b>لوکیشن انتخاب شد</b>
+
+یکی از سرویسهای زیر را انتخاب کنید:";
+$textbotlang['users']['sell']['Service-Location'] = "⚠️ <b>لوکیشن معتبر نیست</b>
+
+از منوی اصلی دوباره «خرید سرویس» را بزنید.";
+$textbotlang['users']['sell']['error-product'] = "⚠️ <b>این محصول در دسترس نیست</b>
+
+محصول دیگری انتخاب کنید یا از منوی اصلی دوباره شروع کنید.";
 $textbotlang['users']['sell']['None-credit'] = "⚠️ <b>موجودی کافی نیست</b>
 
 برای تکمیل این خرید ابتدا کیف پول را شارژ کنید.
 یکی از روش‌های پرداخت زیر را انتخاب کنید:";
-$textbotlang['users']['sell']['ErrorConfig'] = "⚠️ ساخت اشتراک انجام نشد.
+$textbotlang['users']['sell']['ErrorConfig'] = "⚠️ <b>ساخت اشتراک انجام نشد</b>
+
 لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
-$textbotlang['users']['sell']['selectpayment'] = "📌 یک روش پرداخت را انتخاب کنید:";
+$textbotlang['users']['sell']['selectpayment'] = "💳 <b>روش پرداخت</b>
+
+یکی از روشهای زیر را انتخاب کنید:";
 
 
 $textbotlang['users']['status']['notUsername'] = "اگر سرویس‌تان در لیست نیست، از دکمه زیر برای جستجو استفاده کنید.";
@@ -224,10 +231,10 @@ $textbotlang['users']['buy']['invoicebuy'] = "🧾 <b>پیش‌فاکتور خر
 📆 مدت: %s روز
 💰 مبلغ: <b>%s</b> تومان
 📊 حجم: %s گیگ
-💵 موجودی: %s تومان
+👛 موجودی فعلی: %s تومان
 %s
 
-✅ برای پرداخت، دکمه زیر را بزنید.";
+✅ برای پرداخت، دکمه «💰 پرداخت و دریافت سرویس» را بزنید.";
 $textbotlang['users']['buy']['payandGet'] = "💰 پرداخت و دریافت سرویس";
 $textbotlang['users']['buy']['cancel'] = "❌ انصراف";
 $textbotlang['users']['buy']['discount'] = "🎁 ثبت کد تخفیف";
@@ -236,9 +243,14 @@ $textbotlang['users']['buy']['configwg'] = "⚙️ کانفیگ شما";
 
 
 
-$textbotlang['users']['category']['NotFound'] = "❌ دسته‌بندی‌ای برای نمایش نیست.";
-$textbotlang['users']['category']['selectCategory'] = "📌 دسته‌بندی مورد نظر را انتخاب کنید:";
-$textbotlang['users']['category']['error'] = "⚠️ خرید کامل نشد.
+$textbotlang['users']['category']['NotFound'] = "📭 <b>دستهبندیای برای نمایش نیست</b>
+
+لطفاً بعداً دوباره سر بزنید.";
+$textbotlang['users']['category']['selectCategory'] = "📂 <b>انتخاب دستهبندی</b>
+
+یکی از دستهبندیهای زیر را انتخاب کنید:";
+$textbotlang['users']['category']['error'] = "⚠️ <b>خرید کامل نشد</b>
+
 از منوی اصلی دوباره «خرید سرویس» را بزنید.";
 
 
@@ -279,8 +291,11 @@ $textbotlang['users']['Extra_volume']['invoiceExtraVolume'] = "🧾 <b>پیش‌
 
 
 
-$textbotlang['users']['usertest']['limitwarning'] = "ℹ️ اکانت تست شما قبلاً ساخته شده است.\nبرای ادامه استفاده، یک اشتراک تهیه کنید 👇";
-$textbotlang['users']['usertest']['errorcreat'] = "⚠️ ساخت اکانت تست انجام نشد.
+$textbotlang['users']['usertest']['limitwarning'] = "ℹ️ <b>اکانت تست شما قبلاً ساخته شده</b>
+
+برای ادامه استفاده، یک اشتراک تهیه کنید 👇";
+$textbotlang['users']['usertest']['errorcreat'] = "⚠️ <b>ساخت اکانت تست انجام نشد</b>
+
 لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['usertest']['iduser'] = "آیدی عددی کاربر";
 $textbotlang['users']['usertest']['phonenumber'] = "شماره تلفن کاربر";
@@ -525,7 +540,9 @@ $textbotlang['users']['menu_main'] = "🏠 منوی اصلی";
 $textbotlang['users']['selectoption'] = "👇 یکی از گزینه‌های زیر را انتخاب کنید:";
 $textbotlang['users']['page']['next'] = "▶️ بعدی";
 $textbotlang['users']['page']['previous'] = "◀️ قبلی";
-$textbotlang['users']['Service']['Location'] = "🌏 موقعیت سرویس را انتخاب کنید:";
+$textbotlang['users']['Service']['Location'] = "🌏 <b>انتخاب لوکیشن</b>
+
+یکی از لوکیشنهای زیر را انتخاب کنید:";
 $textbotlang['users']['config'] = "کانفیگ‌های شما:";
 $textbotlang['users']['Invalid-comment'] = "❌ دستور نامعتبر است.";
 $textbotlang['users']['selectusername'] = "✏️ <b>نام کاربری سرویس</b> را بفرستید
@@ -636,12 +653,14 @@ $textbotlang['users']['search']['found'] = "✅ سرویس پیدا شد.
 
 $textbotlang['users']['search']['again'] = "🔎 جستجوی مجدد";
 
-$textbotlang['users']['buy']['create_failed_refund'] = "⚠️ ساخت سرویس انجام نشد.
+$textbotlang['users']['buy']['create_failed_refund'] = "⚠️ <b>ساخت سرویس انجام نشد</b>
 
 💰 مبلغ <b>%s</b> تومان به کیف پول برگشت داده شد.
 لطفاً دوباره تلاش کنید.";
 
-$textbotlang['users']['buy']['package_not_found'] = "❌ پکیج یافت نشد.";
+$textbotlang['users']['buy']['package_not_found'] = "⚠️ <b>پکیج یافت نشد</b>
+
+از منوی اصلی دوباره شروع کنید.";
 
 $textbotlang['users']['admin']['userinfo_unavailable'] = "❌ نمایش اطلاعات کاربر در دسترس نیست.";
 
@@ -1695,10 +1714,15 @@ $textbotlang['users']['Balance']['deposit_closed'] = "⛔️ واریز به ح�
 $textbotlang['users']['Extra_volume']['disabled'] = "⛔️ خرید حجم اضافه فعلاً غیرفعال است.";
 
 $textbotlang['Admin']['Status']['status_tariff_list'] = "دکمه لیست تعرفه";
-$textbotlang['users']['sell']['tariff_disabled'] = "⛔️ نمایش لیست تعرفه فعلا غیرفعال است.";
-$textbotlang['users']['sell']['buy_disabled'] = "⛔️ فعلا امکان خرید سرویس جدید وجود ندارد.
+$textbotlang['users']['sell']['tariff_disabled'] = "⛔️ <b>لیست تعرفه فعلاً غیرفعال است</b>
+
+لطفاً بعداً دوباره سر بزنید.";
+$textbotlang['users']['sell']['buy_disabled'] = "⛔️ <b>خرید سرویس فعلاً بسته است</b>
+
 لطفاً بعداً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
-$textbotlang['users']['usertest']['disabled'] = "⛔️ ساخت اکانت تست فعلا غیرفعال است.";
+$textbotlang['users']['usertest']['disabled'] = "⛔️ <b>ساخت اکانت تست فعلاً غیرفعال است</b>
+
+لطفاً بعداً دوباره سر بزنید.";
 $textbotlang['users']['balance_menu'] = "💰 موجودی کیف پول شما: %s تومان";
 
 
