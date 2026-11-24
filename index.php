@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.21";
+$version = "2.6.22";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -289,6 +289,31 @@ if (function_exists('shell_exec') && is_callable('shell_exec')) {
 #---------channel--------------#
 if ($user['username'] == "none" || $user['username'] == null) {
     update("user", "username", $username, "id", $from_id);
+}
+#----------- نسخه 2.6.22: دکمه منوی اصلی وسط مرحله ورود مبلغ → مرحله لغو و همان دکمه اجرا شود -----------#
+if (isset($user['step']) && in_array(strval($user['step']), ['getprice'], true) && isset($text) && is_string($text) && $text !== '' && empty($datain)) {
+    $__nav = [];
+    foreach ((array) ($datatextbot ?? []) as $__k => $__v) {
+        if (is_string($__v) && $__v !== '' && strpos(strval($__k), 'text_') === 0) {
+            $__nav[] = $__v;
+        }
+    }
+    $__nav[] = $textbotlang['Admin']['commendadmin'] ?? '';
+    $__nav[] = $textbotlang['Admin']['commendadminmanagment'] ?? '';
+    $__nav[] = $textbotlang['users']['affiliates']['btn'] ?? '';
+    $__nav[] = $textbotlang['users']['reseller_volume']['btn'] ?? '';
+    $__nav[] = $textbotlang['users']['reseller_request']['btn'] ?? '';
+    $__nav[] = $textbotlang['users']['backhome'] ?? '';
+    $__nav[] = 'ادمین';
+    $__t = trim($text);
+    $__is_nav = in_array($__t, array_filter($__nav), true) || strpos($__t, '/') === 0;
+    if (!$__is_nav && isset($datatextbot['text_account']) && $datatextbot['text_account'] !== '' && strpos($__t, $datatextbot['text_account']) === 0) {
+        $__is_nav = true; // دکمه حساب کاربری با موجودی روی آن
+    }
+    if ($__is_nav) {
+        step('home', $from_id);
+        $user['step'] = 'home';
+    }
 }
 #-----------User_Status------------#
 // ادمین‌ها حتی اگر وضعیت block داشته باشند محدود نمی‌شوند
