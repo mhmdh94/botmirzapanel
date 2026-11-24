@@ -638,14 +638,21 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
         $name = strval($result['name_product'] ?? '');
         // نسخه 2.5.0: برچسب محصول پیشنهادی
         if (function_exists('botFeaturedProductCode') && botFeaturedProductCode() !== '' && botFeaturedProductCode() === strval($result['code_product'] ?? '')) {
-            $name = '⭐ ' . $name . ' (پیشنهادی)';
+            // نسخه 2.5.2: فقط ستاره + دکمه رنگی (بدون کلمه «پیشنهادی» تا در گوشی جا شود)
+            $name = '⭐ ' . $name;
+            $__feat = true;
+        } else {
+            $__feat = false;
         }
         $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
         // دو ستون: نام محصول + قیمت — هر دو همان callback انتخاب محصول
-        $product['inline_keyboard'][] = [
-            ['text' => $price, 'callback_data' => $cb],
-            ['text' => $name, 'callback_data' => $cb],
-        ];
+        $__b1 = ['text' => $price, 'callback_data' => $cb];
+        $__b2 = ['text' => $name, 'callback_data' => $cb];
+        if ($__feat && function_exists('botButtonColorsOn') && botButtonColorsOn()) {
+            $__b1['style'] = 'success';
+            $__b2['style'] = 'success';
+        }
+        $product['inline_keyboard'][] = [$__b1, $__b2];
     }
     $product['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backmenu'] ?? '↩️ بازگشت', 'callback_data' => $backdata],

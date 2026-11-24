@@ -698,13 +698,18 @@ function botSendPhotoWithCopy(array $params, $copyText)
     $copyText = strval($copyText);
     if ($copyText !== '' && strlen($copyText) <= 256) {
         $withKb = $params;
-        $withKb['reply_markup'] = json_encode(['inline_keyboard' => [[
-            ['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $copyText]],
-        ]]], JSON_UNESCAPED_UNICODE);
+        $withKb['reply_markup'] = json_encode(['inline_keyboard' => [
+            [['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $copyText]]],
+            [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']],
+        ]], JSON_UNESCAPED_UNICODE);
         $res = telegram('sendphoto', $withKb);
         if (is_array($res) && !empty($res['ok'])) {
             return $res;
         }
+    }
+    // نسخه 2.5.2: حتی بدون دکمه کپی، راهنمای اتصال زیر QR
+    if (!isset($params['reply_markup'])) {
+        $params['reply_markup'] = json_encode(['inline_keyboard' => [[['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']]]], JSON_UNESCAPED_UNICODE);
     }
     return telegram('sendphoto', $params);
 }
