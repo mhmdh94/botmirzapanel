@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.4.9";
+$version = "2.5.0";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -197,6 +197,17 @@ if (isset($text) && is_string($text) && function_exists('botStripServiceCount'))
     $text = botStripServiceCount($text, $datatextbot);
 }
 // نسخه 2.2.3: دکمه خرید زیر پیام اکانت تست — پیام تست (لینک) ویرایش نشود، منوی خرید در پیام جدید
+# نسخه 2.5.0: راهنمای اتصال (اندروید / آیفون / ویندوز / مک)
+if (isset($datain) && is_string($datain) && preg_match('/^guide_(menu|menu_e|android|ios|win|mac)$/', $datain, $__gm)) {
+    if ($__gm[1] === 'menu') {
+        list($__gt, $__gk) = botGuidePage('');
+        sendmessage($from_id, $__gt, $__gk, 'HTML');
+    } else {
+        list($__gt, $__gk) = botGuidePage($__gm[1] === 'menu_e' ? '' : $__gm[1]);
+        Editmessagetext($from_id, $message_id, $__gt, $__gk);
+    }
+    return;
+}
 if (isset($datain) && $datain === 'buy_fromtest') {
     $datain = '';
     $text = $datatextbot['text_sell'];
@@ -691,6 +702,17 @@ if ($text == "/start") {
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
     sendmessage($from_id, $datatextbot['text_start'], $keyboard, 'html');
+    // نسخه 2.5.0: خوشآمد سهقدمی برای کاربر جدید
+    if (empty($__user_existed_before) && !in_array($from_id, (array)$admin_ids)) {
+        $__wk = [];
+        $__ut_on = !(isset($setting['status_usertest']) && strval($setting['status_usertest']) === '0');
+        if ($__ut_on) {
+            $__wk[] = [['text' => '🔑 دریافت اکانت تست رایگان', 'callback_data' => 'goto_usertest']];
+        }
+        $__wk[] = [['text' => '🛒 خرید اشتراک', 'callback_data' => 'buy_fromtest']];
+        $__wk[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
+        sendmessage($from_id, "👋 <b>خوش آمدید!</b>\n━━━━━━━━━━\n\nشروع در ۳ قدم:\n\n" . ($__ut_on ? "1️⃣ یک <b>اکانت تست رایگان</b> بگیرید و کیفیت را امتحان کنید\n" : "1️⃣ پلنها را از «خرید اشتراک» ببینید\n") . "2️⃣ <b>پلن مناسب</b> خود را انتخاب و خرید کنید\n3️⃣ با <b>راهنمای اتصال</b> در کمتر از یک دقیقه وصل شوید ✅", json_encode(['inline_keyboard' => $__wk], JSON_UNESCAPED_UNICODE), 'HTML');
+    }
     step('home', $from_id);
     return;
 }

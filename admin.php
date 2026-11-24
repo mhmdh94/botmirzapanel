@@ -298,6 +298,24 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
 }
 
 
+# نسخه 2.5.0: علامت محصول پیشنهادی
+if (isset($datain) && preg_match('/^shop_feat_(.+)$/', strval($datain), $__fm) && in_array($from_id, $admin_ids)) {
+    $__fc = strval($__fm[1]);
+    $__fp = function_exists('shopGetProductByCode') ? shopGetProductByCode($__fc) : null;
+    if (!$__fp) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'محصول یافت نشد', 'show_alert' => true]);
+        return;
+    }
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('featured_product', '');
+    }
+    $__cur_f = trim(strval(getPaySettingValue('featured_product', '')));
+    $__new_f = ($__cur_f === $__fc) ? '' : $__fc;
+    update("PaySetting", "ValuePay", $__new_f, "NamePay", "featured_product");
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__new_f !== '' ? '⭐ این محصول پیشنهادی شد (فقط یک محصول میتواند پیشنهادی باشد)' : 'برچسب پیشنهادی برداشته شد'), 'show_alert' => false]);
+    Editmessagetext($from_id, $message_id, shopProductDetailText($__fp), shopProductDetailKeyboard($__fc));
+    return;
+}
 # نسخه 2.4.8: روشن/خاموش دکمههای رنگی
 if (isset($datain) && $datain === 'btncolor_tg' && in_array($from_id, $admin_ids)) {
     if (function_exists('ensurePaySetting')) {
@@ -364,6 +382,9 @@ if (in_array($text, $textadmin) || $datain == "PANEL") {
         sendmessage($from_id, sprintf($textbotlang['Admin']['cron']['active_manual_sendmessage'], $cronCommandsendmessage), null, 'HTML');
     }
     $text_admin = sprintf($textbotlang['Admin']['login-admin'], $version);
+    if (function_exists('botAdminDashLine')) {
+        $text_admin .= botAdminDashLine();
+    }
     sendmessage($from_id, $text_admin, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['Admin']['Back-Adminment'] || $datain == "back_admin") {

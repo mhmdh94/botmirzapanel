@@ -3233,6 +3233,8 @@ function serviceInfoKeyboard($time_label, $volume_label, $with_buy = false)
     // نسخه 2.2.3: زیر پیام اکانت تست دکمه خرید (اگر خرید روشن باشد)
     global $setting;
     $__buy_on = !(is_array($setting) && isset($setting['status_buy']) && strval($setting['status_buy']) === '0');
+    // نسخه 2.5.0: دکمه راهنمای اتصال زیر پیام ساخت سرویس/اکانت تست
+    $rows[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
     if ($with_buy && $__buy_on) {
         $lbl = strval($datatextbot['text_sell'] ?? '');
         if ($lbl === '') {
@@ -8529,6 +8531,97 @@ function botLogTailFile($lines = 50)
     return $f;
 }
 
+/** نسخه 2.5.0: کد محصول پیشنهادی (PaySetting: featured_product) */
+function botFeaturedProductCode()
+{
+    static $v = null;
+    if ($v === null) {
+        $v = function_exists('getPaySettingValue') ? trim(strval(getPaySettingValue('featured_product', ''))) : '';
+    }
+    return $v;
+}
+
+/** نسخه 2.5.0: لینکهای برنامه اتصال */
+function botGuideApps()
+{
+    return [
+        'android' => ['title' => '📱 اندروید', 'apps' => [
+            ['Happ (گوگل پلی)', 'https://play.google.com/store/apps/details?id=com.happproxy'],
+            ['Happ (دانلود مستقیم APK)', 'https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk'],
+        ]],
+        'ios' => ['title' => '🍏 آیفون / آیپد', 'apps' => [
+            ['Happ (اپ استور)', 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215'],
+            ['Streisand (اپ استور)', 'https://apps.apple.com/us/app/streisand/id6450534064'],
+        ]],
+        'win' => ['title' => '💻 ویندوز', 'apps' => [
+            ['Happ (ویندوز ۶۴ بیتی)', 'https://github.com/Happ-proxy/happ-desktop/releases/latest/download/setup-Happ.x64.exe'],
+        ]],
+        'mac' => ['title' => '🖥 مک', 'apps' => [
+            ['Happ (اپ استور)', 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215'],
+            ['Happ (فایل dmg)', 'https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.macOS.universal.dmg'],
+        ]],
+    ];
+}
+
+/** نسخه 2.5.0: صفحه راهنمای اتصال — $os خالی = انتخاب سیستمعامل */
+function botGuidePage($os = '')
+{
+    $apps = botGuideApps();
+    if (!isset($apps[$os])) {
+        $t = "📖 <b>راهنمای اتصال</b>\n━━━━━━━━━━\n\nسیستمعامل دستگاهتان را انتخاب کنید تا برنامه مناسب و مراحل اتصال را ببینید 👇";
+        $kb = [
+            [['text' => $apps['android']['title'], 'callback_data' => 'guide_android'], ['text' => $apps['ios']['title'], 'callback_data' => 'guide_ios']],
+            [['text' => $apps['win']['title'], 'callback_data' => 'guide_win'], ['text' => $apps['mac']['title'], 'callback_data' => 'guide_mac']],
+            [['text' => '🛍 سرویسهای من', 'callback_data' => 'backorder']],
+        ];
+        return [$t, json_encode(['inline_keyboard' => $kb], JSON_UNESCAPED_UNICODE)];
+    }
+    $a = $apps[$os];
+    $names = ($os === 'ios') ? '<b>Happ</b> یا <b>Streisand</b>' : '<b>Happ</b>';
+    $t = "📖 <b>راهنمای اتصال — {$a['title']}</b>\n━━━━━━━━━━\n\n"
+        . "<b>۱. نصب برنامه</b>\nبرنامه {$names} را از دکمههای زیر نصب کنید.\n\n"
+        . "<b>۲. کپی لینک اشتراک</b>\nاز پیام ساخت سرویس یا «🛍 سرویسهای من» ← سرویس ← «لینک اشتراک»، روی لینک بزنید تا کپی شود.\n\n"
+        . "<b>۳. اضافه کردن به برنامه</b>\n"
+        . "<blockquote>• <b>روش اول (کپی):</b> برنامه را باز کنید، دکمه <b>+</b> بالای صفحه را بزنید و «<b>افزودن از کلیپبورد</b>» (Import from Clipboard) را انتخاب کنید.\n"
+        . "• <b>روش دوم (اسکن):</b> در سرویسهای من «📷 QR Code» را بگیرید؛ در برنامه دکمه <b>+</b> ← «<b>اسکن QR</b>» را بزنید و کد را اسکن کنید.</blockquote>\n\n"
+        . "<b>۴. اتصال</b>\nسرور اضافهشده را انتخاب کنید و دکمه اتصال را بزنید. اولین بار اجازه VPN را تأیید کنید ✅\n\n"
+        . "💡 اگر وصل نشد، در برنامه «بروزرسانی اشتراک» (Update) را بزنید یا با پشتیبانی تماس بگیرید.";
+    $kb = [];
+    foreach ($a['apps'] as $ap) {
+        $kb[] = [['text' => '⬇️ ' . $ap[0], 'url' => $ap[1]]];
+    }
+    $kb[] = [['text' => '🔙 انتخاب سیستمعامل دیگر', 'callback_data' => 'guide_menu_e'], ['text' => '🛍 سرویسهای من', 'callback_data' => 'backorder']];
+    return [$t, json_encode(['inline_keyboard' => $kb], JSON_UNESCAPED_UNICODE)];
+}
+
+/** نسخه 2.5.0: خط خلاصه بالای منوی ادمین */
+function botAdminDashLine()
+{
+    try {
+        $tz = new DateTimeZone('Asia/Tehran');
+        $d0 = (new DateTime('now', $tz))->setTime(0, 0, 0)->getTimestamp() - 1;
+        $sd = function_exists('salesLedgerSum') ? salesLedgerSum($d0) : ['cnt' => 0, 'sum' => 0];
+        $wait = botAdmCount("SELECT COUNT(*) FROM Payment_report WHERE payment_Status = 'waiting'");
+        $ph = json_decode(strval(@file_get_contents(__DIR__ . '/cron/panel_health.json')), true);
+        $g = 0;
+        $r = 0;
+        if (is_array($ph)) {
+            foreach ($ph as $st) {
+                if (is_array($st) && !empty($st['ok'])) {
+                    $g++;
+                } elseif (is_array($st)) {
+                    $r++;
+                }
+            }
+        }
+        $pl = ($g + $r) > 0 ? ("🖥 پنل: {$g}🟢" . ($r > 0 ? " {$r}🔴" : '')) : '';
+        return "\n\n📊 <b>امروز:</b> " . number_format(intval($sd['cnt'] ?? 0)) . " فروش (" . number_format(intval($sd['sum'] ?? 0)) . " تومان)"
+            . " | 🧾 " . number_format($wait) . " رسید در انتظار" . ($pl !== '' ? " | {$pl}" : '');
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
 function adminUsertestPanel()
 {
     global $pdo;
@@ -9064,7 +9157,21 @@ function shopProductListTitle($location = null)
     return "🏬 <b>مدیریت محصولات</b>\n📍 موقعیت: <code>{$safe}</code>\nتعداد: <b>{$n}</b>\n\nروی محصول بزنید تا ویرایش کنید.";
 }
 
+/** نسخه 2.5.0: + دکمه «⭐ پیشنهادی» */
 function shopProductDetailKeyboard($code)
+{
+    $kb = json_decode(strval(shopProductDetailKeyboardBase($code)), true);
+    if (!is_array($kb) || !isset($kb['inline_keyboard']) || !is_array($kb['inline_keyboard'])) {
+        return shopProductDetailKeyboardBase($code);
+    }
+    $is_f = (function_exists('botFeaturedProductCode') && botFeaturedProductCode() === strval($code));
+    $row = [['text' => ($is_f ? '⭐ پیشنهادی است (برداشتن)' : '⭐ علامت پیشنهادی'), 'callback_data' => 'shop_feat_' . $code]];
+    $n = count($kb['inline_keyboard']);
+    array_splice($kb['inline_keyboard'], max(0, $n - 1), 0, [$row]);
+    return json_encode($kb, JSON_UNESCAPED_UNICODE);
+}
+
+function shopProductDetailKeyboardBase($code)
 {
     $code = strval($code);
     return json_encode(['inline_keyboard' => [

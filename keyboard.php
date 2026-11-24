@@ -636,6 +636,10 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
             ? ("prodcutservices_" . $result['code_product'])
             : ("prodcutservice_" . $result['code_product']);
         $name = strval($result['name_product'] ?? '');
+        // نسخه 2.5.0: برچسب محصول پیشنهادی
+        if (function_exists('botFeaturedProductCode') && botFeaturedProductCode() !== '' && botFeaturedProductCode() === strval($result['code_product'] ?? '')) {
+            $name = '⭐ ' . $name . ' (پیشنهادی)';
+        }
         $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
         // دو ستون: نام محصول + قیمت — هر دو همان callback انتخاب محصول
         $product['inline_keyboard'][] = [
