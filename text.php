@@ -344,10 +344,7 @@ $textbotlang['users']['support']['GetMessageOfUser'] = "📥 <b>پیام پشت�
 %s";
 
 
-$textbotlang['users']['Balance']['priceinput'] = "💸 <b>مبلغ دلخواه</b>
-
-مبلغ را به تومان وارد کنید:
-✅ حداقل %s و حداکثر %s تومان";
+$textbotlang['users']['Balance']['priceinput'] = "💸 <b>مبلغ دلخواه</b>\n\n✅ حداقل %s و حداکثر %s تومان\n\nدکمه «💰 واریز حداقل مبلغ» را بزنید، یا مبلغ بیشتر را به تومان تایپ کنید:";
 $textbotlang['users']['Balance']['errorprice'] = "❌ <b>مبلغ نامعتبر</b>
 
 مبلغ را فقط به‌صورت عدد بفرستید (مثلاً 200000).";
@@ -1447,11 +1444,7 @@ $textbotlang['Admin']['bot_update']['no'] = "❌ انصراف";
 $textbotlang['Admin']['bot_update']['start'] = "⏳ <b>در حال دانلود و آپدیت... لطفاً صبر کنید</b>";
 $textbotlang['Admin']['bot_update']['only_admin'] = "❌ <b>فقط ادمین اصلی می‌تواند آپدیت کند</b>";
 
-$textbotlang['Admin']['bot_update']['success'] = "✅ آپدیت با موفقیت انجام شد.
-
-📁 تعداد فایل به‌روز شده: %s
-🔒 فایل‌های حساس (config و …) حفظ شدند.
-♻️ ربات آماده استفاده است.";
+$textbotlang['Admin']['bot_update']['success'] = "✅ <b>آپدیت با موفقیت انجام شد</b>\n\n📁 فایل‌های به‌روزشده: <b>%s</b>\n🔒 فایل‌های حساس (config و …) حفظ شدند\n♻️ ربات آماده استفاده است";
 $textbotlang['Admin']['bot_update']['fail'] = "❌ <b>آپدیت ناموفق بود</b>
 
 %s

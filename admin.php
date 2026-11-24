@@ -2515,23 +2515,40 @@ if ($datain == "bot_update_yes") {
         sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['fail'], 'تابع آپدیت موجود نیست.'), $setting_panel, 'HTML');
         return;
     }
+    $__ver_old = strval($version ?? '');
     $result = runBotSelfUpdate();
+    // نسخه 2.6.21: نسخه جدید از فایل بهروزشده
+    $__ver_new = '';
+    $__ix = @file_get_contents(__DIR__ . '/index.php');
+    if (is_string($__ix) && preg_match('/^\$version\s*=\s*"([^"]+)"/m', $__ix, $__vm)) {
+        $__ver_new = $__vm[1];
+    }
+    $__h = function ($v) { return htmlspecialchars(strval($v), ENT_QUOTES, 'UTF-8'); };
     if (!empty($result['ok'])) {
         $n = isset($result['files']) ? intval($result['files']) : 0;
         $msg = sprintf($textbotlang['Admin']['bot_update']['success'], $n);
+        if ($__ver_new !== '') {
+            $msg .= "\n🏷 نسخه: " . (($__ver_old !== '' && $__ver_old !== $__ver_new)
+                ? "<code>" . $__h($__ver_old) . "</code> ← <b>" . $__h($__ver_new) . "</b>"
+                : "<b>" . $__h($__ver_new) . "</b> (بدون تغییر نسخه)");
+        }
         if (!empty($result['backup'])) {
-            $msg .= "\n\n📦 بک‌آپ: <code>" . htmlspecialchars(strval($result['backup']), ENT_QUOTES, 'UTF-8') . "</code>";
+            $msg .= "\n\n📦 بک‌آپ: <code>" . $__h($result['backup']) . "</code>";
         }
         if (!empty($result['failed']) && intval($result['failed']) > 0) {
             $msg .= "\n\n⚠️ تعداد ناموفق: " . intval($result['failed']);
             if (!empty($result['message']) && $result['message'] !== 'ok') {
-                $msg .= "\n" . htmlspecialchars(strval($result['message']), ENT_QUOTES, 'UTF-8');
+                $msg .= "\n" . $__h($result['message']);
             }
         }
-        sendmessage($from_id, $msg, $setting_panel, 'HTML');
     } else {
         $err = isset($result['message']) ? $result['message'] : 'نامشخص';
-        sendmessage($from_id, sprintf($textbotlang['Admin']['bot_update']['fail'], $err), $setting_panel, 'HTML');
+        $msg = sprintf($textbotlang['Admin']['bot_update']['fail'], $__h($err));
+    }
+    // نسخه 2.6.21: همان پیام «در حال آپدیت» به نتیجه تبدیل شود
+    $__ur = Editmessagetext($from_id, $message_id, $msg, json_encode(['inline_keyboard' => []]));
+    if (!is_array($__ur) || empty($__ur['ok'])) {
+        sendmessage($from_id, $msg, $setting_panel, 'HTML');
     }
 }
 
