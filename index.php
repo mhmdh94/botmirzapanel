@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.19";
+$version = "2.6.20";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -44,6 +44,21 @@ if (!checktelegramip())
 if (!botVerifyWebhookSecret()) {
     http_response_code(403);
     die("Unauthorized access");
+}
+#----------- نسخه 2.6.20: بستن چرخش دکمه + «در حال نوشتن» برای کارهای کند -----------#
+if (!empty($callback_query_id)) {
+    register_shutdown_function(function () use ($callback_query_id) {
+        if (empty($GLOBALS['__cb_answered'])) {
+            $GLOBALS['__cb_answered'] = true;
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
+        }
+    });
+    if (is_string($datain) && preg_match('/^(confirmandgetservice|confirmandgetserviceDiscount|confirmserivce-|product_|extend_|renewsame_|rebuy_|serviceextendselect_|prodcutservice|qrcode_|Confirm_pay_|remoceserviceadmin-|rfamt_|user_tx_history|backorder|next_page|previous_page)/', $datain)) {
+        telegram('sendChatAction', ['chat_id' => $from_id, 'action' => 'typing']);
+    }
+} elseif (isset($text) && is_string($text) && $text !== '' && isset($datatextbot) && is_array($datatextbot)
+    && in_array($text, array_filter([$datatextbot['text_Purchased_services'] ?? '', $datatextbot['text_usertest'] ?? '']), true)) {
+    telegram('sendChatAction', ['chat_id' => $from_id, 'action' => 'typing']);
 }
 #-----------duplicate update guard------------#
 if (!botClaimUpdate($update['update_id'] ?? 0))
@@ -4227,7 +4242,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
         step('home', $from_id);
     } else {
         $depLim = getDepositLimits();
-        sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
+        sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), (function_exists('botMinDepositKeyboard') ? botMinDepositKeyboard($depLim['min']) : $backuser), 'HTML');
         step('getprice', $from_id);
     }
 } elseif ($datain == "balpkg_list" || $datain == "balpkg_header") {
@@ -4270,7 +4285,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
     deletemessage($from_id, $message_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
     update("user", "Processing_value_one", "0", "id", $from_id);
-    sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), $backuser, 'HTML');
+    sendmessage($from_id, sprintf($textbotlang['users']['Balance']['priceinput'], formatToman($depLim['min']), formatToman($depLim['max'])), (function_exists('botMinDepositKeyboard') ? botMinDepositKeyboard($depLim['min']) : $backuser), 'HTML');
     step('getprice', $from_id);
 } elseif (preg_match('/^balpkg_(.+)$/', strval($datain), $m_bp) && $datain != "balpkg_custom" && $datain != "balpkg_header" && $datain != "balpkg_list" && $datain != "balpkg_menu") {
     if (function_exists('isDepositEnabled') && !isDepositEnabled()) {

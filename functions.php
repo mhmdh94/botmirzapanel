@@ -10599,3 +10599,16 @@ function botCodeExists($input, $list)
     return false;
 }
 
+/** نسخه 2.6.20: دکمه «واریز حداقل مبلغ» زیر پیام مبلغ دلخواه */
+function botMinDepositKeyboard($min)
+{
+    global $textbotlang;
+    $min = intval($min);
+    $rows = [];
+    if ($min > 0) {
+        $rows[] = [['text' => '💰 واریز حداقل مبلغ (' . number_format($min) . ' تومان)', 'callback_data' => 'dep_min_go']];
+    }
+    $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠 بازگشت', 'callback_data' => 'backuser']];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
+}
+

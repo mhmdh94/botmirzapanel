@@ -286,6 +286,10 @@ function telegram($method, $datas = [])
 {
     global $APIKEY;
     $method = strval($method);
+    // نسخه 2.6.20: ثبت پاسخ به دکمه شیشهای (برای بستن خودکار چرخش دکمه در پایان درخواست)
+    if (strtolower($method) === 'answercallbackquery') {
+        $GLOBALS['__cb_answered'] = true;
+    }
     // نسخه 2.4.8: رنگ خودکار دکمه‌ها (style) + برگشت بدون رنگ اگر تلگرام نپذیرفت
     $__styled = false;
     $__orig = $datas;
