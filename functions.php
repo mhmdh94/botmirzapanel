@@ -10568,3 +10568,34 @@ function botDiscountExpireLabel($row)
     return "تا {$d} ({$ltxt})";
 }
 
+/** نسخه 2.6.19: کد واردشده را بدون حساسیت به حروف بزرگ/کوچک به کد ثبتشده تبدیل میکند */
+function botCanonCode($input, $list)
+{
+    $in = trim(str_replace(["\u{200C}", "\u{200E}", "\u{200F}"], '', strval($input)));
+    if ($in === '' || !is_array($list)) {
+        return $in;
+    }
+    if (in_array($in, $list, true)) {
+        return $in;
+    }
+    $low = strtolower($in);
+    foreach ($list as $c) {
+        if (strtolower(strval($c)) === $low) {
+            return strval($c);
+        }
+    }
+    return $in;
+}
+
+/** آیا کد (بدون حساسیت به حروف) وجود دارد؟ */
+function botCodeExists($input, $list)
+{
+    $low = strtolower(trim(strval($input)));
+    foreach ((array) $list as $c) {
+        if (strtolower(strval($c)) === $low) {
+            return true;
+        }
+    }
+    return false;
+}
+

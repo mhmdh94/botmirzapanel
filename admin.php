@@ -3907,7 +3907,7 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
     sendmessage($from_id, $textbotlang['Admin']['Discountsell']['GetCode'], $backadmin, 'HTML');
     step('get_codesell', $from_id);
 } elseif ($user['step'] == "get_codesell") {
-    if (in_array($text, $SellDiscount)) {
+    if (in_array($text, $SellDiscount) || (function_exists('botCodeExists') && botCodeExists($text, $SellDiscount))) {
         sendmessage($from_id, $textbotlang['Admin']['Discount']['Discountused'], $backadmin, 'HTML');
         return;
     }

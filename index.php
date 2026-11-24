@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.18";
+$version = "2.6.19";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1880,6 +1880,8 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     deletemessage($from_id, $message_id);
     return;
 } elseif ($user['step'] == "getcodeextDiscount") {
+    // نسخه 2.6.19: بدون حساسیت به حروف بزرگ/کوچک
+    $text = function_exists('botCanonCode') ? botCanonCode($text, (array) $SellDiscount) : $text;
     $__xd_code = trim(strval($text));
     if ($__xd_code === '' || !in_array($__xd_code, (array) $SellDiscount, true)) {
         sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
@@ -4133,6 +4135,8 @@ if (isset($datain) && $datain === 'product_header') {
     step('getcodesellDiscount', $from_id);
     deletemessage($from_id, $message_id);
 } elseif ($user['step'] == "getcodesellDiscount") {
+    // نسخه 2.6.19: بدون حساسیت به حروف بزرگ/کوچک
+    $text = function_exists('botCanonCode') ? botCanonCode($text, (array) $SellDiscount) : $text;
     if (!in_array($text, $SellDiscount)) {
         sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
         return;
@@ -4720,6 +4724,8 @@ if ($datain == "Discount") {
     sendmessage($from_id, $textbotlang['users']['Discount']['getcode'], $backuser, 'HTML');
     step('get_code_user', $from_id);
 } elseif ($user['step'] == "get_code_user") {
+    // نسخه 2.6.19: بدون حساسیت به حروف بزرگ/کوچک
+    $text = function_exists('botCanonCode') ? botCanonCode($text, (array) $code_Discount) : $text;
     // جلوگیری از ثبت همزمان یک کد هدیه (دو پیام پشت سر هم = دو بار شارژ)
     if (!walletLock('gift_' . $from_id)) {
         sendmessage($from_id, $textbotlang['users']['busy_or_balance'] ?? "⏳ لطفاً چند ثانیه دیگر دوباره تلاش کنید.", $keyboard, 'HTML');
