@@ -5043,12 +5043,29 @@ function syncBotCrontabs()
             : 'دستور crontab اجرا شد ولی همه خطوط این دامنه تأیید نشدند.',
         'lines' => $wanted,
         'installed' => $installed,
+        'user' => function_exists('getBotCronShellUser') ? getBotCronShellUser() : '',
     ];
 }
 
 /**
  * حذف کرون‌های فقط همین ربات (بر اساس دامنه) از crontab
  */
+/** نسخه 2.6.23: کاربر لینوکسی که PHP با آن اجرا میشود (کرون در crontab همین کاربر نصب میشود) */
+function getBotCronShellUser()
+{
+    $who = '';
+    if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
+        $pw = @posix_getpwuid(@posix_geteuid());
+        if (is_array($pw) && !empty($pw['name'])) {
+            $who = strval($pw['name']);
+        }
+    }
+    if ($who === '' && botCronShellAvailable()) {
+        $who = trim(strval(@shell_exec('whoami 2>/dev/null') ?: ''));
+    }
+    return preg_match('/^[A-Za-z0-9._-]+$/', $who) ? $who : '';
+}
+
 function removeBotCrontabs()
 {
     if (!botCronShellAvailable()) {

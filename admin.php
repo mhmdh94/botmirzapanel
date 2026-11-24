@@ -5227,7 +5227,15 @@ if ($datain == "smartcron_install_crontab") {
         if ($lines_txt !== '') {
             $msg .= "\n\n📌 خطوط نصب‌شده:" . $lines_txt;
         }
-        $msg .= "\n\nبرای اطمینان روی سرور بزنید:\n<code>crontab -l</code>";
+        $cu = strval($res['user'] ?? '');
+        if ($cu !== '' && $cu !== 'root') {
+            $cu_h = htmlspecialchars($cu, ENT_QUOTES, 'UTF-8');
+            $msg .= "\n\n👤 کرون در crontab کاربر <code>" . $cu_h . "</code> نصب شد (کاربری که PHP/وبسرور با آن اجرا میشود)، نه root.";
+            $msg .= "\n\nبرای دیدن آن، روی سرور با root بزنید:\n<code>crontab -u " . $cu_h . " -l</code>";
+            $msg .= "\n\nℹ️ دستور <code>crontab -l</code> با root فقط کرونهای خود root را نشان میدهد.";
+        } else {
+            $msg .= "\n\nبرای اطمینان روی سرور بزنید:\n<code>crontab -l</code>";
+        }
     } else {
         $msg = "⚠️ <b>نصب خودکار ممکن نشد</b>\n\n" . htmlspecialchars($res['message'] ?? '', ENT_QUOTES, 'UTF-8');
         if ($lines_txt !== '') {
