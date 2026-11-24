@@ -929,10 +929,7 @@ try {
 
 $keyboard = [
     'keyboard' => $keyboard_rows,
-    'resize_keyboard' => true,
-    // نسخه 2.6.3: بعد از زدن هر دکمه منو، کیبورد پایین میرود تا پیام بعدی (مثل لیست خرید) در موبایل کامل دیده شود.
-    // کاربر با آیکون کیبورد کنار کادر پیام دوباره بازش میکند؛ با پیام بعدی که منو دارد هم خودش برمیگردد.
-    'one_time_keyboard' => true
+    'resize_keyboard' => true
 ];
 if (isset($from_id) && is_array($admin_ids) && in_array($from_id, $admin_ids)) {
     $keyboard['keyboard'][] = [
