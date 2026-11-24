@@ -344,22 +344,43 @@ $textbotlang['users']['support']['GetMessageOfUser'] = "📥 <b>پیام پشت�
 %s";
 
 
-$textbotlang['users']['Balance']['priceinput'] = "💸 مبلغ را به تومان وارد کنید:
+$textbotlang['users']['Balance']['priceinput'] = "💸 <b>مبلغ دلخواه</b>
+
+مبلغ را به تومان وارد کنید:
 ✅ حداقل %s و حداکثر %s تومان";
-$textbotlang['users']['Balance']['errorprice'] = "❌ مبلغ را فقط به‌صورت عدد بفرستید (مثلاً 200000).";
-$textbotlang['users']['Balance']['errorpricelimit'] = "❌ مبلغ باید بین <b>%s</b> و <b>%s</b> تومان باشد.";
-$textbotlang['users']['Balance']['selectPatment'] = "💵 روش پرداخت را انتخاب کنید:";
-$textbotlang['users']['moeny']['no_payment_method'] = "⚠️ در حال حاضر هیچ روش پرداختی فعال نیست.\nلطفاً با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['Balance']['errorprice'] = "❌ <b>مبلغ نامعتبر</b>
+
+مبلغ را فقط بهصورت عدد بفرستید (مثلاً 200000).";
+$textbotlang['users']['Balance']['errorpricelimit'] = "❌ <b>مبلغ خارج از محدوده</b>
+
+مبلغ باید بین <b>%s</b> و <b>%s</b> تومان باشد.";
+$textbotlang['users']['Balance']['selectPatment'] = "💳 یکی از روشهای پرداخت زیر را انتخاب کنید:";
+$textbotlang['users']['moeny']['no_payment_method'] = "⚠️ <b>روش پرداختی فعال نیست</b>
+
+لطفاً با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['Balance']['reject_pay'] = "❌ رد پرداخت";
 $textbotlang['users']['Balance']['Confirmpayadmin'] = "ℹ️ این پرداخت قبلاً تأیید شده است.";
-$textbotlang['users']['Balance']['finished'] = "✅ پرداخت شما با موفقیت تأیید شد.";
-$textbotlang['users']['Balance']['sending'] = "⏳ پرداخت دریافت شد و در حال بررسی است.\nلطفاً منتظر بمانید.";
-$textbotlang['users']['Balance']['expired'] = "⚠️ زمان لینک پرداخت تمام شده و قابل بررسی نیست.";
-$textbotlang['users']['Balance']['refunded'] = "↩️ مبلغ به کیف پول شما برگشت داده شد.";
+$textbotlang['users']['Balance']['finished'] = "✅ <b>پرداخت تأیید شد</b>
+
+پرداخت شما با موفقیت تأیید شد.";
+$textbotlang['users']['Balance']['sending'] = "⏳ <b>پرداخت در حال بررسی</b>
+
+پرداخت دریافت شد؛ لطفاً منتظر بمانید.";
+$textbotlang['users']['Balance']['expired'] = "⚠️ <b>لینک پرداخت منقضی شده</b>
+
+از «افزایش موجودی» دوباره اقدام کنید.";
+$textbotlang['users']['Balance']['refunded'] = "↩️ <b>مبلغ برگشت داده شد</b>
+
+مبلغ به کیف پول شما برگشت داده شد.";
 $textbotlang['users']['Balance']['waiting'] = "⏳ در انتظار تأیید پرداخت";
-$textbotlang['users']['Balance']['Failed'] = "❌ پرداخت شما تأیید نشد.";
-$textbotlang['users']['Balance']['Confirmpay'] = "✅ <b>پرداخت تأیید شد</b>\nمبلغ به موجودی کیف پول شما اضافه شد.";
-$textbotlang['users']['Balance']['Invalid-receipt'] = "❌ رسید نامعتبر است.
+$textbotlang['users']['Balance']['Failed'] = "❌ <b>پرداخت تأیید نشد</b>
+
+اگر مبلغی کسر شده، با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['Balance']['Confirmpay'] = "✅ <b>پرداخت تأیید شد</b>
+
+مبلغ به موجودی کیف پول شما اضافه شد.";
+$textbotlang['users']['Balance']['Invalid-receipt'] = "❌ <b>رسید نامعتبر است</b>
+
 فقط <b>عکس</b> رسید را ارسال کنید (نه فایل PDF یا متن).";
 $textbotlang['users']['Balance']['Confirmpaying'] = "✅ تأیید پرداخت";
 $textbotlang['users']['Balance']['Send-receipt'] = "🚀 <b>رسید ارسال شد</b>
@@ -475,15 +496,33 @@ $textbotlang['users']['status']['acceptrequest'] = "✅ درخواست حذف س
 $textbotlang['users']['status']['rejectrequest'] = "دلیل رد را بفرستید:";
 
 $textbotlang['users']['Discount']['titlebtn'] = "🎁 کد هدیه";
-$textbotlang['users']['Discount']['getcode'] = "🎁 کد هدیه را ارسال کنید:";
-$textbotlang['users']['Discount']['notcode'] = "❌ کد نامعتبر است.";
-$textbotlang['users']['Discount']['onecode'] = "⚠️ این کد فقط یک‌بار قابل استفاده است.";
-$textbotlang['users']['Discount']['getcodesell'] = "🏷 کد تخفیف را ارسال کنید:";
-$textbotlang['users']['Discount']['correctcode'] = "✅ کد تخفیف اعمال شد و مبلغ فاکتور به‌روز شد.";
-$textbotlang['users']['Discount']['erorrlimit'] = "❌ سقف استفاده از این کد تخفیف تمام شده است.";
-$textbotlang['users']['Discount']['erorrlimitdiscount'] = "❌ سقف استفاده از این کد هدیه تمام شده است.";
-$textbotlang['users']['Discount']['firstdiscount'] = "❌ این کد فقط برای خرید اول است.";
-$textbotlang['users']['Discount']['acceptdiscount'] = "✅ کد هدیه ثبت شد.\n💰 <b>%s</b> تومان به موجودی شما اضافه شد.";
+$textbotlang['users']['Discount']['getcode'] = "🎁 <b>ثبت کد هدیه</b>
+
+کد هدیه را ارسال کنید:";
+$textbotlang['users']['Discount']['notcode'] = "❌ <b>کد نامعتبر است</b>
+
+کد را بررسی کنید و دوباره بفرستید.";
+$textbotlang['users']['Discount']['onecode'] = "⚠️ <b>این کد قبلاً استفاده شده</b>
+
+هر کد فقط یکبار قابل استفاده است.";
+$textbotlang['users']['Discount']['getcodesell'] = "🏷 <b>کد تخفیف</b>
+
+کد تخفیف را ارسال کنید:";
+$textbotlang['users']['Discount']['correctcode'] = "✅ <b>کد تخفیف اعمال شد</b>
+
+مبلغ فاکتور بهروز شد.";
+$textbotlang['users']['Discount']['erorrlimit'] = "❌ <b>ظرفیت کد تخفیف تمام شده</b>
+
+سقف استفاده از این کد پر شده است.";
+$textbotlang['users']['Discount']['erorrlimitdiscount'] = "❌ <b>ظرفیت کد هدیه تمام شده</b>
+
+سقف استفاده از این کد پر شده است.";
+$textbotlang['users']['Discount']['firstdiscount'] = "❌ <b>این کد فقط برای خرید اول است</b>
+
+برای خرید فعلی قابل استفاده نیست.";
+$textbotlang['users']['Discount']['acceptdiscount'] = "✅ <b>کد هدیه ثبت شد</b>
+
+💰 <b>%s</b> تومان به موجودی شما اضافه شد.";
 
 
 
@@ -621,16 +660,28 @@ $textbotlang['users']['pricelist'] = "📋 تعرفه اشتراک‌ها";
 $textbotlang['users']['affiliates']['setpercentage'] = "📊 درصد پورسانت بعد از خرید را بفرستید:";
 $textbotlang['users']['affiliates']['changedpercentage'] = "✅ درصد پورسانت ذخیره شد.";
 $textbotlang['users']['affiliates']['banner'] = "📸 بنر مشارکت در فروش را ارسال کنید.\nبنر باید همراه با عکس باشد.";
-$textbotlang['users']['affiliates']['affiliatesyou'] = "❌ امکان ثبت با این شناسه وجود ندارد.";
+$textbotlang['users']['affiliates']['affiliatesyou'] = "❌ <b>ثبت با این لینک ممکن نیست</b>
+
+لینک دعوت را بررسی کنید.";
 $textbotlang['users']['affiliates']['invalidbanner'] = "❌ بنر نامعتبر است. حتماً همراه با عکس ارسال کنید.";
 $textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر با موفقیت ثبت شد.";
-$textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ نمی‌توانید با لینک مشارکت خودتان ثبت شوید";
+$textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ <b>لینک دعوت خودتان است</b>
+
+نمیتوانید با لینک مشارکت خودتان ثبت شوید.";
 $textbotlang['users']['affiliates']['priceDiscount'] = "🎁 مبلغ هدیه هر دعوت موفق را به تومان بفرستید:";
 $textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ هدیه دعوت ذخیره شد.";
-$textbotlang['users']['affiliates']['offaffiliates'] = "❌ بخش مشارکت در فروش خاموش است.";
-$textbotlang['users']['affiliates']['affiliateseduser'] = "❌ قبلاً با لینک دعوت یک کاربر ثبت شده‌اید و نمی‌توانید لینک دیگری را استفاده کنید.";
-$textbotlang['users']['affiliates']['already_member'] = "❌ شما از قبل عضو ربات هستید و امکان ثبت از طریق لینک دعوت وجود ندارد.";
-$textbotlang['users']['affiliates']['giftuser'] = "🎁 مبلغ <b>%s</b> تومان از طرف دعوت‌کننده (<code>%s</code>) به موجودی شما اضافه شد.";
+$textbotlang['users']['affiliates']['offaffiliates'] = "⛔️ <b>مشارکت در فروش فعلاً غیرفعال است</b>
+
+لطفاً بعداً دوباره سر بزنید.";
+$textbotlang['users']['affiliates']['affiliateseduser'] = "ℹ️ <b>قبلاً با لینک دعوت ثبت شدهاید</b>
+
+امکان استفاده از لینک دعوت دیگر وجود ندارد.";
+$textbotlang['users']['affiliates']['already_member'] = "ℹ️ <b>شما از قبل عضو ربات هستید</b>
+
+ثبت از طریق لینک دعوت فقط برای کاربران جدید است.";
+$textbotlang['users']['affiliates']['giftuser'] = "🎁 <b>هدیه دعوت واریز شد</b>
+
+💰 مبلغ <b>%s</b> تومان از طرف دعوتکننده (<code>%s</code>) به موجودی شما اضافه شد.";
 $textbotlang['users']['affiliates']['porsantuser'] = "🎁 <b>پورسانت واریز شد</b>
 
 💰 مبلغ <b>%s</b> تومان به کیف پول شما اضافه شد.";
@@ -1672,7 +1723,7 @@ $textbotlang['users']['Balance']['packages_list_title'] = "🎁 <b>پکیج‌ه
 $textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه";
 $textbotlang['users']['Balance']['packages_btn'] = "🎁 پکیج‌های واریزی تخفیف‌دار";
 $textbotlang['users']['Balance']['back_to_deposit'] = "🔙 بازگشت";
-$textbotlang['users']['Balance']['package_selected'] = "🎁 پکیج انتخاب شد
+$textbotlang['users']['Balance']['package_selected'] = "🎁 <b>پکیج انتخاب شد</b>
 
 📦 اعتبار دریافتی: <b>%s</b> تومان
 🏷 تخفیف: <b>%s٪</b>
