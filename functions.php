@@ -10496,3 +10496,17 @@ function botRebuyKeyboard($inv)
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
+/** نسخه 2.6.15: بهروزرسانی پیشفاکتور «در حال ساخت سرویس» بعد از پایان ساخت */
+function botFinishBuyInvoiceMsg($chat_id, $mid, $product_name, $amount, $ok)
+{
+    $mid = intval($mid);
+    if ($mid <= 0) {
+        return;
+    }
+    $txt = "🧾 <b>پیشفاکتور خرید</b> — ✅ <b>پرداخت شد</b>\n\n"
+        . "📦 محصول: " . htmlspecialchars(strval($product_name), ENT_QUOTES, 'UTF-8') . "\n"
+        . "💰 مبلغ: <b>" . number_format(intval($amount)) . "</b> تومان\n\n"
+        . ($ok ? "✅ سرویس ساخته شد؛ اطلاعات آن در پیام زیر است." : "⚠️ ساخت سرویس ناموفق بود؛ مبلغ به کیف پول برگشت داده شد.");
+    Editmessagetext($chat_id, $mid, $txt, json_encode(['inline_keyboard' => []]));
+}
+

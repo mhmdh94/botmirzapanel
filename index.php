@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.14";
+$version = "2.6.15";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -3820,6 +3820,7 @@ if (isset($datain) && $datain === 'product_header') {
         return;
     }
     $__buy_deducted = $__price_buy;
+    $__inv_mid = (!empty($message_id) && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) ? intval($message_id) : 0;
     // نسخه 2.6.11: موجودی بعد از خرید (برای پیام سرویس) + بستن پیشفاکتور تا دوباره زده نشود
     $__bal_after_buy = intval($Balance_prim);
     if (!empty($message_id) && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) {
@@ -3881,6 +3882,7 @@ if (isset($datain) && $datain === 'product_header') {
         }
         if ($refunded > 0) {
             $price_fmt = number_format($refunded);
+            if (function_exists('botFinishBuyInvoiceMsg')) { botFinishBuyInvoiceMsg($from_id, $__inv_mid ?? 0, $info_product['name_product'] ?? '', $__buy_deducted ?? 0, false); }
             sendmessage($from_id, sprintf($textbotlang['users']['buy']['create_failed_refund'], $price_fmt), $keyboard, 'HTML');
             $admin_extra = "
 
@@ -4020,6 +4022,7 @@ if (isset($datain) && $datain === 'product_header') {
     }
     if ($marzban_list_get['type'] == "mikrotik") {
         sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
+        if (function_exists('botFinishBuyInvoiceMsg')) { botFinishBuyInvoiceMsg($from_id, $__inv_mid ?? 0, $info_product['name_product'] ?? '', $__buy_deducted ?? 0, true); }
         sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
     } else {
         if ($marzban_list_get['sublink'] == "onsublink") {
@@ -4064,6 +4067,7 @@ if (isset($datain) && $datain === 'product_header') {
                 sendDocument($from_id, $urldocs, $textbotlang['users']['buy']['configwg']);
                 @unlink($urldocs);
             }
+            if (function_exists('botFinishBuyInvoiceMsg')) { botFinishBuyInvoiceMsg($from_id, $__inv_mid ?? 0, $info_product['name_product'] ?? '', $__buy_deducted ?? 0, true); }
             sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         } elseif ($marzban_list_get['config'] == "onconfig") {
             if (count($dataoutput['configs']) == 1) {
@@ -4090,6 +4094,7 @@ if (isset($datain) && $datain === 'product_header') {
             }
         } else {
             sendmessage($from_id, $textcreatuser, $Shoppinginfo, 'HTML');
+            if (function_exists('botFinishBuyInvoiceMsg')) { botFinishBuyInvoiceMsg($from_id, $__inv_mid ?? 0, $info_product['name_product'] ?? '', $__buy_deducted ?? 0, true); }
             sendmessage($from_id, ($textbotlang['users']['menu_main'] ?? '🏠 منوی اصلی'), (botMenuForBalance($from_id) ?: $keyboard), 'HTML');
         }
     }
