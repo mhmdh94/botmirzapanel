@@ -93,7 +93,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     DirectPayment($Payment_report['id_order']);
     // نسخه 2.3.3: پیام رسید نزد ادمینها → «تأیید خودکار شد»
     if (function_exists('botMarkReceiptMsgs')) {
-        botMarkReceiptMsgs($Payment_report['id_order'], '🤖 تأیید خودکار شد', 0, 0, intval($Payment_report['id_user'] ?? 0));
+        botMarkReceiptMsgs($Payment_report['id_order'], '✅ پرداخت تأیید شده است', 0, 0, intval($Payment_report['id_user'] ?? 0), 'success', '🤖 تأیید خودکار شد');
     }
     if (function_exists('notifyUserReceiptAccepted')) {
         notifyUserReceiptAccepted(

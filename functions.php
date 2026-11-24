@@ -2420,7 +2420,7 @@ function botSaveReceiptMsgs($order, $msgs, $kind = 'photo', $caption = '')
  * همه نسخههای پیام رسید را ویرایش کن (وضعیت + برداشتن دکمههای تأیید/رد).
  * $skip_chat/$skip_mid: پیامی که خود ادمین روی آن کلیک کرده (جدا ویرایش میشود).
  */
-function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid = 0)
+function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid = 0, $style = '', $header = '')
 {
     global $pdo;
     if (!botEnsureReceiptMsgsTable()) {
@@ -2433,11 +2433,20 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
     } catch (Throwable $e) {
         return 0;
     }
-    $rows_kb = [[['text' => $note, 'callback_data' => 'none']]];
+    // نسخه 2.4.5: دکمه رنگی (style) + خط بالای وضعیت
+    $__btn = ['text' => $note, 'callback_data' => 'none'];
+    if ($style !== '') {
+        $__btn['style'] = $style;
+    }
+    $rows_kb = [[$__btn]];
     if (intval($uid) > 0) {
         $rows_kb[] = [['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . intval($uid)]];
     }
     $kb = json_encode(['inline_keyboard' => $rows_kb], JSON_UNESCAPED_UNICODE);
+    $rows_plain = $rows_kb;
+    unset($rows_plain[0][0]['style']);
+    $kb_plain = json_encode(['inline_keyboard' => $rows_plain], JSON_UNESCAPED_UNICODE);
+    $__stamp = ($header !== '' ? '<b>' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . "</b>\n" : '') . '<b>' . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . '</b>';
     $done = 0;
     foreach ($rows as $r) {
         $chat = strval($r['chat_id']);
@@ -2447,17 +2456,27 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
         }
         $cap = strval($r['caption'] ?? '');
         $max = ($r['kind'] === 'text') ? 4000 : 1000;
-        $new = $cap !== '' ? ($cap . "\n\n<b>" . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . "</b>") : '';
+        $new = $cap !== '' ? ($cap . "\n\n" . $__stamp) : '';
         $ok = false;
         if ($new !== '' && mb_strlen($new) <= $max) {
             $res = ($r['kind'] === 'text')
                 ? telegram('editMessageText', ['chat_id' => $chat, 'message_id' => $mid, 'text' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb, 'disable_web_page_preview' => true])
                 : telegram('editMessageCaption', ['chat_id' => $chat, 'message_id' => $mid, 'caption' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb]);
             $ok = is_array($res) && !empty($res['ok']);
+            if (!$ok && $style !== '') {
+                // اگر تلگرام style را نپذیرفت، بدون رنگ
+                $res = ($r['kind'] === 'text')
+                    ? telegram('editMessageText', ['chat_id' => $chat, 'message_id' => $mid, 'text' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb_plain, 'disable_web_page_preview' => true])
+                    : telegram('editMessageCaption', ['chat_id' => $chat, 'message_id' => $mid, 'caption' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb_plain]);
+                $ok = is_array($res) && !empty($res['ok']);
+            }
         }
         if (!$ok) {
             // متن بلند بود یا ویرایش نشد → فقط دکمهها عوض شوند
-            telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb]);
+            $res = telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb]);
+            if (!(is_array($res) && !empty($res['ok'])) && $style !== '') {
+                telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb_plain]);
+            }
         }
         $done++;
     }
@@ -5352,7 +5371,7 @@ function botWatchdogTick()
     }
     @file_put_contents($tf, strval(time()));
     $last = intval(@file_get_contents($dir . '/smart_cron.last'));
-    if ($last <= 0 || (time() - $last) < 1200) {
+    if ($last <= 0 || (time() - $last) < 7200) {
         return;
     }
     $af = $dir . '/watchdog_alert.ts';
@@ -5361,7 +5380,12 @@ function botWatchdogTick()
     }
     @file_put_contents($af, strval(time()));
     if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_tech_error', "🚨 <b>کرون هوشمند اجرا نمیشود</b>\n\nآخرین اجرا: " . intval((time() - $last) / 60) . " دقیقه پیش\nاخطار حجم/زمان و حذف فاکتورهای پرداختنشده انجام نمیشود.\nکرون سرور را بررسی کنید (تنظیمات ← کرون ← «📋 دستور کرون سیستم»).");
+        global $usernamebot;
+        $__bn = trim(strval($usernamebot ?? ''));
+        $__bn = ($__bn !== '' && strpos($__bn, '{') === false) ? '@' . ltrim($__bn, '@') : '-';
+        $__ago = time() - $last;
+        $__ago_t = $__ago >= 7200 ? (intval($__ago / 3600) . ' ساعت و ' . intval(($__ago % 3600) / 60) . ' دقیقه') : (intval($__ago / 60) . ' دقیقه');
+        sendChannelReport('rpt_tech_error', "🚨 <b>کرون هوشمند اجرا نمیشود</b>\n🤖 ربات: <b>{$__bn}</b>\n\nآخرین اجرا: {$__ago_t} پیش\nاخطار حجم/زمان و حذف فاکتورهای پرداختنشده انجام نمیشود.\nکرون سرور را بررسی کنید (تنظیمات ← کرون ← «📋 دستور کرون سیستم»).");
     }
 }
 
@@ -8001,7 +8025,7 @@ function botSmartCronStatusLine()
     }
     $ago = max(0, time() - $last);
     $txt = $ago < 120 ? ($ago . ' ثانیه پیش') : (intval($ago / 60) < 120 ? (intval($ago / 60) . ' دقیقه پیش') : (intval($ago / 3600) . ' ساعت پیش'));
-    return ($ago > 600 ? '🔴 ' : '🟢 ') . "آخرین اجرا {$txt}";
+    return ($ago > 7200 ? '🔴 ' : '🟢 ') . "آخرین اجرا {$txt}";
 }
 
 function botSmartCronMenuText()
@@ -8011,7 +8035,7 @@ function botSmartCronMenuText()
     $last = intval(@file_get_contents(__DIR__ . '/cron/smart_cron.last'));
     if ($last <= 0) {
         $warn = "⚠️ هنوز اجرای کرون هوشمند ثبت نشده. اگر چند دقیقه بعد از نصب این نسخه هم همین پیام بود، کرون روی سرور نصب نیست («📋 دستور کرون سیستم»).";
-    } elseif (time() - $last > 600) {
+    } elseif (time() - $last > 7200) {
         $warn = "🔴 " . botSmartCronStatusLine() . " — کرون احتمالاً کار نمیکند؛ اخطارها و حذف فاکتورهای پرداختنشده انجام نمیشود.";
     } else {
         $warn = botSmartCronStatusLine() . " — کرون کار میکند.";
