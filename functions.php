@@ -8925,10 +8925,9 @@ function botAgoText($ts)
 }
 
 /** نسخه 2.4.6: صفحه سلامت ربات */
-/** نسخه 2.6.27: بخش وبهوک، دیتابیس و سرور در صفحه سلامت (فقط خواندنی) */
+/** نسخه 2.6.30: وبهوک تلگرام + وضعیت تنظیمهای ربات (بدون اطلاعات سرور و دیتابیس) */
 function botHealthExtraSection()
 {
-    global $pdo, $version;
     $t = '';
     // وبهوک تلگرام
     $t .= "\n🌐 <b>وبهوک تلگرام</b>\n";
@@ -8939,9 +8938,8 @@ function botHealthExtraSection()
             $t .= "• ⚠️ اطلاعات وبهوک دریافت نشد\n";
         } else {
             $url = strval($wr['url'] ?? '');
-            $t .= "• وضعیت: " . ($url !== '' ? '🟢 تنظیم شده' : '🔴 تنظیم نشده') . "\n";
             $pend = intval($wr['pending_update_count'] ?? 0);
-            $t .= "• پیامهای در صف: " . ($pend > 100 ? '🔴 ' : ($pend > 20 ? '🟡 ' : '🟢 ')) . number_format($pend) . "\n";
+            $t .= "• وضعیت: " . ($url !== '' ? '🟢 تنظیم شده' : '🔴 تنظیم نشده') . " | صف: " . ($pend > 100 ? '🔴 ' : ($pend > 20 ? '🟡 ' : '🟢 ')) . number_format($pend) . "\n";
             $le = intval($wr['last_error_date'] ?? 0);
             if ($le > 0 && time() - $le < 86400) {
                 $msg = htmlspecialchars(mb_substr(strval($wr['last_error_message'] ?? ''), 0, 120, 'UTF-8'), ENT_QUOTES, 'UTF-8');
@@ -8953,43 +8951,56 @@ function botHealthExtraSection()
     } catch (Throwable $e) {
         $t .= "• ⚠️ خطا در بررسی وبهوک\n";
     }
-    // دیتابیس
-    $t .= "\n🗄 <b>دیتابیس</b>\n";
+
+    // تنظیمهای ربات
+    $t .= "\n⚙️ <b>تنظیمهای ربات</b>\n";
     try {
-        $t0 = microtime(true);
-        $pdo->query("SELECT 1")->fetchColumn();
-        $ms = intval(round((microtime(true) - $t0) * 1000));
-        $t .= "• اتصال: " . ($ms > 200 ? '🟡 ' : '🟢 ') . "{$ms} میلیثانیه\n";
-        $sz = $pdo->query("SELECT COALESCE(SUM(data_length + index_length),0) FROM information_schema.TABLES WHERE table_schema = DATABASE()")->fetchColumn();
-        $t .= "• حجم: " . botFmtSize(intval($sz)) . "\n";
-        $uc = intval($pdo->query("SELECT COUNT(*) FROM user")->fetchColumn());
-        $ic = intval($pdo->query("SELECT COUNT(*) FROM invoice")->fetchColumn());
-        $t .= "• کاربران: " . number_format($uc) . " | فاکتورها: " . number_format($ic) . "\n";
+        $st = select("setting", "*", null, null, "select");
+        $fv = function ($col, $def) use ($st) {
+            return function_exists('botFeatureValue') ? botFeatureValue($st, $col, $def) : $def;
+        };
+        $t .= "• ربات: " . ($fv('Bot_Status', '1') === '1' ? '🟢 روشن' : '🔴 خاموش برای کاربران') . "\n";
+        $t .= "• خرید سرویس: " . ($fv('status_buy', '1') === '1' ? '🟢 باز' : '🔴 بسته') . " | تمدید: " . ($fv('status_extend', '1') === '1' ? '🟢 باز' : '🔴 بسته') . " | واریز: " . ($fv('status_deposit', '1') === '1' ? '🟢 باز' : '🔴 بسته') . "\n";
+        // عضویت اجباری
+        if ($fv('force_channel', '1') === '1') {
+            $chs = select("channels", "*");
+            $lnk = is_array($chs) ? trim(strval($chs['link'] ?? '')) : '';
+            $t .= "• عضویت اجباری: " . ($lnk !== '' ? '🟢 روشن (' . htmlspecialchars($lnk, ENT_QUOTES, 'UTF-8') . ')' : '🟡 روشن ولی کانالی تنظیم نشده') . "\n";
+        } else {
+            $t .= "• عضویت اجباری: ⚪️ خاموش\n";
+        }
     } catch (Throwable $e) {
-        $t .= "• 🔴 خطا: <code>" . htmlspecialchars(mb_substr($e->getMessage(), 0, 120, 'UTF-8'), ENT_QUOTES, 'UTF-8') . "</code>\n";
     }
-    // سرور
-    $t .= "\n🖥 <b>سرور</b>\n";
-    $t .= "• نسخه ربات: <code>" . htmlspecialchars(strval($version ?? '-'), ENT_QUOTES, 'UTF-8') . "</code> | PHP: <code>" . PHP_VERSION . "</code>\n";
-    $free = @disk_free_space(__DIR__);
-    $tot = @disk_total_space(__DIR__);
-    if ($free !== false && $tot) {
-        $pct = intval(round(100 * (1 - $free / $tot)));
-        $t .= "• دیسک: " . ($pct >= 90 ? '🔴 ' : ($pct >= 80 ? '🟡 ' : '🟢 ')) . "{$pct}٪ پر (" . botFmtSize(intval($free)) . " خالی)\n";
+    // کرون هوشمند: کدام اخطارها روشن است
+    if (function_exists('smartCronFlag')) {
+        $on = [];
+        foreach (['smart_warn_volume' => 'حجم', 'smart_warn_time' => 'زمان', 'smart_warn_expired' => 'اتمام', 'smart_emergency' => 'تمدید اضطراری', 'smart_clean_missing' => 'حذف فاکتور غایب', 'smart_reseller_warn' => 'Reseller'] as $k => $lab) {
+            if (smartCronFlag($k, '0')) {
+                $on[] = $lab;
+            }
+        }
+        $t .= "• کارهای کرون هوشمند: " . ($on ? '🟢 ' . implode('، ', $on) : '⚪️ همه خاموش') . "\n";
     }
-    $la = function_exists('sys_getloadavg') ? @sys_getloadavg() : false;
-    if (is_array($la) && isset($la[0])) {
-        $t .= "• بار پردازنده (۱/۵/۱۵ دقیقه): " . implode(' / ', array_map(function ($x) { return number_format($x, 2); }, array_slice($la, 0, 3))) . "\n";
+    // بکآپ خودکار
+    if (function_exists('getPaySettingValue')) {
+        $bk_on = getPaySettingValue('backup_cron_enabled', '0') === '1';
+        if ($bk_on) {
+            $h = function_exists('getBackupCronHours') ? intval(getBackupCronHours()) : 24;
+            $to = [];
+            if (getPaySettingValue('backup_send_admin', '0') === '1') {
+                $to[] = 'ادمین';
+            }
+            if (getPaySettingValue('backup_send_channel', '0') === '1') {
+                $to[] = 'کانال';
+            }
+            $t .= "• بکآپ خودکار: 🟢 هر {$h} ساعت" . ($to ? ' → ' . implode(' و ', $to) : ' — 🟡 مقصد ارسال انتخاب نشده') . "\n";
+        } else {
+            $t .= "• بکآپ خودکار: ⚪️ خاموش\n";
+        }
     }
-    $mi = @file_get_contents('/proc/meminfo');
-    if (is_string($mi) && preg_match('/MemTotal:\s+(\d+)/', $mi, $m1) && preg_match('/MemAvailable:\s+(\d+)/', $mi, $m2) && intval($m1[1]) > 0) {
-        $mp = intval(round(100 * (1 - intval($m2[1]) / intval($m1[1]))));
-        $t .= "• رم: " . ($mp >= 90 ? '🔴 ' : ($mp >= 80 ? '🟡 ' : '🟢 ')) . "{$mp}٪ مصرف (" . botFmtSize(intval($m2[1]) * 1024) . " آزاد)\n";
-    }
-    $sh = function_exists('botCronShellAvailable') ? botCronShellAvailable() : false;
-    $cu = function_exists('getBotCronShellUser') ? getBotCronShellUser() : '';
-    $t .= "• shell_exec: " . ($sh ? '🟢 فعال' : '🟡 غیرفعال (نصب خودکار کرون ممکن نیست)') . ($cu !== '' ? " | کاربر: <code>" . htmlspecialchars($cu, ENT_QUOTES, 'UTF-8') . "</code>" : '') . "\n";
-    $t .= "• ساعت سرور: " . (function_exists('jdate') ? jdate('Y/m/d H:i') : date('Y-m-d H:i')) . "\n";
+    // یادآوری کرون
+    $iss = function_exists('botCronReminderIssues') ? botCronReminderIssues() : [];
+    $t .= "• یادآوری کرون: " . (count($iss) === 0 ? '🟢 مشکلی نیست' : '🔴 ' . count($iss) . ' مورد نیاز به رسیدگی') . "\n";
     return $t;
 }
 
@@ -9027,14 +9038,36 @@ function botHealthPage($note = '')
     $auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
     $t .= "• تأیید خودکار رسید: " . ($auto ? (($cc > 0 && time() - $cc <= 1800 ? '🟢 ' : '🔴 ') . botAgoText($cc)) : '⚪️ خاموش') . "\n";
     $bk_on = function_exists('getPaySettingValue') && getPaySettingValue('backup_cron_enabled', '0') === '1';
-    $t .= "• آخرین بکاپ موفق: " . botAgoText($bk) . ($bk_on ? '' : ' (بکاپ خودکار خاموش)') . "\n";
+    $__bk_ok = true;
+    if ($bk_on) {
+        $__bh = function_exists('getBackupCronHours') ? max(1, intval(getBackupCronHours())) : 24;
+        $__bk_ok = $bk > 0 && (time() - $bk) <= intval($__bh * 3600 * 1.5) + 1800;
+    }
+    $t .= "• آخرین بکاپ موفق: " . ($bk_on ? ($__bk_ok ? '🟢 ' : '🔴 ') : '') . botAgoText($bk) . ($bk_on ? '' : ' (بکاپ خودکار خاموش)') . "\n";
     $t .= "• پیام همگانی: " . (is_file($dir . '/info') ? '📨 در حال ارسال' : '—') . "\n";
     // نسخه 2.6.27: وبهوک تلگرام، دیتابیس و سرور
     $t .= botHealthExtraSection();
     // کانال گزارش
     $st = select("setting", "*", null, null, "select");
     $rc = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
-    $t .= "\n📣 کانال گزارش: " . (($rc !== '' && $rc !== '0') ? '✅ تنظیم شده' : '❌ تنظیم نشده') . "\n";
+    if ($rc === '' || $rc === '0') {
+        $t .= "\n📣 کانال گزارش: ❌ تنظیم نشده\n";
+    } else {
+        // نسخه 2.6.30: بررسی دسترسی واقعی ربات به کانال + تعداد گزارشهای روشن
+        $__gc = telegram('getChat', ['chat_id' => $rc]);
+        $__acc = is_array($__gc) && !empty($__gc['ok']);
+        $__on = 0;
+        $__all = 0;
+        if (function_exists('reportChannelTypes') && function_exists('isReportChannelEnabled')) {
+            foreach (array_keys(reportChannelTypes()) as $__rk) {
+                $__all++;
+                if (isReportChannelEnabled($__rk)) {
+                    $__on++;
+                }
+            }
+        }
+        $t .= "\n📣 کانال گزارش: " . ($__acc ? '🟢 ربات دسترسی دارد' : '🔴 ربات به کانال دسترسی ندارد') . ($__all > 0 ? " | {$__on} از {$__all} گزارش روشن" : '') . "\n";
+    }
     // لاگ
     $l1 = botLogStats(__DIR__ . '/error_log');
     $l2 = botLogStats($dir . '/error_log');
