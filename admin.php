@@ -4157,15 +4157,33 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     }
     step("descriptionsrequsts", $from_id);
     update("user", "Processing_value", $usernamepanel, "id", $from_id);
+    update("user", "Processing_value_tow", strval(intval($message_id)), "id", $from_id);
     sendmessage($from_id, $textbotlang['users']['status']['rejectrequest'], $backuser, 'HTML');
 
 } elseif ($user['step'] == "descriptionsrequsts") {
-    sendmessage($from_id, $textbotlang['users']['status']['acceptrequestnote'], $keyboardadmin, 'HTML');
-    $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
-    update("cancel_service", "status", "reject", "username", $user['Processing_value']);
-    update("cancel_service", "description", $text, "username", $user['Processing_value']);
+    // نسخه 2.6.13: قفل اتمیک (دو ادمین همزمان) + پیام کامل + بستن کارت درخواست
+    $__rj_user = strval($user['Processing_value'] ?? '');
+    $nameloc = select("invoice", "*", "username", $__rj_user, "select");
     step("home", $from_id);
-    sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['rejectsendtouser'], $user['Processing_value'], $text), null, 'HTML');
+    $__claim = $pdo->prepare("UPDATE cancel_service SET status = 'reject', description = ? WHERE username = ? AND status = 'waiting'");
+    $__claim->execute([strval($text), $__rj_user]);
+    if ($__claim->rowCount() < 1) {
+        sendmessage($from_id, $textbotlang['users']['status']['residaccepted'], $keyboardadmin, 'HTML');
+        return;
+    }
+    $__h = function ($v) { return htmlspecialchars(strval($v), ENT_QUOTES, 'UTF-8'); };
+    sendmessage($from_id, "❌ <b>درخواست حذف رد شد</b>\n\n🔑 سرویس: \u{200E}<code>" . $__h($__rj_user) . "</code>\n🆔 کاربر: \u{200E}<code>" . $__h($nameloc['id_user'] ?? '') . "</code>\n✍️ دلیل: " . $__h($text), $keyboardadmin, 'HTML');
+    $__card = intval($user['Processing_value_tow'] ?? 0);
+    if ($__card > 0) {
+        telegram('editMessageReplyMarkup', ['chat_id' => $from_id, 'message_id' => $__card, 'reply_markup' => json_encode(['inline_keyboard' => [
+            [['text' => '❌ رد شد', 'callback_data' => 'none']],
+            [['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . intval($nameloc['id_user'] ?? 0)]],
+        ]], JSON_UNESCAPED_UNICODE)]);
+    }
+    update("user", "Processing_value_tow", "0", "id", $from_id);
+    if (is_array($nameloc)) {
+        sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['rejectsendtouser'], $__rj_user, $__h($text)), null, 'HTML');
+    }
 
 } elseif (preg_match('/remoceserviceadmin-(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
@@ -4184,42 +4202,138 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     }
     step("getpricerequests", $from_id);
     update("user", "Processing_value", $username, "id", $from_id);
-    sendmessage($from_id, $textbotlang['users']['status']['getpriceforadd'], $backuser, 'HTML');
+    update("user", "Processing_value_tow", strval(intval($message_id)), "id", $from_id);
+    // نسخه 2.6.13: مبلغ پرداختی + پیشنهاد بر اساس زمان و حجم باقیمانده + دکمههای آماده
+    $__inv = select("invoice", "*", "username", $username, "select");
+    $__paid = intval(str_replace([',', ' ', 'تومان'], '', strval(is_array($__inv) ? ($__inv['price_product'] ?? 0) : 0)));
+    $__ratio = 1.0;
+    $__why = [];
+    try {
+        $__du = $ManagePanel->DataUser(strval($__inv['Service_location'] ?? ''), $username);
+        if (is_array($__du) && ($__du['status'] ?? '') !== 'Unsuccessful') {
+            $__days = intval($__inv['Service_time'] ?? 0);
+            $__exp = intval($__du['expire'] ?? 0);
+            if ($__days > 0 && $__exp > 0 && strval($__inv['name_product'] ?? '') !== 'usertest') {
+                $__dl = max(0, ($__exp - time()) / 86400);
+                $__ratio = min($__ratio, min(1, $__dl / $__days));
+                $__why[] = intval(floor($__dl)) . ' روز از ' . $__days . ' روز';
+            }
+            $__lim = floatval($__du['data_limit'] ?? 0);
+            if ($__lim > 0) {
+                $__vr = max(0, min(1, ($__lim - floatval($__du['used_traffic'] ?? 0)) / $__lim));
+                $__ratio = min($__ratio, $__vr);
+                $__why[] = intval(round($__vr * 100)) . '٪ حجم';
+            }
+        }
+    } catch (Throwable $e) {
+    }
+    $__sug = max(0, intval(floor(($__paid * $__ratio) / 1000) * 1000));
+    $__rows = [];
+    $__r1 = [];
+    if ($__sug > 0 && $__sug < $__paid) {
+        $__r1[] = ['text' => '💡 ' . number_format($__sug), 'callback_data' => 'rfamt_' . $__sug];
+    }
+    if ($__paid > 0) {
+        $__r1[] = ['text' => '💯 کامل ' . number_format($__paid), 'callback_data' => 'rfamt_' . $__paid];
+    }
+    if ($__r1) {
+        $__rows[] = $__r1;
+    }
+    $__rows[] = [['text' => '0️⃣ بدون بازگشت وجه', 'callback_data' => 'rfamt_0']];
+    $__rows[] = [['text' => '❌ انصراف', 'callback_data' => 'rfamt_cancel']];
+    $__msg = "💸 <b>مبلغ بازگشت</b>\n\n"
+        . "🔑 سرویس: \u{200E}<code>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</code>\n"
+        . "💰 پرداختی کاربر: <b>" . number_format($__paid) . "</b> تومان\n"
+        . (($__sug > 0 && $__sug < $__paid) ? "💡 پیشنهاد" . ($__why ? ' (' . implode('، ', $__why) . ' باقیمانده)' : '') . ": <b>" . number_format($__sug) . "</b> تومان\n" : '')
+        . "\nیکی از دکمهها را بزنید یا مبلغ دلخواه را به تومان بفرستید:";
+    sendmessage($from_id, $__msg, json_encode(['inline_keyboard' => $__rows], JSON_UNESCAPED_UNICODE), 'HTML');
 
 } elseif ($user['step'] == "getpricerequests") {
-    if (!ctype_digit($text)) {
-        sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
+    $__via_cb = false;
+    if (isset($datain) && is_string($datain) && preg_match('/^rfamt_(\d+|cancel)$/', $datain, $__am)) {
+        $__via_cb = true;
+        if ($__am[1] === 'cancel') {
+            step("home", $from_id);
+            update("user", "Processing_value_tow", "0", "id", $from_id);
+            Editmessagetext($from_id, $message_id, "↩️ <b>بررسی لغو شد</b>\n\nدرخواست حذف همچنان در انتظار بررسی است.", json_encode(['inline_keyboard' => []]));
+            return;
+        }
+        $__amt = intval($__am[1]);
+    } else {
+        $__t = strtr(trim(strval($text)), ['۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9', ',' => '', '٬' => '', ' ' => '']);
+        if ($__t === '' || !ctype_digit($__t)) {
+            sendmessage($from_id, $textbotlang['Admin']['invalidvalue'], null, 'HTML');
+            return;
+        }
+        $__amt = intval($__t);
     }
-    $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
-    if ($nameloc['price_product'] < $text) {
-        sendmessage($from_id, $textbotlang['Admin']['maxvalue'], $backuser, 'HTML');
+    $__svc = strval($user['Processing_value'] ?? '');
+    $nameloc = select("invoice", "*", "username", $__svc, "select");
+    if (!is_array($nameloc)) {
+        step("home", $from_id);
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'], $keyboardadmin, 'HTML');
         return;
     }
-    sendmessage($from_id, $textbotlang['users']['status']['acceptrequestnote'], $keyboardadmin, 'HTML');
+    if (intval($nameloc['price_product']) < $__amt) {
+        sendmessage($from_id, $textbotlang['Admin']['maxvalue'], null, 'HTML');
+        return;
+    }
+    // قفل اتمیک: اگر ادمین دیگری همزمان بررسی کرده باشد، دوباره پول برنگردد
+    $__claim = $pdo->prepare("UPDATE cancel_service SET status = 'accept' WHERE username = ? AND status = 'waiting'");
+    $__claim->execute([$__svc]);
     step("home", $from_id);
+    if ($__claim->rowCount() < 1) {
+        sendmessage($from_id, $textbotlang['users']['status']['residaccepted'], $keyboardadmin, 'HTML');
+        return;
+    }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
-    $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $user['Processing_value']);
+    $DataUserOut = $ManagePanel->DataUser($marzban_list_get['name_panel'], $__svc);
     if (isset($DataUserOut['status'])) {
-        $ManagePanel->RemoveUser($marzban_list_get['name_panel'], $user['Processing_value']);
+        $ManagePanel->RemoveUser($marzban_list_get['name_panel'], $__svc);
     }
-    update("cancel_service", "status", "accept", "username", $user['Processing_value']);
-    update("invoice", "status", "removedbyadmin", "username", $user['Processing_value']);
-    step("home", $from_id);
-    sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['acceptrequest'], $user['Processing_value']), null, 'HTML');
-    $pricecancel = number_format(intval($text));
-    if (intval($text) != 0) {
-        $Balance_id_cancel_fee = atomicAdjustBalance($nameloc['id_user'], intval($text));
-        sendmessage($nameloc['id_user'], sprintf($textbotlang['users']['status']['addedbalanceremove'], $pricecancel, number_format(intval($Balance_id_cancel_fee))), botMenuForBalance($nameloc['id_user']), 'HTML');
+    update("invoice", "status", "removedbyadmin", "username", $__svc);
+    $pricecancel = number_format($__amt);
+    $__uid = $nameloc['id_user'];
+    if ($__amt > 0) {
+        $__bal_after = atomicAdjustBalance($__uid, $__amt);
+        if (function_exists('logWalletTx')) {
+            logWalletTx($__uid, 'refund', $__amt, $__bal_after, 'بازگشت وجه حذف سرویس: ' . $__svc);
+        }
+    } else {
+        $__br = select("user", "Balance", "id", $__uid, "select");
+        $__bal_after = is_array($__br) ? intval($__br['Balance'] ?? 0) : 0;
     }
+    $__h = function ($v) { return htmlspecialchars(strval($v), ENT_QUOTES, 'UTF-8'); };
+    // پیام یکپارچه به کاربر
+    $__um = "✅ <b>درخواست حذف سرویس تأیید شد</b>\n\n🗑 سرویس: \u{200E}<code>" . $__h($__svc) . "</code>\n"
+        . ($__amt > 0 ? "💰 مبلغ بازگشتی: <b>{$pricecancel}</b> تومان\n" : "ℹ️ مبلغی به کیف پول برنگشت.\n")
+        . "👛 موجودی فعلی: <b>" . number_format(intval($__bal_after)) . "</b> تومان";
+    sendmessage($__uid, $__um, ($__amt > 0 ? botMenuForBalance($__uid) : null), 'HTML');
+    // پیام کامل به ادمین
+    $__am_txt = ($__amt > 0 ? "✅ <b>بازگشت وجه انجام شد</b>\n\n💰 مبلغ: <b>{$pricecancel}</b> تومان به کیف پول کاربر برگشت\n" : "✅ <b>درخواست حذف تأیید شد</b>\n\nℹ️ بدون بازگشت وجه\n")
+        . "🗑 سرویس \u{200E}<code>" . $__h($__svc) . "</code> حذف شد\n"
+        . "🆔 کاربر: \u{200E}<code>" . $__h($__uid) . "</code>";
+    if ($__via_cb && !empty($message_id)) {
+        Editmessagetext($from_id, $message_id, $__am_txt, json_encode(['inline_keyboard' => []]));
+    } else {
+        sendmessage($from_id, $__am_txt, $keyboardadmin, 'HTML');
+    }
+    // کارت درخواست: دکمهها بسته شوند
+    $__card = intval($user['Processing_value_tow'] ?? 0);
+    if ($__card > 0) {
+        telegram('editMessageReplyMarkup', ['chat_id' => $from_id, 'message_id' => $__card, 'reply_markup' => json_encode(['inline_keyboard' => [
+            [['text' => '✅ تأیید شد — ' . ($__amt > 0 ? 'بازگشت ' . $pricecancel . ' ت' : 'بدون بازگشت'), 'callback_data' => 'none']],
+            [['text' => '👤 اطلاعات کاربر', 'callback_data' => 'userinfo_pay_' . intval($__uid)]],
+        ]], JSON_UNESCAPED_UNICODE)]);
+    }
+    update("user", "Processing_value_tow", "0", "id", $from_id);
     if (function_exists('sendChannelReport')) {
-        // کانفیگ = نام کاربری سرویس (نه یوزرنیم تلگرام ادمین/کاربر)
-        $config_user = $nameloc['username'] ?? ($user['Processing_value'] ?? '');
         sendChannelReport('rpt_remove', sprintf(
             $textbotlang['Admin']['Report']['reportremove'],
             $from_id,
             $pricecancel,
-            $config_user,
-            $nameloc['id_user']
+            $nameloc['username'] ?? $__svc,
+            $__uid
         ));
     }
 }

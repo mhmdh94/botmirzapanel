@@ -412,7 +412,7 @@ $textbotlang['users']['togglestatus']['error'] = "❌ خطا در تغییر و�
 
 $textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وجه";
 $textbotlang['users']['removeconfig']['rejectremove'] = "❌ رد حذف";
-$textbotlang['users']['removeconfig']['acceptrequest'] = "✅ درخواست شما ثبت شد.\nپس از بررسی مدیریت، نتیجه از همین ربات اعلام می‌شود.";
+$textbotlang['users']['removeconfig']['acceptrequest'] = "✅ <b>درخواست حذف ثبت شد</b>\n\nپس از بررسی مدیریت، نتیجه از همین ربات اعلام می‌شود.";
 $textbotlang['users']['removeconfig']['accepetrequest'] = $textbotlang['users']['removeconfig']['acceptrequest'];
 $textbotlang['users']['status']['notusername'] = "❌ <b>حذف سرویس ممکن نیست</b>
 
@@ -470,12 +470,12 @@ $textbotlang['users']['status']['RemovedService'] = "✅ <b>سرویس حذف ش
 برای خرید سرویس جدید از منوی اصلی استفاده کنید.";
 $textbotlang['users']['status']['RequestInfoRemove'] = "🗑 <b>درخواست حذف سرویس</b>
 
-🆔 کاربر: <code>%s</code>
+🆔 کاربر: ‎<code>%s</code>
 👤 یوزرنیم: @%s
 🔑 کانفیگ: <code>%s</code>
 📊 وضعیت: %s
 📍 لوکیشن: %s
-🆔 کد: <code>%s</code>
+🆔 کد: ‎<code>%s</code>
 
 📥 مصرف: %s | 📊 کل: %s | 🪫 باقی: %s
 📅 تا: %s (%s)
