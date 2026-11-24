@@ -413,6 +413,7 @@ function telegram($method, $datas = [])
             "message can't be deleted for everyone",
             'message to delete not found',
             'message to edit not found',
+            "message can't be edited",
         ];
         $skip_log = false;
         foreach ($ignore as $needle) {

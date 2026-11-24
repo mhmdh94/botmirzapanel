@@ -2543,6 +2543,16 @@ function botSaveReceiptMsgs($order, $msgs, $kind = 'photo', $caption = '')
  * همه نسخه‌های پیام رسید را ویرایش کن (وضعیت + برداشتن دکمه‌های تأیید/رد).
  * $skip_chat/$skip_mid: پیامی که خود ادمین روی آن کلیک کرده (جدا ویرایش می‌شود).
  */
+/** نسخه 2.6.29: خطای «پیام قابل ویرایش نیست» یا «پیام پیدا نشد» از تلگرام */
+function botTgCantEdit($res)
+{
+    if (!is_array($res) || !empty($res['ok'])) {
+        return false;
+    }
+    $d = strtolower(strval($res['description'] ?? ''));
+    return $d !== '' && (strpos($d, "can't be edited") !== false || strpos($d, 'message to edit not found') !== false);
+}
+
 function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid = 0, $style = '', $header = '')
 {
     global $pdo;
@@ -2586,6 +2596,11 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
                 ? telegram('editMessageText', ['chat_id' => $chat, 'message_id' => $mid, 'text' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb, 'disable_web_page_preview' => true])
                 : telegram('editMessageCaption', ['chat_id' => $chat, 'message_id' => $mid, 'caption' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb]);
             $ok = is_array($res) && !empty($res['ok']);
+            // نسخه 2.6.29: پیامی که تلگرام اجازه ویرایشش را نمیدهد (پاکشده/فورواردی/قدیمی) → تلاش دوباره بیفایده است
+            if (!$ok && botTgCantEdit($res)) {
+                $done++;
+                continue;
+            }
             if (!$ok && $style !== '') {
                 // اگر تلگرام style را نپذیرفت، بدون رنگ
                 $res = ($r['kind'] === 'text')
@@ -2597,7 +2612,7 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
         if (!$ok) {
             // متن بلند بود یا ویرایش نشد → فقط دکمه‌ها عوض شوند
             $res = telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb]);
-            if (!(is_array($res) && !empty($res['ok'])) && $style !== '') {
+            if (!(is_array($res) && !empty($res['ok'])) && $style !== '' && !botTgCantEdit($res)) {
                 telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb_plain]);
             }
         }
