@@ -342,6 +342,15 @@ if (isset($datain) && ($datain === 'btncolor_tg' || $datain === 'btncolor_tgf') 
     return;
 }
 # نسخه 2.4.6: صفحه سلامت ربات + دریافت لاگ (فقط ادمین اصلی)
+# نسخه 2.6.28: دکمه «🩺 سلامت ربات» در منوی اصلی ادمین، کنار آمار ربات
+if (isset($text) && $text === ($textbotlang['Admin']['keyboardadmin']['bot_health'] ?? '🩺 سلامت ربات') && empty($datain) && in_array($from_id, $admin_ids)) {
+    if (function_exists('step')) {
+        step('home', $from_id);
+    }
+    list($__tx, $__kb) = botHealthPage();
+    sendmessage($from_id, $__tx, $__kb, 'HTML');
+    return;
+}
 if (isset($datain) && ($datain === 'bothealth' || $datain === 'bothealth_log') && in_array($from_id, $admin_ids)) {
     if ($datain === 'bothealth') {
         list($__tx, $__kb) = botHealthPage();
@@ -1011,7 +1020,6 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics'] || (isset(
                 ['text' => '📥 اکسل ماه قبل', 'callback_data' => 'stats_excel_prev'],
             ],
             [
-                ['text' => '🩺 سلامت ربات', 'callback_data' => 'bothealth'],
                 ['text' => '🔄 بروزرسانی', 'callback_data' => 'stats_refresh'],
             ],
         ],

@@ -9028,7 +9028,6 @@ function botHealthPage($note = '')
     $t .= "• حجم: ربات " . botFmtSize($l1['size']) . " | کرون " . botFmtSize($l2['size']) . " (بالای ۵ مگ خودکار جابه‌جا می‌شود)";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '📄 ۵۰ خط آخر لاگ', 'callback_data' => 'bothealth_log'], ['text' => '🔄 بروزرسانی', 'callback_data' => 'bothealth']],
-        [['text' => '🔙 بازگشت به آمار ربات', 'callback_data' => 'stats_refresh']],
     ]], JSON_UNESCAPED_UNICODE);
     return [$t, $kb];
 }

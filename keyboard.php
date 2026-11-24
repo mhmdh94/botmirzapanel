@@ -68,7 +68,7 @@ if ($__acc_aff) {
 $keyboardPanel = json_encode(['inline_keyboard' => $__acc_rows]);
 // منوی ادمین گروه‌بندی‌شده: آمار | فروش/مالی | پنل | کاربران | تنظیمات/متن
 $__kb_admin_rows = [
-    [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']]],
+    [['text' => $textbotlang['Admin']['keyboardadmin']['bot_statistics']], ['text' => $textbotlang['Admin']['keyboardadmin']['bot_health'] ?? '🩺 سلامت ربات']],
     [['text' => $textbotlang['Admin']['keyboardadmin']['shop_section']], ['text' => $textbotlang['Admin']['keyboardadmin']['finance']]],
 ];
 try {

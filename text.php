@@ -1414,6 +1414,7 @@ $textbotlang['Admin']['mesage']['nottextmessage'] ="❌  در ارسال همگ�
 
 
 $textbotlang['Admin']['keyboardadmin']['bot_statistics'] = "📊 آمار ربات";
+$textbotlang['Admin']['keyboardadmin']['bot_health'] = "🩺 سلامت ربات";
 $textbotlang['Admin']['keyboardadmin']['manage_panel'] = "✏️ مدیریت پنل";
 $textbotlang['Admin']['keyboardadmin']['add_panel'] = "🖥 اضافه کردن پنل";
 $textbotlang['Admin']['keyboardadmin']['test_account_settings'] = "🔑 تنظیمات اکانت تست";

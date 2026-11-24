@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.27";
+$version = "2.6.28";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -319,6 +319,8 @@ if (isset($user['step']) && in_array(strval($user['step']), ['getprice'], true) 
     }
     $__nav[] = $textbotlang['Admin']['commendadmin'] ?? '';
     $__nav[] = $textbotlang['Admin']['commendadminmanagment'] ?? '';
+    $__nav[] = $textbotlang['Admin']['keyboardadmin']['bot_statistics'] ?? '';
+    $__nav[] = $textbotlang['Admin']['keyboardadmin']['bot_health'] ?? '';
     $__nav[] = $textbotlang['users']['affiliates']['btn'] ?? '';
     $__nav[] = $textbotlang['users']['reseller_volume']['btn'] ?? '';
     $__nav[] = $textbotlang['users']['reseller_request']['btn'] ?? '';
