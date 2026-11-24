@@ -391,6 +391,9 @@ if (in_array($text, $textadmin) || $datain == "PANEL") {
     if (function_exists('botAdminDashLine')) {
         $text_admin .= botAdminDashLine();
     }
+    if (function_exists('botCronReminderText')) {
+        $text_admin .= botCronReminderText(true);
+    }
     sendmessage($from_id, $text_admin, function_exists('buildAdminKeyboard') ? buildAdminKeyboard() : $keyboardadmin, 'HTML');
 }
 if ($text == $textbotlang['Admin']['Back-Adminment'] || $datain == "back_admin") {

@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.23";
+$version = "2.6.24";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -637,6 +637,13 @@ if (($setting['Bot_Status'] ?? '') == "✅  ربات روشن است" && !in_arr
 if (function_exists('botWatchdogTick')) {
     try {
         botWatchdogTick();
+    } catch (Throwable $e) {
+    }
+}
+// نسخه 2.6.24: یادآوری کرون تنظیمنشده به ادمینها (حداکثر هر ۶ ساعت)
+if (function_exists('botCronReminderTick')) {
+    try {
+        botCronReminderTick($admin_ids ?? []);
     } catch (Throwable $e) {
     }
 }

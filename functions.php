@@ -5557,6 +5557,93 @@ function botMaskTail($t)
 }
 
 /** نسخه 2.4.4: هشدار اجرا نشدن کرون هوشمند (از وبهوک، حداکثر هر ۳۰ دقیقه بررسی) */
+/**
+ * نسخه 2.6.24: کرونهای لازمی که تنظیم نشدهاند یا اجرا نمیشوند
+ */
+function botCronReminderIssues()
+{
+    $dir = __DIR__ . '/cron';
+    $out = [];
+    $sc = intval(@file_get_contents($dir . '/smart_cron.last'));
+    if ($sc <= 0) {
+        $out[] = "🛡 <b>کرون هوشمند</b> هنوز یکبار هم اجرا نشده؛ اخطار حجم و زمان، تمدید اضطراری و حذف فاکتورهای پرداختنشده انجام نمیشود.";
+    } elseif (time() - $sc > 7200) {
+        $out[] = "🛡 <b>کرون هوشمند</b> از " . (function_exists('botAgoText') ? botAgoText($sc) : '') . " اجرا نشده؛ اخطارها و کارهای خودکار متوقف است.";
+    }
+    $bk_on = false;
+    $h = 24;
+    try {
+        if (function_exists('getPaySettingValue')) {
+            $bk_on = getPaySettingValue('backup_cron_enabled', '0') === '1';
+            if ($bk_on && function_exists('getBackupCronHours')) {
+                $h = max(1, intval(getBackupCronHours()));
+            }
+        }
+    } catch (Throwable $e) {
+        $bk_on = false;
+    }
+    if ($bk_on) {
+        $bk = intval(@file_get_contents($dir . '/backup.last'));
+        $grace = intval($h * 3600 * 1.5) + 1800;
+        if ($bk <= 0) {
+            $out[] = "📦 <b>بکآپ خودکار</b> روشن است ولی هنوز هیچ بکآپی گرفته نشده؛ کرون بکآپ روی سرور تنظیم نیست.";
+        } elseif (time() - $bk > $grace) {
+            $out[] = "📦 <b>بکآپ خودکار</b> هر {$h} ساعت تنظیم شده، ولی آخرین بکآپ موفق " . (function_exists('botAgoText') ? botAgoText($bk) : '') . " بوده است.";
+        }
+    }
+    return $out;
+}
+
+/** نسخه 2.6.24: متن یادآوری کرون (خالی یعنی همه چیز درست است) */
+function botCronReminderText($short = false)
+{
+    $iss = botCronReminderIssues();
+    if (count($iss) === 0) {
+        return '';
+    }
+    if ($short) {
+        return "\n\n⚠️ <b>کرون تنظیم نیست:</b> " . count($iss) . " مورد — از «🛡 کرون هوشمند» گزینه «🛠 نصب خودکار کرون در سرور» را بزنید.";
+    }
+    return "⏰ <b>یادآوری: کرون ربات تنظیم نشده</b>\n\n• " . implode("\n\n• ", $iss)
+        . "\n\n🛠 دکمه «نصب خودکار کرون» را بزنید. اگر نصب خودکار ممکن نبود، با «📋 دستور کرون» خطها را بگیرید و دستی در crontab سرور بگذارید."
+        . "\n\nℹ️ تا وقتی مشکل حل نشود، این یادآوری هر ۶ ساعت یکبار تکرار میشود.";
+}
+
+function botCronReminderKeyboard()
+{
+    return json_encode(['inline_keyboard' => [
+        [['text' => '🛠 نصب خودکار کرون', 'callback_data' => 'smartcron_install_crontab']],
+        [['text' => '📋 دستور کرون', 'callback_data' => 'smartcron_show_cmd']],
+    ]], JSON_UNESCAPED_UNICODE);
+}
+
+/** نسخه 2.6.24: یادآوری به ادمینها در پیوی (بدون نیاز به کرون؛ با هر پیام به ربات، حداکثر هر ۶ ساعت) */
+function botCronReminderTick($admin_ids)
+{
+    $dir = __DIR__ . '/cron';
+    $tf = $dir . '/cron_reminder.ts';
+    $last = is_file($tf) ? intval(@file_get_contents($tf)) : 0;
+    if ($last <= 0) {
+        // اولین اجرا بعد از آپدیت: ۳۰ دقیقه مهلت تا کرون فرصت اجرا داشته باشد
+        @file_put_contents($tf, strval(time() - 21600 + 1800));
+        return;
+    }
+    if ((time() - $last) < 21600) {
+        return;
+    }
+    @file_put_contents($tf, strval(time()));
+    $txt = botCronReminderText(false);
+    if ($txt === '' || !function_exists('sendmessage')) {
+        return;
+    }
+    $kb = botCronReminderKeyboard();
+    foreach ((array) $admin_ids as $ad) {
+        if (strval($ad) !== '') {
+            @sendmessage($ad, $txt, $kb, 'HTML');
+        }
+    }
+}
+
 function botWatchdogTick()
 {
     $dir = __DIR__ . '/cron';
