@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.24";
+$version = "2.6.25";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -115,31 +115,50 @@ if (intval($from_id) != 0) {
         $verify = 1;
     }
 
-    do {
-        $ref_code = bin2hex(random_bytes(16));
-        $stmt_check = $pdo->prepare("SELECT 1 FROM user WHERE ref_code = :ref_code");
-        $stmt_check->bindParam(':ref_code', $ref_code);
-        $stmt_check->execute();
+    // نسخه 2.6.25: ساخت ref_code و INSERT فقط برای کاربری که هنوز در دیتابیس نیست
+    $__ex = $pdo->prepare("SELECT 1 FROM user WHERE id = :id LIMIT 1");
+    $__ex->execute([':id' => $from_id]);
+    if (!$__ex->fetchColumn()) {
+        do {
+            $ref_code = bin2hex(random_bytes(16));
+            $stmt_check = $pdo->prepare("SELECT 1 FROM user WHERE ref_code = :ref_code");
+            $stmt_check->bindParam(':ref_code', $ref_code);
+            $stmt_check->execute();
 
-    } while ($stmt_check->fetchColumn());
+        } while ($stmt_check->fetchColumn());
 
-    $stmt = $pdo->prepare(
-        "INSERT IGNORE INTO user
-            (id, ref_code, step, limit_usertest, User_Status, number, Balance,
-            pagenumber, username, message_count, last_message_time,
-            affiliatescount, affiliates, verify)
-        VALUES
-            (:from_id, :ref_code, 'none', :limit_usertest_all, 'Active', 'none', '0',
-            '1', :username, '0', '0', '0', '0', :verify)"
-    );
-    $stmt->bindParam(':ref_code', $ref_code);
-    $stmt->bindParam(':verify', $verify);
-    $stmt->bindParam(':from_id', $from_id);
-    $stmt->bindParam(':limit_usertest_all', $setting['limit_usertest_all']);
-    $stmt->bindParam(':username', $username, PDO::PARAM_STR);
-    $stmt->execute();
+        $stmt = $pdo->prepare(
+            "INSERT IGNORE INTO user
+                (id, ref_code, step, limit_usertest, User_Status, number, Balance,
+                pagenumber, username, message_count, last_message_time,
+                affiliatescount, affiliates, verify)
+            VALUES
+                (:from_id, :ref_code, 'none', :limit_usertest_all, 'Active', 'none', '0',
+                '1', :username, '0', '0', '0', '0', :verify)"
+        );
+        $stmt->bindParam(':ref_code', $ref_code);
+        $stmt->bindParam(':verify', $verify);
+        $stmt->bindParam(':from_id', $from_id);
+        $stmt->bindParam(':limit_usertest_all', $setting['limit_usertest_all']);
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
+        $stmt->execute();
+    }
 }
 $user = select("user", "*", "id", $from_id, "select");
+// نسخه 2.6.25: بهروزرسانی یوزرنیم تلگرام اگر کاربر آن را عوض کرده باشد
+// فقط وقتی آپدیت از پیام یا دکمه خود کاربر است (نه آپدیتهایی که یوزرنیم ندارند و NOT_USERNAME میدهند)
+$__un_from = $update['message']['from'] ?? $update['callback_query']['from'] ?? null;
+if (is_array($user) && isset($user['id']) && is_array($__un_from) && intval($from_id) != 0 && intval($__un_from['id'] ?? 0) === intval($from_id)) {
+    $__un = strval($__un_from['username'] ?? 'NOT_USERNAME');
+    if ($__un !== '' && strlen($__un) <= 64 && $__un !== strval($user['username'] ?? '')) {
+        try {
+            $pdo->prepare("UPDATE user SET username = :u WHERE id = :id")->execute([':u' => $__un, ':id' => $from_id]);
+            $user['username'] = $__un;
+        } catch (Throwable $e) {
+            error_log('username sync: ' . $e->getMessage());
+        }
+    }
+}
 if ($user == false) {
     $user = array();
     $user = array(
