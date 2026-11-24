@@ -3703,7 +3703,8 @@ function buildBalancePackageListKeyboard()
         // نسخه 2.6.31: «پرداخت ← دریافت» تا معلوم باشد چقدر میپردازد و چقدر میگیرد
         $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
         if ($p['discount'] > 0) {
-            $label .= "💳 پرداخت " . formatToman($pay) . " ← دریافت " . formatToman($p['amount']) . " (🎁 {$disc}٪)";
+            // نسخه 2.6.35: بدون پرانتز (در متن راستبهچپ تلگرام پرانتز و ایموجی بههم میریخت)
+            $label .= "🎁 {$disc}٪ تخفیف | پرداخت " . formatToman($pay) . " ← دریافت " . formatToman($p['amount']);
         } else {
             $label .= "💳 " . formatToman($p['amount']) . " تومان";
         }
