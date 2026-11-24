@@ -1017,33 +1017,51 @@ $textbotlang['Admin']['managepanel']['type']['alireza'] = "علیرضا";
 
 
 $textbotlang['Admin']['ManageUser']['SendMessageuser'] = "✅ پیام برای کاربر ارسال شد.";
-$textbotlang['Admin']['ManageUser']['GetTextResponse'] = "برای پاسخ به کاربر متن خود را ارسال کنید.";
-$textbotlang['Admin']['ManageUser']['GetText'] = "متن خود را ارسال کنید";
-$textbotlang['Admin']['ManageUser']['ForwardGetext'] = "متن فورواردی خود را ارسال کنید";
+$textbotlang['Admin']['ManageUser']['GetTextResponse'] = "✍️ <b>پاسخ به کاربر</b>
+
+متن پاسخ خود را ارسال کنید:";
+$textbotlang['Admin']['ManageUser']['GetText'] = "✍️ <b>ارسال پیام</b>
+
+متن خود را ارسال کنید:";
+$textbotlang['Admin']['ManageUser']['ForwardGetext'] = "↪️ <b>فوروارد پیام</b>
+
+پیامی که می‌خواهید فوروارد شود را ارسال کنید:";
 $textbotlang['Admin']['ManageUser']['ForwardSendAllUser'] = "✅ پیام برای تمامی کاربران فوروارد شد.";
 $textbotlang['Admin']['ManageUser']['MessageSent'] = "✅ پیام ارسال شد";
 $textbotlang['Admin']['ManageUser']['ChangeTextGet'] = " متن جدید خود را ارسال کنید.
 متن فعلی :";
 $textbotlang['Admin']['ManageUser']['GetIDMessage'] = "✅ متن دریافت شد حالا آیدی عددی کاربر را ارسال کنید.";
-$textbotlang['Admin']['ManageUser']['ErrorText'] = "فقط متن می‌توانید ارسال کنید";
-$textbotlang['Admin']['ManageUser']['SaveText'] = "✅ متن با موفقیت ذخیره شد";
+$textbotlang['Admin']['ManageUser']['ErrorText'] = "❌ <b>فقط متن قابل قبول است</b>
+
+لطفاً پیام را به‌صورت متن ارسال کنید.";
+$textbotlang['Admin']['ManageUser']['SaveText'] = "✅ <b>متن ذخیره شد</b>
+
+تغییرات از همین حالا اعمال می‌شود.";
 $textbotlang['Admin']['ManageUser']['BlockUserId'] = "👤 آیدی عددی کاربر را ارسال کنید";
 $textbotlang['Admin']['ManageUser']['BlockedUserNotice'] = "🚫 شما از طرف مدیریت بلاک شده‌اید.
 
 ✍️ دلیل مسدودی :%s";
-$textbotlang['Admin']['ManageUser']['BlockedUser'] = "کاربر از قبل بلاک بوده است❗️";
-$textbotlang['Admin']['ManageUser']['BlockUser'] = "🚫 کاربر مسدود شد حالا دلیل مسدودی هم ارسال کنید.";
-$textbotlang['Admin']['ManageUser']['RemoveService'] = "در این بخش می‌توانید  سرویسی  داخل ربات حذف نمایید.
+$textbotlang['Admin']['ManageUser']['BlockedUser'] = "ℹ️ <b>کاربر از قبل مسدود است</b>";
+$textbotlang['Admin']['ManageUser']['BlockUser'] = "🚫 <b>کاربر مسدود شد</b>
+
+دلیل مسدودی را ارسال کنید:";
+$textbotlang['Admin']['ManageUser']['RemoveService'] = "🗑 <b>حذف سرویس</b>
+
+در این بخش می‌توانید سرویسی داخل ربات حذف نمایید.
 برای حذف سرویس نام کاربری که داخل پنل ثبت شده بود را ارسال نمایید";
 $textbotlang['Admin']['ManageUser']['RemovedService'] = "✅ سرویس کاربر حذف شد.";
 $textbotlang['Admin']['ManageUser']['DescriptionBlock'] = "✍️ دلیل مسدودی کاربر ذخیره شد";
 $textbotlang['Admin']['ManageUser']['GetIdUserunblock'] = "👤 آیدی عددی کاربر را ارسال کنید";
-$textbotlang['Admin']['ManageUser']['UserNotBlock'] = "کاربر بلاک نیست 😐";
+$textbotlang['Admin']['ManageUser']['UserNotBlock'] = "ℹ️ <b>کاربر مسدود نیست</b>";
 $textbotlang['Admin']['ManageUser']['UserUnblocked'] = "کاربر از حالت مسدودی خارج شد.";
 $textbotlang['Admin']['ManageUser']['list_blocked'] = "🚫 مسدود شده‌ها";
 $textbotlang['Admin']['ManageUser']['unblock_all'] = "✅ خارج کردن همه از مسدودی";
-$textbotlang['Admin']['ManageUser']['unblock_all_confirm'] = "⚠️ آیا مطمئن هستید همه کاربران مسدود از مسدودی خارج شوند؟";
-$textbotlang['Admin']['ManageUser']['unblock_all_done'] = "✅ تعداد <b>%s</b> کاربر از مسدودی خارج شدند.";
+$textbotlang['Admin']['ManageUser']['unblock_all_confirm'] = "⚠️ <b>خارج کردن همه از مسدودی</b>
+
+آیا مطمئن هستید همه کاربران مسدود آزاد شوند؟";
+$textbotlang['Admin']['ManageUser']['unblock_all_done'] = "✅ <b>مسدودی برداشته شد</b>
+
+تعداد <b>%s</b> کاربر از مسدودی خارج شدند.";
 $textbotlang['Admin']['ManageUser']['blocked_empty'] = "📭 هیچ کاربر مسدودی وجود ندارد.";
 $textbotlang['Admin']['ManageUser']['pending_receipts'] = '🧾 رسیدهای تایید نشده';
 $textbotlang['Admin']['ManageUser']['list_balance_gt1'] = "💰 موجودی بالای ۵۰۰ هزار";
@@ -1057,7 +1075,7 @@ $textbotlang['Admin']['ManageUser']['balance_gt1_header'] = "💰 <b>کاربر�
 $textbotlang['Admin']['ManageUser']['Acceptedphone'] = "تایید شده";
 $textbotlang['Admin']['ManageUser']['Failedphone'] = "تایید نشده";
 $textbotlang['Admin']['ManageUser']['dataorder'] = " تاریخ ثبت نشده است";
-$textbotlang['Admin']['ManageUser']['SendOrder'] = "لیست سفارشات کاربر ارسال شد";
+$textbotlang['Admin']['ManageUser']['SendOrder'] = "✅ <b>لیست سفارشات کاربر ارسال شد</b>";
 $textbotlang['Admin']['ManageUser']['mangebtnuserdec'] = "⭕️ در این بخش می‌توانید تمام کاربران را مشاهده کنید 
 ⚠️ برای مدیریت کاربر روی دکمه مدیریت کاربر جلوی هر کاربر بزنید";
 $textbotlang['Admin']['ManageUser']['backlistuser'] = "🏠 بازگشت به لیست کاربران";
@@ -1075,8 +1093,12 @@ $textbotlang['Admin']['ManageUser']['verifynumber'] = "احراز هویت شم�
 $textbotlang['Admin']['ManageUser']['verifynumberirani'] = "تایید شماره ایرانی 🇮🇷";
 $textbotlang['Admin']['ManageUser']['vieworderuser'] = "🛍 مشاهده سفارشات کاربر";
 $textbotlang['Admin']['ManageUser']['searchorder'] = "🛍 جستجو سفارش";
-$textbotlang['Admin']['ManageUser']['ViewOrder'] = "👁 برای مشاهده سفارش آیدی عددی کاربر را ارسال کنید";
-$textbotlang['Admin']['ManageUser']['OrderNotFound'] = "❌ سفارش پیدا نشد";
+$textbotlang['Admin']['ManageUser']['ViewOrder'] = "🔍 <b>مشاهده سفارش</b>
+
+آیدی عددی کاربر را ارسال کنید:";
+$textbotlang['Admin']['ManageUser']['OrderNotFound'] = "❌ <b>سفارش پیدا نشد</b>
+
+آیدی را بررسی کنید و دوباره بفرستید.";
 $textbotlang['Admin']['ManageUser']['viewpaymentuser'] = "💰 مشاهده پرداختی های کاربر";
 $textbotlang['Admin']['ManageUser']['sendpayemntlist'] = "✅ لیست پرداختی های کاربر ارسال شد";
 $textbotlang['Admin']['ManageUser']['removeservice'] = "❌ حذف سفارش";
@@ -1101,8 +1123,8 @@ $textbotlang['Admin']['ManageUser']['Datails'] = "🧾 <b>جزئیات سفار�
 📆 تاریخ خرید: %s";
 $textbotlang['Admin']['ManageUser']['removeorderbtn'] = "❌ حذف سرویس کاربر";
 $textbotlang['Admin']['ManageUser']['verify'] = "احراز هویت";
-$textbotlang['Admin']['ManageUser']['verifyed'] = "کاربر از قبل احراز نبوده است";
-$textbotlang['Admin']['ManageUser']['alreadyverified'] = "ℹ️ کاربر از قبل احراز شده است.";
+$textbotlang['Admin']['ManageUser']['verifyed'] = "ℹ️ <b>کاربر از قبل احراز نشده بود</b>";
+$textbotlang['Admin']['ManageUser']['alreadyverified'] = "ℹ️ <b>کاربر از قبل احراز شده است</b>";
 $textbotlang['Admin']['ManageUser']['unverifyed'] = "✅ احراز هویت کاربر برداشته شد.";
 $textbotlang['Admin']['ManageUser']['verifyeduser'] = "✅ کاربر احراز شد.";
 $textbotlang['Admin']['ManageUser']['removeverify'] = "حذف احراز هویت";
@@ -1298,15 +1320,30 @@ $textbotlang['Admin']['Usertest']['reset_all_limits'] = "♻️ ریست محد�
 $textbotlang['Admin']['Usertest']['reset_all_limits_ok'] = "✅ محدودیت اکانت تست همه کاربران به مقدار پیش‌فرض ریست شد.\nعدد اعمال‌شده: <code>%s</code>";
 
 
-$textbotlang['Admin']['Balance']['PriceBalance'] = "آیدی عددی دریافت شد مبلغی که می‌خواهید به کاربر اضافه کنید را ارسال کنید مبلغ به تومان باشد";
-$textbotlang['Admin']['Balance']['PriceBalancek'] = "آیدی عددی دریافت شد مبلغی که می‌خواهید از کاربرکم کنید را ارسال کنید مبلغ به تومان باشد";
-$textbotlang['Admin']['Balance']['Invalidprice'] = "مبلغ نامعتبر است";
+$textbotlang['Admin']['Balance']['PriceBalance'] = "⬆️ <b>افزایش موجودی کاربر</b>
+
+مبلغی که می‌خواهید اضافه شود را به تومان ارسال کنید:";
+$textbotlang['Admin']['Balance']['PriceBalancek'] = "⬇️ <b>کاهش موجودی کاربر</b>
+
+مبلغی که می‌خواهید کسر شود را به تومان ارسال کنید:";
+$textbotlang['Admin']['Balance']['Invalidprice'] = "❌ <b>مبلغ نامعتبر است</b>
+
+فقط عدد به تومان ارسال کنید.";
 $textbotlang['Admin']['Balance']['AddBalanceUser'] = "✅ مبلغ به موجودی کاربر اضافه شد";
 $textbotlang['Admin']['Balance']['NegativeBalanceUser'] = "✅ مبلغ از موجودی کاربر کسر شد";
-$textbotlang['Admin']['Balance']['addallbalance'] = "📌 مبلغ را برای شارژ همگانی ارسال نمایید";
-$textbotlang['Admin']['Balance']['maxpricebalance'] = "حداکثر ۱۰۰ میلیون تومان می‌باشد";
-$textbotlang['Admin']['Balance']['AddedBalance'] = "💎 مبلغ %s تومان به موجودی کیف پول شما اضافه شد.\n👛 موجودی فعلی: <b>%s</b> تومان";
-$textbotlang['Admin']['Balance']['ReduceBalance'] = "❌ مبلغ %s تومان از موجودی کیف پول شما کسر شد.";
+$textbotlang['Admin']['Balance']['addallbalance'] = "👥 <b>شارژ همگانی</b>
+
+مبلغ شارژ را به تومان ارسال کنید:";
+$textbotlang['Admin']['Balance']['maxpricebalance'] = "⚠️ <b>مبلغ بیش از حد مجاز</b>
+
+حداکثر مبلغ ۱۰۰ میلیون تومان است.";
+$textbotlang['Admin']['Balance']['AddedBalance'] = "💎 <b>موجودی شما افزایش یافت</b>
+
+💰 مبلغ: <b>%s</b> تومان
+👛 موجودی فعلی: <b>%s</b> تومان";
+$textbotlang['Admin']['Balance']['ReduceBalance'] = "➖ <b>موجودی شما کاهش یافت</b>
+
+💰 مبلغ: <b>%s</b> تومان";
 $textbotlang['Admin']['Balance']['SendBalanceAll'] = "👥 شارژ همگانی";
 
 
