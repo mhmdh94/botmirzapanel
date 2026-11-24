@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.2";
+$version = "2.6.4";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1307,7 +1307,7 @@ if ($user['step'] == "getusernameinfo") {
 if (is_string($datain) && $datain !== '' && !in_array($from_id, $admin_ids)) {
     $__own_patterns = [
         '/product_(\w+)/', '/qrcode_(\w+)/', '/subscriptionurl_(\w+)/', '/config_(\w+)/',
-        '/extend_(\w+)/', '/changelink_(\w+)/', '/confirmchange_(\w+)/', '/toggleserv_(\w+)/',
+        '/extend_(\w+)/', '/renewsame_(\w+)/', '/changelink_(\w+)/', '/confirmchange_(\w+)/', '/toggleserv_(\w+)/',
         '/Extra_volume_(\w+)/', '/removeserviceuserco-(\w+)/', '/removebyuser-(\w+)/',
         '/confirmremoveservices-(\w+)/',
     ];
@@ -1327,6 +1327,24 @@ if (is_string($datain) && $datain !== '' && !in_array($from_id, $admin_ids)) {
             }
             break;
         }
+    }
+}
+// نسخه 2.6.4: «🔁 تمدید همان پلن» از پیام هشدار → مستقیم پیشفاکتور تمدید
+if (is_string($datain) && preg_match('/^renewsame_(\w+)$/', $datain, $__rs)) {
+    $__rs_inv = select("invoice", "*", "username", $__rs[1], "select");
+    $__rs_p = (is_array($__rs_inv) && strval($__rs_inv['id_user'] ?? '') === strval($from_id) && function_exists('botFindRenewProduct')) ? botFindRenewProduct($__rs_inv) : null;
+    if ($__rs_p) {
+        update("user", "Processing_value", $__rs[1], "id", $from_id);
+        $user['Processing_value'] = $__rs[1];
+        if (isset($user['Processing_value_tow']) && preg_match('/^[0-9]{9,}$/', strval($user['Processing_value_tow']))) {
+            update("user", "Processing_value_tow", "0", "id", $from_id);
+        }
+        $datain = "serviceextendselect_" . $__rs_p['code_product'];
+    } else {
+        if (!empty($callback_query_id)) {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این پلن دیگر فروخته نمیشود؛ یک پلن دیگر انتخاب کنید.', 'show_alert' => true]);
+        }
+        $datain = "extend_" . $__rs[1];
     }
 }
 if (preg_match('/product_(\w+)/', $datain, $dataget)) {
@@ -1781,6 +1799,9 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
                 $__b2['style'] = 'success';
             }
         }
+        if (function_exists('botBestSellerName') && botBestSellerName() !== '' && botBestSellerName() === strval($result['name_product'] ?? '')) {
+            $__b2['text'] = '🔥 ' . $__b2['text'];
+        }
         $productextend['inline_keyboard'][] = [$__b1, $__b2];
     }
     $productextend['inline_keyboard'][] = [
@@ -1823,7 +1844,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             ]
         ]
     ]);
-    $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], number_format(intval($product['price_product'])), $product['Service_time'], $product['Volume_constraint']);
+    $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], number_format(intval($product['price_product'])), $product['Service_time'], $product['Volume_constraint'], botPricePerGbText($product['price_product'], $product['Volume_constraint'], '', "\n"));
     Editmessagetext($from_id, $message_id, $textextend, $keyboardextend);
 } elseif (preg_match('/confirmserivce-(.*)/', $datain, $dataget)) {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
@@ -3492,7 +3513,7 @@ if (isset($datain) && $datain === 'product_header') {
         $info_product['Volume_constraint'] = $textbotlang['users']['status']['Unlimited'];
     $price_disp = number_format(intval($info_product['price_product']), 0);
     $bal_disp = number_format(intval($user['Balance']), 0);
-    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $price_disp, $info_product['Volume_constraint'], $bal_disp, botInvoiceBalanceLine($info_product['price_product'], $user['Balance']));
+    $textin = sprintf($textbotlang['users']['buy']['invoicebuy'], $username_ac, $info_product['name_product'], $info_product['Service_time'], $price_disp, $info_product['Volume_constraint'], $bal_disp, botPricePerGbText($info_product['price_product'], $info_product['Volume_constraint'], "\n") . botInvoiceBalanceLine($info_product['price_product'], $user['Balance']));
     // پیش‌فاکتور جایگزین همان پیام یوزرنیم (نه پیام جدید)
     if ($edit_mid > 0) {
         Editmessagetext($from_id, $edit_mid, $textin, $payment);
@@ -3993,7 +4014,7 @@ if (isset($datain) && $datain === 'product_header') {
         number_format(intval($info_product['price_product'])),
         $info_product['Volume_constraint'],
         number_format(intval($user['Balance'])),
-        botInvoiceBalanceLine($info_product['price_product'], $user['Balance'])
+        botPricePerGbText($info_product['price_product'], $info_product['Volume_constraint'], "\n") . botInvoiceBalanceLine($info_product['price_product'], $user['Balance'])
     );
     $paymentDiscount = json_encode([
         'inline_keyboard' => [

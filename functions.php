@@ -6196,9 +6196,17 @@ function isPanelUserMissing($dataUser)
 function buildServiceWarnKeyboard($username, $show_emergency = false)
 {
     global $textbotlang;
-    $rows = [
-        [['text' => $textbotlang['users']['extend']['title'] ?? '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]],
-    ];
+    $rows = [];
+    // نسخه 2.6.4: تمدید یکلمسی با همان پلن فعلی (مستقیم به پیشفاکتور تمدید)
+    try {
+        $__inv = select("invoice", "*", "username", $username, "select");
+        $__rp = function_exists('botFindRenewProduct') ? botFindRenewProduct($__inv) : null;
+        if ($__rp) {
+            $rows[] = [['text' => '🔁 تمدید همان پلن (' . number_format(intval($__rp['price_product'])) . ' ت)', 'callback_data' => 'renewsame_' . $username]];
+        }
+    } catch (Throwable $e) {
+    }
+    $rows[] = [['text' => $textbotlang['users']['extend']['title'] ?? '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]];
     if ($show_emergency) {
         $rows[] = [['text' => $textbotlang['users']['cron']['emergency_btn'] ?? '🆘 تمدید اضطراری (۱روز / ۱گیگ)', 'callback_data' => 'emergency_ext_' . $username]];
     }
@@ -10009,4 +10017,64 @@ function processResellerVolumeWarnings()
     }
 }
 
+/** نسخه 2.6.4: نام پرفروشترین محصول ۳۰ روز اخیر (حداقل ۲ فروش) برای برچسب 🔥 */
+function botBestSellerName()
+{
+    global $pdo;
+    static $v = null;
+    if ($v !== null) {
+        return $v;
+    }
+    $v = '';
+    try {
+        $since = time() - 30 * 86400;
+        $st = $pdo->prepare("SELECT name_product, COUNT(*) AS c FROM invoice
+            WHERE name_product IS NOT NULL AND name_product <> '' AND name_product <> 'usertest'
+              AND CAST(price_product AS UNSIGNED) > 0
+              AND ((time_sell REGEXP '^[0-9]+$' AND CAST(time_sell AS UNSIGNED) >= :t)
+                OR (time_sell NOT REGEXP '^[0-9]+$' AND time_sell >= :d))
+            GROUP BY name_product ORDER BY c DESC LIMIT 1");
+        $st->execute([':t' => $since, ':d' => date('Y-m-d H:i:s', $since)]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if ($r && intval($r['c']) >= 2) {
+            $v = strval($r['name_product']);
+        }
+    } catch (Throwable $e) {
+        $v = '';
+    }
+    return $v;
+}
+
+/** نسخه 2.6.4: «💡 قیمت هر گیگ» برای پیشفاکتور؛ برای حجم نامحدود یا قیمت صفر رشته خالی */
+function botPricePerGbText($price, $volume, $suffix = '', $prefix = '')
+{
+    $p = intval($price);
+    $v = is_numeric($volume) ? floatval($volume) : 0;
+    if ($p <= 0 || $v <= 0) {
+        return '';
+    }
+    return $prefix . '💡 قیمت هر گیگ: <b>' . number_format(round($p / $v)) . '</b> تومان' . $suffix;
+}
+
+/** نسخه 2.6.4: محصول فعلی سرویس برای «تمدید همان پلن» (اگر هنوز فروخته میشود) */
+function botFindRenewProduct($inv)
+{
+    global $pdo;
+    if (!is_array($inv)) {
+        return null;
+    }
+    $name = strval($inv['name_product'] ?? '');
+    if ($name === '' || $name === 'usertest') {
+        return null;
+    }
+    try {
+        $st = $pdo->prepare("SELECT * FROM product WHERE name_product = :n AND (Location = :l OR Location = '/all') "
+            . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : '') . " LIMIT 1");
+        $st->execute([':n' => $name, ':l' => strval($inv['Service_location'] ?? '')]);
+        $p = $st->fetch(PDO::FETCH_ASSOC);
+        return $p ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
 

@@ -652,6 +652,10 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
         } else {
             $__feat = false;
         }
+        // نسخه 2.6.4: پرفروشترین محصول ۳۰ روز اخیر فقط با 🔥
+        if (function_exists('botBestSellerName') && botBestSellerName() !== '' && botBestSellerName() === strval($result['name_product'] ?? '')) {
+            $name = '🔥 ' . $name;
+        }
         $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
         // دو ستون: نام محصول + قیمت — هر دو همان callback انتخاب محصول
         $__b1 = ['text' => $price, 'callback_data' => $cb];
