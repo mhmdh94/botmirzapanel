@@ -638,10 +638,7 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
     $product = ['inline_keyboard' => []];
     // ردیف عنوان (مثل اسکرین دو‌ستونه: محصول | قیمت)
     // در تلگرام اندیس ۰ = چپ، اندیس ۱ = راست → قیمت چپ، محصول راست
-    $product['inline_keyboard'][] = [
-        ['text' => '💵 قیمت', 'callback_data' => 'product_header'],
-        ['text' => '🛍 محصول', 'callback_data' => 'product_header'],
-    ];
+    // نسخه 2.6.31: ردیف عنوان حذف شد؛ هر محصول یک دکمه تمامعرض «نام — قیمت»
     while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $cb = ($MethodUsername == ($textbotlang['users']['customusername'] ?? ''))
             ? ("prodcutservices_" . $result['code_product'])
@@ -661,13 +658,11 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
         }
         $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
         // دو ستون: نام محصول + قیمت — هر دو همان callback انتخاب محصول
-        $__b1 = ['text' => $price, 'callback_data' => $cb];
-        $__b2 = ['text' => $name, 'callback_data' => $cb];
+        $__b = ['text' => $name . ' — ' . $price, 'callback_data' => $cb];
         if ($__feat && function_exists('botButtonColorsOn') && botButtonColorsOn()) {
-            $__b1['style'] = 'success';
-            $__b2['style'] = 'success';
+            $__b['style'] = 'success';
         }
-        $product['inline_keyboard'][] = [$__b1, $__b2];
+        $product['inline_keyboard'][] = [$__b];
     }
     $product['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backmenu'] ?? '↩️ بازگشت', 'callback_data' => $backdata],

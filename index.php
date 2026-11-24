@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.30";
+$version = "2.6.31";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1871,29 +1871,24 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->bindValue(':Location', $nameloc['Service_location']);
     $stmt->execute();
     $productextend = ['inline_keyboard' => []];
-    // دو ستون مثل خرید: چپ قیمت، راست نام محصول
-    $productextend['inline_keyboard'][] = [
-        ['text' => '💵 قیمت', 'callback_data' => 'product_header'],
-        ['text' => '🛍 محصول', 'callback_data' => 'product_header'],
-    ];
+    // نسخه 2.6.31: مثل خرید، هر محصول یک دکمه «نام — قیمت»
     while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $cb = "serviceextendselect_" . $result['code_product'];
         $name = strval($result['name_product'] ?? '');
         $price = number_format(intval($result['price_product'] ?? 0)) . ' تومان';
         // نسخه 2.5.3: محصول پیشنهادی در لیست تمدید (ستاره + دکمه سبز)
-        $__b1 = ['text' => $price, 'callback_data' => $cb];
         $__b2 = ['text' => $name, 'callback_data' => $cb];
         if (function_exists('botFeaturedProductCode') && botFeaturedProductCode() !== '' && botFeaturedProductCode() === strval($result['code_product'] ?? '')) {
             $__b2['text'] = '⭐ ' . $name;
             if (function_exists('botButtonColorsOn') && botButtonColorsOn()) {
-                $__b1['style'] = 'success';
                 $__b2['style'] = 'success';
             }
         }
         if (function_exists('botBestSellerName') && botBestSellerName() !== '' && botBestSellerName() === strval($result['name_product'] ?? '')) {
             $__b2['text'] = '🔥 ' . $__b2['text'];
         }
-        $productextend['inline_keyboard'][] = [$__b1, $__b2];
+        $__b2['text'] .= ' — ' . $price;
+        $productextend['inline_keyboard'][] = [$__b2];
     }
     $productextend['inline_keyboard'][] = [
         ['text' => $textbotlang['users']['backorder'], 'callback_data' => "product_" . $username]
@@ -4291,7 +4286,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
         return;
     $pkgs = getBalancePackages();
     if (count($pkgs) > 0) {
-        botShowMsg($from_id, $textbotlang['users']['Balance']['choose_package'] ?? "یک پکیج انتخاب کنید یا مبلغ دلخواه وارد کنید:", buildBalancePackageUserKeyboard(), 'HTML');
+        botShowMsg($from_id, (function_exists('botBalanceMenuText') ? botBalanceMenuText($user) : ($textbotlang['users']['Balance']['choose_package'] ?? "یک پکیج انتخاب کنید یا مبلغ دلخواه وارد کنید:")), buildBalancePackageUserKeyboard(), 'HTML');
         step('home', $from_id);
     } else {
         $depLim = getDepositLimits();
@@ -4322,7 +4317,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet" || $datain =
         sendmessage($from_id, $list_text, $list_kb, 'HTML');
     }
 } elseif ($datain == "balpkg_menu") {
-    $menu_text = $textbotlang['users']['Balance']['choose_package'] ?? "💰 افزایش موجودی";
+    $menu_text = function_exists('botBalanceMenuText') ? botBalanceMenuText($user) : ($textbotlang['users']['Balance']['choose_package'] ?? "💰 افزایش موجودی");
     $menu_kb = function_exists('buildBalancePackageUserKeyboard') ? buildBalancePackageUserKeyboard() : null;
     if (!empty($message_id)) {
         Editmessagetext($from_id, $message_id, $menu_text, $menu_kb);

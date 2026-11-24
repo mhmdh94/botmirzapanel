@@ -255,6 +255,10 @@ function botStyleMarkup($rm)
                 if (strpos(strval($b['callback_data'] ?? ''), 'btxt_') === 0) {
                     continue;
                 }
+                // نسخه 2.6.31: سرویس تمامشده در «سرویسهای من» قرمز نشود (شبیه دکمه حذف بود)
+                if (strpos(strval($b['callback_data'] ?? ''), 'product_') === 0 && strpos(strval($b['text']), '🔴') === 0) {
+                    continue;
+                }
                 $st = botButtonStyleFor($b['text']);
                 if ($st !== '') {
                     $d[$k][$i][$j]['style'] = $st;

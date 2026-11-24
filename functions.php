@@ -981,8 +981,9 @@ function serviceListButtonLabel(array $row)
 {
     $emoji = serviceListEmojiFromInvoice($row);
     $label = $emoji . " " . strval($row['username'] ?? '');
+    // نسخه 2.6.31: متن روشن «… مانده» / «تمام شده»
     if ($emoji === '🔴') {
-        return $label;
+        return $label . " — تمام شده";
     }
     $amount = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
     // اکانت تست: Service_time به «ساعت» ذخیره می‌شود (time_usertest)، نه روز
@@ -995,9 +996,9 @@ function serviceListButtonLabel(array $row)
             $left = ($start + $seconds) - time();
             if ($left > 0) {
                 if ($left < 86400) {
-                    $label .= " | " . intval(ceil($left / 3600)) . " ساعت";
+                    $label .= " — " . intval(ceil($left / 3600)) . " ساعت مانده";
                 } else {
-                    $label .= " | " . intval(ceil($left / 86400)) . " روز";
+                    $label .= " — " . intval(ceil($left / 86400)) . " روز مانده";
                 }
             }
         }
@@ -3685,6 +3686,13 @@ function buildBalancePackageUserKeyboard()
 }
 
 /** لیست پکیج‌ها (بعد از زدن دکمه پکیج‌های تخفیف‌دار) */
+/** نسخه 2.6.31: متن منوی افزایش موجودی با موجودی فعلی */
+function botBalanceMenuText($user)
+{
+    $bal = is_array($user) ? intval($user['Balance'] ?? 0) : 0;
+    return "💰 <b>افزایش موجودی</b>\n\n👛 موجودی فعلی: <b>" . number_format($bal) . "</b> تومان\n\nروش افزایش موجودی را انتخاب کنید:";
+}
+
 function buildBalancePackageListKeyboard()
 {
     global $textbotlang;
@@ -3692,10 +3700,12 @@ function buildBalancePackageListKeyboard()
     foreach (getBalancePackages() as $p) {
         $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
         $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
+        // نسخه 2.6.31: «پرداخت ← دریافت» تا معلوم باشد چقدر میپردازد و چقدر میگیرد
         $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
-        $label .= formatToman($p['amount']) . 'ت';
         if ($p['discount'] > 0) {
-            $label .= " | 🎁 {$disc}٪ | پرداخت " . formatToman($pay) . 'ت';
+            $label .= "💳 پرداخت " . formatToman($pay) . " ← دریافت " . formatToman($p['amount']) . " (🎁 {$disc}٪)";
+        } else {
+            $label .= "💳 " . formatToman($p['amount']) . " تومان";
         }
         $rows[] = [['text' => $label, 'callback_data' => 'balpkg_' . $p['id']]];
     }
