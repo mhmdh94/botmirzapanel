@@ -687,7 +687,11 @@ function botUsageBar($used, $limit)
     }
     $pct = max(0, min(100, (floatval($used) / $limit) * 100));
     $filled = intval(round($pct / 10));
-    return "\n📶 " . str_repeat('▓', $filled) . str_repeat('░', 10 - $filled) . ' ' . number_format($pct, 0) . '%';
+    // نسخه 2.5.4: رنگ بر اساس مصرف + حجم باقیمانده
+    $dot = $pct >= 90 ? '🔴' : ($pct >= 70 ? '🟡' : '🟢');
+    $rem = max(0, $limit - floatval($used));
+    $rem_t = function_exists('formatBytes') ? formatBytes($rem) : (round($rem / 1073741824, 2) . ' GB');
+    return "\n\n{$dot} " . str_repeat('▓', $filled) . str_repeat('░', 10 - $filled) . ' <b>' . number_format($pct, 0) . "٪</b> مصرف شده\n📦 باقیمانده: <b>" . $rem_t . '</b>';
 }
 
 /**
@@ -3740,7 +3744,8 @@ function buildAdminShopSectionText()
         . "📁 دسته‌بندی‌ها: <b>" . number_format($cat) . "</b>\n"
         . "🎟 کد تخفیف: <b>" . number_format($dsc_act) . "</b> فعال از <b>" . number_format($dsc_all) . "</b>\n"
         . "🎁 کد هدیه: <b>" . number_format($gift) . "</b>\n"
-        . "🔑 اکانت تست: <b>" . ($ut_on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
+        . "🔑 اکانت تست: <b>" . ($ut_on ? '✅ روشن' : '❌ خاموش') . "</b>\n"
+        . botFeaturedProductLine() . "\n"
         . "یک بخش را انتخاب کنید:";
 }
 
@@ -5337,6 +5342,14 @@ function ensureReportChannelSettings()
     }
     $done = true;
     $defaults = ['rpt_newuser' => '0'];
+    // نسخه 2.5.4: بررسی کلیدها حداکثر هر ۶ ساعت (کاهش کوئری در هر گزارش)
+    $__ck = __DIR__ . '/cron/rpt_keys.ok';
+    $__sig = md5(implode(',', array_keys(reportChannelTypes())));
+    $__cv = @file_get_contents($__ck);
+    if (is_string($__cv) && strpos($__cv, $__sig) === 0 && (time() - intval(substr($__cv, 33))) < 21600) {
+        return;
+    }
+    @file_put_contents($__ck, $__sig . '|' . time());
     foreach (array_keys(reportChannelTypes()) as $k) {
         if (function_exists('ensurePaySetting')) {
             ensurePaySetting($k, $defaults[$k] ?? '1');
@@ -8624,6 +8637,64 @@ function botAdminDashLine()
             . " | 🧾 " . number_format($wait) . " رسید در انتظار" . ($pl !== '' ? " | {$pl}" : '');
     } catch (Throwable $e) {
         return '';
+    }
+}
+
+/** نسخه 2.5.4: خط محصول پیشنهادی در صفحه فروشگاه */
+function botFeaturedProductLine()
+{
+    $c = function_exists('botFeaturedProductCode') ? botFeaturedProductCode() : '';
+    if ($c === '') {
+        return "⭐ محصول پیشنهادی: —\n";
+    }
+    $p = function_exists('shopGetProductByCode') ? shopGetProductByCode($c) : null;
+    if (!is_array($p)) {
+        return "⭐ محصول پیشنهادی: ⚠️ محصول حذف شده\n";
+    }
+    return "⭐ محصول پیشنهادی: <b>" . htmlspecialchars(strval($p['name_product'] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>\n";
+}
+
+/** نسخه 2.5.4: پیام خوش‌آمد سه‌قدمی (کاربر جدید؛ با یا بدون لینک دعوت) */
+function botSendWelcome($uid)
+{
+    global $setting, $admin_ids;
+    if (in_array(strval($uid), array_map('strval', (array)$admin_ids), true)) {
+        return;
+    }
+    $wk = [];
+    $ut_on = !(is_array($setting) && isset($setting['status_usertest']) && strval($setting['status_usertest']) === '0');
+    if ($ut_on) {
+        $wk[] = [['text' => '🔑 دریافت اکانت تست رایگان', 'callback_data' => 'goto_usertest']];
+    }
+    $wk[] = [['text' => '🛒 خرید اشتراک', 'callback_data' => 'buy_fromtest']];
+    $wk[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
+    sendmessage($uid, "👋 <b>خوش آمدید!</b>\n━━━━━━━━━━\n\nشروع در ۳ قدم:\n\n"
+        . ($ut_on ? "1️⃣ یک <b>اکانت تست رایگان</b> بگیرید و کیفیت را امتحان کنید\n" : "1️⃣ پلن‌ها را از «خرید اشتراک» ببینید\n")
+        . "2️⃣ <b>پلن مناسب</b> خود را انتخاب و خرید کنید\n3️⃣ با <b>راهنمای اتصال</b> در کمتر از یک دقیقه وصل شوید ✅",
+        json_encode(['inline_keyboard' => $wk], JSON_UNESCAPED_UNICODE), 'HTML');
+}
+
+/* نسخه 2.5.4: تابع‌های قدیمی پنل وایرگارد/مرزنشین که در این نسخه وجود ندارند؛
+   بهجای کرش (Fatal) خطای قابل فهم برمی‌گردانند. */
+if (!function_exists('get_userwg')) {
+    function get_userwg($username = '', $panel = '')
+    {
+        if (function_exists('botTechAlert')) {
+            botTechAlert('missing:get_userwg', "⚠️ <b>نوع پنل پشتیبانی نمی‌شود</b>\n\nبرای پنل <code>" . htmlspecialchars(strval($panel), ENT_QUOTES, 'UTF-8') . "</code> تابع وایرگارد در ربات وجود ندارد.", 86400);
+        }
+        return ['status' => 'Unsuccessful', 'msg' => 'این نوع پنل در این نسخه ربات پشتیبانی نمی‌شود', 'error' => 'unsupported_panel'];
+    }
+}
+if (!function_exists('getuserm')) {
+    function getuserm($username = '', $panel = '')
+    {
+        return ['status' => 'Unsuccessful', 'msg' => 'این نوع پنل در این نسخه ربات پشتیبانی نمی‌شود', 'error' => 'unsupported_panel'];
+    }
+}
+if (!function_exists('token_panelm')) {
+    function token_panelm($url = '', $user = '', $pass = '')
+    {
+        return ['error' => 'unsupported_panel', 'detail' => 'این نوع پنل در این نسخه ربات پشتیبانی نمی‌شود', 'access_token' => null];
     }
 }
 

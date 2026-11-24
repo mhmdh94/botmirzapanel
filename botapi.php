@@ -155,6 +155,16 @@ if (!function_exists('botTableExists')) {
     }
 }
 
+/** نسخه 2.5.4: رنگ دکمه موقتاً غیرفعال است؟ (بعد از رد شدن توسط تلگرام) */
+function botNoStyleActive()
+{
+    static $v = null;
+    if ($v === null) {
+        $v = intval(@file_get_contents(__DIR__ . '/cron/nostyle.until')) > time();
+    }
+    return $v;
+}
+
 /** نسخه 2.4.8: روشن بودن دکمه‌های رنگی (PaySetting: button_colors، پیش‌فرض روشن) */
 function botButtonColorsOn($reset = false)
 {
@@ -279,7 +289,7 @@ function telegram($method, $datas = [])
     // نسخه 2.4.8: رنگ خودکار دکمه‌ها (style) + برگشت بدون رنگ اگر تلگرام نپذیرفت
     $__styled = false;
     $__orig = $datas;
-    if (empty($GLOBALS['__bot_nostyle']) && is_array($datas) && isset($datas['reply_markup']) && is_string($datas['reply_markup'])
+    if (empty($GLOBALS['__bot_nostyle']) && !botNoStyleActive() && is_array($datas) && isset($datas['reply_markup']) && is_string($datas['reply_markup'])
         && function_exists('botButtonColorsOn') && botButtonColorsOn()) {
         $__nm = botStyleMarkup($datas['reply_markup']);
         if ($__nm !== $datas['reply_markup']) {
@@ -347,6 +357,8 @@ function telegram($method, $datas = [])
         $desc = isset($res['description']) ? (string) $res['description'] : '';
         if ($__styled && preg_match('/style|button|keyboard/i', $desc)) {
             $GLOBALS['__bot_nostyle'] = true;
+            // نسخه 2.5.4: تا ۲۴ ساعت دیگر رنگ امتحان نشود (هر پیام دوبار ارسال نشود)
+            @file_put_contents(__DIR__ . '/cron/nostyle.until', strval(time() + 86400));
             @error_log('button style rejected by telegram, retry without colors: ' . $desc);
             return telegram($method, $__orig);
         }

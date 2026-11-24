@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.5.3";
+$version = "2.5.4";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -510,6 +510,10 @@ if (strpos($text, "/start ") !== false) {
             sendmessage($affiliatesid, sprintf($textbotlang['users']['affiliates']['giftuser'], $addbalancediscount, $from_id), null, 'html');
         }
         sendmessage($from_id, $datatextbot['text_start'], $keyboard, 'html');
+        // نسخه 2.5.4: خوش‌آمد برای کاربر جدیدی که با لینک دعوت آمده
+        if (function_exists('botSendWelcome')) {
+            botSendWelcome($from_id);
+        }
         $useraffiliates = select("user", "*", "id", $affiliatesid, "select");
         $addcountaffiliates = intval($useraffiliates['affiliatescount']) + 1;
         update("user", "affiliates", $affiliatesid, "id", $from_id);
@@ -2068,7 +2072,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         ]
     ]);
     $priceproductformat = number_format($product['price_product']);
-    $balanceformatsell = number_format(select("user", "Balance", "id", $from_id, "select")['Balance']);
+    $balanceformatsell = number_format(intval(select("user", "Balance", "id", $from_id, "select")['Balance'] ?? 0));
     update("invoice", "Status", "active", "id_invoice", $nameloc['id_invoice']);
     // ریست تاریخ فروش برای محاسبه صحیح ایموجی/انقضا بعد از تمدید
     try {

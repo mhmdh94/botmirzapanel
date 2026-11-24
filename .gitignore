@@ -15,3 +15,5 @@ cron/panel_health.json
 cron/schema_cache.json
 error_log.1
 cron/error_log.1
+cron/nostyle.until
+cron/rpt_keys.ok

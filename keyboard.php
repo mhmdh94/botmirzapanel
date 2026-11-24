@@ -133,8 +133,8 @@ $setting_panel = json_encode([
     ],
     'resize_keyboard' => true
 ]);
-$PaySettingcard = select("PaySetting", "ValuePay", "NamePay", 'Cartstatus', "select")['ValuePay'];
-$PaySettingdigi = select("PaySetting", "ValuePay", "NamePay", 'digistatus', "select")['ValuePay'];
+$PaySettingcard = (select("PaySetting", "ValuePay", "NamePay", 'Cartstatus', "select")['ValuePay'] ?? '');
+$PaySettingdigi = (select("PaySetting", "ValuePay", "NamePay", 'digistatus', "select")['ValuePay'] ?? '');
 $step_payment = [
     'inline_keyboard' => []
 ];
