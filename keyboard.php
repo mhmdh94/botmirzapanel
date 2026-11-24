@@ -407,7 +407,7 @@ if ($table_exists) {
     }
     $json_list_Discount_list_admin_sell = json_encode($list_Discountsell);
 }
-// نسخه 2.6.2: دکمه «ثبت کد تخفیف» فقط وقتی هست که حداقل یک کد تخفیف با ظرفیت باقیمانده تعریف شده باشد
+// نسخه 2.6.2: دکمه «ثبت کد تخفیف» فقط وقتی هست که حداقل یک کد تخفیف با ظرفیت باقی‌مانده تعریف شده باشد
 $__has_sell_discount = false;
 if ($table_exists) {
     try {

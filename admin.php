@@ -1344,7 +1344,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         [['text' => '📦 دارای سرویس فعال (' . number_format(count($__sets['act'])) . ')', 'callback_data' => 'cast_ok_act']],
         [['text' => '🆕 بدون خرید (' . number_format(count($__sets['nobuy'])) . ')', 'callback_data' => 'cast_ok_nobuy']],
         [['text' => '⏳ انقضا تا ۷ روز آینده (' . number_format(count($__sets['exp7'])) . ')', 'callback_data' => 'cast_ok_exp7']],
-        [['text' => '🔚 سرویس تمامشده (' . number_format(count($__sets['ended'])) . ')', 'callback_data' => 'cast_ok_ended']],
+        [['text' => '🔚 سرویس تمام‌شده (' . number_format(count($__sets['ended'])) . ')', 'callback_data' => 'cast_ok_ended']],
         [['text' => '👛 دارای موجودی (' . number_format(count($__sets['bal'])) . ')', 'callback_data' => 'cast_ok_bal']],
         [['text' => '❌ انصراف', 'callback_data' => 'cast_no']],
     ]], JSON_UNESCAPED_UNICODE);
@@ -1363,7 +1363,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         return;
     }
     $__tg = (isset($__cm[2]) && $__cm[2] !== '') ? $__cm[2] : 'all';
-    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده', 'ended' => 'سرویس تمامشده', 'bal' => 'دارای موجودی'];
+    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده', 'ended' => 'سرویس تمام‌شده', 'bal' => 'دارای موجودی'];
     $__sets = botCastRecipientSets();
     $result = $__sets[$__tg] ?? [];
     if (count($result) === 0) {
@@ -4203,7 +4203,7 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     step("getpricerequests", $from_id);
     update("user", "Processing_value", $username, "id", $from_id);
     update("user", "Processing_value_tow", strval(intval($message_id)), "id", $from_id);
-    // نسخه 2.6.13: مبلغ پرداختی + پیشنهاد بر اساس زمان و حجم باقیمانده + دکمههای آماده
+    // نسخه 2.6.13: مبلغ پرداختی + پیشنهاد بر اساس زمان و حجم باقی‌مانده + دکمه‌های آماده
     $__inv = select("invoice", "*", "username", $username, "select");
     $__paid = intval(str_replace([',', ' ', 'تومان'], '', strval(is_array($__inv) ? ($__inv['price_product'] ?? 0) : 0)));
     $__ratio = 1.0;
@@ -4244,8 +4244,8 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     $__msg = "💸 <b>مبلغ بازگشت</b>\n\n"
         . "🔑 سرویس: \u{200E}<code>" . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . "</code>\n"
         . "💰 پرداختی کاربر: <b>" . number_format($__paid) . "</b> تومان\n"
-        . (($__sug > 0 && $__sug < $__paid) ? "💡 پیشنهاد" . ($__why ? ' (' . implode('، ', $__why) . ' باقیمانده)' : '') . ": <b>" . number_format($__sug) . "</b> تومان\n" : '')
-        . "\nیکی از دکمهها را بزنید یا مبلغ دلخواه را به تومان بفرستید:";
+        . (($__sug > 0 && $__sug < $__paid) ? "💡 پیشنهاد" . ($__why ? ' (' . implode('، ', $__why) . ' باقی‌مانده)' : '') . ": <b>" . number_format($__sug) . "</b> تومان\n" : '')
+        . "\nیکی از دکمه‌ها را بزنید یا مبلغ دلخواه را به تومان بفرستید:";
     sendmessage($from_id, $__msg, json_encode(['inline_keyboard' => $__rows], JSON_UNESCAPED_UNICODE), 'HTML');
 
 } elseif ($user['step'] == "getpricerequests") {
@@ -4318,7 +4318,7 @@ if (preg_match('/rejectremoceserviceadmin-(\w+)/', $datain, $dataget)) {
     } else {
         sendmessage($from_id, $__am_txt, $keyboardadmin, 'HTML');
     }
-    // کارت درخواست: دکمهها بسته شوند
+    // کارت درخواست: دکمه‌ها بسته شوند
     $__card = intval($user['Processing_value_tow'] ?? 0);
     if ($__card > 0) {
         telegram('editMessageReplyMarkup', ['chat_id' => $from_id, 'message_id' => $__card, 'reply_markup' => json_encode(['inline_keyboard' => [

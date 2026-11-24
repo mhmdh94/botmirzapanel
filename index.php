@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.16";
+$version = "2.6.17";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1329,7 +1329,7 @@ if (is_string($datain) && $datain !== '' && !in_array($from_id, $admin_ids)) {
         }
     }
 }
-// نسخه 2.6.14: «🔁 خرید دوباره همان پلن» برای سرویس حذفشده/تمامشده → مستقیم مرحله خرید همان محصول
+// نسخه 2.6.14: «🔁 خرید دوباره همان پلن» برای سرویس حذف‌شده/تمام‌شده → مستقیم مرحله خرید همان محصول
 if (is_string($datain) && preg_match('/^rebuy_(\w+)$/', $datain, $__rb)) {
     $__rb_st = select("setting", "*");
     if (is_array($__rb_st) && strval($__rb_st['status_buy'] ?? '1') === '0') {
@@ -1352,7 +1352,7 @@ if (is_string($datain) && preg_match('/^rebuy_(\w+)$/', $datain, $__rb)) {
         $datain = "buy";
     }
 }
-// نسخه 2.6.4: «🔁 تمدید همان پلن» از پیام هشدار → مستقیم پیشفاکتور تمدید
+// نسخه 2.6.4: «🔁 تمدید همان پلن» از پیام هشدار → مستقیم پیش‌فاکتور تمدید
 if (is_string($datain) && preg_match('/^renewsame_(\w+)$/', $datain, $__rs)) {
     $__rs_inv = select("invoice", "*", "username", $__rs[1], "select");
     $__rs_p = (is_array($__rs_inv) && strval($__rs_inv['id_user'] ?? '') === strval($from_id) && function_exists('botFindRenewProduct')) ? botFindRenewProduct($__rs_inv) : null;
@@ -2076,7 +2076,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     try {
         $__ded = $pdo->prepare("UPDATE user SET Balance = Balance - :p WHERE id = :id AND CAST(Balance AS SIGNED) >= :p2");
         $__ded->execute([':p' => $__price_ext, ':id' => $from_id, ':p2' => $__price_ext]);
-        // نسخه 2.6.9: تمدید رایگان (کد تخفیف ۱۰۰٪) — UPDATE با مبلغ صفر ردیفی تغییر نمیدهد و rowCount صفر است
+        // نسخه 2.6.9: تمدید رایگان (کد تخفیف ۱۰۰٪) — UPDATE با مبلغ صفر ردیفی تغییر نمی‌دهد و rowCount صفر است
         if ($__price_ext > 0 && $__ded->rowCount() < 1) {
             $__ext_dc_release();
             @flock($__lock_fp, LOCK_UN);
@@ -2265,7 +2265,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (!empty($__lock_path) && is_file($__lock_path)) {
         @unlink($__lock_path);
     }
-    // نسخه 2.6.10: پیام «در حال تمدید» به پیام کامل موفقیت تبدیل میشود (نه پیام جدا)
+    // نسخه 2.6.10: پیام «در حال تمدید» به پیام کامل موفقیت تبدیل می‌شود (نه پیام جدا)
     $__done_txt = function_exists('botRenewDoneText')
         ? botRenewDoneText($usernamepanel, $product, $__price_ext, $Balance_Low_user, $__ext_dc ?? '')
         : $textbotlang['users']['extend']['thanks'];
@@ -3821,11 +3821,11 @@ if (isset($datain) && $datain === 'product_header') {
     }
     $__buy_deducted = $__price_buy;
     $__inv_mid = (!empty($message_id) && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) ? intval($message_id) : 0;
-    // نسخه 2.6.11: موجودی بعد از خرید (برای پیام سرویس) + بستن پیشفاکتور تا دوباره زده نشود
+    // نسخه 2.6.11: موجودی بعد از خرید (برای پیام سرویس) + بستن پیش‌فاکتور تا دوباره زده نشود
     $__bal_after_buy = intval($Balance_prim);
     if (!empty($message_id) && ($datain == "confirmandgetservice" || $datain == "confirmandgetserviceDiscount")) {
         Editmessagetext($from_id, $message_id,
-            "🧾 <b>پیشفاکتور خرید</b> — ✅ <b>پرداخت شد</b>\n\n"
+            "🧾 <b>پیش‌فاکتور خرید</b> — ✅ <b>پرداخت شد</b>\n\n"
             . "📦 محصول: " . htmlspecialchars(strval($info_product['name_product'] ?? ''), ENT_QUOTES, 'UTF-8') . "\n"
             . "💰 مبلغ: <b>" . number_format($__buy_deducted) . "</b> تومان\n\n"
             . "⏳ در حال ساخت سرویس…",
@@ -4120,7 +4120,7 @@ if (isset($datain) && $datain === 'product_header') {
     }
     step('home', $from_id);
 } elseif ($datain == "aptdc") {
-    // دکمه قدیمی روی پیشفاکتورهای قبلی: اگر کد تخفیفی نمانده، فقط اطلاع بده
+    // دکمه قدیمی روی پیش‌فاکتورهای قبلی: اگر کد تخفیفی نمانده، فقط اطلاع بده
     if (empty($__has_sell_discount)) {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'در حال حاضر کد تخفیف فعالی وجود ندارد.', 'show_alert' => true]);
         return;
@@ -4674,7 +4674,7 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
         $__pvt_r = strval($user['Processing_value_tow'] ?? '');
         if (strpos($__pvt_r, 'extendafterpay|') === 0) {
             // نسخه 2.6.16: رسید تمدید — متن مخصوص تمدید
-            $__rs_res = sendmessage($from_id, "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، سرویس شما <b>خودکار تمدید</b> میشود و نتیجه همینجا اعلام میشود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nاگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.", $keyboard, 'HTML');
+            $__rs_res = sendmessage($from_id, "🚀 <b>رسید ارسال شد</b>\n\nپس از تأیید مدیریت، سرویس شما <b>خودکار تمدید</b> می‌شود و نتیجه همینجا اعلام می‌شود.\nلطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.\n\nاگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.", $keyboard, 'HTML');
         } else {
             $__rs_res = sendmessage($from_id, (function_exists('getEditableBotText') ? getEditableBotText('msg_receipt_sent', $textbotlang['users']['Balance']['Send-receipt']) : $textbotlang['users']['Balance']['Send-receipt']), $keyboard, 'HTML');
         }
@@ -4824,7 +4824,7 @@ if ($text == $textbotlang['users']['affiliates']['btn'] || $datain == "acc_invit
     $__aff_st = function_exists('botAffiliateStats') ? botAffiliateStats($from_id) : null;
     $__aff_inv = max(intval($user['affiliatescount'] ?? 0), intval($__aff_st['invited'] ?? 0));
     $__aff_stats = "\n\n📊 <b>آمار دعوت شما</b>"
-        . "\n👥 دعوتشده: <b>" . number_format($__aff_inv) . "</b> نفر"
+        . "\n👥 دعوت‌شده: <b>" . number_format($__aff_inv) . "</b> نفر"
         . (is_array($__aff_st) ? "\n🛒 خرید کردهاند: <b>" . number_format(intval($__aff_st['buyers'])) . "</b> نفر" . ($__aff_inv > 0 ? " (" . intval(round(intval($__aff_st['buyers']) * 100 / $__aff_inv)) . "٪)" : '') : '')
         . "\n💸 پورسانت دریافتی: <b>" . number_format(function_exists('getAffiliatesEarned') ? intval(getAffiliatesEarned($from_id)) : 0) . "</b> تومان"
         . (is_array($__aff_st) && intval($__aff_st['recent']) > 0 ? "\n📅 پورسانت ۳۰ روز اخیر: <b>" . number_format(intval($__aff_st['recent'])) . "</b> تومان" : '');

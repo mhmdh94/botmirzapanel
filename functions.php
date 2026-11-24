@@ -687,11 +687,11 @@ function botUsageBar($used, $limit)
     }
     $pct = max(0, min(100, (floatval($used) / $limit) * 100));
     $filled = intval(round($pct / 10));
-    // نسخه 2.5.4: رنگ بر اساس مصرف + حجم باقیمانده
+    // نسخه 2.5.4: رنگ بر اساس مصرف + حجم باقی‌مانده
     $dot = $pct >= 90 ? '🔴' : ($pct >= 70 ? '🟡' : '🟢');
     $rem = max(0, $limit - floatval($used));
     $rem_t = function_exists('formatBytes') ? formatBytes($rem) : (round($rem / 1073741824, 2) . ' GB');
-    return "\n\n{$dot} " . str_repeat('▓', $filled) . str_repeat('░', 10 - $filled) . ' <b>' . number_format($pct, 0) . "٪</b> مصرف شده\n📦 باقیمانده: <b>" . $rem_t . '</b>';
+    return "\n\n{$dot} " . str_repeat('▓', $filled) . str_repeat('░', 10 - $filled) . ' <b>' . number_format($pct, 0) . "٪</b> مصرف شده\n📦 باقی‌مانده: <b>" . $rem_t . '</b>';
 }
 
 /**
@@ -1809,7 +1809,7 @@ function DirectPayment($order_id)
             }
         }
         $__svc_kb = null;
-        // نسخه 2.6.12: serviceInfoKeyboard لینک کپی را از $dataoutput سراسری میخواند
+        // نسخه 2.6.12: serviceInfoKeyboard لینک کپی را از $dataoutput سراسری می‌خواند
         $GLOBALS['dataoutput'] = $dataoutput;
         if (($marzban_list_get['type'] ?? '') == "wgdashboard") {
             $textcreatuser = sprintf($textbotlang['users']['buy']['createservicewgbuy'], $dataoutput['username'], $get_invoice['name_product']);
@@ -5576,7 +5576,7 @@ function botRptJ($fmt, $ts, $tr = 'fa')
     return date('Y-m-d', intval($ts));
 }
 
-/** نسخه 2.6.6: دورههای گزارش در ساعت اول روز (روزانه؛ شنبه هفتگی؛ اول ماه شمسی ماهانه) */
+/** نسخه 2.6.6: دوره‌های گزارش در ساعت اول روز (روزانه؛ شنبه هفتگی؛ اول ماه شمسی ماهانه) */
 function botReportPeriods(DateTime $now)
 {
     $tz = $now->getTimezone();
@@ -5635,7 +5635,7 @@ function botReportUserSnapshot(DateTime $now)
             total INT NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         $ins = $pdo->prepare("INSERT IGNORE INTO report_user_snapshot (d, total) VALUES (?, ?)");
-        // عدد ذخیرهشده نسخههای قبل (ساعت ۲۳:۵۵) ≈ شروع روز بعد
+        // عدد ذخیره‌شده نسخه‌های قبل (ساعت ۲۳:۵۵) ≈ شروع روز بعد
         $prev = json_decode(strval(@file_get_contents($dir . '/daily_users.json')), true);
         if (is_array($prev) && !empty($prev['date']) && isset($prev['total'])) {
             $pd = DateTime::createFromFormat('Y-m-d H:i:s', strval($prev['date']) . ' 00:00:00', $now->getTimezone());
@@ -6476,7 +6476,7 @@ function buildServiceWarnKeyboard($username, $show_emergency = false)
 {
     global $textbotlang;
     $rows = [];
-    // نسخه 2.6.4: تمدید یکلمسی با همان پلن فعلی (مستقیم به پیشفاکتور تمدید)
+    // نسخه 2.6.4: تمدید یکلمسی با همان پلن فعلی (مستقیم به پیش‌فاکتور تمدید)
     try {
         $__inv = select("invoice", "*", "username", $username, "select");
         $__rp = function_exists('botFindRenewProduct') ? botFindRenewProduct($__inv) : null;
@@ -9004,7 +9004,7 @@ if (!function_exists('token_panelm')) {
     }
 }
 
-/** نسخه 2.5.7: اگر از دکمه شیشهای آمده، همان پیام ویرایش شود؛ وگرنه (یا اگر ویرایش نشد) پیام جدید */
+/** نسخه 2.5.7: اگر از دکمه شیشه‌ای آمده، همان پیام ویرایش شود؛ وگرنه (یا اگر ویرایش نشد) پیام جدید */
 function botShowMsg($chat, $text, $kb, $pm = 'HTML')
 {
     global $datain, $message_id, $update;
@@ -10335,7 +10335,7 @@ function botPricePerGbText($price, $volume, $suffix = '', $prefix = '')
     return $prefix . '💡 قیمت هر گیگ: <b>' . number_format(round($p / $v)) . '</b> تومان' . $suffix;
 }
 
-/** نسخه 2.6.4: محصول فعلی سرویس برای «تمدید همان پلن» (اگر هنوز فروخته میشود) */
+/** نسخه 2.6.4: محصول فعلی سرویس برای «تمدید همان پلن» (اگر هنوز فروخته می‌شود) */
 function botFindRenewProduct($inv)
 {
     global $pdo;
@@ -10417,7 +10417,7 @@ function botRenewDoneText($username, $product, $paid, $balance_after, $discount_
     if ($balance_after !== null) {
         $t .= "👛 موجودی فعلی: <b>" . number_format(intval($balance_after)) . "</b> تومان\n";
     }
-    $t .= "\nبرای مشاهده سرویس یا بازگشت به لیست، از دکمههای زیر استفاده کنید.";
+    $t .= "\nبرای مشاهده سرویس یا بازگشت به لیست، از دکمه‌های زیر استفاده کنید.";
     return $t;
 }
 
@@ -10458,7 +10458,7 @@ function botSaveReceiptUserMsg($order, $chat_id, $res)
     }
 }
 
-/** پیام ذخیرهشده را برمیگرداند و حذف میکند؛ فقط اگر جوانتر از $max_age ثانیه باشد */
+/** پیام ذخیره‌شده را برمیگرداند و حذف میکند؛ فقط اگر جوانتر از $max_age ثانیه باشد */
 function botTakeReceiptUserMsg($order, $max_age = 900)
 {
     global $pdo;
@@ -10479,7 +10479,7 @@ function botTakeReceiptUserMsg($order, $max_age = 900)
     }
 }
 
-/** نسخه 2.6.14: برچسب حجم برای پیشفاکتورها («50 گیگ» یا «نامحدود») */
+/** نسخه 2.6.14: برچسب حجم برای پیش‌فاکتورها («50 گیگ» یا «نامحدود») */
 function botVolLabel($v)
 {
     if (is_numeric($v)) {
@@ -10489,7 +10489,7 @@ function botVolLabel($v)
     return $v === '' ? 'نامحدود' : $v;
 }
 
-/** نسخه 2.6.14: کیبورد «خرید دوباره همان پلن» برای سرویس حذفشده/تمامشده */
+/** نسخه 2.6.14: کیبورد «خرید دوباره همان پلن» برای سرویس حذف‌شده/تمام‌شده */
 function botRebuyKeyboard($inv)
 {
     global $textbotlang;
@@ -10503,14 +10503,14 @@ function botRebuyKeyboard($inv)
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
-/** نسخه 2.6.15: بهروزرسانی پیشفاکتور «در حال ساخت سرویس» بعد از پایان ساخت */
+/** نسخه 2.6.15: به‌روزرسانی پیش‌فاکتور «در حال ساخت سرویس» بعد از پایان ساخت */
 function botFinishBuyInvoiceMsg($chat_id, $mid, $product_name, $amount, $ok)
 {
     $mid = intval($mid);
     if ($mid <= 0) {
         return;
     }
-    $txt = "🧾 <b>پیشفاکتور خرید</b> — ✅ <b>پرداخت شد</b>\n\n"
+    $txt = "🧾 <b>پیش‌فاکتور خرید</b> — ✅ <b>پرداخت شد</b>\n\n"
         . "📦 محصول: " . htmlspecialchars(strval($product_name), ENT_QUOTES, 'UTF-8') . "\n"
         . "💰 مبلغ: <b>" . number_format(intval($amount)) . "</b> تومان\n\n"
         . ($ok ? "✅ سرویس ساخته شد؛ اطلاعات آن در پیام زیر است." : "⚠️ ساخت سرویس ناموفق بود؛ مبلغ به کیف پول برگشت داده شد.");

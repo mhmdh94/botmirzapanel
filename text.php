@@ -92,7 +92,7 @@ $textbotlang['users']['sell']['service_sell'] = "🛍 <b>سرویس‌های م�
 $textbotlang['users']['sell']['service_empty_hint'] = "برای خرید اشتراک جدید از منوی اصلی استفاده کنید.";
 $textbotlang['users']['sell']['Service-select'] = "🛒 <b>لوکیشن انتخاب شد</b>
 
-یکی از سرویسهای زیر را انتخاب کنید:";
+یکی از سرویس‌های زیر را انتخاب کنید:";
 $textbotlang['users']['sell']['Service-Location'] = "⚠️ <b>لوکیشن معتبر نیست</b>
 
 از منوی اصلی دوباره «خرید سرویس» را بزنید.";
@@ -108,7 +108,7 @@ $textbotlang['users']['sell']['ErrorConfig'] = "⚠️ <b>ساخت اشتراک 
 لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['sell']['selectpayment'] = "💳 <b>روش پرداخت</b>
 
-یکی از روشهای زیر را انتخاب کنید:";
+یکی از روش‌های زیر را انتخاب کنید:";
 
 
 $textbotlang['users']['status']['notUsername'] = "اگر سرویس‌تان در لیست نیست، از دکمه زیر برای جستجو استفاده کنید.";
@@ -145,7 +145,7 @@ $textbotlang['users']['status']['error2'] = "⚠️ <b>مراحل ناقص ما�
 از منوی اصلی دوباره شروع کنید.";
 $textbotlang['users']['status']['usernotfound'] = "⚠️ <b>این سرویس روی سرور پیدا نشد</b>
 
-سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور حذف میشود.
+سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور حذف می‌شود.
 لطفاً اشتراک جدید تهیه کنید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗 دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
@@ -263,7 +263,7 @@ $textbotlang['users']['category']['NotFound'] = "📭 <b>دستهبندیای ب
 لطفاً بعداً دوباره سر بزنید.";
 $textbotlang['users']['category']['selectCategory'] = "📂 <b>انتخاب دستهبندی</b>
 
-یکی از دستهبندیهای زیر را انتخاب کنید:";
+یکی از دسته‌بندی‌های زیر را انتخاب کنید:";
 $textbotlang['users']['category']['error'] = "⚠️ <b>خرید کامل نشد</b>
 
 از منوی اصلی دوباره «خرید سرویس» را بزنید.";
@@ -350,11 +350,11 @@ $textbotlang['users']['Balance']['priceinput'] = "💸 <b>مبلغ دلخواه<
 ✅ حداقل %s و حداکثر %s تومان";
 $textbotlang['users']['Balance']['errorprice'] = "❌ <b>مبلغ نامعتبر</b>
 
-مبلغ را فقط بهصورت عدد بفرستید (مثلاً 200000).";
+مبلغ را فقط به‌صورت عدد بفرستید (مثلاً 200000).";
 $textbotlang['users']['Balance']['errorpricelimit'] = "❌ <b>مبلغ خارج از محدوده</b>
 
 مبلغ باید بین <b>%s</b> و <b>%s</b> تومان باشد.";
-$textbotlang['users']['Balance']['selectPatment'] = "💳 یکی از روشهای پرداخت زیر را انتخاب کنید:";
+$textbotlang['users']['Balance']['selectPatment'] = "💳 یکی از روش‌های پرداخت زیر را انتخاب کنید:";
 $textbotlang['users']['moeny']['no_payment_method'] = "⚠️ <b>روش پرداختی فعال نیست</b>
 
 لطفاً با پشتیبانی در ارتباط باشید.";
@@ -420,7 +420,7 @@ $textbotlang['users']['status']['notusername'] = "❌ <b>حذف سرویس مم�
 $textbotlang['users']['status']['errorexits'] = "ℹ️ <b>درخواست حذف قبلاً ثبت شده</b>
 
 برای این سرویس قبلاً درخواست حذف/بازگشت وجه ثبت شده و درخواست دوم ممکن نیست.
-برای سرویسهای دیگر محدودیتی ندارید.";
+برای سرویس‌های دیگر محدودیتی ندارید.";
 $textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید، درخواست حذف برای مدیریت ارسال می‌شود.
 
 در صورت موافقت، مبلغ باقی‌مانده (طبق نظر ادمین) به کیف پول برمی‌گردد.";
@@ -510,7 +510,7 @@ $textbotlang['users']['Discount']['getcodesell'] = "🏷 <b>کد تخفیف</b>
 کد تخفیف را ارسال کنید:";
 $textbotlang['users']['Discount']['correctcode'] = "✅ <b>کد تخفیف اعمال شد</b>
 
-مبلغ فاکتور بهروز شد.";
+مبلغ فاکتور به‌روز شد.";
 $textbotlang['users']['Discount']['erorrlimit'] = "❌ <b>ظرفیت کد تخفیف تمام شده</b>
 
 سقف استفاده از این کد پر شده است.";
@@ -612,7 +612,7 @@ $textbotlang['users']['page']['next'] = "▶️ بعدی";
 $textbotlang['users']['page']['previous'] = "◀️ قبلی";
 $textbotlang['users']['Service']['Location'] = "🌏 <b>انتخاب لوکیشن</b>
 
-یکی از لوکیشنهای زیر را انتخاب کنید:";
+یکی از لوکیشن‌های زیر را انتخاب کنید:";
 $textbotlang['users']['config'] = "کانفیگ‌های شما:";
 $textbotlang['users']['Invalid-comment'] = "❌ دستور نامعتبر است.";
 $textbotlang['users']['selectusername'] = "✏️ <b>نام کاربری سرویس</b> را بفرستید
@@ -667,7 +667,7 @@ $textbotlang['users']['affiliates']['invalidbanner'] = "❌ بنر نامعتب�
 $textbotlang['users']['affiliates']['insertbanner'] = "✅ بنر با موفقیت ثبت شد.";
 $textbotlang['users']['affiliates']['invalidaffiliates'] = "❌ <b>لینک دعوت خودتان است</b>
 
-نمیتوانید با لینک مشارکت خودتان ثبت شوید.";
+نمی‌توانید با لینک مشارکت خودتان ثبت شوید.";
 $textbotlang['users']['affiliates']['priceDiscount'] = "🎁 مبلغ هدیه هر دعوت موفق را به تومان بفرستید:";
 $textbotlang['users']['affiliates']['changedpriceDiscount'] = "✅ مبلغ هدیه دعوت ذخیره شد.";
 $textbotlang['users']['affiliates']['offaffiliates'] = "⛔️ <b>مشارکت در فروش فعلاً غیرفعال است</b>
@@ -730,7 +730,7 @@ $textbotlang['users']['search']['prompt'] = "🔍 <b>جستجوی سرویس</b>
 
 $textbotlang['users']['search']['notfound'] = "❌ <b>سرویسی با این نام پیدا نشد</b>
 
-فقط سرویسهای خرید خودتان قابل جستجو است.";
+فقط سرویس‌های خرید خودتان قابل جستجو است.";
 
 $textbotlang['users']['search']['multiple'] = "🔎 <b>چند سرویس مشابه پیدا شد</b>
 
