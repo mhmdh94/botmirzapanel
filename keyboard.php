@@ -53,7 +53,6 @@ if (!(isset($setting['status_deposit']) && ($setting['status_deposit'] == '0' ||
 }
 $__acc_row2[] = ['text' => '🎁 ثبت کد هدیه', 'callback_data' => 'Discount'];
 $__acc_rows[] = $__acc_row2;
-$__acc_rows[] = [['text' => '🧾 وضعیت رسیدهای من', 'callback_data' => 'user_receipts']];
 $__acc_aff = !(isset($setting['status_affiliates_btn']) && ($setting['status_affiliates_btn'] == '0' || $setting['status_affiliates_btn'] === 0));
 if ($__acc_aff) {
     try {

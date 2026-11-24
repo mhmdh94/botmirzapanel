@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.5";
+$version = "2.6.4";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -3152,55 +3152,6 @@ if ($text == $datatextbot['text_account'] || (isset($setting['show_balance']) &&
 }
 
 #----------------[ user transaction history ]------------------#
-// نسخه 2.6.5: وضعیت رسیدهای کاربر
-if ($datain == "user_receipts") {
-    global $pdo;
-    $__rows = [];
-    try {
-        $__st = $pdo->prepare("SELECT id_order, time, price, payment_Status, Payment_Method, dec_not_confirmed FROM Payment_report
-            WHERE id_user = ? AND Payment_Method IN ('cart to cart', 'crypto', 'sheba') ORDER BY id DESC LIMIT 10");
-        $__st->execute([strval($from_id)]);
-        $__rows = $__st->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Throwable $e) {
-        $__rows = [];
-    }
-    if (empty($__rows)) {
-        $__msg = "🧾 <b>وضعیت رسیدهای من</b>\n\nهنوز رسیدی ارسال نکردهاید.";
-    } else {
-        $__parts = [];
-        $__waiting = 0;
-        foreach ($__rows as $__r) {
-            $__s = strval($__r['payment_Status'] ?? '');
-            if ($__s === 'waiting') {
-                $__waiting++;
-            }
-            $__p = botReceiptStatusLabel($__s)
-                . "\n💰 مبلغ: <b>" . number_format(intval($__r['price'] ?? 0)) . "</b> تومان"
-                . "\n🧾 کد: <code>" . htmlspecialchars(strval($__r['id_order']), ENT_QUOTES, 'UTF-8') . "</code>"
-                . "\n🕐 " . htmlspecialchars(strval($__r['time'] ?? ''), ENT_QUOTES, 'UTF-8');
-            $__why = trim(strval($__r['dec_not_confirmed'] ?? ''));
-            if ($__s === 'reject' && $__why !== '' && stripos($__why, 'auto-expir') === false) {
-                $__p .= "\n✍️ دلیل: " . htmlspecialchars($__why, ENT_QUOTES, 'UTF-8');
-            }
-            $__parts[] = $__p;
-        }
-        $__msg = "🧾 <b>وضعیت رسیدهای من</b>\n\n" . implode("\n\n➖➖➖\n\n", $__parts);
-        if ($__waiting > 0) {
-            $__msg .= "\n\nℹ️ رسیدهای «در انتظار» بهزودی بررسی میشوند؛ نیازی به پیام به پشتیبانی نیست.";
-        }
-    }
-    $__kb = json_encode(['inline_keyboard' => [
-        [['text' => '🔄 بهروزرسانی', 'callback_data' => 'user_receipts']],
-        [['text' => '🔙 بازگشت', 'callback_data' => 'user_tx_back']],
-    ]], JSON_UNESCAPED_UNICODE);
-    $__res = Editmessagetext($from_id, $message_id, $__msg, $__kb);
-    if (!is_array($__res) || empty($__res['ok'])) {
-        if (!empty($callback_query_id)) {
-            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'تغییری نسبت به قبل نیست.']);
-        }
-    }
-    return;
-}
 if ($datain == "user_tx_history") {
     global $pdo;
     if (function_exists('ensureWalletLog')) {
