@@ -1821,6 +1821,14 @@ function DirectPayment($order_id)
             $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $dataoutput['username'], $get_invoice['name_product'], $config, $output_config_link);
             $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
         }
+        // نسخه 2.6.14: مبلغ و موجودی فعلی زیر پیام سرویس (خرید بعد از تأیید رسید)
+        try {
+            $__br_pay = select("user", "Balance", "id", $uid_buyer, "select");
+            $__pp_pay = intval($get_invoice['price_product'] ?? 0);
+            $textcreatuser .= "\n\n" . ($__pp_pay > 0 ? "💰 مبلغ: <b>" . number_format($__pp_pay) . "</b> تومان\n" : '')
+                . "👛 موجودی فعلی: <b>" . number_format(intval(is_array($__br_pay) ? ($__br_pay['Balance'] ?? 0) : 0)) . "</b> تومان";
+        } catch (Throwable $e) {
+        }
         if ($output_config_link === '' && $config === '' && ($marzban_list_get['type'] ?? '') !== 'mikrotik') {
             $textcreatuser .= "\n\n⚠️ لینک اشتراک از پنل دریافت نشد. از «سرویس‌های من» وضعیت را بررسی کنید یا با پشتیبانی در تماس باشید.";
         }
@@ -10462,5 +10470,29 @@ function botTakeReceiptUserMsg($order, $max_age = 900)
     } catch (Throwable $e) {
         return null;
     }
+}
+
+/** نسخه 2.6.14: برچسب حجم برای پیشفاکتورها («50 گیگ» یا «نامحدود») */
+function botVolLabel($v)
+{
+    if (is_numeric($v)) {
+        return floatval($v) > 0 ? (rtrim(rtrim(strval($v), '0'), '.') === '' ? strval($v) : strval($v + 0)) . ' گیگ' : 'نامحدود';
+    }
+    $v = trim(strval($v));
+    return $v === '' ? 'نامحدود' : $v;
+}
+
+/** نسخه 2.6.14: کیبورد «خرید دوباره همان پلن» برای سرویس حذفشده/تمامشده */
+function botRebuyKeyboard($inv)
+{
+    global $textbotlang;
+    $rows = [];
+    $p = function_exists('botFindRenewProduct') ? botFindRenewProduct($inv) : null;
+    if ($p && is_array($inv)) {
+        $rows[] = [['text' => '🔁 خرید دوباره همان پلن (' . number_format(intval($p['price_product'])) . ' ت)', 'callback_data' => 'rebuy_' . strval($inv['username'])]];
+    }
+    $rows[] = [['text' => '🛒 خرید سرویس جدید', 'callback_data' => 'buy']];
+    $rows[] = [['text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی', 'callback_data' => 'backuser']];
+    return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
