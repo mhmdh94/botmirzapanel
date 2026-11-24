@@ -41,6 +41,15 @@ if (function_exists('botDailySummaryTick')) {
     }
 }
 
+// نسخه 2.6.5: یادآوری رسیدهای بررسینشده بعد از ۳۰ دقیقه
+if (function_exists('botReceiptReminderTick')) {
+    try {
+        botReceiptReminderTick(30);
+    } catch (Throwable $e) {
+        error_log('receipt reminder: ' . $e->getMessage());
+    }
+}
+
 // حذف خودکار فاکتورهای unpaid منقضی (TTL قابل تنظیم، پیش‌فرض ۴۵ دقیقه)
 if (function_exists('cleanupExpiredUnpaidInvoices')) {
     $n_unpaid = cleanupExpiredUnpaidInvoices(null);
