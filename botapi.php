@@ -135,12 +135,17 @@ if (!function_exists('botTableExists')) {
         if (!empty($c[$name]) && (time() - intval($c[$name])) < 600) {
             return $mem[$name] = true;
         }
+        // نسخه 2.4.7: SHOW TABLES با placeholder در حالت native prepare خطا میدهد → query + quote
         $ok = false;
         try {
-            $st = $pdo->prepare("SHOW TABLES LIKE ?");
-            $st->execute([$name]);
-            $ok = count($st->fetchAll()) > 0;
+            $st = $pdo->query("SHOW TABLES LIKE " . $pdo->quote($name));
+            $ok = $st ? (count($st->fetchAll()) > 0) : false;
         } catch (Throwable $e) {
+            // در صورت خطا فرض بر وجود جدول (رفتار امن برای منوها)
+            if (function_exists('botErrorLog')) {
+                botErrorLog('botTableExists failed', ['table' => $name, 'err' => $e->getMessage()], 'WARN', 'db');
+            }
+            return $mem[$name] = true;
         }
         if ($ok) {
             $c[$name] = time();
