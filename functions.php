@@ -2049,9 +2049,35 @@ function DirectPayment($order_id)
             return;
         }
         $price_ext = intval($product['price_product']);
+        // نسخه 2.6.7: کد تخفیف تمدید که قبل از پرداخت ثبت شده بود
+        $__xd_code = strval($steppay[4] ?? '');
+        $__xd_used = false;
+        $__xd_release = function () use (&$__xd_used, $__xd_code, $pdo) {
+            if (!$__xd_used) {
+                return;
+            }
+            try {
+                $pdo->prepare("UPDATE DiscountSell SET usedDiscount = GREATEST(CAST(usedDiscount AS SIGNED) - 1, 0) WHERE codeDiscount = ?")->execute([$__xd_code]);
+            } catch (Throwable $e) {
+            }
+            $__xd_used = false;
+        };
+        $__xd_price = (isset($steppay[3]) && is_numeric($steppay[3])) ? intval($steppay[3]) : -1;
+        if ($__xd_code !== '' && $__xd_price >= 0 && $__xd_price <= $price_ext) {
+            try {
+                $__xr = $pdo->prepare("UPDATE DiscountSell SET usedDiscount = CAST(usedDiscount AS SIGNED) + 1 WHERE codeDiscount = ? AND CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)");
+                $__xr->execute([$__xd_code]);
+                if ($__xr->rowCount() > 0) {
+                    $price_ext = $__xd_price;
+                    $__xd_used = true;
+                }
+            } catch (Throwable $e) {
+            }
+        }
         $bal_row = select("user", "Balance", "id", $uid, "select");
         $bal_now = is_array($bal_row) ? intval($bal_row['Balance'] ?? 0) : intval($bal_row);
         if ($bal_now < $price_ext) {
+            $__xd_release();
             update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
             sendmessage($uid, "✅ مبلغ " . number_format($credit_amount) . " تومان واریز شد.\n⚠️ موجودی برای تکمیل تمدید کافی نیست. از «سرویس‌های من» تمدید را دوباره بزنید.", null, 'HTML');
             return;
@@ -2060,6 +2086,7 @@ function DirectPayment($order_id)
         if (function_exists('atomicDeductBalance')) {
             $bal_after = atomicDeductBalance($uid, $price_ext);
             if ($bal_after === false) {
+                $__xd_release();
                 update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
                 sendmessage($uid, "✅ مبلغ واریز شد ولی کسر تمدید ممکن نشد. از «سرویس‌های من» تمدید کنید.", null, 'HTML');
                 return;

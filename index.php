@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.6";
+$version = "2.6.7";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1833,19 +1833,82 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     // نسخه 2.2.6: اطلاعات فاکتور فقط بعد از پرداخت موفق تمدید عوض می‌شود (نه هنگام انتخاب پلن)
     update("user", "Processing_value_one", $codeproduct, "id", $from_id);
-    $keyboardextend = json_encode([
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['users']['extend']['confirm'], 'callback_data' => "confirmserivce-" . $codeproduct],
-            ],
-            [
-                ['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"]
-
-            ]
-        ]
-    ]);
+    if (strpos(strval($user['Processing_value_four'] ?? ''), 'extdis|') === 0) {
+        update("user", "Processing_value_four", "0", "id", $from_id);
+    }
+    // نسخه 2.6.7: دکمه کد تخفیف در تمدید (فقط اگر کد تخفیف فعال وجود دارد)
+    $__ext_rows = [[['text' => $textbotlang['users']['extend']['confirm'], 'callback_data' => "confirmserivce-" . $codeproduct]]];
+    if (!empty($__has_sell_discount)) {
+        $__ext_rows[] = [['text' => $textbotlang['users']['buy']['discount'], 'callback_data' => "extdc_" . $codeproduct]];
+    }
+    $__ext_rows[] = [['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"]];
+    $keyboardextend = json_encode(['inline_keyboard' => $__ext_rows]);
     $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], number_format(intval($product['price_product'])), $product['Service_time'], $product['Volume_constraint'], botPricePerGbText($product['price_product'], $product['Volume_constraint'], '', "\n"));
     Editmessagetext($from_id, $message_id, $textextend, $keyboardextend);
+} elseif (is_string($datain) && preg_match('/^extdc_(\w+)$/', $datain, $dataget)) {
+    // نسخه 2.6.7: کد تخفیف در تمدید
+    if (empty($__has_sell_discount)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'در حال حاضر کد تخفیف فعالی وجود ندارد.', 'show_alert' => true]);
+        return;
+    }
+    update("user", "Processing_value_one", $dataget[1], "id", $from_id);
+    sendmessage($from_id, $textbotlang['users']['Discount']['getcodesell'], $backuser, 'HTML');
+    step('getcodeextDiscount', $from_id);
+    deletemessage($from_id, $message_id);
+    return;
+} elseif ($user['step'] == "getcodeextDiscount") {
+    $__xd_code = trim(strval($text));
+    if ($__xd_code === '' || !in_array($__xd_code, (array) $SellDiscount, true)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
+        return;
+    }
+    $__xd = select("DiscountSell", "*", "codeDiscount", $__xd_code, "select");
+    if (!is_array($__xd)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
+        return;
+    }
+    if (intval($__xd['usedDiscount'] ?? 0) >= intval($__xd['limitDiscount'] ?? 0)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['erorrlimit'], $backuser, 'HTML');
+        return;
+    }
+    if (strval($__xd['usefirst'] ?? '0') === '1') {
+        sendmessage($from_id, $textbotlang['users']['Discount']['firstdiscount'], $backuser, 'HTML');
+        return;
+    }
+    $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
+    if (!is_array($nameloc) || strval($nameloc['id_user'] ?? '') !== strval($from_id)) {
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
+    $codeproduct = strval($user['Processing_value_one'] ?? '');
+    $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product LIMIT 1");
+    $stmt->bindValue(':Location', $nameloc['Service_location']);
+    $stmt->bindValue(':code_product', $codeproduct);
+    $stmt->execute();
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($product == false) {
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        step('home', $from_id);
+        return;
+    }
+    $__orig = intval($product['price_product']);
+    $__pct = floatval($__xd['price'] ?? 0);
+    $__new = max(0, intval(round($__orig - ($__pct / 100) * $__orig)));
+    update("user", "Processing_value_four", "extdis|" . $__xd_code . "|" . $codeproduct . "|" . $__new . "|" . $nameloc['username'], "id", $from_id);
+    step('home', $from_id);
+    sendmessage($from_id, $textbotlang['users']['Discount']['correctcode'], $keyboard, 'HTML');
+    $__pct_s = rtrim(rtrim(number_format($__pct, 2, '.', ''), '0'), '.');
+    $__extra = "\n🏷 کد تخفیف: <code>" . htmlspecialchars($__xd_code, ENT_QUOTES, 'UTF-8') . "</code> ({$__pct_s}٪)"
+        . "\n💸 قیمت قبل از تخفیف: <s>" . number_format($__orig) . "</s> تومان"
+        . (function_exists('botPricePerGbText') ? botPricePerGbText($__new, $product['Volume_constraint'], '', "\n") : '');
+    $textextend = sprintf($textbotlang['users']['extend']['invoicExtend'], $nameloc['username'], $product['name_product'], number_format($__new), $product['Service_time'], $product['Volume_constraint'], $__extra);
+    $keyboardextend = json_encode(['inline_keyboard' => [
+        [['text' => $textbotlang['users']['extend']['confirm'], 'callback_data' => "confirmserivce-" . $codeproduct]],
+        [['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"]],
+    ]]);
+    sendmessage($from_id, $textextend, $keyboardextend, 'HTML');
+    return;
 } elseif (preg_match('/confirmserivce-(.*)/', $datain, $dataget)) {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']), $keyboard, 'HTML');
@@ -1911,11 +1974,51 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     @fflush($__lock_fp);
 
     $__price_ext = intval($product['price_product']);
+    // نسخه 2.6.7: کد تخفیف تمدید (رزرو اتمیک ظرفیت کد)
+    $__ext_dc = '';
+    $__ext_dc_carry = '';
+    $__ext_dc_release = function () use (&$__ext_dc, $pdo) {
+        if ($__ext_dc === '') {
+            return;
+        }
+        try {
+            $pdo->prepare("UPDATE DiscountSell SET usedDiscount = GREATEST(CAST(usedDiscount AS SIGNED) - 1, 0) WHERE codeDiscount = ?")->execute([$__ext_dc]);
+        } catch (Throwable $e) {
+        }
+        $__ext_dc = '';
+    };
+    $__pv4x = strval($user['Processing_value_four'] ?? '');
+    if (strpos($__pv4x, 'extdis|') === 0) {
+        update("user", "Processing_value_four", "0", "id", $from_id);
+        $__dp = explode('|', $__pv4x);
+        if (count($__dp) >= 5 && $__dp[2] === strval($codeproduct) && $__dp[4] === strval($nameloc['username'] ?? '')
+            && intval($__dp[3]) >= 0 && intval($__dp[3]) <= $__price_ext) {
+            $__rsv_ok = false;
+            try {
+                $__rsv = $pdo->prepare("UPDATE DiscountSell SET usedDiscount = CAST(usedDiscount AS SIGNED) + 1 WHERE codeDiscount = ? AND CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)");
+                $__rsv->execute([$__dp[1]]);
+                $__rsv_ok = $__rsv->rowCount() > 0;
+            } catch (Throwable $e) {
+                $__rsv_ok = false;
+            }
+            if (!$__rsv_ok) {
+                @flock($__lock_fp, LOCK_UN);
+                @fclose($__lock_fp);
+                @unlink($__lock_path);
+                sendmessage($from_id, $textbotlang['users']['Discount']['erorrlimit'], $keyboard, 'HTML');
+                return;
+            }
+            $__price_ext = intval($__dp[3]);
+            $__ext_dc = $__dp[1];
+        }
+    }
     // موجودی را زنده از دیتابیس بخوان (نه از کش ابتدای ریکوئست)
     $__bal_row = select("user", "Balance", "id", $from_id, "select");
     $__bal_now = is_array($__bal_row) ? intval($__bal_row['Balance'] ?? 0) : intval($__bal_row);
 
     if ($__bal_now < $__price_ext) {
+        $__ext_dc_carry = $__ext_dc;
+        $__ext_dc_release();
         @flock($__lock_fp, LOCK_UN);
         @fclose($__lock_fp);
         @unlink($__lock_path);
@@ -1933,7 +2036,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         // قصد تمدید بعد از پرداخت
         $ext_user = strval($nameloc['username'] ?? '');
         $ext_code = strval($codeproduct ?? '');
-        update("user", "Processing_value_tow", "extendafterpay|" . $ext_user . "|" . $ext_code, "id", $from_id);
+        update("user", "Processing_value_tow", "extendafterpay|" . $ext_user . "|" . $ext_code . ($__ext_dc_carry !== '' ? "|" . $__price_ext . "|" . $__ext_dc_carry : ''), "id", $from_id);
         update("user", "Processing_value_one", $ext_code, "id", $from_id);
         update("user", "Processing_value", $Balance_prim, "id", $from_id);
         if (function_exists('presentPaymentMethods')) {
@@ -1951,6 +2054,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         $__ded = $pdo->prepare("UPDATE user SET Balance = Balance - :p WHERE id = :id AND CAST(Balance AS SIGNED) >= :p2");
         $__ded->execute([':p' => $__price_ext, ':id' => $from_id, ':p2' => $__price_ext]);
         if ($__ded->rowCount() < 1) {
+            $__ext_dc_release();
             @flock($__lock_fp, LOCK_UN);
             @fclose($__lock_fp);
             @unlink($__lock_path);
@@ -1967,7 +2071,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
 
     $usernamepanel = $nameloc['username'];
     if (function_exists('logWalletTx')) {
-        logWalletTx($from_id, 'renew', $__price_ext, $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')));
+        logWalletTx($from_id, 'renew', $__price_ext, $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')) . ($__ext_dc !== '' ? ' (کد تخفیف ' . $__ext_dc . ')' : ''));
+    }
+    if ($__ext_dc !== '' && function_exists('sendChannelReport') && isset($textbotlang['users']['Report']['discountused'])) {
+        sendChannelReport('rpt_discount', sprintf($textbotlang['users']['Report']['discountused'], $username, $from_id, $__ext_dc) . "\n🔄 نوع: تمدید سرویس");
     }
     if (function_exists('recordSale')) {
         recordSale($from_id, $__price_ext, 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
