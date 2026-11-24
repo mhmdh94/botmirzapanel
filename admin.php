@@ -3941,6 +3941,24 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
     step('getusefirst', $from_id);
 } elseif ($user['step'] == "getusefirst") {
     update("DiscountSell", "usefirst", $text, "codeDiscount", $user['Processing_value']);
+    // نسخه 2.6.18: مدت اعتبار کد
+    if (function_exists('botEnsureDiscountExpireCol')) {
+        botEnsureDiscountExpireCol();
+    }
+    sendmessage($from_id, "⏳ <b>مدت اعتبار کد</b>\n\nتعداد روز اعتبار کد را بفرستید (مثلاً <code>7</code>).\nبرای بدون محدودیت زمانی <code>0</code> بفرستید.", $backadmin, 'HTML');
+    step('getexpirecode', $from_id);
+} elseif ($user['step'] == "getexpirecode") {
+    $__ed = strtr(trim(strval($text)), ['۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9']);
+    if ($__ed === '' || !ctype_digit($__ed) || intval($__ed) > 3650) {
+        sendmessage($from_id, "❌ <b>مقدار نامعتبر</b>\n\nفقط عدد روز بفرستید (۰ تا ۳۶۵۰). برای بدون محدودیت <code>0</code> بفرستید.", $backadmin, 'HTML');
+        return;
+    }
+    $__exp_at = intval($__ed) > 0 ? (time() + intval($__ed) * 86400) : 0;
+    try {
+        $pdo->prepare("UPDATE DiscountSell SET expire_at = ? WHERE codeDiscount = ?")->execute([$__exp_at, $user['Processing_value']]);
+    } catch (Throwable $e) {
+        error_log('discount expire save: ' . $e->getMessage());
+    }
     sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], null, 'HTML');
     if (function_exists('codesDiscountListKeyboard')) {
         list($__tx, $__kb) = codesDiscountListKeyboard(0);

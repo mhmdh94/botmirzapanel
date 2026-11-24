@@ -2082,7 +2082,7 @@ function DirectPayment($order_id)
         $__xd_price = (isset($steppay[3]) && is_numeric($steppay[3])) ? intval($steppay[3]) : -1;
         if ($__xd_code !== '' && $__xd_price >= 0 && $__xd_price <= $price_ext) {
             try {
-                $__xr = $pdo->prepare("UPDATE DiscountSell SET usedDiscount = CAST(usedDiscount AS SIGNED) + 1 WHERE codeDiscount = ? AND CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)");
+                $__xr = $pdo->prepare("UPDATE DiscountSell SET usedDiscount = CAST(usedDiscount AS SIGNED) + 1 WHERE codeDiscount = ? AND CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED) AND (expire_at = 0 OR expire_at > UNIX_TIMESTAMP())");
                 $__xr->execute([$__xd_code]);
                 if ($__xr->rowCount() > 0) {
                     $price_ext = $__xd_price;
@@ -9154,6 +9154,9 @@ function codesDiscountListKeyboard($page = 0)
                 $safe = substr(md5($code), 0, 12);
             }
             $label_code = mb_strlen($code) > 16 ? (mb_substr($code, 0, 14) . '…') : $code;
+            if (function_exists('botDiscountExpired') && botDiscountExpired($r)) {
+                $label_code = '⌛ ' . $label_code;
+            }
             $kb['inline_keyboard'][] = [
                 ['text' => "{$used}/{$lim}", 'callback_data' => 'codes_disc_v_' . $safe],
                 ['text' => $price . '%', 'callback_data' => 'codes_disc_v_' . $safe],
@@ -9307,7 +9310,8 @@ function codesDiscountDetail($row)
         . "کد: <code>{$code}</code>\n"
         . "درصد: <b>{$price}٪</b>\n"
         . "استفاده: <b>{$used}</b> از <b>{$lim}</b>\n"
-        . "نوع: {$first_lbl}";
+        . "نوع: {$first_lbl}\n"
+        . "⏳ اعتبار: " . (function_exists('botDiscountExpireLabel') ? botDiscountExpireLabel($row) : 'بدون محدودیت زمانی');
     $raw = strval($row['codeDiscount'] ?? '');
     $safe = rawurlencode($raw);
     if (strlen('codes_disc_del_' . $safe) > 60) {
@@ -10515,5 +10519,52 @@ function botFinishBuyInvoiceMsg($chat_id, $mid, $product_name, $amount, $ok)
         . "💰 مبلغ: <b>" . number_format(intval($amount)) . "</b> تومان\n\n"
         . ($ok ? "✅ سرویس ساخته شد؛ اطلاعات آن در پیام زیر است." : "⚠️ ساخت سرویس ناموفق بود؛ مبلغ به کیف پول برگشت داده شد.");
     Editmessagetext($chat_id, $mid, $txt, json_encode(['inline_keyboard' => []]));
+}
+
+/** نسخه 2.6.18: ستون مدت اعتبار کد تخفیف (expire_at = unix time، صفر = بدون محدودیت) */
+function botEnsureDiscountExpireCol()
+{
+    global $pdo;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    $flag = __DIR__ . '/cron/dsc_expire.ok';
+    if (is_file($flag)) {
+        return;
+    }
+    try {
+        $c = $pdo->query("SHOW COLUMNS FROM DiscountSell LIKE 'expire_at'");
+        if ($c && $c->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE DiscountSell ADD COLUMN expire_at INT NOT NULL DEFAULT 0");
+        }
+        @file_put_contents($flag, strval(time()));
+    } catch (Throwable $e) {
+        error_log('discount expire col: ' . $e->getMessage());
+    }
+}
+
+/** کد تخفیف منقضی شده؟ */
+function botDiscountExpired($row)
+{
+    $e = is_array($row) ? intval($row['expire_at'] ?? 0) : 0;
+    return $e > 0 && $e <= time();
+}
+
+/** متن اعتبار کد برای ادمین */
+function botDiscountExpireLabel($row)
+{
+    $e = is_array($row) ? intval($row['expire_at'] ?? 0) : 0;
+    if ($e <= 0) {
+        return 'بدون محدودیت زمانی';
+    }
+    $d = function_exists('jdate') ? jdate('Y/m/d H:i', $e) : date('Y/m/d H:i', $e);
+    if ($e <= time()) {
+        return "⌛ منقضی شده ({$d})";
+    }
+    $left = $e - time();
+    $ltxt = $left >= 86400 ? (intval(ceil($left / 86400)) . ' روز مانده') : (intval(ceil($left / 3600)) . ' ساعت مانده');
+    return "تا {$d} ({$ltxt})";
 }
 

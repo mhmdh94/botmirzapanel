@@ -520,6 +520,7 @@ $textbotlang['users']['Discount']['erorrlimitdiscount'] = "❌ <b>ظرفیت ک�
 $textbotlang['users']['Discount']['firstdiscount'] = "❌ <b>این کد فقط برای خرید اول است</b>
 
 برای خرید فعلی قابل استفاده نیست.";
+$textbotlang['users']['Discount']['expired'] = "⌛ <b>مهلت این کد تخفیف تمام شده است</b>\n\nکد دیگری وارد کنید یا بدون کد ادامه دهید.";
 $textbotlang['users']['Discount']['acceptdiscount'] = "✅ <b>کد هدیه ثبت شد</b>
 
 💰 <b>%s</b> تومان به موجودی شما اضافه شد.";

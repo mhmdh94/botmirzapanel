@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.17";
+$version = "2.6.18";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -1894,6 +1894,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['users']['Discount']['erorrlimit'], $backuser, 'HTML');
         return;
     }
+    if (function_exists('botDiscountExpired') && botDiscountExpired($__xd)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['expired'] ?? '⌛ مهلت این کد تخفیف تمام شده است.', $backuser, 'HTML');
+        return;
+    }
     if (strval($__xd['usefirst'] ?? '0') === '1') {
         sendmessage($from_id, $textbotlang['users']['Discount']['firstdiscount'], $backuser, 'HTML');
         return;
@@ -2018,7 +2022,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
             && intval($__dp[3]) >= 0 && intval($__dp[3]) <= $__price_ext) {
             $__rsv_ok = false;
             try {
-                $__rsv = $pdo->prepare("UPDATE DiscountSell SET usedDiscount = CAST(usedDiscount AS SIGNED) + 1 WHERE codeDiscount = ? AND CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)");
+                $__rsv = $pdo->prepare("UPDATE DiscountSell SET usedDiscount = CAST(usedDiscount AS SIGNED) + 1 WHERE codeDiscount = ? AND CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED) AND (expire_at = 0 OR expire_at > UNIX_TIMESTAMP())");
                 $__rsv->execute([$__dp[1]]);
                 $__rsv_ok = $__rsv->rowCount() > 0;
             } catch (Throwable $e) {
@@ -4150,6 +4154,10 @@ if (isset($datain) && $datain === 'product_header') {
     }
     if ($SellDiscountlimit['limitDiscount'] == $SellDiscountlimit['usedDiscount']) {
         sendmessage($from_id, $textbotlang['users']['Discount']['erorrlimit'], null, 'HTML');
+        return;
+    }
+    if (function_exists('botDiscountExpired') && botDiscountExpired($SellDiscountlimit)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['expired'] ?? '⌛ مهلت این کد تخفیف تمام شده است.', $backuser, 'HTML');
         return;
     }
     if ($SellDiscountlimit['usefirst'] == "1") {

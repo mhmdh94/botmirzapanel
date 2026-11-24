@@ -411,7 +411,10 @@ if ($table_exists) {
 $__has_sell_discount = false;
 if ($table_exists) {
     try {
-        $__has_sell_discount = intval($pdo->query("SELECT COUNT(*) FROM DiscountSell WHERE CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED)")->fetchColumn()) > 0;
+        if (function_exists('botEnsureDiscountExpireCol')) {
+            botEnsureDiscountExpireCol();
+        }
+        $__has_sell_discount = intval($pdo->query("SELECT COUNT(*) FROM DiscountSell WHERE CAST(usedDiscount AS SIGNED) < CAST(limitDiscount AS SIGNED) AND (expire_at = 0 OR expire_at > UNIX_TIMESTAMP())")->fetchColumn()) > 0;
     } catch (Throwable $e) {
         $__has_sell_discount = !empty($DiscountSell);
     }
