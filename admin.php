@@ -100,7 +100,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         return;
     }
     if ($datain === 'navuser_block') {
-        // نسخه 2.4.2: لیست صفحهبندیشده + رفع مسدودی سریع
+        // نسخه 2.4.2: لیست صفحه‌بندی‌شده + رفع مسدودی سریع
         list($__tx, $__kb) = botBlockedListPage(0);
         $__nav_show($__tx, $__kb);
         return;
@@ -271,7 +271,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
         if ($__rv === '') {
             $__vs = "⚠️ دریافت نسخه گیتهاب ممکن نشد (اتصال سرور به گیتهاب).";
         } elseif (version_compare($__rv, $__cv, '<=')) {
-            $__vs = "✅ ربات بهروز است.";
+            $__vs = "✅ ربات به‌روز است.";
         } else {
             $__vs = "🆕 نسخه جدید موجود است.";
         }
@@ -282,7 +282,7 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
             ],
             [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
         ]], JSON_UNESCAPED_UNICODE);
-        $__nav_show("🔄 <b>آپدیت ربات</b>\n\n🌐 منبع: <code>github.com/mhmdh94/botmirzapanel</code> (شاخه main)\n📦 نسخه فعلی: <b>" . htmlspecialchars($__cv, ENT_QUOTES, 'UTF-8') . "</b>\n🆕 نسخه گیتهاب: <b>" . ($__rv !== '' ? htmlspecialchars($__rv, ENT_QUOTES, 'UTF-8') : '?') . "</b>\n\n{$__vs}\n\nقبل از آپدیت از فایلها بکاپ گرفته میشود و config.php حفظ میشود.\nآپدیت انجام شود؟", $kb);
+        $__nav_show("🔄 <b>آپدیت ربات</b>\n\n🌐 منبع: <code>github.com/mhmdh94/botmirzapanel</code> (شاخه main)\n📦 نسخه فعلی: <b>" . htmlspecialchars($__cv, ENT_QUOTES, 'UTF-8') . "</b>\n🆕 نسخه گیتهاب: <b>" . ($__rv !== '' ? htmlspecialchars($__rv, ENT_QUOTES, 'UTF-8') : '?') . "</b>\n\n{$__vs}\n\nقبل از آپدیت از فایل‌ها بکاپ گرفته می‌شود و config.php حفظ می‌شود.\nآپدیت انجام شود؟", $kb);
         return;
     } elseif ($datain === 'navset_backup') {
         if (function_exists('backupSettingsText') && function_exists('buildBackupSettingsKeyboard')) {
@@ -312,11 +312,11 @@ if (isset($datain) && preg_match('/^shop_feat_(.+)$/', strval($datain), $__fm) &
     $__cur_f = trim(strval(getPaySettingValue('featured_product', '')));
     $__new_f = ($__cur_f === $__fc) ? '' : $__fc;
     update("PaySetting", "ValuePay", $__new_f, "NamePay", "featured_product");
-    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__new_f !== '' ? '⭐ این محصول پیشنهادی شد (فقط یک محصول میتواند پیشنهادی باشد)' : 'برچسب پیشنهادی برداشته شد'), 'show_alert' => false]);
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__new_f !== '' ? '⭐ این محصول پیشنهادی شد (فقط یک محصول می‌تواند پیشنهادی باشد)' : 'برچسب پیشنهادی برداشته شد'), 'show_alert' => false]);
     Editmessagetext($from_id, $message_id, shopProductDetailText($__fp), shopProductDetailKeyboard($__fc));
     return;
 }
-# نسخه 2.4.8: روشن/خاموش دکمههای رنگی
+# نسخه 2.4.8: روشن/خاموش دکمه‌های رنگی
 if (isset($datain) && $datain === 'btncolor_tg' && in_array($from_id, $admin_ids)) {
     if (function_exists('ensurePaySetting')) {
         ensurePaySetting('button_colors', '1');
@@ -327,9 +327,9 @@ if (isset($datain) && $datain === 'btncolor_tg' && in_array($from_id, $admin_ids
         botButtonColorsOn(true);
     }
     if (function_exists('botAdminActionReport')) {
-        botAdminActionReport('دکمههای رنگی', 'وضعیت: <b>' . ($__bc_new === '1' ? '✅ روشن' : '❌ خاموش') . '</b>');
+        botAdminActionReport('دکمه‌های رنگی', 'وضعیت: <b>' . ($__bc_new === '1' ? '✅ روشن' : '❌ خاموش') . '</b>');
     }
-    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__bc_new === '1' ? '🎨 دکمههای رنگی روشن شد' : 'دکمههای رنگی خاموش شد'), 'show_alert' => false]);
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__bc_new === '1' ? '🎨 دکمه‌های رنگی روشن شد' : 'دکمه‌های رنگی خاموش شد'), 'show_alert' => false]);
     Editmessagetext($from_id, $message_id,
         function_exists('buildAdminSettingsSectionText') ? buildAdminSettingsSectionText() : '⚙️ تنظیمات',
         function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : json_encode(['inline_keyboard' => []]));
@@ -343,7 +343,7 @@ if (isset($datain) && ($datain === 'bothealth' || $datain === 'bothealth_log') &
         return;
     }
     if (function_exists('isMainBotAdmin') && !isMainBotAdmin($from_id)) {
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'فقط ادمین اصلی میتواند لاگ را دریافت کند.', 'show_alert' => true]);
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'فقط ادمین اصلی می‌تواند لاگ را دریافت کند.', 'show_alert' => true]);
         return;
     }
     $__lf = botLogTailFile(50);
@@ -356,7 +356,7 @@ if (isset($datain) && ($datain === 'bothealth' || $datain === 'bothealth_log') &
     @unlink($__lf);
     return;
 }
-# نسخه 2.4.3: توضیح قابلیتها و تأیید تغییرهای حساس
+# نسخه 2.4.3: توضیح قابلیت‌ها و تأیید تغییرهای حساس
 if (isset($datain) && is_string($datain) && in_array($from_id, $admin_ids)) {
     if (preg_match('/^ftinfo:(\w+)$/', $datain, $__fi)) {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => botFeatureInfo($__fi[1]), 'show_alert' => true]);
@@ -511,7 +511,7 @@ if ($user['step'] == "addadmin" && empty($datain)) {
         [['text' => '✅ بله، ادمین شود', 'callback_data' => 'admadd_ok_' . $__aid]],
         [['text' => '❌ انصراف', 'callback_data' => 'adm_adm_list']],
     ]], JSON_UNESCAPED_UNICODE);
-    sendmessage($from_id, "➕ <b>افزودن ادمین</b>\n\n🆔 آیدی: <code>{$__aid}</code>\n{$__info}\n\n⚠️ ادمین به همه بخشهای مدیریت (موجودی کاربران، رسیدها، پیام همگانی) دسترسی کامل دارد.\nاضافه شود؟", $__kb, 'HTML');
+    sendmessage($from_id, "➕ <b>افزودن ادمین</b>\n\n🆔 آیدی: <code>{$__aid}</code>\n{$__info}\n\n⚠️ ادمین به همه بخش‌های مدیریت (موجودی کاربران، رسیدها، پیام همگانی) دسترسی کامل دارد.\nاضافه شود؟", $__kb, 'HTML');
     return;
 }
 if ($text == $textbotlang['Admin']['Removeedadmin']) {
@@ -530,11 +530,11 @@ if ($text == $textbotlang['Admin']['Removeedadmin']) {
         return;
     }
     if ($__did === strval($from_id)) {
-        sendmessage($from_id, "❌ نمیتوانید خودتان را حذف کنید. آیدی دیگری بفرستید:", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ نمی‌توانید خودتان را حذف کنید. آیدی دیگری بفرستید:", $backadmin, 'HTML');
         return;
     }
     if (!in_array($__did, array_map('strval', (array)($admin_ids ?? [])), true)) {
-        sendmessage($from_id, "❌ این آیدی در لیست ادمینها نیست. دوباره بفرستید:", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ این آیدی در لیست ادمین‌ها نیست. دوباره بفرستید:", $backadmin, 'HTML');
         return;
     }
     step('home', $from_id);
@@ -567,7 +567,7 @@ if ($text == $textbotlang['Admin']['getlimitusertest']['setlimitallbtn']) {
     sendmessage($from_id, $textbotlang['Admin']['getlimitusertest']['limitall'], $backadmin, 'HTML');
     step('limit_usertest_allusers', $from_id);
 } elseif ($user['step'] == "limit_usertest_allusers" && empty($datain)) {
-    // نسخه 2.4.1: اعتبارسنجی + پیشنمایش تعداد + تأیید
+    // نسخه 2.4.1: اعتبارسنجی + پیش‌نمایش تعداد + تأیید
     $__n = botAdmInt($text, 0, 1000);
     if ($__n === null) {
         sendmessage($from_id, "❌ یک عدد بین ۰ تا ۱۰۰۰ بفرستید:", $backadmin, 'HTML');
@@ -581,7 +581,7 @@ if ($text == $textbotlang['Admin']['getlimitusertest']['setlimitallbtn']) {
         $__chg = intval($__st->fetchColumn());
     } catch (Throwable $e) {}
     $__old = strval($setting['limit_usertest_all'] ?? '-');
-    sendmessage($from_id, "⚠️ <b>تغییر سقف تست همه کاربران</b>\n\nسقف فعلی: <b>{$__old}</b>\nسقف جدید: <b>{$__n}</b>\n👥 کاربرانی که سهمیهشان تغییر میکند: <b>" . number_format($__chg) . "</b>\n\nسهمیه باقیمانده همه کاربران روی <b>{$__n}</b> گذاشته میشود (حتی کسانی که قبلاً تست گرفتهاند).\nاعمال شود؟", json_encode(['inline_keyboard' => [
+    sendmessage($from_id, "⚠️ <b>تغییر سقف تست همه کاربران</b>\n\nسقف فعلی: <b>{$__old}</b>\nسقف جدید: <b>{$__n}</b>\n👥 کاربرانی که سهمیهشان تغییر می‌کند: <b>" . number_format($__chg) . "</b>\n\nسهمیه باقی‌مانده همه کاربران روی <b>{$__n}</b> گذاشته می‌شود (حتی کسانی که قبلاً تست گرفته‌اند).\nاعمال شود؟", json_encode(['inline_keyboard' => [
         [['text' => '✅ بله، اعمال شود', 'callback_data' => 'utlim_ok_' . $__n]],
         [['text' => '❌ انصراف', 'callback_data' => 'adm_ut_panel']],
     ]], JSON_UNESCAPED_UNICODE), 'HTML');
@@ -616,7 +616,7 @@ if (isset($datain) && preg_match('/^adm_adm_delok_(\d+)$/', strval($datain), $__
     try {
         $pdo->prepare("DELETE FROM admin WHERE id_admin = ?")->execute([$__did]);
     } catch (Throwable $e) {}
-    botAdminActionReport('حذف ادمین', "🆔 ادمین حذفشده: <code>{$__did}</code>");
+    botAdminActionReport('حذف ادمین', "🆔 ادمین حذف‌شده: <code>{$__did}</code>");
     list($__tx, $__kb) = adminAdminsListKeyboard($from_id);
     Editmessagetext($from_id, $message_id, "✅ ادمین <code>{$__did}</code> حذف شد.\n\n" . $__tx, $__kb);
     return;
@@ -660,7 +660,7 @@ if (isset($datain) && in_array($datain, ['chjoin_set', 'chjoin_test', 'chjoin_de
         return;
     }
     if ($datain === 'chjoin_del') {
-        Editmessagetext($from_id, $message_id, "⚠️ قفل کانال برداشته شود؟\nبعد از آن کاربران بدون عضویت در کانال از ربات استفاده میکنند.", json_encode(['inline_keyboard' => [
+        Editmessagetext($from_id, $message_id, "⚠️ قفل کانال برداشته شود؟\nبعد از آن کاربران بدون عضویت در کانال از ربات استفاده می‌کنند.", json_encode(['inline_keyboard' => [
             [['text' => '✅ بله، برداشته شود', 'callback_data' => 'chjoin_delok']],
             [['text' => '❌ انصراف', 'callback_data' => 'navset_chjoin']],
         ]], JSON_UNESCAPED_UNICODE));
@@ -933,7 +933,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['bot_statistics'] || (isset(
         }
     }
 
-    // نسخه 2.2.9: سرویس واقعاً فعال + سرویسهایی که تا ۳ روز آینده منقضی میشوند (بدون تست)
+    // نسخه 2.2.9: سرویس واقعاً فعال + سرویس‌هایی که تا ۳ روز آینده منقضی می‌شوند (بدون تست)
     $svc_active = 0;
     $svc_expiring = 0;
     try {
@@ -1249,7 +1249,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['add_panel']) {
     $stmt = $pdo->prepare("INSERT INTO marzban_panel (name_panel,url_panel,username_panel,password_panel,type,inboundid,sublink,configManual,MethodUsername,statusTest,status,onholdstatus) VALUES (?, ?, ?, ?, ?,?,?,?,?,?,?,?)");
     $stmt->execute([$userdata['name'], $userdata['url_panel'], $userdata['username_panel'], $text, $userdata['type'], $inboundid, $sublink, $config, $textbotlang['users']['customidAndRandom'], $valueteststatus, $stauts, $on_hold]);
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['addedpanel'], $keyboardadmin, 'HTML');
-    // نسخه 2.3.8: صفحه شیشهای پنل جدید + تست اتصال خودکار
+    // نسخه 2.3.8: صفحه شیشه‌ای پنل جدید + تست اتصال خودکار
     try {
         $__np_row = select("marzban_panel", "*", "name_panel", $userdata['name'], "select");
         if (is_array($__np_row) && function_exists('adminPanelDetailKeyboard')) {
@@ -1289,10 +1289,10 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         sendmessage($from_id, $__tx, $__kb, 'HTML');
     }
 } elseif ($text == $textbotlang['Admin']['systemsms']['sendbulkbtn']) {
-    sendmessage($from_id, "✉️ متن پیام همگانی را بفرستید.\nمیتوانید <b>عکس با کپشن</b> هم بفرستید. قالب HTML (مثل <code>&lt;b&gt;</code>) پشتیبانی میشود.", $backadmin, 'HTML');
+    sendmessage($from_id, "✉️ متن پیام همگانی را بفرستید.\nمی‌توانید <b>عکس با کپشن</b> هم بفرستید. قالب HTML (مثل <code>&lt;b&gt;</code>) پشتیبانی می‌شود.", $backadmin, 'HTML');
     step('getconfirmsendall', $from_id);
 } elseif ($user['step'] == "getconfirmsendall" || $user['step'] == "gettextforwardMessage") {
-    // نسخه 2.3.9: پیشنمایش + تأیید + صف کرون (برای متن، عکس و فوروارد)
+    // نسخه 2.3.9: پیش‌نمایش + تأیید + صف کرون (برای متن، عکس و فوروارد)
     if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
         step('home', $from_id);
         return;
@@ -1328,7 +1328,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         sendmessage($from_id, "❌ این پیام قابل ارسال نیست؛ احتمالاً قالب HTML آن اشتباه است (مثلاً تگ بسته نشده).\nاصلاح کنید و دوباره بفرستید:", $backadmin, 'HTML');
         return;
     }
-    // نسخه 2.4.2: انتخاب گروه گیرندهها
+    // نسخه 2.4.2: انتخاب گروه گیرنده‌ها
     $__sets = botCastRecipientSets();
     $__bc['cast_pending'] = 1;
     update("user", "Processing_value", json_encode($__bc, JSON_UNESCAPED_UNICODE), "id", $from_id);
@@ -1340,7 +1340,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         [['text' => '⏳ انقضا تا ۷ روز آینده (' . number_format(count($__sets['exp7'])) . ')', 'callback_data' => 'cast_ok_exp7']],
         [['text' => '❌ انصراف', 'callback_data' => 'cast_no']],
     ]], JSON_UNESCAPED_UNICODE);
-    sendmessage($from_id, "👆 پیشنمایش پیام بالاست.\n\n🎯 <b>گیرندهها را انتخاب کنید</b> (عدد داخل پرانتز = تعداد گیرنده).\nکاربران مسدود در هیچ گروهی نیستند.\n\nبا زدن هر گروه، ارسال شروع میشود.", $__ckb, 'HTML');
+    sendmessage($from_id, "👆 پیش‌نمایش پیام بالاست.\n\n🎯 <b>گیرنده‌ها را انتخاب کنید</b> (عدد داخل پرانتز = تعداد گیرنده).\nکاربران مسدود در هیچ گروهی نیستند.\n\nبا زدن هر گروه، ارسال شروع می‌شود.", $__ckb, 'HTML');
 } elseif (isset($datain) && preg_match('/^cast_(ok|no)(?:_(act|nobuy|exp7))?$/', strval($datain), $__cm)) {
     $__bc = json_decode(strval($user['Processing_value'] ?? ''), true);
     if ($__cm[1] === 'no' || !is_array($__bc) || empty($__bc['cast_pending'])) {
@@ -1359,7 +1359,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
     $__sets = botCastRecipientSets();
     $result = $__sets[$__tg] ?? [];
     if (count($result) === 0) {
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این گروه هیچ گیرندهای ندارد. گروه دیگری انتخاب کنید.', 'show_alert' => true]);
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این گروه هیچ گیرنده‌ای ندارد. گروه دیگری انتخاب کنید.', 'show_alert' => true]);
         return;
     }
     update("user", "Processing_value", "0", "id", $from_id);
@@ -1369,7 +1369,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
     $__bc['total'] = count($result);
     $__bc['started'] = time();
     $__cancel_kb = json_encode(['inline_keyboard' => [[['text' => '⏹ توقف ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
-    $__pm = sendmessage($from_id, "📨 <b>ارسال همگانی در صف قرار گرفت</b>\n\n🎯 گروه: <b>{$__labels[$__tg]}</b>\n👥 گیرندهها: <b>" . number_format($__bc['total']) . "</b>\n✅ ارسالشده: 0 | ❌ ناموفق: 0\n\n⏳ ارسال با کرون انجام میشود و این پیام خودکار بهروز میشود.", $__cancel_kb, 'HTML');
+    $__pm = sendmessage($from_id, "📨 <b>ارسال همگانی در صف قرار گرفت</b>\n\n🎯 گروه: <b>{$__labels[$__tg]}</b>\n👥 گیرنده‌ها: <b>" . number_format($__bc['total']) . "</b>\n✅ ارسال‌شده: 0 | ❌ ناموفق: 0\n\n⏳ ارسال با کرون انجام می‌شود و این پیام خودکار به‌روز می‌شود.", $__cancel_kb, 'HTML');
     if (is_array($__pm) && isset($__pm['result']['message_id'])) {
         $__bc['progress_mid'] = intval($__pm['result']['message_id']);
     }
@@ -1377,23 +1377,23 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
     file_put_contents('cron/info', json_encode($__bc, JSON_UNESCAPED_UNICODE));
     if (function_exists('sendChannelReport')) {
         $__tn = ['text' => 'متن', 'photo' => 'عکس', 'forward' => 'فوروارد'];
-        sendChannelReport('rpt_broadcast', "📨 <b>شروع پیام همگانی</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n📝 نوع: " . ($__tn[$__bc['type'] ?? 'text'] ?? 'متن') . "\n🎯 گروه: {$__labels[$__tg]}\n👥 گیرندهها: " . number_format($__bc['total']));
+        sendChannelReport('rpt_broadcast', "📨 <b>شروع پیام همگانی</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n📝 نوع: " . ($__tn[$__bc['type'] ?? 'text'] ?? 'متن') . "\n🎯 گروه: {$__labels[$__tg]}\n👥 گیرنده‌ها: " . number_format($__bc['total']));
     }
     Editmessagetext($from_id, $message_id, "✅ تأیید شد. گروه: <b>{$__labels[$__tg]}</b>", json_encode(['inline_keyboard' => []]));
 } elseif ($datain == "cancel_sendmessage") {
-    // نسخه 2.4.2: توقف + ثبت گزارش (کرون بعد از توقف فایلها را دوباره نمیسازد)
+    // نسخه 2.4.2: توقف + ثبت گزارش (کرون بعد از توقف فایل‌ها را دوباره نمی‌سازد)
     $__ci = is_file('cron/info') ? json_decode(strval(@file_get_contents('cron/info')), true) : null;
     @unlink('cron/info');
     @unlink('cron/users.json');
     if (is_array($__ci)) {
         botCastSaveLast($__ci, 'cancelled');
         if (function_exists('sendChannelReport')) {
-            sendChannelReport('rpt_broadcast', "⏹ <b>پیام همگانی متوقف شد</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n👥 گیرندهها: " . number_format(intval($__ci['total'] ?? 0)) . "\n✅ ارسالشده: " . number_format(intval($__ci['sent'] ?? 0)) . " | ❌ ناموفق: " . number_format(intval($__ci['fail'] ?? 0)));
+            sendChannelReport('rpt_broadcast', "⏹ <b>پیام همگانی متوقف شد</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n👥 گیرنده‌ها: " . number_format(intval($__ci['total'] ?? 0)) . "\n✅ ارسال‌شده: " . number_format(intval($__ci['sent'] ?? 0)) . " | ❌ ناموفق: " . number_format(intval($__ci['fail'] ?? 0)));
         }
         $__tot = intval($__ci['total'] ?? 0);
         $__s = intval($__ci['sent'] ?? 0);
         $__f = intval($__ci['fail'] ?? 0);
-        $__msg = "⏹ <b>ارسال همگانی متوقف شد</b>\n\n👥 گیرندهها: <b>" . number_format($__tot) . "</b>\n✅ ارسالشده: <b>" . number_format($__s) . "</b> | ❌ ناموفق: <b>" . number_format($__f) . "</b>\n⏳ ارسالنشده: <b>" . number_format(max(0, $__tot - $__s - $__f)) . "</b>";
+        $__msg = "⏹ <b>ارسال همگانی متوقف شد</b>\n\n👥 گیرنده‌ها: <b>" . number_format($__tot) . "</b>\n✅ ارسال‌شده: <b>" . number_format($__s) . "</b> | ❌ ناموفق: <b>" . number_format($__f) . "</b>\n⏳ ارسال‌نشده: <b>" . number_format(max(0, $__tot - $__s - $__f)) . "</b>";
     } else {
         $__msg = "ℹ️ ارسال همگانی فعالی وجود ندارد (احتمالاً تمام شده است).";
     }
@@ -1631,9 +1631,9 @@ elseif (preg_match('/banuserlist_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['BlockedUser'], $backadmin, 'HTML');
         return;
     }
-    // نسخه 2.4.0: اول دلیل، بعد مسدود (انصراف = مسدود نمیشود)
+    // نسخه 2.4.0: اول دلیل، بعد مسدود (انصراف = مسدود نمی‌شود)
     update("user", "Processing_value", $iduser, "id", $from_id);
-    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['BlockUser'] ?? 'دلیل مسدودی را بفرستید:') . "\n\nℹ️ کاربر هنوز مسدود نشده؛ بعد از فرستادن دلیل مسدود میشود. برای دلیل پیشفرض <code>-</code> بفرستید. با «بازگشت» لغو میشود.", $backadmin, 'HTML');
+    sendmessage($from_id, ($textbotlang['Admin']['ManageUser']['BlockUser'] ?? 'دلیل مسدودی را بفرستید:') . "\n\nℹ️ کاربر هنوز مسدود نشده؛ بعد از فرستادن دلیل مسدود می‌شود. برای دلیل پیش‌فرض <code>-</code> بفرستید. با «بازگشت» لغو می‌شود.", $backadmin, 'HTML');
     step('adddecriptionblock', $from_id);
 } elseif ($user['step'] == "adddecriptionblock") {
     if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
@@ -1740,7 +1740,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['user_services'] || $datain 
 
 # رسیدهای تایید نشده (waiting)
 if ($text == ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '___')) {
-    // نسخه 2.4.2: همان پیام «در حال بررسی» به نتیجه تبدیل میشود
+    // نسخه 2.4.2: همان پیام «در حال بررسی» به نتیجه تبدیل می‌شود
     $__pm = sendmessage($from_id, "⏳ در حال بررسی رسیدهای در انتظار تأیید…", null, 'HTML');
     $res = function_exists('resendWaitingPaymentReceipts')
         ? resendWaitingPaymentReceipts($from_id, 40)
@@ -1830,7 +1830,7 @@ if ($datain == 'unblock_all_users_no') {
     list($__tx, $__kb) = botBlockedListPage(0);
     Editmessagetext($from_id, $message_id, $__tx, $__kb);
 }
-# نسخه 2.4.2: صفحهبندی مسدودها و رفع مسدودی سریع
+# نسخه 2.4.2: صفحه‌بندی مسدودها و رفع مسدودی سریع
 if (in_array($from_id, $admin_ids) && isset($datain) && preg_match('/^blk_(pg|ub)_(\d+)(?:_(\d+))?$/', strval($datain), $__bm)) {
     if ($__bm[1] === 'pg') {
         list($__tx, $__kb) = botBlockedListPage(intval($__bm[2]));
@@ -2045,7 +2045,7 @@ if (in_array($from_id, $admin_ids) && preg_match('/^shop_delask_([A-Za-z0-9]+)$/
         [['text' => '✅ بله، حذف شود', 'callback_data' => 'shop_ep_del_' . $m_da[1]]],
         [['text' => '❌ خیر، بازگشت', 'callback_data' => 'shop_p_' . $m_da[1]]],
     ]], JSON_UNESCAPED_UNICODE);
-    Editmessagetext($from_id, $message_id, "⚠️ <b>حذف محصول «{$__dn}»؟</b>\n\nاین کار برگشتپذیر نیست. سرویسهایی که قبلاً با این محصول خریده شدهاند سالم میمانند.\n\n💡 اگر فقط میخواهید موقتاً به کاربران نشان داده نشود، «🙈 مخفی کردن» را بزنید.", $__kb_da);
+    Editmessagetext($from_id, $message_id, "⚠️ <b>حذف محصول «{$__dn}»؟</b>\n\nاین کار برگشت‌پذیر نیست. سرویس‌هایی که قبلاً با این محصول خریده شده‌اند سالم می‌مانند.\n\n💡 اگر فقط می‌خواهید موقتاً به کاربران نشان داده نشود، «🙈 مخفی کردن» را بزنید.", $__kb_da);
     return;
 }
 
@@ -2069,12 +2069,12 @@ if (in_array($from_id, $admin_ids) && preg_match('/^shop_(hide|copy)_([A-Za-z0-9
         } catch (Throwable $e) {
             error_log('shop hide: ' . $e->getMessage());
         }
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($new_h ? '🙈 محصول از کاربران مخفی شد' : '👁 محصول به کاربران نمایش داده میشود'), 'show_alert' => false]);
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($new_h ? '🙈 محصول از کاربران مخفی شد' : '👁 محصول به کاربران نمایش داده می‌شود'), 'show_alert' => false]);
         $p = shopGetProductByCode($code);
         Editmessagetext($from_id, $message_id, shopProductDetailText($p), shopProductDetailKeyboard($code));
         return;
     }
-    // کپی: محصول جدید با همان مشخصات، بهصورت مخفی (تا بعد از ویرایش نمایش داده شود)
+    // کپی: محصول جدید با همان مشخصات، به‌صورت مخفی (تا بعد از ویرایش نمایش داده شود)
     $new_code = '';
     for ($__i = 0; $__i < 15; $__i++) {
         $__c = bin2hex(random_bytes(2));
@@ -2623,7 +2623,7 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
         'caption' => $caption,
         'reply_markup' => $keyboard_accept
     ]);
-    // نسخه 2.3.3: نسخه همین رسید نزد ادمینهای دیگر هم «تأیید شد» شود
+    // نسخه 2.3.3: نسخه همین رسید نزد ادمین‌های دیگر هم «تأیید شد» شود
     if (function_exists('botMarkReceiptMsgs')) {
         botMarkReceiptMsgs($order_id, '✅ تأیید شد (ادمین ' . $from_id . ')', $from_id, $message_id, intval($id_user_pay));
     }
@@ -2740,12 +2740,12 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
     if (!empty($message_id)) {
         update("user", "Processing_value_tow", strval($message_id), "id", $from_id);
     }
-    // نسخه 2.3.2: دلیلهای آماده (یا تایپ دلیل دلخواه)
+    // نسخه 2.3.2: دلیل‌های آماده (یا تایپ دلیل دلخواه)
     $__rr_kb = ['inline_keyboard' => []];
     foreach ((function_exists('botRejectReasons') ? botRejectReasons() : []) as $__rr_i => $__rr_t) {
         $__rr_kb['inline_keyboard'][] = [['text' => $__rr_t, 'callback_data' => 'rjr_' . $__rr_i]];
     }
-    sendmessage($from_id, "❌ <b>دلیل رد رسید</b>\n\nیکی از دلیلهای زیر را بزنید، یا دلیل دلخواه را تایپ کنید:", $__rr_kb['inline_keyboard'] ? json_encode($__rr_kb, JSON_UNESCAPED_UNICODE) : $backadmin, 'HTML');
+    sendmessage($from_id, "❌ <b>دلیل رد رسید</b>\n\nیکی از دلیل‌های زیر را بزنید، یا دلیل دلخواه را تایپ کنید:", $__rr_kb['inline_keyboard'] ? json_encode($__rr_kb, JSON_UNESCAPED_UNICODE) : $backadmin, 'HTML');
     step('reject-dec', $from_id);
     // رسید معمولاً عکس است — text خالی است و editMessageText خطای "message text is empty" می‌دهد
     $__rj_note = "❌ <b>در حال رد پرداخت</b>\nکد: <code>" . htmlspecialchars(strval($id_order), ENT_QUOTES, 'UTF-8') . "</code>\nمنتظر دلیل رد...";
@@ -2998,7 +2998,7 @@ if ($text == $textbotlang['Admin']['Usertest']['setvolumeusertest']) {
 }
 #-------------------------#
 elseif (preg_match('/^(addbalanceuser|lowbalanceuser)_(\w+)$/', strval($datain), $dataget)) {
-    // نسخه 2.4.0: افزایش/کاهش موجودی با پیشنمایش و تأیید
+    // نسخه 2.4.0: افزایش/کاهش موجودی با پیش‌نمایش و تأیید
     $__op = ($dataget[1] === 'addbalanceuser') ? 'add' : 'low';
     $__u0 = select("user", "*", "id", $dataget[2], "select");
     if (!is_array($__u0)) {
@@ -3044,7 +3044,7 @@ elseif (preg_match('/^(addbalanceuser|lowbalanceuser)_(\w+)$/', strval($datain),
         [['text' => '❌ انصراف', 'callback_data' => 'balc_no']],
     ]], JSON_UNESCAPED_UNICODE);
     $__nm = htmlspecialchars(strval($__u0['username'] ?? '-'), ENT_QUOTES, 'UTF-8');
-    sendmessage($from_id, "⚠️ <b>تأیید " . ($__op === 'add' ? 'افزایش' : 'کاهش') . " موجودی</b>\n\n🆔 کاربر: <code>" . htmlspecialchars(strval($__pv['uid']), ENT_QUOTES, 'UTF-8') . "</code> (@{$__nm})\n👛 موجودی فعلی: <b>" . number_format($__cur) . "</b> تومان\n" . ($__op === 'add' ? '➕' : '➖') . " مبلغ: <b>" . number_format($__amt) . "</b> تومان\n💳 موجودی بعد از تغییر: <b>" . number_format($__after) . "</b> تومان" . ($__after < 0 ? "\n\n❗️ <b>موجودی کاربر منفی میشود.</b>" : '') . "\n\nاعمال شود؟", $__kb, 'HTML');
+    sendmessage($from_id, "⚠️ <b>تأیید " . ($__op === 'add' ? 'افزایش' : 'کاهش') . " موجودی</b>\n\n🆔 کاربر: <code>" . htmlspecialchars(strval($__pv['uid']), ENT_QUOTES, 'UTF-8') . "</code> (@{$__nm})\n👛 موجودی فعلی: <b>" . number_format($__cur) . "</b> تومان\n" . ($__op === 'add' ? '➕' : '➖') . " مبلغ: <b>" . number_format($__amt) . "</b> تومان\n💳 موجودی بعد از تغییر: <b>" . number_format($__after) . "</b> تومان" . ($__after < 0 ? "\n\n❗️ <b>موجودی کاربر منفی می‌شود.</b>" : '') . "\n\nاعمال شود؟", $__kb, 'HTML');
 }
 if (isset($datain) && ($datain === 'balc_ok' || $datain === 'balc_no')) {
     $__raw = strval($user['Processing_value'] ?? '');
@@ -3279,7 +3279,7 @@ if ($text == $textbotlang['Admin']['ManageUser']['removeorderbtn']) {
         [['text' => '🗑 بله، حذف شود', 'callback_data' => 'rmsvc_ok_' . strval($info_product['id_invoice'])]],
         [['text' => '❌ انصراف', 'callback_data' => 'rmsvc_no']],
     ]], JSON_UNESCAPED_UNICODE);
-    sendmessage($from_id, "⚠️ <b>حذف سرویس</b>\n\n👤 یوزرنیم: <code>" . $__h($info_product['username']) . "</code>\n🆔 کاربر: <code>" . $__h($info_product['id_user']) . "</code>\n📦 محصول: " . $__h($info_product['name_product']) . "\n📍 پنل: " . $__h($info_product['Service_location']) . "\n📌 وضعیت: " . $__h($info_product['Status']) . "\n\n❗️ سرویس از پنل و ربات حذف میشود و <b>مبلغی به کاربر برنمیگردد</b>. مطمئنید؟", $__rkb, 'HTML');
+    sendmessage($from_id, "⚠️ <b>حذف سرویس</b>\n\n👤 یوزرنیم: <code>" . $__h($info_product['username']) . "</code>\n🆔 کاربر: <code>" . $__h($info_product['id_user']) . "</code>\n📦 محصول: " . $__h($info_product['name_product']) . "\n📍 پنل: " . $__h($info_product['Service_location']) . "\n📌 وضعیت: " . $__h($info_product['Status']) . "\n\n❗️ سرویس از پنل و ربات حذف می‌شود و <b>مبلغی به کاربر برنمیگردد</b>. مطمئنید؟", $__rkb, 'HTML');
 }
 if (isset($datain) && ($datain === 'rmsvc_no' || preg_match('/^rmsvc_ok_([A-Za-z0-9]+)$/', strval($datain), $__m_rs))) {
     if ($datain === 'rmsvc_no') {
@@ -3483,7 +3483,7 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     $keyboardmoeny = function_exists('buildFinanceKeyboard') ? buildFinanceKeyboard() : null;
     Editmessagetext($from_id, $message_id, (function_exists('buildFinanceSummaryText') ? buildFinanceSummaryText() : ($textbotlang['users']['moeny']['settingpay'] ?? '💳 تنظیمات مالی')), $keyboardmoeny);
 } elseif ($datain == "settingcart") {
-    // نسخه 2.3.0: صفحه شیشهای کارت به کارت
+    // نسخه 2.3.0: صفحه شیشه‌ای کارت به کارت
     if (function_exists('buildCardSettingsPage')) {
         list($__ct, $__ck) = buildCardSettingsPage();
         Editmessagetext($from_id, $message_id, $__ct, $__ck);
@@ -3495,11 +3495,11 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     Editmessagetext($from_id, $message_id, $__st_t, $__st_k);
 } elseif ($datain == "fin_card_edit") {
     // نسخه 2.3.2: افزودن کارت جدید به لیست
-    sendmessage($from_id, "➕ <b>افزودن کارت</b>\n\nشماره کارت ۱۶ رقمی را بفرستید.\nمیتوانید نام صاحب کارت و بانک را هم بنویسید.", $backadmin, 'HTML');
+    sendmessage($from_id, "➕ <b>افزودن کارت</b>\n\nشماره کارت ۱۶ رقمی را بفرستید.\nمی‌توانید نام صاحب کارت و بانک را هم بنویسید.", $backadmin, 'HTML');
     step('addcard', $from_id);
 } elseif ($datain == "fin_card_replace") {
     $__cd = select("PaySetting", "ValuePay", "NamePay", "CartDescription", "select");
-    sendmessage($from_id, "♻️ <b>جایگزینی همه کارتها</b>\n\nهمه کارتهای فعلی حذف و فقط کارتی که میفرستید ثبت میشود.\n\n" . sprintf($textbotlang['users']['moeny']['sendcart'], htmlspecialchars(strval(is_array($__cd) ? ($__cd['ValuePay'] ?? '') : ''), ENT_QUOTES, 'UTF-8')), $backadmin, 'HTML');
+    sendmessage($from_id, "♻️ <b>جایگزینی همه کارت‌ها</b>\n\nهمه کارت‌های فعلی حذف و فقط کارتی که می‌فرستید ثبت می‌شود.\n\n" . sprintf($textbotlang['users']['moeny']['sendcart'], htmlspecialchars(strval(is_array($__cd) ? ($__cd['ValuePay'] ?? '') : ''), ENT_QUOTES, 'UTF-8')), $backadmin, 'HTML');
     step('changecard', $from_id);
 } elseif (preg_match('/^fin_card_del_(\d+)$/', strval($datain), $__m_cdel)) {
     $__cl = botGetCardList();
@@ -3516,7 +3516,7 @@ if (preg_match('/^editpay-(.*)-(.*)/', $datain, $dataget)) {
     }
 } elseif ($datain == "fin_sheba_edit") {
     $__sd = trim(strval(getPaySettingValue('ShebaDescription', '')));
-    sendmessage($from_id, "🏦 شماره شبا را بفرستید (IR + ۲۴ رقم).\nمیتوانید نام صاحب حساب و بانک را هم بنویسید.\n\nمتن فعلی: " . ($__sd !== '' ? "<code>" . htmlspecialchars($__sd, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده'), $backadmin, 'HTML');
+    sendmessage($from_id, "🏦 شماره شبا را بفرستید (IR + ۲۴ رقم).\nمی‌توانید نام صاحب حساب و بانک را هم بنویسید.\n\nمتن فعلی: " . ($__sd !== '' ? "<code>" . htmlspecialchars($__sd, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده'), $backadmin, 'HTML');
     step('changesheba', $from_id);
 }
 if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
@@ -3524,7 +3524,7 @@ if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
     sendmessage($from_id, sprintf($textbotlang['users']['moeny']['sendcart'], $PaySetting['ValuePay']), $backadmin, 'HTML');
     step('changecard', $from_id);
 } elseif ($user['step'] == "changecard") {
-    // نسخه 2.3.0: اعتبارسنجی + برگشت به صفحه مالی شیشهای
+    // نسخه 2.3.0: اعتبارسنجی + برگشت به صفحه مالی شیشه‌ای
     if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
         step('home', $from_id);
         return;
@@ -3542,7 +3542,7 @@ if ($text == $textbotlang['users']['moeny']['card_number_settings']) {
     step('home', $from_id);
     $__cn = function_exists('botExtractCardNumber') ? botExtractCardNumber($__card_txt) : '';
     if ($__cn === '') {
-        $__cw = "\n\n⚠️ شماره کارت ۱۶ رقمی در متن پیدا نشد. ذخیره شد، ولی دکمه «کپی شماره کارت» به کاربر نشان داده نمیشود.";
+        $__cw = "\n\n⚠️ شماره کارت ۱۶ رقمی در متن پیدا نشد. ذخیره شد، ولی دکمه «کپی شماره کارت» به کاربر نشان داده نمی‌شود.";
     } elseif (function_exists('botCardLuhnOk') && !botCardLuhnOk($__cn)) {
         $__cw = "\n\n🔢 شماره کارت: <code>{$__cn}</code>\n⚠️ رقم کنترل این شماره کارت درست نیست؛ احتمالاً یک رقم اشتباه است. دوباره چک کنید.";
     } else {
@@ -3577,7 +3577,7 @@ if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'addcard' 
     }
     if (count($__cl) >= 10) {
         step('home', $from_id);
-        sendmessage($from_id, "❌ حداکثر ۱۰ کارت میشود ثبت کرد.", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ حداکثر ۱۰ کارت می‌شود ثبت کرد.", $backadmin, 'HTML');
         return;
     }
     $__cl[] = $__ac;
@@ -3595,7 +3595,7 @@ if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'changeshe
         return;
     }
     if (!isset($text) || !is_string($text) || trim($text) === '') {
-        sendmessage($from_id, "❌ شماره شبا را بهصورت متن بفرستید:", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ شماره شبا را به‌صورت متن بفرستید:", $backadmin, 'HTML');
         return;
     }
     $__sh_txt = botNormalizeDigits(trim($text));
@@ -3621,7 +3621,7 @@ if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'changeshe
     sendmessage($from_id, "✅ شماره شبا ذخیره شد: <code>{$__sh}</code>" . ($__on_now ? '' : "\n\nℹ️ واریز به شبا هنوز <b>خاموش</b> است. از ردیف «🏦 واریز به شبا» روشنش کنید.") . "\n\n" . buildFinanceSummaryText(), buildFinanceKeyboard(), 'HTML');
     return;
 }
-# نسخه 2.2.9: درگاههای NowPayments و آقای پرداخت حذف شدند
+# نسخه 2.2.9: درگاه‌های NowPayments و آقای پرداخت حذف شدند
 if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain === 'nav_panel') {
     if (function_exists('adminPanelsListKeyboard')) {
         list($__tx, $__kb) = adminPanelsListKeyboard();
@@ -3784,7 +3784,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['manage_panel'] || $datain =
     step('home', $from_id);
 }
 if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel']) {
-    // نسخه 2.3.8: دکمه قدیمی دیگر مستقیم حذف نمیکند؛ همان تأیید جدید
+    // نسخه 2.3.8: دکمه قدیمی دیگر مستقیم حذف نمی‌کند؛ همان تأیید جدید
     $__rp = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if (!is_array($__rp) || empty($__rp['id'])) {
         sendmessage($from_id, "❌ پنل پیدا نشد. از «✏️ مدیریت پنل» پنل را انتخاب کنید.", $keyboardadmin, 'HTML');
@@ -3797,7 +3797,7 @@ if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['removepanel'
             [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_pan_act_del_' . $__rid]],
             [['text' => '❌ انصراف', 'callback_data' => 'adm_pan_' . $__rid]],
         ]], JSON_UNESCAPED_UNICODE);
-        sendmessage($from_id, "⚠️ پنل <code>" . htmlspecialchars(strval($__rp['name_panel']), ENT_QUOTES, 'UTF-8') . "</code> حذف شود؟\n\n📦 سرویس فعال: <b>{$__sv}</b> | 🛒 محصول: <b>{$__pr}</b>" . ($__sv > 0 ? "\n\n❗️ این پنل سرویس فعال دارد. بهتر است بهجای حذف، «فروش» را غیرفعال کنید." : ''), $__kb_rp, 'HTML');
+        sendmessage($from_id, "⚠️ پنل <code>" . htmlspecialchars(strval($__rp['name_panel']), ENT_QUOTES, 'UTF-8') . "</code> حذف شود؟\n\n📦 سرویس فعال: <b>{$__sv}</b> | 🛒 محصول: <b>{$__pr}</b>" . ($__sv > 0 ? "\n\n❗️ این پنل سرویس فعال دارد. بهتر است به‌جای حذف، «فروش» را غیرفعال کنید." : ''), $__kb_rp, 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume']) {
@@ -3809,7 +3809,7 @@ if ($text == $textbotlang['Admin']['managepanel']['keyboardpanel']['setvolume'])
         return;
     }
     update("setting", "Extra_volume", $text);
-    // نسخه 2.2.9: بعد از ثبت، برگشت به صفحه شیشهای فروشگاه
+    // نسخه 2.2.9: بعد از ثبت، برگشت به صفحه شیشه‌ای فروشگاه
     $__ev_msg = ($textbotlang['users']['Extra_volume']['ChangedPrice'] ?? '✅ ذخیره شد.') . "\n💰 قیمت هر گیگ: <b>" . number_format(intval($text)) . "</b> تومان";
     if (function_exists('buildAdminShopSectionText') && function_exists('buildAdminShopInlineKeyboard')) {
         sendmessage($from_id, $__ev_msg . "\n\n" . buildAdminShopSectionText(), buildAdminShopInlineKeyboard(), 'HTML');
@@ -3830,7 +3830,7 @@ if ($text == $textbotlang['Admin']['Balance']['SendBalanceAll']) {
     }
     $__mv = str_replace([',', '٬', '،', ' '], '', function_exists('botNormalizeDigits') ? botNormalizeDigits(trim(strval($text))) : trim(strval($text)));
     if (!ctype_digit($__mv) || intval($__mv) < 1 || intval($__mv) > 100000000) {
-        sendmessage($from_id, "❌ مبلغ را فقط بهصورت عدد بفرستید (۱ تا ۱۰۰,۰۰۰,۰۰۰ تومان):", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ مبلغ را فقط به‌صورت عدد بفرستید (۱ تا ۱۰۰,۰۰۰,۰۰۰ تومان):", $backadmin, 'HTML');
         return;
     }
     $__mamt = intval($__mv);
@@ -3857,7 +3857,7 @@ if (isset($datain) && ($datain === 'massc_ok' || $datain === 'massc_no')) {
         Editmessagetext($from_id, $message_id, ($datain === 'massc_no' ? "❌ شارژ همگانی لغو شد." : "⚠️ این درخواست منقضی شده یا قبلاً انجام شده است. دوباره از «شارژ همگانی» شروع کنید."), json_encode(['inline_keyboard' => []]));
         return;
     }
-    // قفل: فقط یکبار اجرا شود (ضد دابلکلیک)
+    // قفل: فقط یک‌بار اجرا شود (ضد دابل‌کلیک)
     $__claim = $pdo->prepare("UPDATE user SET Processing_value = '0' WHERE id = ? AND Processing_value = ?");
     $__claim->execute([strval($from_id), strval($user['Processing_value'])]);
     if ($__claim->rowCount() < 1) {
@@ -4052,7 +4052,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
     step('home', $from_id);
     $__aff = select("affiliates", "*", null, null, "select");
     $__old = intval(is_array($__aff) ? ($__aff['affiliatespercentage'] ?? 0) : 0);
-    sendmessage($from_id, "⚠️ <b>تغییر درصد پورسانت</b>\n\nفعلی: <b>{$__old}٪</b>\nجدید: <b>{$__n}٪</b>\n\nبعد از هر خرید زیرمجموعه، {$__n}٪ مبلغ به معرف پورسانت داده میشود.\nذخیره شود؟", json_encode(['inline_keyboard' => [
+    sendmessage($from_id, "⚠️ <b>تغییر درصد پورسانت</b>\n\nفعلی: <b>{$__old}٪</b>\nجدید: <b>{$__n}٪</b>\n\nبعد از هر خرید زیرمجموعه، {$__n}٪ مبلغ به معرف پورسانت داده می‌شود.\nذخیره شود؟", json_encode(['inline_keyboard' => [
         [['text' => '✅ بله، ذخیره شود', 'callback_data' => 'affpct_ok_' . $__n]],
         [['text' => '❌ انصراف', 'callback_data' => 'affpanel_refresh']],
     ]], JSON_UNESCAPED_UNICODE), 'HTML');
@@ -4259,19 +4259,19 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['settingscron']) {
     sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($text == $textbotlang['Admin']['cron']['test']['active']) {
-    sendmessage($from_id, "⚠️ کرون‌های قدیمی غیرفعال شده‌اند.\nاز «زمانبندیها (کرون)» فقط <b>کرون هوشمند</b> را فعال و تنظیم کنید.", null, 'HTML');
+    sendmessage($from_id, "⚠️ کرون‌های قدیمی غیرفعال شده‌اند.\nاز «زمان‌بندی‌ها (کرون)» فقط <b>کرون هوشمند</b> را فعال و تنظیم کنید.", null, 'HTML');
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
         sendmessage($from_id, botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['test']['disable']) {
-    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    // نسخه 2.4.1: crontab سرور دستکاری نمی‌شود؛ همه زمان‌بندی‌ها با کرون هوشمند است
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند و چیزی برای غیرفعال کردن نیست.\nهمه زمان‌بندی‌ها از اینجا مدیریت می‌شوند:", buildSmartCronAdminKeyboard(), 'HTML');
     } else {
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند.", $keyboardadmin, 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['active']) {
@@ -4282,12 +4282,12 @@ if ($text == $textbotlang['Admin']['cron']['volume']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['volume']['disable']) {
-    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    // نسخه 2.4.1: crontab سرور دستکاری نمی‌شود؛ همه زمان‌بندی‌ها با کرون هوشمند است
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند و چیزی برای غیرفعال کردن نیست.\nهمه زمان‌بندی‌ها از اینجا مدیریت می‌شوند:", buildSmartCronAdminKeyboard(), 'HTML');
     } else {
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند.", $keyboardadmin, 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['time']['active']) {
@@ -4298,12 +4298,12 @@ if ($text == $textbotlang['Admin']['cron']['time']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['time']['disable']) {
-    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    // نسخه 2.4.1: crontab سرور دستکاری نمی‌شود؛ همه زمان‌بندی‌ها با کرون هوشمند است
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند و چیزی برای غیرفعال کردن نیست.\nهمه زمان‌بندی‌ها از اینجا مدیریت می‌شوند:", buildSmartCronAdminKeyboard(), 'HTML');
     } else {
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند.", $keyboardadmin, 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['active']) {
@@ -4314,17 +4314,17 @@ if ($text == $textbotlang['Admin']['cron']['remove']['active']) {
     }
 }
 if ($text == $textbotlang['Admin']['cron']['remove']['disable']) {
-    // نسخه 2.4.1: crontab سرور دستکاری نمیشود؛ همه زمانبندیها با کرون هوشمند است
+    // نسخه 2.4.1: crontab سرور دستکاری نمی‌شود؛ همه زمان‌بندی‌ها با کرون هوشمند است
     if (function_exists('buildSmartCronAdminKeyboard')) {
         ensureSmartCronSettings();
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند و چیزی برای غیرفعال کردن نیست.\nهمه زمانبندیها از اینجا مدیریت میشوند:", buildSmartCronAdminKeyboard(), 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند و چیزی برای غیرفعال کردن نیست.\nهمه زمان‌بندی‌ها از اینجا مدیریت می‌شوند:", buildSmartCronAdminKeyboard(), 'HTML');
     } else {
-        sendmessage($from_id, "ℹ️ کرونهای قدیمی دیگر استفاده نمیشوند.", $keyboardadmin, 'HTML');
+        sendmessage($from_id, "ℹ️ کرون‌های قدیمی دیگر استفاده نمی‌شوند.", $keyboardadmin, 'HTML');
     }
 }
 if ($text == $textbotlang['Admin']['keyboardadmin']['user_search']) {
     // نسخه 2.3.9: جستجو با آیدی عددی، یوزرنیم تلگرام یا یوزرنیم سرویس
-    sendmessage($from_id, "🔍 <b>جستجوی کاربر</b>\n\nیکی از اینها را بفرستید:\n• آیدی عددی (مثلاً <code>123456789</code>)\n• یوزرنیم تلگرام (مثلاً <code>@username</code>)\n• یوزرنیم سرویس (مثلاً <code>ali_123</code>)", $backadmin, 'HTML');
+    sendmessage($from_id, "🔍 <b>جستجوی کاربر</b>\n\nیکی از این‌ها را بفرستید:\n• آیدی عددی (مثلاً <code>123456789</code>)\n• یوزرنیم تلگرام (مثلاً <code>@username</code>)\n• یوزرنیم سرویس (مثلاً <code>ali_123</code>)", $backadmin, 'HTML');
     step('show_infos', $from_id);
 } elseif ($user['step'] == "show_infos") {
     if (isset($text) && is_string($text) && $text === ($textbotlang['Admin']['Back-Adminment'] ?? '___')) {
@@ -4520,7 +4520,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     } elseif ($setting['iran_number'] == "❌ بررسی شماره ایرانی غیرفعال است") {
         update("setting", "iran_number", "0");
     }
-    // نسخه 2.4.3: صفحه گروهبندیشده قابلیتها (بدون بررسی crontab)
+    // نسخه 2.4.3: صفحه گروه‌بندی‌شده قابلیت‌ها (بدون بررسی crontab)
     list($__ftx, $__fkb) = botFeaturesPage();
     if (!empty($GLOBALS['__admin_nav_edit_mid'])) {
         $__mid_feat = intval($GLOBALS['__admin_nav_edit_mid']);
@@ -4796,7 +4796,7 @@ if ($text == $textbotlang['users']['status']['manageService']) {
 
 #----------------[ Deposit min/max ]------------------#
 if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_limits_settings") {
-    // نسخه 2.3.3: صفحه شیشهای
+    // نسخه 2.3.3: صفحه شیشه‌ای
     ensurePaySetting('min_deposit', '100000');
     ensurePaySetting('max_deposit', '10000000');
     step('home', $from_id);
@@ -4826,14 +4826,14 @@ if ($text == $textbotlang['Admin']['deposit']['menu'] || $datain == "deposit_lim
     $lim = getDepositLimits();
     if ($user['step'] == 'deposit_set_min') {
         if ($__v > intval($lim['max'])) {
-            sendmessage($from_id, "❌ حداقل نمیتواند از حداکثر فعلی (" . number_format(intval($lim['max'])) . " تومان) بیشتر باشد. دوباره بفرستید:", $backadmin, 'HTML');
+            sendmessage($from_id, "❌ حداقل نمی‌تواند از حداکثر فعلی (" . number_format(intval($lim['max'])) . " تومان) بیشتر باشد. دوباره بفرستید:", $backadmin, 'HTML');
             return;
         }
         ensurePaySetting('min_deposit', '100000');
         update("PaySetting", "ValuePay", strval($__v), "NamePay", "min_deposit");
     } else {
         if ($__v < intval($lim['min'])) {
-            sendmessage($from_id, "❌ حداکثر نمیتواند از حداقل فعلی (" . number_format(intval($lim['min'])) . " تومان) کمتر باشد. دوباره بفرستید:", $backadmin, 'HTML');
+            sendmessage($from_id, "❌ حداکثر نمی‌تواند از حداقل فعلی (" . number_format(intval($lim['min'])) . " تومان) کمتر باشد. دوباره بفرستید:", $backadmin, 'HTML');
             return;
         }
         ensurePaySetting('max_deposit', '10000000');
@@ -5180,7 +5180,7 @@ if ($datain == "adm_noop") {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پنل یافت نشد', 'show_alert' => true]);
     }
 } elseif (preg_match('/^adm_pan_tg_(status|test|sub|cfg)_(\d+)$/', strval($datain), $m_tg)) {
-    // نسخه 2.3.6: روشن/خاموش تنظیمات پنل از صفحه شیشهای
+    // نسخه 2.3.6: روشن/خاموش تنظیمات پنل از صفحه شیشه‌ای
     $panel = adminPanelGetById($m_tg[2]);
     if (!$panel) {
         telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'پنل یافت نشد', 'show_alert' => true]);
@@ -5332,7 +5332,7 @@ if ($datain == "adm_noop") {
     sendmessage($from_id, $textbotlang['Admin']['category']['getname'] ?? 'نام دسته را بفرستید:', $backadmin, 'HTML');
     step("getremarkcategory", $from_id);
 } elseif (preg_match('/^adm_cat_(del|delok)_(\d+)$/', strval($datain), $m)) {
-    // نسخه 2.3.8: دستهای که محصول دارد حذف نمیشود؛ بقیه با تأیید
+    // نسخه 2.3.8: دسته‌ای که محصول دارد حذف نمی‌شود؛ بقیه با تأیید
     $__cid = intval($m[2]);
     $__cat = select("category", "*", "id", $__cid, "select");
     if (!is_array($__cat)) {
@@ -5351,7 +5351,7 @@ if ($datain == "adm_noop") {
     $__cn = htmlspecialchars(strval($__cat['remark'] ?? ''), ENT_QUOTES, 'UTF-8');
     if ($__np > 0) {
         list($tx, $kb) = adminCategoriesListKeyboard();
-        Editmessagetext($from_id, $message_id, "❌ دسته «{$__cn}» <b>{$__np}</b> محصول دارد و حذف نشد.\nاگر حذف شود، این محصولات از منوی خرید کاربران ناپدید میشوند.\n\nاول از «📦 مدیریت محصولات» دسته این محصولات را عوض کنید (دکمه «📁 دسته»)، بعد دسته را حذف کنید.\n\n" . $tx, $kb);
+        Editmessagetext($from_id, $message_id, "❌ دسته «{$__cn}» <b>{$__np}</b> محصول دارد و حذف نشد.\nاگر حذف شود، این محصولات از منوی خرید کاربران ناپدید می‌شوند.\n\nاول از «📦 مدیریت محصولات» دسته این محصولات را عوض کنید (دکمه «📁 دسته»)، بعد دسته را حذف کنید.\n\n" . $tx, $kb);
         return;
     }
     if ($m[1] === 'del') {
@@ -5379,7 +5379,7 @@ if ($datain == "adm_noop") {
 } elseif (preg_match('/^adm_adm_del_(\d+)$/', strval($datain), $m)) {
     $del_id = strval($m[1]);
     if (strval($adminnumber) === $del_id || strval($from_id) === $del_id) {
-        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => (strval($adminnumber) === $del_id ? 'ادمین اصلی قابل حذف نیست' : 'نمیتوانید خودتان را حذف کنید'), 'show_alert' => true]);
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => (strval($adminnumber) === $del_id ? 'ادمین اصلی قابل حذف نیست' : 'نمی‌توانید خودتان را حذف کنید'), 'show_alert' => true]);
     } else {
         Editmessagetext($from_id, $message_id, "⚠️ ادمین <code>{$del_id}</code> حذف شود؟", json_encode(['inline_keyboard' => [
             [['text' => '✅ بله، حذف شود', 'callback_data' => 'adm_adm_delok_' . $del_id]],
@@ -5404,7 +5404,7 @@ if ($datain == "adm_noop") {
 }
 
 
-# نسخه 2.3.0: تغییر نام دستهبندی
+# نسخه 2.3.0: تغییر نام دسته‌بندی
 if (in_array($from_id, $admin_ids) && isset($datain) && preg_match('/^adm_cat_ren_(\d+)$/', strval($datain), $m_cr)) {
     $__cat = select("category", "*", "id", intval($m_cr[1]), "select");
     if (!is_array($__cat)) {
@@ -5429,12 +5429,12 @@ if (in_array($from_id, $admin_ids) && strval($user['step'] ?? '') === 'adm_cat_r
     $__cid = intval($user['Processing_value'] ?? 0);
     $__dup = select("category", "*", "remark", $__new_cn, "select");
     if (is_array($__dup) && intval($__dup['id'] ?? 0) !== $__cid) {
-        sendmessage($from_id, "❌ دستهای با همین نام وجود دارد. نام دیگری بفرستید:", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ دسته‌ای با همین نام وجود دارد. نام دیگری بفرستید:", $backadmin, 'HTML');
         return;
     }
     if ($__cid <= 0 || !is_array(select("category", "*", "id", $__cid, "select"))) {
         step('home', $from_id);
-        sendmessage($from_id, "❌ دسته پیدا نشد. دوباره از لیست دستهها شروع کنید.", $backadmin, 'HTML');
+        sendmessage($from_id, "❌ دسته پیدا نشد. دوباره از لیست دسته‌ها شروع کنید.", $backadmin, 'HTML');
         return;
     }
     update("category", "remark", $__new_cn, "id", $__cid);
@@ -5853,7 +5853,7 @@ if ($__rv_is_admin && function_exists('isResellerFeatureEnabled') && isResellerF
             [['text' => '✅ بله، حذف شود', 'callback_data' => 'rv_del_' . intval($__pl['id'])]],
             [['text' => '❌ خیر، بازگشت', 'callback_data' => 'rv_edit_' . intval($__pl['id'])]],
         ]], JSON_UNESCAPED_UNICODE);
-        Editmessagetext($from_id, $message_id, "⚠️ <b>حذف پلن {$__gbl} — " . number_format(intval($__pl['price'] ?? 0)) . " تومان؟</b>\n\nاین کار برگشتپذیر نیست.\n💡 اگر فقط نمیخواهید فعلاً فروخته شود، «🔴 غیرفعال کردن» را بزنید.", $kb);
+        Editmessagetext($from_id, $message_id, "⚠️ <b>حذف پلن {$__gbl} — " . number_format(intval($__pl['price'] ?? 0)) . " تومان؟</b>\n\nاین کار برگشت‌پذیر نیست.\n💡 اگر فقط نمی‌خواهید فعلاً فروخته شود، «🔴 غیرفعال کردن» را بزنید.", $kb);
         return;
     }
 

@@ -59,7 +59,7 @@ if ($limit > 200) {
 }
 
 // نشانگر بر اساس id_invoice (keyset) به جای OFFSET:
-// اگر وسط اجرا فاکتوری حذف شود، ردیفهای بعدی جابهجا نمیشوند و کاربری جا نمیماند.
+// اگر وسط اجرا فاکتوری حذف شود، ردیف‌های بعدی جابه‌جا نمی‌شوند و کاربری جا نمی‌ماند.
 ensurePaySetting('smart_cron_cursor_id', '');
 $cursor = strval(getPaySettingValue('smart_cron_cursor_id', ''));
 

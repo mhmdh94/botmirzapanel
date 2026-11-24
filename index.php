@@ -9,8 +9,8 @@ if (function_exists('fastcgi_finish_request')) {
 }
 
 ini_set('error_log', 'error_log');
-// نسخه ربات — با هر تغییر یک عدد بالا میرود (در پیام ورود ادمین نمایش داده میشود)
-$version = "2.5.0";
+// نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
+$version = "2.5.1";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -87,7 +87,7 @@ if (!in_array($from_id, $users_ids) && intval($from_id) != 0) {
     foreach ($admin_ids as $admin) {
         sendmessage($admin, $newuser, $Response, 'html');
     }
-    // نسخه 2.4.4: گزارش کاربر جدید در کانال (کلید rpt_newuser، پیشفرض خاموش)
+    // نسخه 2.4.4: گزارش کاربر جدید در کانال (کلید rpt_newuser، پیش‌فرض خاموش)
     if (function_exists('sendChannelReport')) {
         sendChannelReport('rpt_newuser', $newuser);
     }
@@ -187,12 +187,12 @@ foreach ($datatxtbot as $item) {
 }
 if (function_exists('ensureEditableStatusTexts')) { ensureEditableStatusTexts(); }
 if (function_exists('botMigrateEditableDefaults')) { botMigrateEditableDefaults(); }
-// نسخه 2.2.2: دکمههای منوی قدیمی (کیبورد ذخیرهشده نزد کاربر) به متن جدید نگاشت شوند
+// نسخه 2.2.2: دکمه‌های منوی قدیمی (کیبورد ذخیره‌شده نزد کاربر) به متن جدید نگاشت شوند
 if (isset($text) && is_string($text) && function_exists('botAliasLegacyMenuText')
     && !(isset($user['step']) && is_string($user['step']) && strpos($user['step'], 'edit_bottext_') === 0)) {
     $text = botAliasLegacyMenuText($text, $datatextbot);
 }
-// نسخه 2.2.7: دکمه «سرویسهای من (N)»
+// نسخه 2.2.7: دکمه «سرویس‌های من (N)»
 if (isset($text) && is_string($text) && function_exists('botStripServiceCount')) {
     $text = botStripServiceCount($text, $datatextbot);
 }
@@ -212,7 +212,7 @@ if (isset($datain) && $datain === 'buy_fromtest') {
     $datain = '';
     $text = $datatextbot['text_sell'];
 }
-// نسخه 2.2.4: دکمههای زیر پیام تأیید پرداخت (پیام تأیید ویرایش نشود)
+// نسخه 2.2.4: دکمه‌های زیر پیام تأیید پرداخت (پیام تأیید ویرایش نشود)
 if (isset($datain) && $datain === 'goto_buy') {
     $datain = '';
     $text = $datatextbot['text_sell'];
@@ -585,7 +585,7 @@ if (!$__is_admin) {
 if (($setting['Bot_Status'] ?? '') == "✅  ربات روشن است" && !in_array($from_id, $admin_ids)) {
     sendmessage($from_id, $textbotlang['users']['updatingbot'], null, 'html');
     foreach ($admin_ids as $admin) {
-        sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعالسازی به منوی تنظیمات عمومی > روشن/خاموش قابلیتها بروید تا رباتتان فعال شود.", null, 'html');
+        sendmessage($admin, "❌ ادمین عزیز ربات فعال نیست جهت فعال‌سازی به منوی تنظیمات عمومی > روشن/خاموش قابلیت‌ها بروید تا رباتتان فعال شود.", null, 'html');
     }
     return;
 }
@@ -702,7 +702,7 @@ if ($text == "/start") {
     update("user", "Processing_value_one", "0", "id", $from_id);
     update("user", "Processing_value_tow", "0", "id", $from_id);
     sendmessage($from_id, $datatextbot['text_start'], $keyboard, 'html');
-    // نسخه 2.5.0: خوشآمد سهقدمی برای کاربر جدید
+    // نسخه 2.5.0: خوش‌آمد سه‌قدمی برای کاربر جدید
     if (empty($__user_existed_before) && !in_array($from_id, (array)$admin_ids)) {
         $__wk = [];
         $__ut_on = !(isset($setting['status_usertest']) && strval($setting['status_usertest']) === '0');
@@ -711,7 +711,7 @@ if ($text == "/start") {
         }
         $__wk[] = [['text' => '🛒 خرید اشتراک', 'callback_data' => 'buy_fromtest']];
         $__wk[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
-        sendmessage($from_id, "👋 <b>خوش آمدید!</b>\n━━━━━━━━━━\n\nشروع در ۳ قدم:\n\n" . ($__ut_on ? "1️⃣ یک <b>اکانت تست رایگان</b> بگیرید و کیفیت را امتحان کنید\n" : "1️⃣ پلنها را از «خرید اشتراک» ببینید\n") . "2️⃣ <b>پلن مناسب</b> خود را انتخاب و خرید کنید\n3️⃣ با <b>راهنمای اتصال</b> در کمتر از یک دقیقه وصل شوید ✅", json_encode(['inline_keyboard' => $__wk], JSON_UNESCAPED_UNICODE), 'HTML');
+        sendmessage($from_id, "👋 <b>خوش آمدید!</b>\n━━━━━━━━━━\n\nشروع در ۳ قدم:\n\n" . ($__ut_on ? "1️⃣ یک <b>اکانت تست رایگان</b> بگیرید و کیفیت را امتحان کنید\n" : "1️⃣ پلن‌ها را از «خرید اشتراک» ببینید\n") . "2️⃣ <b>پلن مناسب</b> خود را انتخاب و خرید کنید\n3️⃣ با <b>راهنمای اتصال</b> در کمتر از یک دقیقه وصل شوید ✅", json_encode(['inline_keyboard' => $__wk], JSON_UNESCAPED_UNICODE), 'HTML');
     }
     step('home', $from_id);
     return;
@@ -1299,7 +1299,7 @@ if ($user['step'] == "getusernameinfo") {
 }
 #-----------ownership guard: کاربر فقط سرویس خودش را ببیند/تغییر دهد------------#
 // قبلاً چند دکمه (product_ / config_ / subscriptionurl_ / extend_ / changelink_ / confirmchange_ / removebyuser-)
-// مالکیت را چک نمیکردند؛ با callback دستساز میشد لینک یا سرویس کاربر دیگری را دید یا تغییر داد.
+// مالکیت را چک نمی‌کردند؛ با callback دستساز می‌شد لینک یا سرویس کاربر دیگری را دید یا تغییر داد.
 if (is_string($datain) && $datain !== '' && !in_array($from_id, $admin_ids)) {
     $__own_patterns = [
         '/product_(\w+)/', '/qrcode_(\w+)/', '/subscriptionurl_(\w+)/', '/config_(\w+)/',
@@ -1791,7 +1791,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
         sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
         return;
     }
-    // نسخه 2.2.6: اطلاعات فاکتور فقط بعد از پرداخت موفق تمدید عوض میشود (نه هنگام انتخاب پلن)
+    // نسخه 2.2.6: اطلاعات فاکتور فقط بعد از پرداخت موفق تمدید عوض می‌شود (نه هنگام انتخاب پلن)
     update("user", "Processing_value_one", $codeproduct, "id", $from_id);
     $keyboardextend = json_encode([
         'inline_keyboard' => [
@@ -2672,7 +2672,7 @@ if ($text == $datatextbot['text_usertest']) {
         sendmessage($from_id, $textbotlang['users']['usertest']['limitwarning'], botBuyButtonKeyboard(), 'html');
         return;
     }
-    // نسخه 2.2: اگر فقط یک لوکیشن تست هست، مرحله انتخاب رد میشود (مثل خرید)
+    // نسخه 2.2: اگر فقط یک لوکیشن تست هست، مرحله انتخاب رد می‌شود (مثل خرید)
     $__test_panels = [];
     try {
         $__test_panels = $pdo->query("SELECT id FROM marzban_panel WHERE statusTest = 'ontestshowpanel'")->fetchAll(PDO::FETCH_COLUMN);

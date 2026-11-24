@@ -15,7 +15,7 @@ $setting = select("setting", "*");
 @file_put_contents(__DIR__ . '/croncard.last', strval(time()));
 // فقط اگر در دیتابیس صریحاً روشن باشد اجرا شود — در غیر این صورت خروج
 // (اگر تابع نبود یا مقدار غیر از 1 بود، هیچ رسیدی تأیید نشود)
-// نسخه 2.4.0: پاکسازی ردیفهای قدیمی پیام رسید (حداکثر یکبار در ساعت)
+// نسخه 2.4.0: پاک‌سازی ردیف‌های قدیمی پیام رسید (حداکثر یک‌بار در ساعت)
 if (function_exists('botCleanupReceiptMsgs')) {
     $__cl_f = __DIR__ . '/receipt_cleanup.ts';
     if (!is_file($__cl_f) || (time() - intval(@file_get_contents($__cl_f))) > 3600) {
@@ -62,7 +62,7 @@ foreach ($datatxtbot as $item) {
         $datatextbot[$item['id_text']] = $item['text'];
     }
 }
-// نسخه 2.3.1: تأیید خودکار شامل واریز به شبا هم میشود
+// نسخه 2.3.1: تأیید خودکار شامل واریز به شبا هم می‌شود
 $stmt = $pdo->prepare("SELECT * FROM Payment_report WHERE payment_Status = 'waiting' AND Payment_Method IN ('cart to cart', 'sheba')");
 $stmt->execute();
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -93,7 +93,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $GLOBALS['deferred_channel_reports'] = [];
     $GLOBALS['payment_user_notified'] = false;
     DirectPayment($Payment_report['id_order']);
-    // نسخه 2.3.3: پیام رسید نزد ادمینها → «تأیید خودکار شد»
+    // نسخه 2.3.3: پیام رسید نزد ادمین‌ها → «تأیید خودکار شد»
     if (function_exists('botMarkReceiptMsgs')) {
         botMarkReceiptMsgs($Payment_report['id_order'], '✅ پرداخت تأیید شده است', 0, 0, intval($Payment_report['id_user'] ?? 0), 'success', '🤖 تأیید خودکار شد');
     }

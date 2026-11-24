@@ -40,7 +40,7 @@ if ($table_exists) {
         }
     }
 }
-// ---- Main keyboard: از نسخه 2.2 در functions.php ساخته میشود (buildUserMainKeyboard) تا بعد از تغییر موجودی هم قابل ارسال باشد ----
+// ---- Main keyboard: از نسخه 2.2 در functions.php ساخته می‌شود (buildUserMainKeyboard) تا بعد از تغییر موجودی هم قابل ارسال باشد ----
 $keyboard = buildUserMainKeyboard(isset($from_id) ? $from_id : 0, $datatextbot, $setting, $admin_ids);
 
 
@@ -625,7 +625,7 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
     }
     $stmt->execute();
     $product = ['inline_keyboard' => []];
-    // ردیف عنوان (مثل اسکرین دوستونه: محصول | قیمت)
+    // ردیف عنوان (مثل اسکرین دو‌ستونه: محصول | قیمت)
     // در تلگرام اندیس ۰ = چپ، اندیس ۱ = راست → قیمت چپ، محصول راست
     $product['inline_keyboard'][] = [
         ['text' => '💵 قیمت', 'callback_data' => 'product_header'],

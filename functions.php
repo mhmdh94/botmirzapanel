@@ -81,7 +81,7 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
     } catch (PDOException $e) {
-        // نسخه 2.4.6: بهجای توقف کل ربات → ثبت خطا + هشدار + ادامه
+        // نسخه 2.4.6: به‌جای توقف کل ربات → ثبت خطا + هشدار + ادامه
         if (function_exists('botErrorLog')) {
             botErrorLog('DB select failed', ['table' => strval($table), 'field' => strval($field), 'where' => strval($whereField), 'err' => $e->getMessage()], 'ERROR', 'db');
         } else {
@@ -638,7 +638,7 @@ function atomicAddBalance($user_id, $amount)
 
 /**
  * تغییر اتمیک موجودی (+ یا -) در یک دستور SQL — بدون «خواندن، محاسبه، نوشتن».
- * دو درخواست همزمان هر دو اعمال میشوند و هیچکدام گم نمیشود. موجودی جدید را برمیگرداند.
+ * دو درخواست همزمان هر دو اعمال می‌شوند و هیچ‌کدام گم نمی‌شود. موجودی جدید را برمی‌گرداند.
  */
 function atomicAdjustBalance($user_id, $delta)
 {
@@ -652,7 +652,7 @@ function atomicAdjustBalance($user_id, $delta)
     return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
 }
 
-/** کسر اتمیک با کف صفر (موجودی منفی نمیشود). موجودی جدید را برمیگرداند. */
+/** کسر اتمیک با کف صفر (موجودی منفی نمی‌شود). موجودی جدید را برمی‌گرداند. */
 function atomicDeductBalanceFloorZero($user_id, $amount)
 {
     global $pdo;
@@ -665,7 +665,7 @@ function atomicDeductBalanceFloorZero($user_id, $amount)
     return is_array($row) ? intval($row['Balance'] ?? 0) : 0;
 }
 
-/** خط «موجودی فعلی» برای انتهای پیامهای کیف پول (به متنهای قابل ویرایش دست نمیزند) */
+/** خط «موجودی فعلی» برای انتهای پیام‌های کیف پول (به متن‌های قابل ویرایش دست نمی‌زند) */
 function botBalanceLine($balance)
 {
     return "\n👛 موجودی فعلی: <b>" . number_format(intval($balance)) . "</b> تومان";
@@ -691,7 +691,7 @@ function botUsageBar($used, $limit)
 }
 
 /**
- * ارسال عکس با دکمه «کپی لینک» (copy_text). اگر تلگرام دکمه را نپذیرفت، همان عکس بدون دکمه ارسال میشود.
+ * ارسال عکس با دکمه «کپی لینک» (copy_text). اگر تلگرام دکمه را نپذیرفت، همان عکس بدون دکمه ارسال می‌شود.
  */
 function botSendPhotoWithCopy(array $params, $copyText)
 {
@@ -709,10 +709,10 @@ function botSendPhotoWithCopy(array $params, $copyText)
     return telegram('sendphoto', $params);
 }
 
-/** متن دکمههای منو از جدول textbot (برای ساخت منو خارج از keyboard.php، مثلاً در کرون) */
+/** متن دکمه‌های منو از جدول textbot (برای ساخت منو خارج از keyboard.php، مثلاً در کرون) */
 /**
- * نسخه 2.2.2: متن جدید دکمههای منو + متنهای قدیمی (پیشفرض) برای مهاجرت.
- * فقط اگر متن دیتابیس دقیقاً یکی از پیشفرضهای قدیمی باشد عوض میشود؛ متن سفارشی ادمین دست نمیخورد.
+ * نسخه 2.2.2: متن جدید دکمه‌های منو + متن‌های قدیمی (پیش‌فرض) برای مهاجرت.
+ * فقط اگر متن دیتابیس دقیقاً یکی از پیش‌فرض‌های قدیمی باشد عوض می‌شود؛ متن سفارشی ادمین دست نمی‌خورد.
  */
 function botMenuLabelMigrations()
 {
@@ -724,7 +724,7 @@ function botMenuLabelMigrations()
     ];
 }
 
-/** اگر متن دیتابیس پیشفرض قدیمی است، در دیتابیس بهروز کن و متن جدید را برگردان */
+/** اگر متن دیتابیس پیش‌فرض قدیمی است، در دیتابیس به‌روز کن و متن جدید را برگردان */
 function botMigrateMenuLabel($id_text, $text)
 {
     $map = botMenuLabelMigrations();
@@ -813,7 +813,7 @@ $row1 = [];
 // دکمه خرید همیشه هست؛ اگر خرید خاموش باشد در index پیام «بسته است» می‌دهد
 $row1[] = ['text' => $datatextbot['text_sell']];
 if (!isset($setting['status_usertest']) || $setting['status_usertest'] == '1' || $setting['status_usertest'] === 1) {
-    // نسخه 2.2.2: اگر سهمیه تست کاربر صفر شده، دکمه نمایش داده نشود (با افزایش سهمیه دوباره میآید)
+    // نسخه 2.2.2: اگر سهمیه تست کاربر صفر شده، دکمه نمایش داده نشود (با افزایش سهمیه دوباره می‌آید)
     $__show_test = true;
     if (isset($from_id) && intval($from_id) > 0) {
         try {
@@ -844,7 +844,7 @@ if (!empty($row1)) {
     $keyboard_rows[] = $row1;
 }
 // ردیف: سرویس‌های من (+ افزایش موجودی در صورت فعال بودن واریز)
-// نسخه 2.2.7: تعداد سرویسهای فعال کنار دکمه «سرویسهای من»
+// نسخه 2.2.7: تعداد سرویس‌های فعال کنار دکمه «سرویس‌های من»
 $__svc_label = $datatextbot['text_Purchased_services'];
 if (isset($from_id) && intval($from_id) > 0 && function_exists('botCountActiveServices')) {
     $__svc_n = botCountActiveServices($from_id);
@@ -931,8 +931,8 @@ if (isset($from_id) && is_array($admin_ids) && in_array($from_id, $admin_ids)) {
 }
 
 /**
- * منوی تازه (با موجودی بهروز روی دکمه حساب) برای فرستادن همراه پیامهای کیف پول.
- * فقط وقتی «نمایش موجودی روی دکمه» روشن است؛ وگرنه null (یعنی کیبورد کاربر دست نمیخورد).
+ * منوی تازه (با موجودی به‌روز روی دکمه حساب) برای فرستادن همراه پیام‌های کیف پول.
+ * فقط وقتی «نمایش موجودی روی دکمه» روشن است؛ وگرنه null (یعنی کیبورد کاربر دست نمی‌خورد).
  */
 function botMenuForBalance($user_id)
 {
@@ -947,7 +947,7 @@ function botMenuForBalance($user_id)
     }
 }
 
-/** خط «موجودی بعد از خرید» یا «کسری» در پیشفاکتور */
+/** خط «موجودی بعد از خرید» یا «کسری» در پیش‌فاکتور */
 function botInvoiceBalanceLine($price, $balance)
 {
     $price = intval($price);
@@ -955,7 +955,7 @@ function botInvoiceBalanceLine($price, $balance)
     if ($balance >= $price) {
         return "🧮 موجودی بعد از خرید: <b>" . number_format($balance - $price) . "</b> تومان";
     }
-    return "⚠️ کسری موجودی: <b>" . number_format($price - $balance) . "</b> تومان (در مرحله بعد پرداخت میکنید)";
+    return "⚠️ کسری موجودی: <b>" . number_format($price - $balance) . "</b> تومان (در مرحله بعد پرداخت می‌کنید)";
 }
 
 /** دکمه «🔐 خرید اشتراک» (اینلاین) */
@@ -965,8 +965,8 @@ function botBuyButtonKeyboard()
 }
 
 /**
- * متن دکمه هر سرویس در «سرویسهای من»: ایموجی + یوزرنیم + روزهای باقیمانده (تخمین از دیتابیس ربات).
- * برای سرویس نامحدود یا تمامشده، روز نشان داده نمیشود.
+ * متن دکمه هر سرویس در «سرویس‌های من»: ایموجی + یوزرنیم + روزهای باقی‌مانده (تخمین از دیتابیس ربات).
+ * برای سرویس نامحدود یا تمامشده، روز نشان داده نمی‌شود.
  */
 function serviceListButtonLabel(array $row)
 {
@@ -976,7 +976,7 @@ function serviceListButtonLabel(array $row)
         return $label;
     }
     $amount = intval($row['Service_time'] ?? $row['service_time'] ?? 0);
-    // اکانت تست: Service_time به «ساعت» ذخیره میشود (time_usertest)، نه روز
+    // اکانت تست: Service_time به «ساعت» ذخیره می‌شود (time_usertest)، نه روز
     $is_test = (strval($row['name_product'] ?? '') === 'usertest');
     $seconds = $is_test ? ($amount * 3600) : ($amount * 86400);
     $ts_raw = $row['time_sell'] ?? '';
@@ -998,7 +998,7 @@ function serviceListButtonLabel(array $row)
 
 /**
  * قفل MySQL برای جلوگیری از اجرای همزمان یک عملیات (مثلاً دو بار ثبت کد هدیه).
- * در پایان درخواست خودکار آزاد میشود. نام با دیتابیس پیشوند میخورد تا رباتهای مختلف تداخل نکنند.
+ * در پایان درخواست خودکار آزاد می‌شود. نام با دیتابیس پیشوند می‌خورد تا ربات‌های مختلف تداخل نکنند.
  */
 function walletLock($name, $timeout = 10)
 {
@@ -1496,7 +1496,7 @@ function notifyUserReceiptAccepted($user_id, $order_id, $price = 0, $extra = '')
     } else {
         $msg = "✅ <b>رسید پرداخت شما تأیید شد</b>\n\n"
             . "💰 مبلغ: <b>{$price_fmt}</b> تومان\n"
-            . "🛒 کد پیگیری: <code>{$order_s}</code>";
+            . "🛒 کد پی‌گیری: <code>{$order_s}</code>";
     }
     if (is_string($extra) && $extra !== '') {
         $msg .= "\n\n" . $extra;
@@ -1659,7 +1659,7 @@ function DirectPayment($order_id)
             $credit_amount = function_exists('getPaymentCreditAmount') ? intval(getPaymentCreditAmount($Payment_report)) : intval($Payment_report['price']);
             $Balance_id = select("user", "*", "id", $uid, "select");
             $bal_before = intval(is_array($Balance_id) ? ($Balance_id['Balance'] ?? 0) : 0);
-            // قبلاً اینجا مبلغ واریز به جای موجودی جدید در لاگ ثبت میشد
+            // قبلاً اینجا مبلغ واریز به جای موجودی جدید در لاگ ثبت می‌شد
             $bal_now = atomicAdjustBalance($uid, $credit_amount);
             if (function_exists('logWalletTx')) {
                 logWalletTx($uid, 'deposit', $credit_amount, intval($bal_now), 'واریز پس از خرید (فاکتور unpaid یافت نشد): ' . $uname_try);
@@ -1739,7 +1739,7 @@ function DirectPayment($order_id)
                     . "لطفاً دوباره از منو مراحل خرید را انجام دهید.
 
 "
-                    . "🛒 کد پیگیری: {$order_id}";
+                    . "🛒 کد پی‌گیری: {$order_id}";
                 $admin_extra = "
 
 💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
@@ -1750,7 +1750,7 @@ function DirectPayment($order_id)
                     . "لطفاً دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.
 
 "
-                    . "🛒 کد پیگیری: {$order_id}";
+                    . "🛒 کد پی‌گیری: {$order_id}";
                 $admin_extra = "
 
 ℹ️ مبلغی به کیف پول اضافه نشد.";
@@ -2236,7 +2236,7 @@ function DirectPayment($order_id)
         if ($credit_amount > intval($Payment_report['price'])) {
             $textpay .= "\n🎁 مبلغ پرداختی: {$pay_fmt} تومان — اعتبار واریزی: {$credit_fmt} تومان";
         }
-        // نسخه 2.2.4: پیام تأیید با دکمه خرید / سرویسهای من؛ منوی بهروز (موجودی) جدا
+        // نسخه 2.2.4: پیام تأیید با دکمه خرید / سرویس‌های من؛ منوی به‌روز (موجودی) جدا
         $__kb_after = function_exists('botAfterDepositKeyboard') ? botAfterDepositKeyboard() : null;
         $__menu_bal = botMenuForBalance($Payment_report['id_user']);
         if ($__kb_after) {
@@ -2252,7 +2252,7 @@ function DirectPayment($order_id)
 }
 
 /** نسخه 2.2.4: خط «کسری» در پیام موجودی ناکافی */
-/** نسخه 2.2.6: تعداد سرویسهایی که در «سرویسهای من» نمایش داده میشوند (برای صفحهبندی) */
+/** نسخه 2.2.6: تعداد سرویس‌هایی که در «سرویس‌های من» نمایش داده می‌شوند (برای صفحه‌بندی) */
 function botCountListedServices($user_id)
 {
     global $pdo;
@@ -2265,7 +2265,7 @@ function botCountListedServices($user_id)
     }
 }
 
-/** نسخه 2.2.7: تعداد سرویسهای فعال کاربر (برای دکمه منو) */
+/** نسخه 2.2.7: تعداد سرویس‌های فعال کاربر (برای دکمه منو) */
 function botCountActiveServices($user_id)
 {
     global $pdo;
@@ -2278,7 +2278,7 @@ function botCountActiveServices($user_id)
     }
 }
 
-/** نسخه 2.2.7: «🛍 سرویسهای من (3)» → متن اصلی دکمه، تا هندلرها درست کار کنند */
+/** نسخه 2.2.7: «🛍 سرویس‌های من (3)» → متن اصلی دکمه، تا هندلرها درست کار کنند */
 function botStripServiceCount($text, $datatextbot)
 {
     if (!is_string($text) || $text === '') {
@@ -2294,7 +2294,7 @@ function botStripServiceCount($text, $datatextbot)
     return $text;
 }
 
-/** نسخه 2.2.7: آیا کاربر میتواند اکانت تست بگیرد (تست روشن + سهمیه > 0) */
+/** نسخه 2.2.7: آیا کاربر می‌تواند اکانت تست بگیرد (تست روشن + سهمیه > 0) */
 function botUserCanGetTest($user_id)
 {
     try {
@@ -2327,7 +2327,7 @@ function botProductHiddenColumnExists()
     return $ok;
 }
 
-/** نسخه 2.2.9: ساخت ستون is_hidden (فقط اضافه کردن، پیشفرض ۰ = نمایش) */
+/** نسخه 2.2.9: ساخت ستون is_hidden (فقط اضافه کردن، پیش‌فرض ۰ = نمایش) */
 function botEnsureProductHiddenColumn()
 {
     global $pdo;
@@ -2406,16 +2406,16 @@ function buildFinanceSummaryText()
     $off = '❌ خاموش';
     return "💳 <b>مالی و پرداخت</b>\n\n"
         . "💳 کارت به کارت: <b>" . ($card_on ? $on : $off) . "</b>\n"
-        . ((function_exists('botGetCardList') && count(botGetCardList()) > 1) ? ("🔢 کارتها: <b>" . count(botGetCardList()) . "</b> عدد (نوبتی)\n") : ("🔢 کارت فعلی: " . $card_disp . "\n"))
+        . ((function_exists('botGetCardList') && count(botGetCardList()) > 1) ? ("🔢 کارت‌ها: <b>" . count(botGetCardList()) . "</b> عدد (نوبتی)\n") : ("🔢 کارت فعلی: " . $card_disp . "\n"))
         . "🏦 واریز به شبا: <b>" . ((function_exists('isShebaPaymentEnabled') && isShebaPaymentEnabled()) ? $on : $off) . "</b>\n"
         . "💎 کریپتو: <b>" . ($digi_on ? $on : $off) . "</b>\n"
         . "🤖 تأیید خودکار رسید: <b>" . ($auto_on ? $on : $off) . "</b>\n"
         . "💰 حداقل واریز: <b>" . number_format($min) . "</b> تومان | حداکثر: <b>" . number_format($max) . "</b> تومان\n"
         . "🧾 رسیدهای در انتظار: <b>" . number_format($wait) . "</b>\n\n"
-        . "برای تغییر، یکی از گزینهها را بزنید.";
+        . "برای تغییر، یکی از گزینه‌ها را بزنید.";
 }
 
-/** نسخه 2.3.3: نگهداری پیامهای رسید نزد ادمینها، تا بعد از تأیید/رد همه ویرایش شوند */
+/** نسخه 2.3.3: نگهداری پیام‌های رسید نزد ادمینها، تا بعد از تأیید/رد همه ویرایش شوند */
 function botEnsureReceiptMsgsTable()
 {
     global $pdo;
@@ -2460,8 +2460,8 @@ function botSaveReceiptMsgs($order, $msgs, $kind = 'photo', $caption = '')
 }
 
 /**
- * همه نسخههای پیام رسید را ویرایش کن (وضعیت + برداشتن دکمههای تأیید/رد).
- * $skip_chat/$skip_mid: پیامی که خود ادمین روی آن کلیک کرده (جدا ویرایش میشود).
+ * همه نسخه‌های پیام رسید را ویرایش کن (وضعیت + برداشتن دکمه‌های تأیید/رد).
+ * $skip_chat/$skip_mid: پیامی که خود ادمین روی آن کلیک کرده (جدا ویرایش می‌شود).
  */
 function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid = 0, $style = '', $header = '')
 {
@@ -2515,7 +2515,7 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
             }
         }
         if (!$ok) {
-            // متن بلند بود یا ویرایش نشد → فقط دکمهها عوض شوند
+            // متن بلند بود یا ویرایش نشد → فقط دکمه‌ها عوض شوند
             $res = telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb]);
             if (!(is_array($res) && !empty($res['ok'])) && $style !== '') {
                 telegram('editMessageReplyMarkup', ['chat_id' => $chat, 'message_id' => $mid, 'reply_markup' => $kb_plain]);
@@ -2530,7 +2530,7 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
     return $done;
 }
 
-/** نسخه 2.4.0: پاکسازی ردیفهای قدیمی receipt_msgs (رسیدهای بررسیشده یا قدیمیتر از ۷ روز) */
+/** نسخه 2.4.0: پاک‌سازی ردیف‌های قدیمی receipt_msgs (رسیدهای بررسی‌شده یا قدیمی‌تر از ۷ روز) */
 function botCleanupReceiptMsgs()
 {
     global $pdo;
@@ -2549,7 +2549,7 @@ function botCleanupReceiptMsgs()
     return $n;
 }
 
-/** نسخه 2.3.3: صفحه شیشهای حداقل/حداکثر واریز */
+/** نسخه 2.3.3: صفحه شیشه‌ای حداقل/حداکثر واریز */
 function buildDepositLimitsPage($prefix = '')
 {
     $lim = getDepositLimits();
@@ -2557,7 +2557,7 @@ function buildDepositLimitsPage($prefix = '')
         . "💰 <b>حداقل / حداکثر واریز</b>\n\n"
         . "🔻 حداقل: <b>" . number_format(intval($lim['min'])) . "</b> تومان\n"
         . "🔺 حداکثر: <b>" . number_format(intval($lim['max'])) . "</b> تومان\n\n"
-        . "این محدوده برای افزایش موجودی و کسری خرید/تمدید اعمال میشود.";
+        . "این محدوده برای افزایش موجودی و کسری خرید/تمدید اعمال می‌شود.";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '✏️ تغییر حداقل', 'callback_data' => 'dep_set_min'], ['text' => '✏️ تغییر حداکثر', 'callback_data' => 'dep_set_max']],
         [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']],
@@ -2565,7 +2565,7 @@ function buildDepositLimitsPage($prefix = '')
     return [$t, $kb];
 }
 
-/** نسخه 2.3.2: لیست کارتها (JSON در PaySetting.card_list)؛ اگر خالی بود همان CartDescription قدیمی */
+/** نسخه 2.3.2: لیست کارت‌ها (JSON در PaySetting.card_list)؛ اگر خالی بود همان CartDescription قدیمی */
 function botGetCardList()
 {
     $list = [];
@@ -2595,7 +2595,7 @@ function botGetCardList()
     return $list;
 }
 
-/** ذخیره لیست کارتها + همگامسازی CartDescription با کارت اول (برای سازگاری) */
+/** ذخیره لیست کارت‌ها + همگام‌سازی CartDescription با کارت اول (برای سازگاری) */
 function botSaveCardList(array $list)
 {
     $clean = [];
@@ -2610,7 +2610,7 @@ function botSaveCardList(array $list)
     }
     update("PaySetting", "ValuePay", json_encode(array_values($clean), JSON_UNESCAPED_UNICODE), "NamePay", "card_list");
     if (function_exists('botAdminActionReport')) {
-        botAdminActionReport('تغییر کارتهای مقصد', '💳 تعداد کارت: <b>' . count($clean) . '</b>' . ($clean ? "\n" . implode('، ', array_map('botMaskTail', $clean)) : ''));
+        botAdminActionReport('تغییر کارت‌های مقصد', '💳 تعداد کارت: <b>' . count($clean) . '</b>' . ($clean ? "\n" . implode('، ', array_map('botMaskTail', $clean)) : ''));
     }
     if ($clean) {
         update("PaySetting", "ValuePay", $clean[0], "NamePay", "CartDescription");
@@ -2689,7 +2689,7 @@ function botGetCardShownForUser($user_id)
     }
 }
 
-/** نسخه 2.3.2: دلیلهای آماده رد رسید */
+/** نسخه 2.3.2: دلیل‌های آماده رد رسید */
 function botRejectReasons()
 {
     return [
@@ -2784,7 +2784,7 @@ function isShebaPaymentEnabled()
     return botExtractSheba(getPaySettingValue('ShebaDescription', '')) !== '';
 }
 
-/** نسخه 2.3.2: صفحه شیشهای تنظیم کارت به کارت (چند کارت) */
+/** نسخه 2.3.2: صفحه شیشه‌ای تنظیم کارت به کارت (چند کارت) */
 function buildCardSettingsPage()
 {
     $r = select("PaySetting", "ValuePay", "NamePay", "Cartstatus", "select");
@@ -2793,7 +2793,7 @@ function buildCardSettingsPage()
     $n = count($list);
     $t = "💳 <b>تنظیم کارت به کارت</b>\n\n"
         . "🔌 وضعیت: <b>" . ($on ? '✅ روشن' : '❌ خاموش') . "</b>\n"
-        . "🔢 تعداد کارت: <b>{$n}</b>" . ($n > 1 ? " (به نوبت به کاربران نشان داده میشوند)" : '') . "\n\n";
+        . "🔢 تعداد کارت: <b>{$n}</b>" . ($n > 1 ? " (به نوبت به کاربران نشان داده می‌شوند)" : '') . "\n\n";
     $kb = ['inline_keyboard' => []];
     if ($n === 0) {
         $t .= "❗️ هنوز کارتی ثبت نشده.";
@@ -2802,7 +2802,7 @@ function buildCardSettingsPage()
         $cn = botExtractCardNumber($c);
         $t .= ($i + 1) . ") <code>" . htmlspecialchars($c, ENT_QUOTES, 'UTF-8') . "</code>\n";
         if ($cn === '') {
-            $t .= "   ⚠️ شماره ۱۶ رقمی پیدا نشد؛ دکمه کپی نمایش داده نمیشود.\n";
+            $t .= "   ⚠️ شماره ۱۶ رقمی پیدا نشد؛ دکمه کپی نمایش داده نمی‌شود.\n";
         } elseif (!botCardLuhnOk($cn)) {
             $t .= "   ⚠️ رقم کنترل این کارت درست نیست؛ دوباره چک کنید.\n";
         }
@@ -2820,7 +2820,7 @@ function buildCardSettingsPage()
     return [$t, json_encode($kb, JSON_UNESCAPED_UNICODE)];
 }
 
-/** نسخه 2.3.0: صفحه شیشهای تنظیم شبا */
+/** نسخه 2.3.0: صفحه شیشه‌ای تنظیم شبا */
 function buildShebaSettingsPage()
 {
     if (function_exists('ensurePaySetting')) {
@@ -2832,11 +2832,11 @@ function buildShebaSettingsPage()
     $sh = botExtractSheba($txt);
     $t = "🏦 <b>تنظیم واریز به شبا</b>\n\n"
         . "🔌 وضعیت: <b>" . ($on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
-        . "📝 متنی که به کاربر نشان داده میشود:\n"
+        . "📝 متنی که به کاربر نشان داده می‌شود:\n"
         . ($txt !== '' ? "<code>" . htmlspecialchars($txt, ENT_QUOTES, 'UTF-8') . "</code>" : '❗️ ثبت نشده') . "\n\n"
-        . ($sh !== '' ? "🔢 شبا: <code>{$sh}</code>" : "⚠️ هنوز شبای معتبری ثبت نشده؛ تا ثبت نشود این روش به کاربر نشان داده نمیشود.") . "\n\n"
+        . ($sh !== '' ? "🔢 شبا: <code>{$sh}</code>" : "⚠️ هنوز شبای معتبری ثبت نشده؛ تا ثبت نشود این روش به کاربر نشان داده نمی‌شود.") . "\n\n"
         . "ℹ️ روشن/خاموش کردن از ردیف «🏦 واریز به شبا» در صفحه مالی است.\n"
-        . "ℹ️ اگر «🤖 تأیید خودکار رسید» روشن باشد، رسیدهای شبا هم مثل کارت به کارت خودکار تأیید میشوند.";
+        . "ℹ️ اگر «🤖 تأیید خودکار رسید» روشن باشد، رسیدهای شبا هم مثل کارت به کارت خودکار تأیید می‌شوند.";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '✏️ تغییر شماره شبا', 'callback_data' => 'fin_sheba_edit']],
         [['text' => '↩️ بازگشت به مالی', 'callback_data' => 'finance_menu_back']],
@@ -2853,7 +2853,7 @@ function botShortfallLine($amount)
     return "\n\n💳 کسری: <b>" . number_format($amount) . "</b> تومان";
 }
 
-/** نسخه 2.2.4: دکمههای زیر پیام «موجودی شارژ شد» */
+/** نسخه 2.2.4: دکمه‌های زیر پیام «موجودی شارژ شد» */
 function botAfterDepositKeyboard()
 {
     global $textbotlang;
@@ -2871,7 +2871,7 @@ function botAfterDepositKeyboard()
     }
 }
 
-/** نسخه 2.2.4: اگر متن رسید ذخیرهشده همان پیشفرض قدیمی است، به املای «تأیید» بهروز شود */
+/** نسخه 2.2.4: اگر متن رسید ذخیره‌شده همان پیش‌فرض قدیمی است، به املای «تأیید» به‌روز شود */
 function botMigrateEditableDefaults()
 {
     global $textbotlang;
@@ -2885,7 +2885,7 @@ function botMigrateEditableDefaults()
         if ($new === '') {
             return;
         }
-        // نسخه 2.3.4: پیشفرضهای قدیمی → متن جدید (فقط اگر ادمین متن را عوض نکرده باشد)
+        // نسخه 2.3.4: پیش‌فرض‌های قدیمی → متن جدید (فقط اگر ادمین متن را عوض نکرده باشد)
         $__nl = 'اگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.';
         $__legacy = [
             str_replace($__nl, 'فقط در صورت عدم تأیید تا یک ساعت، به پشتیبانی پیام بدید.', $new),
@@ -3658,8 +3658,8 @@ function buildAdminSettingsInlineKeyboard()
     global $textbotlang;
     $rows = [
         [
-            ['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus'] ?? '🎛 روشن/خاموش قابلیتها', 'callback_data' => 'navset_features'],
-            ['text' => $textbotlang['Admin']['keyboardadmin']['settingscron'] ?? '⏱ زمانبندیها (کرون)', 'callback_data' => 'navset_cron'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['seetingstatus'] ?? '🎛 روشن/خاموش قابلیت‌ها', 'callback_data' => 'navset_features'],
+            ['text' => $textbotlang['Admin']['keyboardadmin']['settingscron'] ?? '⏱ زمان‌بندی‌ها (کرون)', 'callback_data' => 'navset_cron'],
         ],
         [
             ['text' => $textbotlang['Admin']['channel']['channelreport'] ?? '📣 کانال گزارش', 'callback_data' => 'navset_chreport'],
@@ -3732,14 +3732,14 @@ function buildAdminShopSectionText()
     $ut_on = !(is_array($st) && isset($st['status_usertest']) && strval($st['status_usertest']) === '0');
     return "🏬 <b>بخش فروشگاه</b>\n\n"
         . "📦 محصولات: <b>" . number_format($prod) . "</b> (نمایش: <b>" . number_format(max(0, $prod - $hid)) . "</b> | مخفی: <b>" . number_format($hid) . "</b>)\n"
-        . "📁 دستهبندیها: <b>" . number_format($cat) . "</b>\n"
+        . "📁 دسته‌بندی‌ها: <b>" . number_format($cat) . "</b>\n"
         . "🎟 کد تخفیف: <b>" . number_format($dsc_act) . "</b> فعال از <b>" . number_format($dsc_all) . "</b>\n"
         . "🎁 کد هدیه: <b>" . number_format($gift) . "</b>\n"
         . "🔑 اکانت تست: <b>" . ($ut_on ? '✅ روشن' : '❌ خاموش') . "</b>\n\n"
         . "یک بخش را انتخاب کنید:";
 }
 
-/** نسخه 2.4.2: شمارندههای صفحه مدیریت کاربران */
+/** نسخه 2.4.2: شمارنده‌های صفحه مدیریت کاربران */
 function botAdminUserCounts()
 {
     static $c = null;
@@ -3766,7 +3766,7 @@ function buildAdminUserServicesInlineKeyboard()
             ],
             [
                 ['text' => $textbotlang['Admin']['Balance']['SendBalanceAll'] ?? '👥 شارژ همگانی', 'callback_data' => 'navuser_ball'],
-                ['text' => ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شدهها') . ' (' . number_format($c['blocked']) . ')', 'callback_data' => 'navuser_block'],
+                ['text' => ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها') . ' (' . number_format($c['blocked']) . ')', 'callback_data' => 'navuser_block'],
             ],
             [
                 ['text' => ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده') . ' (' . number_format($c['rcpt']) . ')', 'callback_data' => 'navuser_rcpt'],
@@ -3810,7 +3810,7 @@ function buildAdminBroadcastInlineKeyboard()
 
 function buildAdminBroadcastText()
 {
-    $t = "📨 <b>ارسال پیام همگانی</b>\n\nمتن، عکس با کپشن یا فوروارد. بعد از پیشنمایش، گروه گیرندهها (همه / دارای سرویس فعال / بدون خرید / انقضا تا ۷ روز) را انتخاب میکنید.";
+    $t = "📨 <b>ارسال پیام همگانی</b>\n\nمتن، عکس با کپشن یا فوروارد. بعد از پیش‌نمایش، گروه گیرنده‌ها (همه / دارای سرویس فعال / بدون خرید / انقضا تا ۷ روز) را انتخاب می‌کنید.";
     $fi = __DIR__ . '/cron/info';
     if (is_file($fi)) {
         $i = json_decode(strval(@file_get_contents($fi)), true);
@@ -3827,7 +3827,7 @@ function buildAdminBroadcastText()
     return $t;
 }
 
-/** نسخه 2.4.2: گیرندههای پیام همگانی بر اساس گروه — فقط کاربران فعال (غیر مسدود) */
+/** نسخه 2.4.2: گیرنده‌های پیام همگانی بر اساس گروه — فقط کاربران فعال (غیر مسدود) */
 function botCastRecipientSets()
 {
     global $pdo;
@@ -3922,7 +3922,7 @@ function botCastSaveLast($info, $status)
     @file_put_contents(__DIR__ . '/cron/cast_last.json', json_encode($d, JSON_UNESCAPED_UNICODE));
 }
 
-/** کرون بعد از توقف: آمار دسته آخر را به گزارش اضافه میکند */
+/** کرون بعد از توقف: آمار دسته آخر را به گزارش اضافه می‌کند */
 function botCastUpdateCancelled($info)
 {
     $d = botCastLastData();
@@ -3949,15 +3949,15 @@ function botCastLastText()
         . "📌 وضعیت: " . ((($d['status'] ?? '') === 'done') ? '✅ کامل ارسال شد' : '⏹ توسط ادمین متوقف شد') . "\n"
         . "📝 نوع: " . ($types[$d['type'] ?? 'text'] ?? 'متن') . "\n"
         . "🎯 گروه: " . htmlspecialchars(strval($d['target_label'] ?? '-'), ENT_QUOTES, 'UTF-8') . "\n"
-        . "👥 گیرندهها: <b>" . number_format($tot) . "</b>\n"
-        . "✅ ارسالشده: <b>" . number_format($s) . "</b>\n"
+        . "👥 گیرنده‌ها: <b>" . number_format($tot) . "</b>\n"
+        . "✅ ارسال‌شده: <b>" . number_format($s) . "</b>\n"
         . "❌ ناموفق: <b>" . number_format($f) . "</b>\n"
-        . ($rem > 0 ? "⏳ ارسالنشده: <b>" . number_format($rem) . "</b>\n" : '')
+        . ($rem > 0 ? "⏳ ارسال‌نشده: <b>" . number_format($rem) . "</b>\n" : '')
         . "\n🕐 شروع: " . botCastFmtTime(intval($d['started'] ?? 0)) . "\n🏁 پایان: " . botCastFmtTime(intval($d['ended'] ?? 0))
-        . "\n\nℹ️ ناموفقها معمولاً کاربرانی هستند که ربات را بلاک کردهاند.";
+        . "\n\nℹ️ ناموفق‌ها معمولاً کاربرانی هستند که ربات را بلاک کرده‌اند.";
 }
 
-/** نسخه 2.4.2: لیست صفحهبندیشده کاربران مسدود با رفع مسدودی سریع */
+/** نسخه 2.4.2: لیست صفحه‌بندی‌شده کاربران مسدود با رفع مسدودی سریع */
 function botBlockedListPage($page = 0)
 {
     global $pdo;
@@ -4025,7 +4025,7 @@ function buildAffiliatesAdminPanel()
     $has_banner = !empty($aff['id_media']) && $aff['id_media'] !== 'none';
 
     $text = "👥 <b>تنظیمات مشارکت در فروش</b>\n\n"
-        . "از این صفحه همه گزینه‌ها را یکجا مدیریت کنید.\n\n"
+        . "از این صفحه همه گزینه‌ها را یک‌جا مدیریت کنید.\n\n"
         . "📊 <b>وضعیت فعلی</b>\n"
         . "• سیستم مشارکت در فروش: " . ($sys_on ? $on_lbl : $off_lbl) . "\n"
         . "• پورسانت بعد از خرید: " . ($com_on ? $on_lbl : $off_lbl) . "\n"
@@ -4577,7 +4577,7 @@ function buildFinanceKeyboard()
     $auto_status_txt = $auto_on
         ? ($textbotlang['Admin']['turnon'] ?? 'روشن ✅')
         : ($textbotlang['Admin']['turnoff'] ?? 'خاموش ❌');
-    // نسخه 2.3.0: شبا (پیشفرض خاموش)
+    // نسخه 2.3.0: شبا (پیش‌فرض خاموش)
     if (function_exists('ensurePaySetting')) {
         ensurePaySetting('shebastatus', 'offsheba');
         ensurePaySetting('ShebaDescription', '');
@@ -4614,7 +4614,7 @@ function buildFinanceKeyboard()
             ['text' => $textbotlang['Admin']['balance_pkg']['menu'] ?? '🎁 پکیج افزایش موجودی', 'callback_data' => 'balance_packages_settings'],
         ],
     ];
-    // نسخه 2.2.9: میانبر رسیدهای در انتظار
+    // نسخه 2.2.9: میان‌بر رسیدهای در انتظار
     $__wr = function_exists('botCountWaitingReceipts') ? botCountWaitingReceipts() : 0;
     $rows[] = [['text' => '🧾 رسیدهای در انتظار' . ($__wr > 0 ? " ({$__wr})" : ''), 'callback_data' => 'fin_rcpt']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
@@ -5315,7 +5315,7 @@ function reportChannelTypes()
         'rpt_create_error' => '⚠️ خطای ساخت سرویس',
         'rpt_reseller_warn' => '⚠️ هشدار حجم پنل ریسلر',
         'rpt_reseller_volume' => '📦 خرید حجم پنل ریسلر',
-        'rpt_newuser' => '👤 کاربر جدید (پیشفرض خاموش)',
+        'rpt_newuser' => '👤 کاربر جدید (پیش‌فرض خاموش)',
         'rpt_admin_action' => '🛡 تغییرات حساس ادمین',
         'rpt_broadcast' => '📨 پیام همگانی',
         'rpt_tech_error' => '🚨 خطاهای فنی',
@@ -5325,7 +5325,7 @@ function reportChannelTypes()
 
 function ensureReportChannelSettings()
 {
-    // نسخه 2.4.4: فقط یکبار در هر درخواست + پیشفرض جدا برای کلیدهای پرحجم
+    // نسخه 2.4.4: فقط یک‌بار در هر درخواست + پیش‌فرض جدا برای کلیدهای پرحجم
     static $done = false;
     if ($done) {
         return;
@@ -5351,7 +5351,7 @@ function botReportSend($key, $text)
         return false;
     }
     $text = trim(strval($text));
-    // نسخه 2.4.6: قالب یکدست — نام ربات بالا، خط جداکننده و زمان پایین
+    // نسخه 2.4.6: قالب یک‌دست — نام ربات بالا، خط جداکننده و زمان پایین
     global $usernamebot;
     $__bn = trim(strval($usernamebot ?? ''));
     if ($__bn !== '' && strpos($__bn, '{') === false) {
@@ -5372,11 +5372,11 @@ function botReportSend($key, $text)
     }
     $d = is_array($r) ? strval($r['description'] ?? '') : 'no response';
     error_log('channel report fail [' . $key . ']: ' . $d);
-    // نسخه 2.4.6: ربات دسترسی کانال گزارش را ندارد → روزی یکبار به ادمین اصلی
+    // نسخه 2.4.6: ربات دسترسی کانال گزارش را ندارد → روزی یک‌بار به ادمین اصلی
     if (preg_match('/rights|not enough|chat not found|forbidden|kicked|not a member|CHAT_WRITE|have no rights/i', $d) && function_exists('botAlertThrottle') && botAlertThrottle('chlost', 86400)) {
         global $adminnumber;
         if (!empty($adminnumber) && strpos(strval($adminnumber), '{') === false) {
-            telegram('sendmessage', ['chat_id' => $adminnumber, 'text' => "⚠️ <b>گزارشها به کانال گزارش نمیرسند</b>\n\nکانال: <code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code>\nخطای تلگرام: <code>" . htmlspecialchars(mb_substr($d, 0, 200), ENT_QUOTES, 'UTF-8') . "</code>\n\nربات را دوباره در کانال ادمین کنید (با اجازه ارسال پیام) یا از تنظیمات ← کانال گزارش، کانال را دوباره ثبت کنید.\n(این پیام حداکثر روزی یکبار ارسال میشود.)", 'parse_mode' => 'HTML']);
+            telegram('sendmessage', ['chat_id' => $adminnumber, 'text' => "⚠️ <b>گزارش‌ها به کانال گزارش نمی‌رسند</b>\n\nکانال: <code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code>\nخطای تلگرام: <code>" . htmlspecialchars(mb_substr($d, 0, 200), ENT_QUOTES, 'UTF-8') . "</code>\n\nربات را دوباره در کانال ادمین کنید (با اجازه ارسال پیام) یا از تنظیمات ← کانال گزارش، کانال را دوباره ثبت کنید.\n(این پیام حداکثر روزی یک‌بار ارسال می‌شود.)", 'parse_mode' => 'HTML']);
         }
     }
     if (stripos($d, "can't parse") !== false) {
@@ -5399,7 +5399,7 @@ function botAdminActionReport($title, $body = '')
     sendChannelReport('rpt_admin_action', "🛡 <b>" . $title . "</b>\n\n👨‍💼 ادمین: <code>" . htmlspecialchars(strval($from_id ?? '-'), ENT_QUOTES, 'UTF-8') . "</code>{$u}" . ($body !== '' ? "\n" . $body : ''));
 }
 
-/** نسخه 2.4.4: گزارش تغییر قابلیتهای حساس */
+/** نسخه 2.4.4: گزارش تغییر قابلیت‌های حساس */
 function botFeatureToggleReport($type, $newval)
 {
     $sens = ['statusbot', 'status_buy', 'status_extend', 'status_deposit', 'status_extra_volume', 'force_channel', 'verify', 'get_number', 'iran_number', 'roll_Status', 'status_usertest'];
@@ -5450,11 +5450,11 @@ function botWatchdogTick()
         $__bn = ($__bn !== '' && strpos($__bn, '{') === false) ? '@' . ltrim($__bn, '@') : '-';
         $__ago = time() - $last;
         $__ago_t = $__ago >= 7200 ? (intval($__ago / 3600) . ' ساعت و ' . intval(($__ago % 3600) / 60) . ' دقیقه') : (intval($__ago / 60) . ' دقیقه');
-        sendChannelReport('rpt_tech_error', "🚨 <b>کرون هوشمند اجرا نمیشود</b>\n🤖 ربات: <b>{$__bn}</b>\n\nآخرین اجرا: {$__ago_t} پیش\nاخطار حجم/زمان و حذف فاکتورهای پرداختنشده انجام نمیشود.\nکرون سرور را بررسی کنید (تنظیمات ← کرون ← «📋 دستور کرون سیستم»).");
+        sendChannelReport('rpt_tech_error', "🚨 <b>کرون هوشمند اجرا نمی‌شود</b>\n🤖 ربات: <b>{$__bn}</b>\n\nآخرین اجرا: {$__ago_t} پیش\nاخطار حجم/زمان و حذف فاکتورهای پرداخت‌نشده انجام نمی‌شود.\nکرون سرور را بررسی کنید (تنظیمات ← کرون ← «📋 دستور کرون سیستم»).");
     }
 }
 
-/** نسخه 2.4.4: خلاصه روزانه (از کرون هوشمند، ۲۳:۵۵ به بعد، روزی یکبار) */
+/** نسخه 2.4.4: خلاصه روزانه (از کرون هوشمند، ۲۳:۵۵ به بعد، روزی یک‌بار) */
 function botDailySummaryTick()
 {
     global $pdo;
@@ -5488,7 +5488,7 @@ function botDailySummaryTick()
     $users = botAdmCount("SELECT COUNT(*) FROM user");
     $uf = $dir . '/daily_users.json';
     $prev = json_decode(strval(@file_get_contents($uf)), true);
-    $new_line = (is_array($prev) && isset($prev['total'])) ? number_format(max(0, $users - intval($prev['total']))) : '— (از فردا محاسبه میشود)';
+    $new_line = (is_array($prev) && isset($prev['total'])) ? number_format(max(0, $users - intval($prev['total']))) : '— (از فردا محاسبه می‌شود)';
     @file_put_contents($uf, json_encode(['date' => $today, 'total' => $users]));
     $wait_c = 0;
     $wait_s = 0;
@@ -6272,9 +6272,9 @@ function msgShortfallBelowMin($context = 'buy', $short = 0)
     $minf = formatToman($lim['min']);
     // نسخه 2.3.5: پیشنهاد مستقیم واریز حداقل مبلغ (دکمه زیر پیام)
     $map = [
-        'buy' => "بعد از تأیید واریز، دوباره «🛒 خرید اشتراک» را بزنید؛ مبلغ از کیف پول کم میشود.",
-        'extend' => "بعد از تأیید واریز، دوباره تمدید را بزنید؛ مبلغ از کیف پول کم میشود.",
-        'extra' => "بعد از تأیید واریز، دوباره حجم اضافه بخرید؛ مبلغ از کیف پول کم میشود.",
+        'buy' => "بعد از تأیید واریز، دوباره «🛒 خرید اشتراک» را بزنید؛ مبلغ از کیف پول کم می‌شود.",
+        'extend' => "بعد از تأیید واریز، دوباره تمدید را بزنید؛ مبلغ از کیف پول کم می‌شود.",
+        'extra' => "بعد از تأیید واریز، دوباره حجم اضافه بخرید؛ مبلغ از کیف پول کم می‌شود.",
         'pay' => "لطفاً از بخش افزایش موجودی حداقل این مبلغ را واریز کنید.",
     ];
     $tail = $map[$context] ?? $map['pay'];
@@ -6288,7 +6288,7 @@ function msgShortfallBelowMin($context = 'buy', $short = 0)
         . "🔻 حداقل واریز: <b>{$minf}</b> تومان\n\n"
         . "با دکمه زیر <b>{$minf}</b> تومان به کیف پول واریز کنید.\n"
         . $tail . "\n"
-        . "💰 مابقی مبلغ در کیف پول شما میماند.";
+        . "💰 مابقی مبلغ در کیف پول شما می‌ماند.";
 }
 
 /** نسخه 2.3.5: دکمه «واریز حداقل مبلغ» زیر پیام کسری */
@@ -7635,7 +7635,7 @@ function botPanelUsageCounts()
     return $out;
 }
 
-/** نسخه 2.3.6: بعد از تغییر آدرس/یوزر/پسورد، توکن کششده پاک و اتصال تست شود */
+/** نسخه 2.3.6: بعد از تغییر آدرس/یوزر/پسورد، توکن کش‌شده پاک و اتصال تست شود */
 function botPanelAutoTest($panel)
 {
     global $pdo;
@@ -7651,7 +7651,7 @@ function botPanelAutoTest($panel)
         return '';
     }
     return "\n\n" . adminPanelTestConnectionText($fresh)
-        . "\n\nℹ️ اگر یوزرنیم و پسورد هر دو را عوض میکنید، بعد از ثبت هر دو دوباره «🔗 تست اتصال» را بزنید.";
+        . "\n\nℹ️ اگر یوزرنیم و پسورد هر دو را عوض می‌کنید، بعد از ثبت هر دو دوباره «🔗 تست اتصال» را بزنید.";
 }
 
 function adminPanelDetailKeyboard($panel, $extra_msg = '')
@@ -7694,7 +7694,7 @@ function adminPanelDetailKeyboard($panel, $extra_msg = '')
         ],
         [
             ['text' => '🔗 تست اتصال', 'callback_data' => 'adm_pan_act_connect_' . $id],
-            ['text' => '📂 گروهها', 'callback_data' => 'adm_pan_act_groups_' . $id],
+            ['text' => '📂 گروه‌ها', 'callback_data' => 'adm_pan_act_groups_' . $id],
         ],
         [
             ['text' => '✏️ نام', 'callback_data' => 'adm_pan_act_name_' . $id],
@@ -7711,7 +7711,7 @@ function adminPanelDetailKeyboard($panel, $extra_msg = '')
             ['text' => '🗑 حذف پنل', 'callback_data' => 'adm_pan_act_delask_' . $id],
         ],
         [
-            ['text' => '🔙 لیست پنلها', 'callback_data' => 'adm_pan_list'],
+            ['text' => '🔙 لیست پنل‌ها', 'callback_data' => 'adm_pan_list'],
         ],
     ]];
     return [$text, json_encode($kb, JSON_UNESCAPED_UNICODE)];
@@ -7757,7 +7757,7 @@ function adminPanelTestConnectionText($panel)
                 $lines[] = "👥 کاربران پنل: <b>{$active}</b> فعال از <b>{$total}</b>";
                 // نسخه 2.3.7: جزئیات بیشتر (اگر پنل برگرداند)
                 $__extra = [];
-                foreach ([['online_users', '🟢 آنلاین'], ['on_hold_users', '⏳ متصلنشده'], ['expired_users', '🔚 منقضی'], ['limited_users', '🚫 پایان حجم'], ['disabled_users', '⛔ غیرفعال']] as $__f) {
+                foreach ([['online_users', '🟢 آنلاین'], ['on_hold_users', '⏳ متصل‌نشده'], ['expired_users', '🔚 منقضی'], ['limited_users', '🚫 پایان حجم'], ['disabled_users', '⛔ غیرفعال']] as $__f) {
                     if (is_array($System_Stats) && isset($System_Stats[$__f[0]]) && is_numeric($System_Stats[$__f[0]])) {
                         $__extra[] = $__f[1] . ' ' . number_format(intval($System_Stats[$__f[0]]));
                     }
@@ -7766,10 +7766,10 @@ function adminPanelTestConnectionText($panel)
                     $lines[] = implode(' | ', $__extra);
                 }
                 $__uc = function_exists('botPanelUsageCounts') ? botPanelUsageCounts() : [];
-                $lines[] = "🤖 سرویس فعال ثبتشده در ربات: <b>" . number_format(intval($__uc[strval($name)]['svc'] ?? 0)) . "</b>";
-                $lines[] = "📂 گروهها: <b>{$g_count}</b>";
+                $lines[] = "🤖 سرویس فعال ثبت‌شده در ربات: <b>" . number_format(intval($__uc[strval($name)]['svc'] ?? 0)) . "</b>";
+                $lines[] = "📂 گروه‌ها: <b>{$g_count}</b>";
                 $lines[] = "⏱ " . ($__tok_cached ? "توکن از کش" : "ورود {$ms_token}ms") . " · آمار {$ms_stats}ms";
-                $lines[] = "ℹ️ عدد پنل شامل کاربرانی هم هست که بیرون از ربات ساخته شدهاند؛ عدد ربات فقط فروشهای ربات (بدون تست) است.";
+                $lines[] = "ℹ️ عدد پنل شامل کاربرانی هم هست که بیرون از ربات ساخته شده‌اند؛ عدد ربات فقط فروش‌های ربات (بدون تست) است.";
             } elseif (is_array($Check_token) && (($Check_token['detail'] ?? '') == 'Incorrect username or password' || stripos(strval($Check_token['detail'] ?? ''), 'password') !== false)) {
                 $lines[] = "❌ یوزرنیم یا پسورد اشتباه است.";
             } else {
@@ -7959,13 +7959,13 @@ function botCheckBotChannelAdmin($ch)
     return [false, 'ربات در کانال ادمین نیست (وضعیت: ' . htmlspecialchars($st, ENT_QUOTES, 'UTF-8') . ').'];
 }
 
-/** نسخه 2.4.1: صفحه شیشهای کانال عضویت اجباری */
+/** نسخه 2.4.1: صفحه شیشه‌ای کانال عضویت اجباری */
 function botChannelJoinPage($note = '')
 {
     $row = select('channels', 'link', null, null, 'select');
     $link = is_array($row) ? trim(strval($row['link'] ?? '')) : '';
     $t = ($note !== '' ? $note . "\n\n" : '') . "📢 <b>کانال عضویت اجباری</b>\n\n"
-        . ($link !== '' ? "کانال فعلی: @" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') : "❌ کانالی تنظیم نشده؛ کاربران بدون عضویت از ربات استفاده میکنند.");
+        . ($link !== '' ? "کانال فعلی: @" . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') : "❌ کانالی تنظیم نشده؛ کاربران بدون عضویت از ربات استفاده می‌کنند.");
     $rows = [[['text' => ($link !== '' ? '✏️ تغییر کانال' : '➕ تنظیم کانال'), 'callback_data' => 'chjoin_set']]];
     if ($link !== '') {
         $rows[] = [
@@ -7990,7 +7990,7 @@ function botUsertestResetConfirm()
         $st->execute([$lim]);
         $chg = intval($st->fetchColumn());
     } catch (Throwable $e) {}
-    $t = "⚠️ <b>ریست سقف تست همه کاربران</b>\n\nسهمیه تست همه کاربران روی <b>{$lim}</b> گذاشته میشود.\n👥 کاربرانی که تغییر میکنند: <b>" . number_format($chg) . "</b>\n\nانجام شود؟";
+    $t = "⚠️ <b>ریست سقف تست همه کاربران</b>\n\nسهمیه تست همه کاربران روی <b>{$lim}</b> گذاشته می‌شود.\n👥 کاربرانی که تغییر می‌کنند: <b>" . number_format($chg) . "</b>\n\nانجام شود؟";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '✅ بله، ریست شود', 'callback_data' => 'adm_ut_resetok']],
         [['text' => '❌ انصراف', 'callback_data' => 'adm_ut_panel']],
@@ -7998,7 +7998,7 @@ function botUsertestResetConfirm()
     return [$t, $kb];
 }
 
-/** نسخه 2.4.3: کیبورد فعالیتهای گزارش + دکمه بازگشت */
+/** نسخه 2.4.3: کیبورد فعالیت‌های گزارش + دکمه بازگشت */
 function buildReportChannelKeyboard()
 {
     $kb = json_decode(strval(buildReportChannelKeyboardBase()), true);
@@ -8036,20 +8036,20 @@ function botReportChannelPage($note = '')
     $st = select("setting", "*", null, null, "select");
     $ch = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
     if ($ch === '' || $ch === '0') {
-        $info = "❌ تنظیم نشده — گزارشها جایی فرستاده نمیشوند.";
+        $info = "❌ تنظیم نشده — گزارش‌ها جایی فرستاده نمی‌شوند.";
     } else {
         $r = telegram('getChat', ['chat_id' => $ch]);
         if (is_array($r) && !empty($r['ok'])) {
             $title = strval($r['result']['title'] ?? '');
             $info = "✅ <b>" . htmlspecialchars($title !== '' ? $title : $ch, ENT_QUOTES, 'UTF-8') . "</b> (<code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code>)";
         } else {
-            $info = "⚠️ <code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code> — ربات به این کانال دسترسی ندارد؛ گزارشها ارسال نمیشوند.";
+            $info = "⚠️ <code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code> — ربات به این کانال دسترسی ندارد؛ گزارش‌ها ارسال نمی‌شوند.";
         }
     }
-    $t = ($note !== '' ? $note . "\n\n" : '') . "📣 <b>کانال گزارش</b>\n\nکانال: {$info}\n\nگزارش خرید، تمدید، واریز و کارهای ادمین به این کانال فرستاده میشود.";
+    $t = ($note !== '' ? $note . "\n\n" : '') . "📣 <b>کانال گزارش</b>\n\nکانال: {$info}\n\nگزارش خرید، تمدید، واریز و کارهای ادمین به این کانال فرستاده می‌شود.";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '📡 تنظیم آیدی کانال گزارش', 'callback_data' => 'rpch_setid']],
-        [['text' => '⚙️ فعالیتهای گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
+        [['text' => '⚙️ فعالیت‌های گزارش (روشن/خاموش)', 'callback_data' => 'rpch_toggles']],
         [['text' => '📨 ارسال پیام تست', 'callback_data' => 'rpch_test'], ['text' => '🔄 بروزرسانی', 'callback_data' => 'rpch_menu']],
         [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
     ]], JSON_UNESCAPED_UNICODE);
@@ -8101,16 +8101,16 @@ function botSmartCronMenuText()
     if ($last <= 0) {
         $warn = "⚠️ هنوز اجرای کرون هوشمند ثبت نشده. اگر چند دقیقه بعد از نصب این نسخه هم همین پیام بود، کرون روی سرور نصب نیست («📋 دستور کرون سیستم»).";
     } elseif (time() - $last > 7200) {
-        $warn = "🔴 " . botSmartCronStatusLine() . " — کرون احتمالاً کار نمیکند؛ اخطارها و حذف فاکتورهای پرداختنشده انجام نمیشود.";
+        $warn = "🔴 " . botSmartCronStatusLine() . " — کرون احتمالاً کار نمی‌کند؛ اخطارها و حذف فاکتورهای پرداخت‌نشده انجام نمی‌شود.";
     } else {
-        $warn = botSmartCronStatusLine() . " — کرون کار میکند.";
+        $warn = botSmartCronStatusLine() . " — کرون کار می‌کند.";
     }
     return $base . "\n\n" . $warn
         . "\n\nℹ️ <b>راهنما</b>"
-        . "\n• حذف فاکتور یوزر غایب: اگر پنل صریحاً بگوید کاربر وجود ندارد، فاکتورش از ربات حذف میشود (از پنل چیزی پاک نمیشود)."
-        . "\n• اخطار حجم / زمان / اتمام: پیام هشدار به کاربر طبق درصدها و روزهای تنظیمشده."
-        . "\n• تمدید اضطراری: تمدید یکبارمصرف برای سرویس تمامشده."
-        . "\n• دیباگ: لاگ اجرای کرون به کانال گزارش فرستاده میشود.";
+        . "\n• حذف فاکتور یوزر غایب: اگر پنل صریحاً بگوید کاربر وجود ندارد، فاکتورش از ربات حذف می‌شود (از پنل چیزی پاک نمی‌شود)."
+        . "\n• اخطار حجم / زمان / اتمام: پیام هشدار به کاربر طبق درصدها و روزهای تنظیم‌شده."
+        . "\n• تمدید اضطراری: تمدید یک‌بارمصرف برای سرویس تمام‌شده."
+        . "\n• دیباگ: لاگ اجرای کرون به کانال گزارش فرستاده می‌شود.";
 }
 
 /** نسخه 2.4.3: نسخه index.php روی گیتهاب */
@@ -8136,7 +8136,7 @@ function botRemoteVersion()
     return '';
 }
 
-/** نسخه 2.4.3: تعریف قابلیتها [type, ستون, پیشفرض, عنوان] */
+/** نسخه 2.4.3: تعریف قابلیت‌ها [type, ستون, پیش‌فرض, عنوان] */
 function botFeatureGroups()
 {
     return [
@@ -8158,7 +8158,7 @@ function botFeatureGroups()
             ['status_extra_volume', 'status_extra_volume', '1', '➕ خرید حجم اضافه'],
             ['status_deposit', 'status_deposit', '1', '💰 افزایش موجودی'],
             ['status_usertest', 'status_usertest', '1', '🔑 اکانت تست'],
-            ['category', 'statuscategory', '0', '📁 دستهبندی محصولات'],
+            ['category', 'statuscategory', '0', '📁 دسته‌بندی محصولات'],
             ['status_tariff_list', 'status_tariff_list', '0', '📋 لیست تعرفه'],
             ['status_search_service', 'status_search_service', '1', '🔍 جستجوی سرویس'],
         ]],
@@ -8202,7 +8202,7 @@ function botFeaturesPage()
         }
     }
     $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
-    $t = "🎛 <b>روشن/خاموش قابلیتها</b>\n\nروی هر گزینه بزنید تا روشن/خاموش شود. ℹ️ توضیح همان گزینه را نشان میدهد.\nگزینههای حساس قبل از تغییر تأیید میخواهند.";
+    $t = "🎛 <b>روشن/خاموش قابلیت‌ها</b>\n\nروی هر گزینه بزنید تا روشن/خاموش شود. ℹ️ توضیح همان گزینه را نشان می‌دهد.\nگزینه‌های حساس قبل از تغییر تأیید می‌خواهند.";
     if (botFeatureValue($st, 'Bot_Status', '1') === '0') {
         $t .= "\n\n🔴 <b>ربات الان برای کاربران خاموش است.</b>";
     }
@@ -8215,21 +8215,21 @@ function botFeaturesPage()
 function botFeatureInfo($type)
 {
     $m = [
-        'statusbot' => 'اگر خاموش شود، ربات برای همه کاربران (غیر ادمین) از کار میافتد و فقط پیام «ربات خاموش است» میبینند.',
+        'statusbot' => 'اگر خاموش شود، ربات برای همه کاربران (غیر ادمین) از کار می‌افتد و فقط پیام «ربات خاموش است» می‌بینند.',
         'roll_Status' => 'کاربر قبل از استفاده باید قوانین ربات را تأیید کند.',
-        'force_channel' => 'کاربر تا عضو کانال عضویت اجباری نشود نمیتواند از ربات استفاده کند. کانال از «📢 کانال عضویت» تنظیم میشود.',
+        'force_channel' => 'کاربر تا عضو کانال عضویت اجباری نشود نمی‌تواند از ربات استفاده کند. کانال از «📢 کانال عضویت» تنظیم می‌شود.',
         'NotUser' => 'مربوط به دکمه/درخواست نام کاربری در بخش کاربر.',
-        'show_balance' => 'موجودی کیف پول کاربر روی دکمه منو نمایش داده میشود.',
+        'show_balance' => 'موجودی کیف پول کاربر روی دکمه منو نمایش داده می‌شود.',
         'get_number' => 'کاربر قبل از استفاده باید شماره موبایلش را با دکمه تلگرام بفرستد.',
-        'iran_number' => 'وقتی احراز شماره روشن است، فقط شماره ایرانی (+98) پذیرفته میشود.',
-        'verify' => 'کاربران جدید تا وقتی ادمین تأییدشان نکند نمیتوانند از ربات استفاده کنند.',
-        'status_buy' => 'خرید سرویس جدید. اگر خاموش باشد، تمدید و بقیه بخشها کار میکنند.',
+        'iran_number' => 'وقتی احراز شماره روشن است، فقط شماره ایرانی (+98) پذیرفته می‌شود.',
+        'verify' => 'کاربران جدید تا وقتی ادمین تأییدشان نکند نمی‌توانند از ربات استفاده کنند.',
+        'status_buy' => 'خرید سرویس جدید. اگر خاموش باشد، تمدید و بقیه بخش‌ها کار می‌کنند.',
         'status_extend' => 'امکان تمدید سرویس توسط کاربر.',
         'status_extra_volume' => 'امکان خرید حجم اضافه برای سرویس.',
         'status_deposit' => 'امکان افزایش موجودی کیف پول (واریز).',
         'status_usertest' => 'دکمه دریافت اکانت تست در منوی کاربر.',
-        'category' => 'محصولات هنگام خرید بر اساس دستهبندی نمایش داده میشوند.',
-        'status_tariff_list' => 'دکمه لیست تعرفهها در منوی کاربر.',
+        'category' => 'محصولات هنگام خرید بر اساس دسته‌بندی نمایش داده می‌شوند.',
+        'status_tariff_list' => 'دکمه لیست تعرفه‌ها در منوی کاربر.',
         'status_search_service' => 'امکان جستجوی سرویس توسط کاربر.',
         'status_support' => 'دکمه پشتیبانی در منوی کاربر.',
         'status_affiliates_btn' => 'دکمه مشارکت در فروش (لینک دعوت) در منوی کاربر.',
@@ -8244,20 +8244,20 @@ function botFeatureDangerWarning($type, $cur)
 {
     $cur = strval($cur);
     if ($type === 'statusbot' && $cur === '1') {
-        return "⚠️ <b>خاموش کردن ربات</b>\n\nربات برای همه کاربران (غیر ادمین) از کار میافتد: نه خرید، نه تمدید، نه دیدن سرویسها.\nخاموش شود؟";
+        return "⚠️ <b>خاموش کردن ربات</b>\n\nربات برای همه کاربران (غیر ادمین) از کار می‌افتد: نه خرید، نه تمدید، نه دیدن سرویس‌ها.\nخاموش شود؟";
     }
     if ($type === 'status_buy' && $cur === '1') {
-        return "⚠️ <b>بستن خرید سرویس جدید</b>\n\nهیچ کاربری نمیتواند سرویس جدید بخرد (تمدید طبق تنظیم خودش ادامه دارد).\nبسته شود؟";
+        return "⚠️ <b>بستن خرید سرویس جدید</b>\n\nهیچ کاربری نمی‌تواند سرویس جدید بخرد (تمدید طبق تنظیم خودش ادامه دارد).\nبسته شود؟";
     }
     if ($type === 'status_extend' && $cur === '1') {
-        return "⚠️ <b>بستن تمدید سرویس</b>\n\nکاربران نمیتوانند سرویسشان را تمدید کنند.\nبسته شود؟";
+        return "⚠️ <b>بستن تمدید سرویس</b>\n\nکاربران نمی‌توانند سرویسشان را تمدید کنند.\nبسته شود؟";
     }
     if ($type === 'verify' && $cur === '0') {
         $n = function_exists('botAdmCount') ? botAdmCount("SELECT COUNT(*) FROM user WHERE COALESCE(verify, '0') IN ('0', '')") : 0;
-        return "⚠️ <b>روشن کردن احراز هویت</b>\n\nکاربرانی که تأیید نشدهاند تا تأیید ادمین نتوانند از ربات استفاده کنند.\n👥 کاربران تأییدنشده: <b>" . number_format($n) . "</b>\nروشن شود؟";
+        return "⚠️ <b>روشن کردن احراز هویت</b>\n\nکاربرانی که تأیید نشده‌اند تا تأیید ادمین نتوانند از ربات استفاده کنند.\n👥 کاربران تأییدنشده: <b>" . number_format($n) . "</b>\nروشن شود؟";
     }
     if ($type === 'get_number' && $cur === '0') {
-        return "⚠️ <b>روشن کردن احراز شماره</b>\n\nکاربرانی که شماره نفرستادهاند تا شماره نفرستند نمیتوانند از ربات استفاده کنند.\nروشن شود؟";
+        return "⚠️ <b>روشن کردن احراز شماره</b>\n\nکاربرانی که شماره نفرستاده‌اند تا شماره نفرستند نمی‌توانند از ربات استفاده کنند.\nروشن شود؟";
     }
     if ($type === 'force_channel' && $cur === '0') {
         $jr = select('channels', 'link', null, null, 'select');
@@ -8266,8 +8266,8 @@ function botFeatureDangerWarning($type, $cur)
             return "⚠️ <b>عضویت اجباری</b>\n\nهنوز کانالی تنظیم نشده؛ تا کانال را از «📢 کانال عضویت» تنظیم نکنید این گزینه اثری ندارد.\nروشن شود؟";
         }
         $chk = function_exists('botCheckBotChannelAdmin') ? botCheckBotChannelAdmin($jl) : [null, ''];
-        $line = ($chk[0] === true) ? "✅ ربات در @{$jl} ادمین است." : ("❌ " . $chk[1] . "\nتا ربات ادمین نباشد، عضویت کاربران درست بررسی نمیشود.");
-        return "⚠️ <b>روشن کردن عضویت اجباری</b>\n\nکاربرانی که عضو @" . htmlspecialchars($jl, ENT_QUOTES, 'UTF-8') . " نیستند تا عضو نشوند نمیتوانند از ربات استفاده کنند.\n{$line}\nروشن شود؟";
+        $line = ($chk[0] === true) ? "✅ ربات در @{$jl} ادمین است." : ("❌ " . $chk[1] . "\nتا ربات ادمین نباشد، عضویت کاربران درست بررسی نمی‌شود.");
+        return "⚠️ <b>روشن کردن عضویت اجباری</b>\n\nکاربرانی که عضو @" . htmlspecialchars($jl, ENT_QUOTES, 'UTF-8') . " نیستند تا عضو نشوند نمی‌توانند از ربات استفاده کنند.\n{$line}\nروشن شود؟";
     }
     return '';
 }
@@ -8369,7 +8369,7 @@ function botPanelHealthMark($name, $ok, $err = '')
         } else {
             $cause = 'پاسخ نامعتبر از API پنل';
         }
-        sendChannelReport('rpt_tech_error', "🚨 <b>پنل در دسترس نیست</b>\n\n🖥 پنل: <b>{$hn}</b>\n📝 علت: {$cause}\n<code>" . htmlspecialchars(mb_substr($e, 0, 200), ENT_QUOTES, 'UTF-8') . "</code>\n\nساخت و تمدید سرویس روی این پنل انجام نمیشود. وقتی وصل شد خبر میدهم.");
+        sendChannelReport('rpt_tech_error', "🚨 <b>پنل در دسترس نیست</b>\n\n🖥 پنل: <b>{$hn}</b>\n📝 علت: {$cause}\n<code>" . htmlspecialchars(mb_substr($e, 0, 200), ENT_QUOTES, 'UTF-8') . "</code>\n\nساخت و تمدید سرویس روی این پنل انجام نمی‌شود. وقتی وصل شد خبر می‌دهم.");
     }
     $d[$name] = $s;
     @file_put_contents($f, json_encode($d, JSON_UNESCAPED_UNICODE), LOCK_EX);
@@ -8447,8 +8447,8 @@ function botHealthPage($note = '')
 {
     $dir = __DIR__ . '/cron';
     $t = ($note !== '' ? $note . "\n\n" : '') . "🩺 <b>سلامت ربات</b>\n";
-    // پنلها
-    $t .= "\n🖥 <b>پنلها</b>\n";
+    // پنل‌ها
+    $t .= "\n🖥 <b>پنل‌ها</b>\n";
     $ph = json_decode(strval(@file_get_contents($dir . '/panel_health.json')), true);
     $ph = is_array($ph) ? $ph : [];
     $panels = select("marzban_panel", "name_panel", null, null, "fetchAll");
@@ -8468,11 +8468,11 @@ function botHealthPage($note = '')
             }
         }
     }
-    // کرونها
+    // کرون‌ها
     $sc = intval(@file_get_contents($dir . '/smart_cron.last'));
     $cc = intval(@file_get_contents($dir . '/croncard.last'));
     $bk = intval(@file_get_contents($dir . '/backup.last'));
-    $t .= "\n⏱ <b>کرونها</b>\n";
+    $t .= "\n⏱ <b>کرون‌ها</b>\n";
     $t .= "• کرون هوشمند: " . ($sc > 0 && time() - $sc <= 7200 ? '🟢 ' : '🔴 ') . botAgoText($sc) . "\n";
     $auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
     $t .= "• تأیید خودکار رسید: " . ($auto ? (($cc > 0 && time() - $cc <= 1800 ? '🟢 ' : '🔴 ') . botAgoText($cc)) : '⚪️ خاموش') . "\n";
@@ -8488,7 +8488,7 @@ function botHealthPage($note = '')
     $l2 = botLogStats($dir . '/error_log');
     $t .= "\n📄 <b>لاگ خطا (۲۴ ساعت اخیر)</b>\n";
     $t .= "• خطا: <b>" . number_format($l1['err'] + $l2['err']) . "</b> | هشدار: <b>" . number_format($l1['warn'] + $l2['warn']) . "</b>\n";
-    $t .= "• حجم: ربات " . botFmtSize($l1['size']) . " | کرون " . botFmtSize($l2['size']) . " (بالای ۵ مگ خودکار جابهجا میشود)";
+    $t .= "• حجم: ربات " . botFmtSize($l1['size']) . " | کرون " . botFmtSize($l2['size']) . " (بالای ۵ مگ خودکار جابه‌جا می‌شود)";
     $kb = json_encode(['inline_keyboard' => [
         [['text' => '📄 ۵۰ خط آخر لاگ', 'callback_data' => 'bothealth_log'], ['text' => '🔄 بروزرسانی', 'callback_data' => 'bothealth']],
         [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
@@ -8496,7 +8496,7 @@ function botHealthPage($note = '')
     return [$t, $kb];
 }
 
-/** نسخه 2.4.6: فایل متنی آخرین خطوط لاگ (توکنها حذف میشوند) */
+/** نسخه 2.4.6: فایل متنی آخرین خطوط لاگ (توکن‌ها حذف می‌شوند) */
 function botLogTailFile($lines = 50)
 {
     $parts = [];
@@ -8541,7 +8541,7 @@ function botFeaturedProductCode()
     return $v;
 }
 
-/** نسخه 2.5.0: لینکهای برنامه اتصال */
+/** نسخه 2.5.0: لینک‌های برنامه اتصال */
 function botGuideApps()
 {
     return [
@@ -8563,34 +8563,34 @@ function botGuideApps()
     ];
 }
 
-/** نسخه 2.5.0: صفحه راهنمای اتصال — $os خالی = انتخاب سیستمعامل */
+/** نسخه 2.5.0: صفحه راهنمای اتصال — $os خالی = انتخاب سیستم‌عامل */
 function botGuidePage($os = '')
 {
     $apps = botGuideApps();
     if (!isset($apps[$os])) {
-        $t = "📖 <b>راهنمای اتصال</b>\n━━━━━━━━━━\n\nسیستمعامل دستگاهتان را انتخاب کنید تا برنامه مناسب و مراحل اتصال را ببینید 👇";
+        $t = "📖 <b>راهنمای اتصال</b>\n━━━━━━━━━━\n\nسیستم‌عامل دستگاهتان را انتخاب کنید تا برنامه مناسب و مراحل اتصال را ببینید 👇";
         $kb = [
             [['text' => $apps['android']['title'], 'callback_data' => 'guide_android'], ['text' => $apps['ios']['title'], 'callback_data' => 'guide_ios']],
             [['text' => $apps['win']['title'], 'callback_data' => 'guide_win'], ['text' => $apps['mac']['title'], 'callback_data' => 'guide_mac']],
-            [['text' => '🛍 سرویسهای من', 'callback_data' => 'backorder']],
+            [['text' => '🛍 سرویس‌های من', 'callback_data' => 'backorder']],
         ];
         return [$t, json_encode(['inline_keyboard' => $kb], JSON_UNESCAPED_UNICODE)];
     }
     $a = $apps[$os];
     $names = ($os === 'ios') ? '<b>Happ</b> یا <b>Streisand</b>' : '<b>Happ</b>';
     $t = "📖 <b>راهنمای اتصال — {$a['title']}</b>\n━━━━━━━━━━\n\n"
-        . "<b>۱. نصب برنامه</b>\nبرنامه {$names} را از دکمههای زیر نصب کنید.\n\n"
-        . "<b>۲. کپی لینک اشتراک</b>\nاز پیام ساخت سرویس یا «🛍 سرویسهای من» ← سرویس ← «لینک اشتراک»، روی لینک بزنید تا کپی شود.\n\n"
+        . "<b>۱. نصب برنامه</b>\nبرنامه {$names} را از دکمه‌های زیر نصب کنید.\n\n"
+        . "<b>۲. کپی لینک اشتراک</b>\nاز پیام ساخت سرویس یا «🛍 سرویس‌های من» ← سرویس ← «لینک اشتراک»، روی لینک بزنید تا کپی شود.\n\n"
         . "<b>۳. اضافه کردن به برنامه</b>\n"
-        . "<blockquote>• <b>روش اول (کپی):</b> برنامه را باز کنید، دکمه <b>+</b> بالای صفحه را بزنید و «<b>افزودن از کلیپبورد</b>» (Import from Clipboard) را انتخاب کنید.\n"
-        . "• <b>روش دوم (اسکن):</b> در سرویسهای من «📷 QR Code» را بگیرید؛ در برنامه دکمه <b>+</b> ← «<b>اسکن QR</b>» را بزنید و کد را اسکن کنید.</blockquote>\n\n"
-        . "<b>۴. اتصال</b>\nسرور اضافهشده را انتخاب کنید و دکمه اتصال را بزنید. اولین بار اجازه VPN را تأیید کنید ✅\n\n"
+        . "<blockquote>• <b>روش اول (کپی):</b> برنامه را باز کنید، دکمه <b>+</b> بالای صفحه را بزنید و «<b>افزودن از کلیپ‌بورد</b>» (Import from Clipboard) را انتخاب کنید.\n"
+        . "• <b>روش دوم (اسکن):</b> در سرویس‌های من «📷 QR Code» را بگیرید؛ در برنامه دکمه <b>+</b> ← «<b>اسکن QR</b>» را بزنید و کد را اسکن کنید.</blockquote>\n\n"
+        . "<b>۴. اتصال</b>\nسرور اضافه‌شده را انتخاب کنید و دکمه اتصال را بزنید. اولین بار اجازه VPN را تأیید کنید ✅\n\n"
         . "💡 اگر وصل نشد، در برنامه «بروزرسانی اشتراک» (Update) را بزنید یا با پشتیبانی تماس بگیرید.";
     $kb = [];
     foreach ($a['apps'] as $ap) {
         $kb[] = [['text' => '⬇️ ' . $ap[0], 'url' => $ap[1]]];
     }
-    $kb[] = [['text' => '🔙 انتخاب سیستمعامل دیگر', 'callback_data' => 'guide_menu_e'], ['text' => '🛍 سرویسهای من', 'callback_data' => 'backorder']];
+    $kb[] = [['text' => '🔙 انتخاب سیستم‌عامل دیگر', 'callback_data' => 'guide_menu_e'], ['text' => '🛍 سرویس‌های من', 'callback_data' => 'backorder']];
     return [$t, json_encode(['inline_keyboard' => $kb], JSON_UNESCAPED_UNICODE)];
 }
 

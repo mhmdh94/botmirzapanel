@@ -42,7 +42,7 @@ $textbotlang['users']['spam']['spamedmessage'] = "⛔ <b>مسدود خودکار
 
 📨 فقط می‌توانید به پشتیبانی پیام دهید.
 🔓 پس از بررسی، ادمین می‌تواند حساب را آزاد کند.";
-$textbotlang['users']['spam']['blocked_manual'] = "🔒 <b>حساب شما توسط مدیریت مسدود شد.</b>\n\n✍️ دلیل: %s\n\n📨 فقط امکان ارسال پیام به پشتیبانی وجود دارد.\nبرای پیگیری از دکمه زیر استفاده کنید.";
+$textbotlang['users']['spam']['blocked_manual'] = "🔒 <b>حساب شما توسط مدیریت مسدود شد.</b>\n\n✍️ دلیل: %s\n\n📨 فقط امکان ارسال پیام به پشتیبانی وجود دارد.\nبرای پی‌گیری از دکمه زیر استفاده کنید.";
 $textbotlang['users']['spam']['blocked_generic'] = "🔒 <b>حساب شما مسدود است.</b>\n\n📨 فقط امکان ارسال پیام به پشتیبانی وجود دارد.";
 $textbotlang['users']['spam']['blocked_only_support'] = "⛔ حساب شما مسدود است.
 
@@ -336,7 +336,7 @@ $textbotlang['users']['Balance']['Send-receipt'] = "🚀 <b>رسید ارسال 
 اگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.";
 $textbotlang['users']['Balance']['Send-receip-buy'] = "🚀 <b>رسید ارسال شد</b>
 
-پس از تأیید مدیریت، سرویس شما <b>خودکار ساخته</b> و همینجا ارسال میشود.
+پس از تأیید مدیریت، سرویس شما <b>خودکار ساخته</b> و همینجا ارسال می‌شود.
 لطفاً صبور باشید و از ارسال دوباره رسید خودداری کنید.
 
 اگر تا یک ساعت تأیید نشد، به پشتیبانی پیام دهید.";
@@ -456,7 +456,7 @@ $textbotlang['users']['moeny']['carttext'] = "💳 <b>واریز کارت‌به
 ⏳ تا تأیید مدیریت صبر کنید.";
 $textbotlang['users']['moeny']['iranpay'] = "💎 <b>پرداخت کریپتو</b>
 
-🧾 پیگیری: <code>%s</code>
+🧾 پی‌گیری: <code>%s</code>
 🌐 شبکه: TRX
 💳 آدرس:
 <code>%s</code>
@@ -484,19 +484,19 @@ $textbotlang['users']['moeny']['cartresid'] = "🧾 <b>رسید پرداخت ج�
 $textbotlang['users']['moeny']['Charged.'] = "✅ <b>شارژ انجام شد</b>
 
 💰 مبلغ: <b>%s</b> تومان به کیف پول اضافه شد.
-🧾 کد پیگیری: <code>%s</code>
+🧾 کد پی‌گیری: <code>%s</code>
 
 از پرداخت شما متشکریم.";
 $textbotlang['users']['moeny']['receipt_accepted'] = "✅ <b>رسید پرداخت شما تأیید شد</b>
 
 💰 مبلغ: <b>%s</b> تومان
-🛒 کد پیگیری: <code>%s</code>";
+🛒 کد پی‌گیری: <code>%s</code>";
 
 $textbotlang['users']['moeny']['acceptedcart'] = "✅ پرداخت تأیید شد";
 $textbotlang['users']['moeny']['rejectresid'] = "❌ <b>پرداخت رد شد</b>
 
 ✍️ دلیل: %s
-🧾 کد پیگیری: <code>%s</code>
+🧾 کد پی‌گیری: <code>%s</code>
 
 در صورت نیاز با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['moeny']['sendcart'] = "💳 شماره کارت را بفرستید.\nمی‌توانید نام صاحب کارت را هم بنویسید.\n\nشماره کارت فعلی: <code>%s</code>";
@@ -761,7 +761,7 @@ $textbotlang['Admin']['manageadmin']['showlist'] = "👨‍🔧 آیدی عدد�
 
 
 $textbotlang['Admin']['manageusertest']['getidlimit'] = " ⚜️ آیدی عددی کاربر را ارسال کنید
-توضیحات: در این بخش می‌توانید محدودیت ساخت اکانت تست را برای کاربر تغییر دهید. بطور پیشفرض محدودیت ساخت عدد 1 است.";
+توضیحات: در این بخش می‌توانید محدودیت ساخت اکانت تست را برای کاربر تغییر دهید. بطور پیش‌فرض محدودیت ساخت عدد 1 است.";
 $textbotlang['Admin']['getlimitusertest']['getid'] = "آیدی عددی دریافت شد لطفاً تعداد ساخت اکانت تست را ارسال کنید";
 $textbotlang['Admin']['getlimitusertest']['setlimit'] = "محدودیت برای کاربر تنظیم گردید.";
 $textbotlang['Admin']['getlimitusertest']['limitall'] = "تعداد ساخت اکانت تست را وارد نمایید.";
@@ -790,7 +790,7 @@ $textbotlang['Admin']['managepanel']['errorstatuspanel'] = "امکان اتصا�
 ⭕️ در صورت وارد کردن دامنه طبق شرایط اعلام شده  این خطا بدلیل  بسته بودن خروجی پورت پنل روی هاست ربات اتفاق می افتد.
     
 راه حل اول : پورت پنل را به پورت های 443 یا 8080 تغییر دهید این پورت ها  همیشه باز هستند
-⚠️ اگر پنل پورت 443 است  گاهی با پورت 443 کار میکند گاهی بدون پورت 
+⚠️ اگر پنل پورت 443 است  گاهی با پورت 443 کار می‌کند گاهی بدون پورت 
 راه حل دوم : به پشتیبانی هاستینگ تیکت داده و اعلام کنید پورت پنل تان را باز کنند روی سرور";
 $textbotlang['Admin']['managepanel']['addpanelname']= "برای اضافه کردن پنل  به ربات ابتدا یک نام برای پنل خود ارسال کنید
                 
@@ -800,7 +800,7 @@ $textbotlang['Admin']['managepanel']['addpanelurl'] = "🔗 نام پنل ذخی
     🔸 آدرس پنل باید بدون dashboard ارسال شود.
     🔹 در صورتی که پورت پنل 443 است پورت را نباید وارد کنید.  ( گاهی حتما با پورت باید وارد کنید)
     🔸 آخر آدرس نباید / داشته باشد
-    🔹 در صورت وارد کردن آیپی حتما http یا https باید داشته باشد";
+    🔹 در صورت وارد کردن آی‌پی حتما http یا https باید داشته باشد";
 $textbotlang['Admin']['managepanel']['Invalid-domain'] = "🔗 آدرس دامنه نامعتبر است";
 $textbotlang['Admin']['managepanel']['usernameset'] ="👤 آدرس پنل ذخیره شد حالا نام کاربری  را ارسال کنید";
 $textbotlang['Admin']['managepanel']['getpassword'] = "🔑  رمز عبور پنل  خود را وارد نمایید";
@@ -853,8 +853,8 @@ $textbotlang['Admin']['managepanel']['notemarzban'] = "📌 نکات بعد اض
 ۲) اینباند/پروتکل لازم نیست — از گروه‌های پنل خوانده می‌شود.
 ۳) روش ساخت نام کاربری را در مدیریت پنل تنظیم کنید.";
 $textbotlang['Admin']['managepanel']['wgdashboard'] = "❌ نکته :
-برای فعالسازی پنل باید به منوی مدیریت پنل  رفته و گزینه های 
-منوی تنظیم شناسه اینباند رفته و نام کانفیگ را تنظیم نمایید در غیراینصورت ربات هیچ کانفیگی نمیسازد";
+برای فعال‌سازی پنل باید به منوی مدیریت پنل  رفته و گزینه های 
+منوی تنظیم شناسه اینباند رفته و نام کانفیگ را تنظیم نمایید در غیراینصورت ربات هیچ کانفیگی نمی‌سازد";
 $textbotlang['Admin']['managepanel']['showpanelbtn'] = "👁‍🗨 وضعیت نمایش پنل";
 $textbotlang['Admin']['managepanel']['mikrotik'] = "❌ نکات :
 ۱ - به مدیریت پنل > نام گروه رفته و نام گروهی که می‌خواهید بسته از آن ساخته شود را ارسال کنید.";
@@ -1129,8 +1129,8 @@ $textbotlang['Admin']['Product']['Service_location'] ="📌 موقعیت محص�
  ⭕️ برای تعریف محصول در همه موقعیت ها دستور /all را ارسال کنید";
 $textbotlang['Admin']['Product']['nullpProduct']   = "⭕️ محصولی یافت نشد برای رفع مشکل با پشتیبانی در ارتباط باشید";
 $textbotlang['Admin']['Product']['Rmove_location'] ="📌 موقعیت محصول خود را انتخاب کنید";
-$textbotlang['Admin']['Product']['selectRemoveProduct'] ="محصولی که میخوای حذف کنی ر و انتخاب کن";
-$textbotlang['Admin']['Product']['selectEditProduct'] ="محصولی که میخوای ویرایش کنی رو انتخاب کن";
+$textbotlang['Admin']['Product']['selectRemoveProduct'] ="محصولی که می‌خوای حذف کنی ر و انتخاب کن";
+$textbotlang['Admin']['Product']['selectEditProduct'] ="محصولی که می‌خوای ویرایش کنی رو انتخاب کن";
 $textbotlang['Admin']['Product']['selectfieldProduct'] ="فیلدی که مخیواهید ویرایش کنید را انتخاب کنید";
 $textbotlang['Admin']['Product']['RemoveedProduct'] ="✅ محصول با موفقیت حذف شد.";
 $textbotlang['Admin']['Product']['AddProductStepOne'] = " ابتدا نام اشتراک خود را ارسال نمایید
@@ -1210,7 +1210,7 @@ $textbotlang['Admin']['Discount']['GetCode'] ="کدی را برای کدهدیه
 $textbotlang['Admin']['Discount']['ErrorCode'] ="کد نامعتبر است کد باید حتما انگلیسی بدون کاراکتر اضافی باشد";
 $textbotlang['Admin']['Discount']['PriceCode'] ="کد دریافت شد حالا مبلغ کد  رو بفرست";
 $textbotlang['Admin']['Discount']['SaveCode'] ="✅  کد با موفقیت ثبت شد";
-$textbotlang['Admin']['Discount']['RemoveCode'] ="کد که میخوای حذف کنی رو انتخاب کن";
+$textbotlang['Admin']['Discount']['RemoveCode'] ="کد که می‌خوای حذف کنی رو انتخاب کن";
 $textbotlang['Admin']['Discount']['RemovedCode'] ="✅ کد  با موفقیت حذف شد.";
 $textbotlang['Admin']['Discount']['NotCode'] = "❌ خطا 
 📝 کد هدیه انتخابی وجود ندارد";
@@ -1343,12 +1343,12 @@ $textbotlang['Admin']['cron']['active_manual'] = "📝 بدلیل غیرفعال
 کرون حذف :  حذف سرویسی که تمام شده است پس از تعیین زمان توسط شما
 
 <blockquote>%s</blockquote>";
-$textbotlang['Admin']['cron']['active_manual_card'] = "جهت فعالسازی تایید خودکار بدون بررسی بدلیل غیرفعال بودن تابع shell_exec باید کرون را بصورت دستی انجام دهید.
+$textbotlang['Admin']['cron']['active_manual_card'] = "جهت فعال‌سازی تایید خودکار بدون بررسی بدلیل غیرفعال بودن تابع shell_exec باید کرون را بصورت دستی انجام دهید.
 
 جهت تنظیم می‌توانید از کامند زیر استفاده کنید
 
 <blockquote>%s</blockquote>";
-$textbotlang['Admin']['cron']['active_manual_sendmessage'] = "جهت فعالسازی  بخش ارسال پیام بدلیل غیرفعال بودن تابع shell_exec باید کرون را بصورت دستی انجام دهید.
+$textbotlang['Admin']['cron']['active_manual_sendmessage'] = "جهت فعال‌سازی  بخش ارسال پیام بدلیل غیرفعال بودن تابع shell_exec باید کرون را بصورت دستی انجام دهید.
 
 جهت تنظیم می‌توانید از کامند زیر استفاده کنید
 

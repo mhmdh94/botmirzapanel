@@ -117,7 +117,7 @@ function botErrorLog($message, array $ctx = [], $level = 'ERROR', $section = '')
     }
 }
 
-/** نسخه 2.4.6: وجود جدول با کش ۱۰ دقیقهای (بهجای SHOW TABLES در هر پیام) */
+/** نسخه 2.4.6: وجود جدول با کش ۱۰ دقیقه‌ای (به‌جای SHOW TABLES در هر پیام) */
 if (!function_exists('botTableExists')) {
     function botTableExists($name)
     {
@@ -135,7 +135,7 @@ if (!function_exists('botTableExists')) {
         if (!empty($c[$name]) && (time() - intval($c[$name])) < 600) {
             return $mem[$name] = true;
         }
-        // نسخه 2.4.7: SHOW TABLES با placeholder در حالت native prepare خطا میدهد → query + quote
+        // نسخه 2.4.7: SHOW TABLES با placeholder در حالت native prepare خطا می‌دهد → query + quote
         $ok = false;
         try {
             $st = $pdo->query("SHOW TABLES LIKE " . $pdo->quote($name));
@@ -155,7 +155,7 @@ if (!function_exists('botTableExists')) {
     }
 }
 
-/** نسخه 2.4.8: روشن بودن دکمههای رنگی (PaySetting: button_colors، پیشفرض روشن) */
+/** نسخه 2.4.8: روشن بودن دکمه‌های رنگی (PaySetting: button_colors، پیش‌فرض روشن) */
 function botButtonColorsOn($reset = false)
 {
     static $v = null;
@@ -205,13 +205,13 @@ function botButtonStyleFor($t)
     if ($starts(['✅', '🟢', '🛒']) || $has(['خرید', 'تمدید', 'واریز', 'تأیید', 'تایید', 'پرداخت'])) {
         return 'success';
     }
-    if ($starts(['🛍', '🔑', '📲', '🎁']) || $has(['اکانت تست', 'لینک اشتراک', 'QR', 'سرویسهای من', 'سرویس‌های من'])) {
+    if ($starts(['🛍', '🔑', '📲', '🎁']) || $has(['اکانت تست', 'لینک اشتراک', 'QR', 'سرویس‌های من', 'سرویس‌های من'])) {
         return 'primary';
     }
     return '';
 }
 
-/** نسخه 2.4.8: افزودن style به دکمههای inline و reply */
+/** نسخه 2.4.8: افزودن style به دکمه‌های inline و reply */
 function botStyleMarkup($rm)
 {
     if (!is_string($rm) || $rm === '' || strpos($rm, 'keyboard') === false) {
@@ -276,7 +276,7 @@ function telegram($method, $datas = [])
 {
     global $APIKEY;
     $method = strval($method);
-    // نسخه 2.4.8: رنگ خودکار دکمهها (style) + برگشت بدون رنگ اگر تلگرام نپذیرفت
+    // نسخه 2.4.8: رنگ خودکار دکمه‌ها (style) + برگشت بدون رنگ اگر تلگرام نپذیرفت
     $__styled = false;
     $__orig = $datas;
     if (empty($GLOBALS['__bot_nostyle']) && is_array($datas) && isset($datas['reply_markup']) && is_string($datas['reply_markup'])
@@ -578,7 +578,7 @@ function sendDocument($chat_id, $documentPath, $caption)
     ]);
 }
 /**
- * جلوگیری از پردازش دوباره یک آپدیت (خرید/تمدید دوبل وقتی تلگرام آپدیت را دوباره میفرستد).
+ * جلوگیری از پردازش دوباره یک آپدیت (خرید/تمدید دوبل وقتی تلگرام آپدیت را دوباره می‌فرستد).
  * true = آپدیت جدید است و باید پردازش شود؛ false = تکراری است.
  */
 function botClaimUpdate($update_id)
@@ -610,7 +610,7 @@ function botClaimUpdate($update_id)
         botLog('telegram', 'duplicate update skipped', ['update_id' => $update_id], 'INFO');
         return false;
     }
-    // پاکسازی گاهبهگاه (قدیمیتر از ۲ روز)
+    // پاک‌سازی گاهبهگاه (قدیمی‌تر از ۲ روز)
     if (mt_rand(1, 500) === 1) {
         try {
             $pdo->prepare("DELETE FROM processed_updates WHERE created_at < ?")->execute([time() - 172800]);
@@ -620,7 +620,7 @@ function botClaimUpdate($update_id)
     return true;
 }
 
-/** مقدار تنظیمشده و غیر placeholder است؟ ({...} یعنی نصبکننده هنوز پر نکرده) */
+/** مقدار تنظیم‌شده و غیر placeholder است؟ ({...} یعنی نصبکننده هنوز پر نکرده) */
 function botConfigValueSet($v)
 {
     $v = is_string($v) ? trim($v) : '';
@@ -629,7 +629,7 @@ function botConfigValueSet($v)
 
 /**
  * بررسی هدر X-Telegram-Bot-Api-Secret-Token.
- * اگر $secrettoken در config تنظیم نشده باشد (نصبهای قدیمی) چیزی رد نمیشود.
+ * اگر $secrettoken در config تنظیم نشده باشد (نصب‌های قدیمی) چیزی رد نمی‌شود.
  */
 function botVerifyWebhookSecret()
 {
@@ -645,7 +645,7 @@ function botVerifyWebhookSecret()
     return false;
 }
 
-/** کلید دسترسی کرونها — از توکن ربات مشتق میشود، تنظیم جدیدی لازم نیست */
+/** کلید دسترسی کرون‌ها — از توکن ربات مشتق می‌شود، تنظیم جدیدی لازم نیست */
 function botCronKey()
 {
     global $APIKEY, $domainhosts;
@@ -661,7 +661,7 @@ function botCronUrl($script)
 
 /**
  * فقط اجرای CLI، درخواست از خود سرور، یا درخواست با ?key= درست مجاز است.
- * کرونهای قدیمی (curl از همین سرور) بدون تغییر کار میکنند.
+ * کرون‌های قدیمی (curl از همین سرور) بدون تغییر کار می‌کنند.
  */
 function botRequireCronAccess()
 {

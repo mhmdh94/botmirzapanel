@@ -66,9 +66,9 @@ $sent = intval($info['sent'] ?? 0);
 $fail = intval($info['fail'] ?? 0);
 $done = (count($userid) === 0);
 $status = ($done ? "✅ <b>ارسال همگانی تمام شد</b>" : "📨 <b>در حال ارسال همگانی…</b>")
-    . "\n\n👥 گیرندهها: <b>" . number_format($total) . "</b>"
-    . "\n✅ ارسالشده: <b>" . number_format($sent) . "</b> | ❌ ناموفق: <b>" . number_format($fail) . "</b>"
-    . ($done ? "\n\nℹ️ ناموفقها معمولاً کاربرانی هستند که ربات را بلاک کردهاند." : "\n⏳ باقیمانده: <b>" . number_format(count($userid)) . "</b>");
+    . "\n\n👥 گیرنده‌ها: <b>" . number_format($total) . "</b>"
+    . "\n✅ ارسال‌شده: <b>" . number_format($sent) . "</b> | ❌ ناموفق: <b>" . number_format($fail) . "</b>"
+    . ($done ? "\n\nℹ️ ناموفق‌ها معمولاً کاربرانی هستند که ربات را بلاک کرده‌اند." : "\n⏳ باقی‌مانده: <b>" . number_format(count($userid)) . "</b>");
 if (!empty($info['progress_mid']) && $admin) {
     $kb = $done ? json_encode(['inline_keyboard' => []]) : json_encode(['inline_keyboard' => [[['text' => '⏹ توقف ارسال', 'callback_data' => 'cancel_sendmessage']]]], JSON_UNESCAPED_UNICODE);
     telegram('editMessageText', ['chat_id' => $admin, 'message_id' => intval($info['progress_mid']), 'text' => $status, 'parse_mode' => 'HTML', 'reply_markup' => $kb]);
@@ -80,7 +80,7 @@ if ($done) {
         botCastSaveLast($info, 'done');
     }
     if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_broadcast', "✅ <b>پیام همگانی تمام شد</b>\n\n🎯 گروه: " . htmlspecialchars(strval($info['target_label'] ?? 'همه کاربران'), ENT_QUOTES, 'UTF-8') . "\n👥 گیرندهها: " . number_format($total) . "\n✅ ارسالشده: " . number_format($sent) . " | ❌ ناموفق: " . number_format($fail));
+        sendChannelReport('rpt_broadcast', "✅ <b>پیام همگانی تمام شد</b>\n\n🎯 گروه: " . htmlspecialchars(strval($info['target_label'] ?? 'همه کاربران'), ENT_QUOTES, 'UTF-8') . "\n👥 گیرنده‌ها: " . number_format($total) . "\n✅ ارسال‌شده: " . number_format($sent) . " | ❌ ناموفق: " . number_format($fail));
     }
     @unlink('info');
     @unlink('users.json');

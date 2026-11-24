@@ -6,7 +6,7 @@ channel => @mirzapanel
 $dbname = '{DATABASE_NAME}'; //  Name Database
 $usernamedb = '{DATABASE_USERNAME}'; // Username Database
 $passworddb = '{DATABASE_PASSOWRD}'; // Password Database
-// در PHP 8.1+ اتصال ناموفق Exception میدهد؛ بررسی connect_error قبلی هرگز اجرا نمیشد.
+// در PHP 8.1+ اتصال ناموفق Exception می‌دهد؛ بررسی connect_error قبلی هرگز اجرا نمی‌شد.
 try {
     $connect = mysqli_connect("localhost", $usernamedb, $passworddb, $dbname);
 } catch (\mysqli_sql_exception $e) {
@@ -14,7 +14,7 @@ try {
 }
 if (!$connect) {
     error_log('DB connection failed (mysqli): ' . mysqli_connect_error());
-    http_response_code(503); // تلگرام بعداً دوباره میفرستد
+    http_response_code(503); // تلگرام بعداً دوباره می‌فرستد
     exit;
 }
 mysqli_set_charset($connect, "utf8mb4");
