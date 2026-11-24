@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.4";
+$version = "2.6.6";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4644,8 +4644,14 @@ if ($text == $textbotlang['users']['affiliates']['btn'] || $datain == "acc_invit
         ]
     ]);
     // نسخه 2.2: توضیح + آمار + لینک دعوت در یک پیام
-    $__aff_stats = "\n\n👥 دعوت‌شده‌های شما: <b>" . number_format(intval($user['affiliatescount'] ?? 0)) . "</b> نفر"
-        . "\n💸 پورسانت دریافتی: <b>" . number_format(function_exists('getAffiliatesEarned') ? intval(getAffiliatesEarned($from_id)) : 0) . "</b> تومان";
+    // نسخه 2.6.6: آمار دعوت (دعوتشده، خریدکرده، پورسانت)
+    $__aff_st = function_exists('botAffiliateStats') ? botAffiliateStats($from_id) : null;
+    $__aff_inv = max(intval($user['affiliatescount'] ?? 0), intval($__aff_st['invited'] ?? 0));
+    $__aff_stats = "\n\n📊 <b>آمار دعوت شما</b>"
+        . "\n👥 دعوتشده: <b>" . number_format($__aff_inv) . "</b> نفر"
+        . (is_array($__aff_st) ? "\n🛒 خرید کردهاند: <b>" . number_format(intval($__aff_st['buyers'])) . "</b> نفر" . ($__aff_inv > 0 ? " (" . intval(round(intval($__aff_st['buyers']) * 100 / $__aff_inv)) . "٪)" : '') : '')
+        . "\n💸 پورسانت دریافتی: <b>" . number_format(function_exists('getAffiliatesEarned') ? intval(getAffiliatesEarned($from_id)) : 0) . "</b> تومان"
+        . (is_array($__aff_st) && intval($__aff_st['recent']) > 0 ? "\n📅 پورسانت ۳۰ روز اخیر: <b>" . number_format(intval($__aff_st['recent'])) . "</b> تومان" : '');
     $__aff_desc = (isset($affiliates['description']) && $affiliates['description'] !== '' && $affiliates['description'] !== 'none')
         ? "\n\n" . $affiliates['description']
         : '';

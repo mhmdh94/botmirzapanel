@@ -3847,12 +3847,16 @@ function buildAdminBroadcastText()
 function botCastRecipientSets()
 {
     global $pdo;
-    $out = ['all' => [], 'act' => [], 'nobuy' => [], 'exp7' => []];
+    $out = ['all' => [], 'act' => [], 'nobuy' => [], 'exp7' => [], 'ended' => [], 'bal' => []];
+    $balpos = [];
     $active = [];
     try {
-        $st = $pdo->query("SELECT id FROM user WHERE User_Status = 'Active'");
+        $st = $pdo->query("SELECT id, Balance FROM user WHERE User_Status = 'Active'");
         while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
             $active[] = strval($r['id']);
+            if (intval($r['Balance'] ?? 0) > 0) {
+                $balpos[strval($r['id'])] = 1;
+            }
         }
     } catch (Throwable $e) {
         return $out;
@@ -3885,6 +3889,9 @@ function botCastRecipientSets()
     foreach ($active as $id) {
         $row = ['id' => $id];
         $out['all'][] = $row;
+        if (isset($balpos[$id])) {
+            $out['bal'][] = $row;
+        }
         if (!$inv_ok) {
             continue;
         }
@@ -3896,6 +3903,10 @@ function botCastRecipientSets()
         }
         if (isset($exp[$id])) {
             $out['exp7'][] = $row;
+        }
+        // نسخه 2.6.6: قبلاً خرید کرده ولی الان سرویس فعالی ندارد
+        if (isset($buyers[$id]) && !isset($act[$id])) {
+            $out['ended'][] = $row;
         }
     }
     return $out;
@@ -5335,7 +5346,9 @@ function reportChannelTypes()
         'rpt_admin_action' => '🛡 تغییرات حساس ادمین',
         'rpt_broadcast' => '📨 پیام همگانی',
         'rpt_tech_error' => '🚨 خطاهای فنی',
-        'rpt_daily' => '📊 خلاصه روزانه',
+        'rpt_daily' => '📊 گزارش روزانه',
+        'rpt_weekly' => '🗓 گزارش هفتگی (شنبه)',
+        'rpt_monthly' => '📅 گزارش ماهانه (اول ماه)',
     ];
 }
 
@@ -5484,41 +5497,204 @@ function botWatchdogTick()
 }
 
 /** نسخه 2.4.4: خلاصه روزانه (از کرون هوشمند، ۲۳:۵۵ به بعد، روزی یک‌بار) */
-function botDailySummaryTick()
+function botRptJ($fmt, $ts, $tr = 'fa')
+{
+    if (function_exists('jdate')) {
+        return jdate($fmt, intval($ts), '', 'Asia/Tehran', $tr);
+    }
+    return date('Y-m-d', intval($ts));
+}
+
+/** نسخه 2.6.6: دورههای گزارش در ساعت اول روز (روزانه؛ شنبه هفتگی؛ اول ماه شمسی ماهانه) */
+function botReportPeriods(DateTime $now)
+{
+    $tz = $now->getTimezone();
+    $out = [];
+    $today0 = (clone $now)->setTime(0, 0, 0);
+    $yest0 = (clone $today0)->modify('-1 day');
+    $out[] = [
+        'kind' => 'daily', 'rpt' => 'rpt_daily', 'key' => $yest0->format('Y-m-d'),
+        'from' => $yest0->getTimestamp(), 'to' => $today0->getTimestamp(),
+        'title' => "📊 <b>گزارش روزانه</b>\n🗓 " . botRptJ('l j F Y', $yest0->getTimestamp()),
+    ];
+    if ($now->format('w') === '6') {
+        $w0 = (clone $today0)->modify('-7 days');
+        $out[] = [
+            'kind' => 'weekly', 'rpt' => 'rpt_weekly', 'key' => $w0->format('Y-m-d'),
+            'from' => $w0->getTimestamp(), 'to' => $today0->getTimestamp(),
+            'title' => "🗓 <b>گزارش هفتگی</b>\n📆 " . botRptJ('j F', $w0->getTimestamp()) . ' تا ' . botRptJ('j F Y', $yest0->getTimestamp()),
+        ];
+    }
+    if (function_exists('jdate') && function_exists('jalali_to_gregorian')
+        && intval(jdate('j', $now->getTimestamp(), '', 'Asia/Tehran', 'en')) === 1) {
+        $jy = intval(jdate('Y', $now->getTimestamp(), '', 'Asia/Tehran', 'en'));
+        $jm = intval(jdate('n', $now->getTimestamp(), '', 'Asia/Tehran', 'en'));
+        $pm = $jm - 1;
+        $py = $jy;
+        if ($pm < 1) {
+            $pm = 12;
+            $py--;
+        }
+        $g = jalali_to_gregorian($py, $pm, 1);
+        if (is_array($g) && count($g) >= 3) {
+            $m0 = new DateTime(sprintf('%04d-%02d-%02d 00:00:00', $g[0], $g[1], $g[2]), $tz);
+            $out[] = [
+                'kind' => 'monthly', 'rpt' => 'rpt_monthly', 'key' => sprintf('%04d-%02d', $py, $pm),
+                'from' => $m0->getTimestamp(), 'to' => $today0->getTimestamp(),
+                'title' => "📅 <b>گزارش ماهانه</b>\n🗓 " . botRptJ('F Y', $m0->getTimestamp()),
+            ];
+        }
+    }
+    return $out;
+}
+
+/** نسخه 2.6.6: عکس تعداد کل کاربران در شروع هر روز (برای «کاربر جدید» هر دوره) */
+function botReportUserSnapshot(DateTime $now)
+{
+    global $pdo;
+    $dir = __DIR__ . '/cron';
+    $key = $now->format('Y-m-d');
+    $mf = $dir . '/user_snapshot.date';
+    if (trim(strval(@file_get_contents($mf))) === $key) {
+        return;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS report_user_snapshot (
+            d CHAR(10) NOT NULL PRIMARY KEY,
+            total INT NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $ins = $pdo->prepare("INSERT IGNORE INTO report_user_snapshot (d, total) VALUES (?, ?)");
+        // عدد ذخیرهشده نسخههای قبل (ساعت ۲۳:۵۵) ≈ شروع روز بعد
+        $prev = json_decode(strval(@file_get_contents($dir . '/daily_users.json')), true);
+        if (is_array($prev) && !empty($prev['date']) && isset($prev['total'])) {
+            $pd = DateTime::createFromFormat('Y-m-d H:i:s', strval($prev['date']) . ' 00:00:00', $now->getTimezone());
+            if ($pd) {
+                $pd->modify('+1 day');
+                $ins->execute([$pd->format('Y-m-d'), intval($prev['total'])]);
+            }
+        }
+        $ins->execute([$key, botAdmCount("SELECT COUNT(*) FROM user")]);
+        @file_put_contents($mf, $key);
+    } catch (Throwable $e) {
+        error_log('user snapshot: ' . $e->getMessage());
+    }
+}
+
+function botReportUsersAt($ts)
 {
     global $pdo;
     try {
-        $tz = new DateTimeZone('Asia/Tehran');
-        $now = new DateTime('now', $tz);
+        $d = (new DateTime('@' . intval($ts)))->setTimezone(new DateTimeZone('Asia/Tehran'))->format('Y-m-d');
+        $st = $pdo->prepare("SELECT total FROM report_user_snapshot WHERE d = ? LIMIT 1");
+        $st->execute([$d]);
+        $v = $st->fetchColumn();
+        return ($v === false || $v === null) ? null : intval($v);
     } catch (Throwable $e) {
-        return;
+        return null;
     }
-    if (intval($now->format('H')) !== 23 || intval($now->format('i')) < 55) {
-        return;
+}
+
+/** نسخه 2.6.6: متن گزارش یک دوره [from, to) */
+function botPeriodReportText($title, $from, $to)
+{
+    global $pdo;
+    $from = intval($from);
+    $to = intval($to);
+    $len = max(1, $to - $from);
+    $n = function ($v) {
+        return number_format(intval($v));
+    };
+    if (function_exists('ensureSalesLedger')) {
+        ensureSalesLedger();
     }
-    $dir = __DIR__ . '/cron';
-    $today = $now->format('Y-m-d');
-    $df = $dir . '/daily_report.date';
-    if (trim(strval(@file_get_contents($df))) === $today) {
-        return;
+    if (function_exists('ensureWalletLog')) {
+        ensureWalletLog();
     }
-    @file_put_contents($df, $today);
-    $day0 = (clone $now)->setTime(0, 0, 0)->getTimestamp() - 1;
-    $mon0 = (clone $now)->modify('first day of this month')->setTime(0, 0, 0)->getTimestamp() - 1;
-    $sd = ['cnt' => 0, 'sum' => 0];
-    $sm = ['cnt' => 0, 'sum' => 0];
+    // فروش به تفکیک نوع
+    $types = [];
+    $cnt = 0;
+    $sum = 0;
     try {
-        if (function_exists('salesLedgerSum')) {
-            $sd = salesLedgerSum($day0);
-            $sm = salesLedgerSum($mon0);
+        $st = $pdo->prepare("SELECT sale_type, COUNT(*) AS c, COALESCE(SUM(price),0) AS s FROM sales_ledger WHERE created_at >= ? AND created_at < ? GROUP BY sale_type");
+        $st->execute([$from, $to]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $types[strval($r['sale_type'])] = [intval($r['c']), intval($r['s'])];
+            $cnt += intval($r['c']);
+            $sum += intval($r['s']);
         }
     } catch (Throwable $e) {
     }
-    $users = botAdmCount("SELECT COUNT(*) FROM user");
-    $uf = $dir . '/daily_users.json';
-    $prev = json_decode(strval(@file_get_contents($uf)), true);
-    $new_line = (is_array($prev) && isset($prev['total'])) ? number_format(max(0, $users - intval($prev['total']))) : '— (از فردا محاسبه می‌شود)';
-    @file_put_contents($uf, json_encode(['date' => $today, 'total' => $users]));
+    $prev = 0;
+    try {
+        $st = $pdo->prepare("SELECT COALESCE(SUM(price),0) FROM sales_ledger WHERE created_at >= ? AND created_at < ?");
+        $st->execute([$from - $len, $from]);
+        $prev = intval($st->fetchColumn());
+    } catch (Throwable $e) {
+    }
+    $cmp = '';
+    if ($prev > 0) {
+        $pc = intval(round(($sum - $prev) * 100 / $prev));
+        $cmp = "\n" . ($pc >= 0 ? '📈' : '📉') . " نسبت به دوره قبل: <b>" . ($pc > 0 ? '+' : '') . $pc . "٪</b>";
+    }
+    $names = ['buy' => 'خرید', 'renew' => 'تمدید', 'extra_volume' => 'حجم اضافه', 'reseller_volume' => 'حجم نمایندگی'];
+    $brk = '';
+    foreach (array_merge(array_keys($names), array_diff(array_keys($types), array_keys($names))) as $k) {
+        if (!isset($types[$k])) {
+            continue;
+        }
+        $brk .= "\n   • " . ($names[$k] ?? $k) . ": " . $n($types[$k][0]) . " عدد | " . $n($types[$k][1]) . " ت";
+    }
+    // واریز به کیف پول
+    $dep_c = 0;
+    $dep_s = 0;
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) AS c, COALESCE(SUM(amount),0) AS s FROM wallet_log WHERE type = 'deposit' AND created_at >= ? AND created_at < ?");
+        $st->execute([$from, $to]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        $dep_c = intval($r['c'] ?? 0);
+        $dep_s = intval($r['s'] ?? 0);
+    } catch (Throwable $e) {
+    }
+    // کاربر جدید
+    $total_users = botAdmCount("SELECT COUNT(*) FROM user");
+    $ua = botReportUsersAt($from);
+    $ub = botReportUsersAt($to);
+    $new_users = ($ua !== null && $ub !== null) ? $n(max(0, $ub - $ua)) : '—';
+    // تبدیل تست به خرید
+    $testers = 0;
+    $conv = 0;
+    try {
+        $st = $pdo->prepare("SELECT COUNT(*) AS testers, COALESCE(SUM(x.conv),0) AS conv FROM (
+                SELECT t.id_user, ((SELECT COUNT(*) FROM sales_ledger s WHERE s.id_user = t.id_user AND s.sale_type = 'buy' AND s.created_at >= t.ts) > 0) AS conv
+                FROM (SELECT id_user, MIN(CAST(time_sell AS UNSIGNED)) AS ts FROM invoice
+                      WHERE name_product = 'usertest' AND time_sell REGEXP '^[0-9]{9,}$'
+                        AND CAST(time_sell AS UNSIGNED) >= ? AND CAST(time_sell AS UNSIGNED) < ?
+                      GROUP BY id_user) t
+            ) x");
+        $st->execute([$from, $to]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        $testers = intval($r['testers'] ?? 0);
+        $conv = intval($r['conv'] ?? 0);
+    } catch (Throwable $e) {
+    }
+    $conv_pct = $testers > 0 ? (' (' . intval(round($conv * 100 / $testers)) . '٪)') : '';
+    // در حال انقضا
+    $tsx = "(CASE WHEN time_sell REGEXP '^[0-9]{9,}$' THEN CAST(time_sell AS UNSIGNED) ELSE UNIX_TIMESTAMP(time_sell) END)";
+    $exp3 = 0;
+    $exp7 = 0;
+    try {
+        $st = $pdo->prepare("SELECT
+                SUM(({$tsx} + CAST(Service_time AS UNSIGNED) * 86400) BETWEEN :n AND :n3) AS e3,
+                SUM(({$tsx} + CAST(Service_time AS UNSIGNED) * 86400) BETWEEN :n2 AND :n7) AS e7
+            FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'
+              AND CAST(Service_time AS UNSIGNED) > 0 AND {$tsx} > 0");
+        $now = time();
+        $st->execute([':n' => $now, ':n3' => $now + 3 * 86400, ':n2' => $now, ':n7' => $now + 7 * 86400]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        $exp3 = intval($r['e3'] ?? 0);
+        $exp7 = intval($r['e7'] ?? 0);
+    } catch (Throwable $e) {
+    }
     $wait_c = 0;
     $wait_s = 0;
     try {
@@ -5529,15 +5705,47 @@ function botDailySummaryTick()
     }
     $act = botAdmCount("SELECT COUNT(*) FROM invoice WHERE (Status = 'active' OR Status = 'sendedwarn') AND name_product != 'usertest'");
     $bal = botAdmCount("SELECT COALESCE(SUM(CAST(Balance AS SIGNED)),0) FROM user");
-    $title = function_exists('jdate') ? jdate('Y/m/d') : $today;
-    if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_daily', "📊 <b>خلاصه روز {$title}</b>\n\n"
-            . "🛒 فروش امروز: <b>" . number_format(intval($sd['cnt'] ?? 0)) . "</b> عدد | <b>" . number_format(intval($sd['sum'] ?? 0)) . "</b> تومان\n"
-            . "📅 فروش این ماه: <b>" . number_format(intval($sm['cnt'] ?? 0)) . "</b> عدد | <b>" . number_format(intval($sm['sum'] ?? 0)) . "</b> تومان\n"
-            . "👤 کاربران جدید امروز: <b>{$new_line}</b> (کل: " . number_format($users) . ")\n"
-            . "📦 سرویس فعال: <b>" . number_format($act) . "</b>\n"
-            . "🧾 رسید در انتظار: <b>" . number_format($wait_c) . "</b> (" . number_format($wait_s) . " تومان)\n"
-            . "👛 موجودی کیف پول کاربران: <b>" . number_format($bal) . "</b> تومان");
+
+    return $title . "\n\n"
+        . "🛒 <b>فروش و درآمد:</b> <b>" . $n($cnt) . "</b> عدد | <b>" . $n($sum) . "</b> تومان" . $cmp . $brk
+        . "\n\n💳 واریز به کیف پول: <b>" . $n($dep_s) . "</b> تومان (" . $n($dep_c) . " تراکنش)"
+        . "\n👤 کاربر جدید: <b>{$new_users}</b> (کل: " . $n($total_users) . ")"
+        . "\n🧪 اکانت تست: <b>" . $n($testers) . "</b> | خرید بعد از تست: <b>" . $n($conv) . "</b>" . $conv_pct
+        . "\n\n⏳ در حال انقضا: ۳ روز آینده <b>" . $n($exp3) . "</b> | ۷ روز آینده <b>" . $n($exp7) . "</b>"
+        . "\n📦 سرویس فعال: <b>" . $n($act) . "</b>"
+        . "\n🧾 رسید در انتظار: <b>" . $n($wait_c) . "</b> (" . $n($wait_s) . " تومان)"
+        . "\n👛 موجودی کیف پول کاربران: <b>" . $n($bal) . "</b> تومان";
+}
+
+/**
+ * نسخه 2.6.6: گزارش خودکار در ساعت اول روز جدید (۰۰:۰۰ تا ۰۰:۵۹ تهران)
+ * روزانه = روز قبل؛ شنبه = هفته قبل؛ اول ماه شمسی = ماه قبل. هر گزارش فقط یکبار.
+ */
+function botDailySummaryTick()
+{
+    try {
+        $tz = new DateTimeZone('Asia/Tehran');
+        $now = new DateTime('now', $tz);
+    } catch (Throwable $e) {
+        return;
+    }
+    if (!function_exists('jdate') && is_file(__DIR__ . '/jdf.php')) {
+        require_once __DIR__ . '/jdf.php';
+    }
+    botReportUserSnapshot($now);
+    if (intval($now->format('G')) !== 0) {
+        return;
+    }
+    $dir = __DIR__ . '/cron';
+    foreach (botReportPeriods($now) as $p) {
+        $mf = $dir . '/' . $p['kind'] . '_report.date';
+        if (trim(strval(@file_get_contents($mf))) === $p['key']) {
+            continue;
+        }
+        @file_put_contents($mf, $p['key']);
+        if (function_exists('sendChannelReport')) {
+            sendChannelReport($p['rpt'], botPeriodReportText($p['title'], $p['from'], $p['to']));
+        }
     }
 }
 
@@ -10076,5 +10284,34 @@ function botFindRenewProduct($inv)
     } catch (Throwable $e) {
         return null;
     }
+}
+
+/** نسخه 2.6.6: آمار دعوت کاربر */
+function botAffiliateStats($uid)
+{
+    global $pdo;
+    $o = ['invited' => 0, 'buyers' => 0, 'recent' => 0];
+    try {
+        if (function_exists('ensureSalesLedger')) {
+            ensureSalesLedger();
+        }
+        $st = $pdo->prepare("SELECT COUNT(*) FROM user WHERE affiliates = ?");
+        $st->execute([strval($uid)]);
+        $o['invited'] = intval($st->fetchColumn());
+        $st = $pdo->prepare("SELECT COUNT(*) FROM user u WHERE u.affiliates = ? AND (
+                EXISTS (SELECT 1 FROM invoice i WHERE i.id_user = u.id AND i.name_product <> 'usertest' AND CAST(i.price_product AS UNSIGNED) > 0)
+                OR EXISTS (SELECT 1 FROM sales_ledger s WHERE s.id_user = u.id AND s.sale_type = 'buy'))");
+        $st->execute([strval($uid)]);
+        $o['buyers'] = intval($st->fetchColumn());
+        if (function_exists('ensureWalletLog')) {
+            ensureWalletLog();
+        }
+        $st = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM wallet_log WHERE id_user = ? AND type = 'affiliate' AND created_at >= ?");
+        $st->execute([intval($uid), time() - 30 * 86400]);
+        $o['recent'] = intval($st->fetchColumn());
+    } catch (Throwable $e) {
+        error_log('affiliate stats: ' . $e->getMessage());
+    }
+    return $o;
 }
 

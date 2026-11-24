@@ -1344,10 +1344,12 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         [['text' => '📦 دارای سرویس فعال (' . number_format(count($__sets['act'])) . ')', 'callback_data' => 'cast_ok_act']],
         [['text' => '🆕 بدون خرید (' . number_format(count($__sets['nobuy'])) . ')', 'callback_data' => 'cast_ok_nobuy']],
         [['text' => '⏳ انقضا تا ۷ روز آینده (' . number_format(count($__sets['exp7'])) . ')', 'callback_data' => 'cast_ok_exp7']],
+        [['text' => '🔚 سرویس تمامشده (' . number_format(count($__sets['ended'])) . ')', 'callback_data' => 'cast_ok_ended']],
+        [['text' => '👛 دارای موجودی (' . number_format(count($__sets['bal'])) . ')', 'callback_data' => 'cast_ok_bal']],
         [['text' => '❌ انصراف', 'callback_data' => 'cast_no']],
     ]], JSON_UNESCAPED_UNICODE);
     sendmessage($from_id, "👆 پیش‌نمایش پیام بالاست.\n\n🎯 <b>گیرنده‌ها را انتخاب کنید</b> (عدد داخل پرانتز = تعداد گیرنده).\nکاربران مسدود در هیچ گروهی نیستند.\n\nبا زدن هر گروه، ارسال شروع می‌شود.", $__ckb, 'HTML');
-} elseif (isset($datain) && preg_match('/^cast_(ok|no)(?:_(act|nobuy|exp7))?$/', strval($datain), $__cm)) {
+} elseif (isset($datain) && preg_match('/^cast_(ok|no)(?:_(act|nobuy|exp7|ended|bal))?$/', strval($datain), $__cm)) {
     $__bc = json_decode(strval($user['Processing_value'] ?? ''), true);
     if ($__cm[1] === 'no' || !is_array($__bc) || empty($__bc['cast_pending'])) {
         if (is_array($__bc) && !empty($__bc['cast_pending'])) {
@@ -1361,7 +1363,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         return;
     }
     $__tg = (isset($__cm[2]) && $__cm[2] !== '') ? $__cm[2] : 'all';
-    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده'];
+    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده', 'ended' => 'سرویس تمامشده', 'bal' => 'دارای موجودی'];
     $__sets = botCastRecipientSets();
     $result = $__sets[$__tg] ?? [];
     if (count($result) === 0) {
