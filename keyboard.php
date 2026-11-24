@@ -6,11 +6,8 @@ if (function_exists('ensureFeatureSettingsColumns')) { ensureFeatureSettingsColu
 $setting = select("setting", "*");
 $admin_ids = select("admin", "id_admin", null, null, "FETCH_COLUMN");
 //-----------------------------[  text panel  ]-------------------------------
-$sql = "SHOW TABLES LIKE 'textbot'";
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('textbot');
+$result = $table_exists ? [1] : [];
 $datatextbot = array(
     'text_usertest' => '',
     'text_Purchased_services' => '',
@@ -218,10 +215,8 @@ $backadmin = json_encode([
     ],
     'resize_keyboard' => true,
 ]);
-$stmt = $pdo->prepare("SHOW TABLES LIKE 'marzban_panel'");
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('marzban_panel');
+$result = $table_exists ? [1] : [];
 $namepanel = [];
 if ($table_exists) {
     $stmt = $pdo->prepare("SELECT * FROM marzban_panel");
@@ -243,11 +238,8 @@ if ($table_exists) {
     ];
     $json_list_marzban_panel = json_encode($list_marzban_panel);
 }
-$sql = "SHOW TABLES LIKE 'help_disabled_removed'";
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('help_disabled_removed');
+$result = $table_exists ? [1] : [];
 if ($table_exists) {
     $help = [];
     $stmt = $pdo->prepare("SELECT * FROM help");
@@ -330,11 +322,8 @@ $textbot = json_encode([
     'resize_keyboard' => true
 ], JSON_UNESCAPED_UNICODE);
 //--------------------------------------------------
-$sql = "SHOW TABLES LIKE 'protocol'";
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('protocol');
+$result = $table_exists ? [1] : [];
 if ($table_exists) {
     $getdataprotocol = select("protocol", "*", null, null, "fetchAll");
     $protocol = [];
@@ -345,11 +334,8 @@ if ($table_exists) {
     $keyboardprotocollist = json_encode(['resize_keyboard' => true, 'keyboard' => $protocol]);
 }
 //--------------------------------------------------
-$sql = "SHOW TABLES LIKE 'product'";
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('product');
+$result = $table_exists ? [1] : [];
 if ($table_exists) {
     $product = [];
     $stmt = $pdo->prepare("SELECT * FROM product WHERE Location = :Location OR Location = '/all'");
@@ -373,11 +359,8 @@ if ($table_exists) {
     $json_list_product_list_admin = json_encode($list_product);
 }
 //--------------------------------------------------
-$sql = "SHOW TABLES LIKE 'Discount'";
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('Discount');
+$result = $table_exists ? [1] : [];
 if ($table_exists) {
     $Discount = [];
     $stmt = $pdo->prepare("SELECT * FROM Discount");
@@ -400,11 +383,8 @@ if ($table_exists) {
     $json_list_Discount_list_admin = json_encode($list_Discount);
 }
 //--------------------------------------------------
-$sql = "SHOW TABLES LIKE 'DiscountSell'";
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$result = $stmt->fetchAll();
-$table_exists = count($result) > 0;
+$table_exists = botTableExists('DiscountSell');
+$result = $table_exists ? [1] : [];
 $namepanel = [];
 if ($table_exists) {
     $DiscountSell = [];

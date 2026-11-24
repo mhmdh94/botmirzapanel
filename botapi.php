@@ -101,6 +101,10 @@ function botErrorLog($message, array $ctx = [], $level = 'ERROR', $section = '')
         if (!$p) {
             continue;
         }
+        // نسخه 2.4.6: چرخش لاگ بالای ۵ مگابایت
+        if (is_file($p) && @filesize($p) > 5242880) {
+            @rename($p, $p . '.1');
+        }
         $dir = dirname($p);
         if (is_dir($dir) && is_writable($dir)) {
             @file_put_contents($p, $line, FILE_APPEND | LOCK_EX);
@@ -110,6 +114,39 @@ function botErrorLog($message, array $ctx = [], $level = 'ERROR', $section = '')
             @file_put_contents($p, $line, FILE_APPEND | LOCK_EX);
             break;
         }
+    }
+}
+
+/** نسخه 2.4.6: وجود جدول با کش ۱۰ دقیقهای (بهجای SHOW TABLES در هر پیام) */
+if (!function_exists('botTableExists')) {
+    function botTableExists($name)
+    {
+        global $pdo;
+        static $mem = [];
+        $name = strval($name);
+        if (isset($mem[$name])) {
+            return $mem[$name];
+        }
+        $f = __DIR__ . '/cron/schema_cache.json';
+        $c = is_file($f) ? json_decode(strval(@file_get_contents($f)), true) : [];
+        if (!is_array($c)) {
+            $c = [];
+        }
+        if (!empty($c[$name]) && (time() - intval($c[$name])) < 600) {
+            return $mem[$name] = true;
+        }
+        $ok = false;
+        try {
+            $st = $pdo->prepare("SHOW TABLES LIKE ?");
+            $st->execute([$name]);
+            $ok = count($st->fetchAll()) > 0;
+        } catch (Throwable $e) {
+        }
+        if ($ok) {
+            $c[$name] = time();
+            @file_put_contents($f, json_encode($c), LOCK_EX);
+        }
+        return $mem[$name] = $ok;
     }
 }
 
@@ -564,6 +601,15 @@ if (!defined('BOT_SHUTDOWN_LOG')) {
             ]);
         } else {
             @error_log($msg);
+        }
+        // نسخه 2.4.6: هشدار خطای جدی به کانال (هر خطای تکراری حداکثر هر ۳۰ دقیقه)
+        try {
+            if (function_exists('botTechAlert')) {
+                $__fl = basename(strval($e['file'] ?? '')) . ':' . intval($e['line'] ?? 0);
+                $__act = strval(($GLOBALS['datain'] ?? '') !== '' ? $GLOBALS['datain'] : ($GLOBALS['text'] ?? ''));
+                botTechAlert('fatal:' . $__fl, "🚨 <b>خطای جدی PHP</b>\nربات به این درخواست جواب نداد.\n\n📄 <code>" . htmlspecialchars($__fl, ENT_QUOTES, 'UTF-8') . "</code>\n<code>" . htmlspecialchars(mb_substr(strval($e['message']), 0, 400), ENT_QUOTES, 'UTF-8') . "</code>\n🆔 کاربر: <code>" . intval($GLOBALS['from_id'] ?? 0) . "</code>\n🔘 " . htmlspecialchars(mb_substr($__act, 0, 60), ENT_QUOTES, 'UTF-8'));
+            }
+        } catch (Throwable $__t) {
         }
     });
 }

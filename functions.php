@@ -81,7 +81,22 @@ function select($table, $field, $whereField = null, $whereValue = null, $type = 
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
     } catch (PDOException $e) {
-        die("Query failed: " . $e->getMessage());
+        // نسخه 2.4.6: بهجای توقف کل ربات → ثبت خطا + هشدار + ادامه
+        if (function_exists('botErrorLog')) {
+            botErrorLog('DB select failed', ['table' => strval($table), 'field' => strval($field), 'where' => strval($whereField), 'err' => $e->getMessage()], 'ERROR', 'db');
+        } else {
+            error_log('select failed: ' . $e->getMessage());
+        }
+        if (function_exists('botTechAlert')) {
+            botTechAlert('db:' . $table . ':' . $whereField, "🚨 <b>خطای دیتابیس</b>\n\nجدول: <code>" . htmlspecialchars(strval($table), ENT_QUOTES, 'UTF-8') . "</code>\n<code>" . htmlspecialchars(mb_substr($e->getMessage(), 0, 300), ENT_QUOTES, 'UTF-8') . "</code>");
+        }
+        if ($type == "count") {
+            return 0;
+        }
+        if ($type == "FETCH_COLUMN" || $type == "fetchAll") {
+            return [];
+        }
+        return false;
     }
 }
 
@@ -588,6 +603,9 @@ function atomicDeductBalance($user_id, $amount)
             return false;
         }
     } catch (Throwable $e) {
+        if (function_exists('botErrorLog')) {
+            botErrorLog('atomicDeductBalance failed', ['uid' => strval($user_id), 'amount' => $amount, 'err' => $e->getMessage()], 'ERROR', 'wallet');
+        }
         return false;
     }
     $row = select("user", "Balance", "id", $user_id, "select");
@@ -608,6 +626,9 @@ function atomicAddBalance($user_id, $amount)
         $st = $pdo->prepare("UPDATE user SET Balance = Balance + :p WHERE id = :id");
         $st->execute([':p' => $amount, ':id' => $user_id]);
     } catch (Throwable $e) {
+        if (function_exists('botErrorLog')) {
+            botErrorLog('atomicAddBalance fallback', ['uid' => strval($user_id), 'amount' => $amount, 'err' => $e->getMessage()], 'ERROR', 'wallet');
+        }
         $row = select("user", "Balance", "id", $user_id, "select");
         $cur = is_array($row) ? intval($row['Balance'] ?? 0) : 0;
         update("user", "Balance", $cur + $amount, "id", $user_id);
@@ -1703,6 +1724,10 @@ function DirectPayment($order_id)
             $err_msg = formatPanelErrorMsg($dataoutput['msg'] ?? null);
             $pay_amount = intval($Payment_report['price']);
             $refunded = refundBalanceIfDeducted($Payment_report['id_user'], $pay_amount, null);
+            if ($refunded > 0 && function_exists('logWalletTx')) {
+                $__rb = select("user", "Balance", "id", $Payment_report['id_user'], "select");
+                logWalletTx($Payment_report['id_user'], 'refund', $refunded, intval(is_array($__rb) ? ($__rb['Balance'] ?? 0) : 0), 'برگشت وجه: ساخت سرویس ناموفق (سفارش ' . $order_id . ')');
+            }
             update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
             $price_fmt = number_format($pay_amount);
             if ($refunded > 0) {
@@ -2103,6 +2128,24 @@ function DirectPayment($order_id)
             }
             sendmessage($uid, "❌ تمدید با خطا مواجه شد. مبلغ تمدید به کیف پول برگشت.\nاز «سرویس‌های من» دوباره تلاش کنید.", null, 'HTML');
             if (function_exists('botLogException')) { botLogException($e, 'renew'); } else { error_log('extendafterpay fail: ' . $e->getMessage()); }
+            // نسخه 2.4.6: ثبت برگشت وجه + خبر به ادمین و کانال
+            try {
+                $__rb = select("user", "Balance", "id", $uid, "select");
+                $__rb_v = intval(is_array($__rb) ? ($__rb['Balance'] ?? 0) : 0);
+                if (function_exists('logWalletTx')) {
+                    logWalletTx($uid, 'refund', $price_ext, $__rb_v, 'برگشت وجه: تمدید ناموفق ' . $ext_username);
+                }
+                $__em = "⚠️ <b>تمدید پس از پرداخت ناموفق</b>\n\n🆔 کاربر: <code>{$uid}</code>\n🔑 سرویس: <code>" . htmlspecialchars(strval($ext_username), ENT_QUOTES, 'UTF-8') . "</code>\n📍 پنل: " . htmlspecialchars(strval($nameloc['Service_location'] ?? '-'), ENT_QUOTES, 'UTF-8') . "\n💰 " . number_format($price_ext) . " تومان به کیف پول برگشت داده شد (موجودی: " . number_format($__rb_v) . ")\n📝 خطا: <code>" . htmlspecialchars(mb_substr($e->getMessage(), 0, 200), ENT_QUOTES, 'UTF-8') . "</code>";
+                foreach ((array)($GLOBALS['admin_ids'] ?? []) as $__adm) {
+                    if (intval($__adm) > 0) {
+                        sendmessage($__adm, $__em, null, 'HTML');
+                    }
+                }
+                if (function_exists('sendChannelReport')) {
+                    sendChannelReport('rpt_create_error', $__em);
+                }
+            } catch (Throwable $__e2) {
+            }
         }
         update("Payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
         if (in_array(strval($Payment_report['Payment_Method'] ?? ''), ['cart to cart', 'sheba'], true) && !empty($callback_query_id)) {
@@ -3633,6 +3676,7 @@ function buildAdminSettingsInlineKeyboard()
     }
     $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'];
     $rows[] = $__last;
+    $rows[] = [['text' => '🩺 سلامت ربات', 'callback_data' => 'bothealth']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -5301,9 +5345,18 @@ function botReportSend($key, $text)
     if ($ch === '' || $ch === '0') {
         return false;
     }
-    $text = strval($text);
+    $text = trim(strval($text));
+    // نسخه 2.4.6: قالب یکدست — نام ربات بالا، خط جداکننده و زمان پایین
+    global $usernamebot;
+    $__bn = trim(strval($usernamebot ?? ''));
+    if ($__bn !== '' && strpos($__bn, '{') === false) {
+        $__bn = ltrim($__bn, '@');
+        if (mb_stripos($text, '@' . $__bn) === false) {
+            $text = "🤖 <b>@" . htmlspecialchars($__bn, ENT_QUOTES, 'UTF-8') . "</b>\n" . $text;
+        }
+    }
     if (mb_strpos($text, '🕐') === false) {
-        $text .= "\n\n🕐 " . (function_exists('jdate') ? jdate('Y/m/d H:i') : date('Y-m-d H:i'));
+        $text .= "\n━━━━━━━━━━\n🕐 " . (function_exists('jdate') ? jdate('Y/m/d H:i') : date('Y-m-d H:i'));
     }
     if (mb_strlen($text) > 4000) {
         $text = mb_substr($text, 0, 3990) . '…';
@@ -5314,6 +5367,13 @@ function botReportSend($key, $text)
     }
     $d = is_array($r) ? strval($r['description'] ?? '') : 'no response';
     error_log('channel report fail [' . $key . ']: ' . $d);
+    // نسخه 2.4.6: ربات دسترسی کانال گزارش را ندارد → روزی یکبار به ادمین اصلی
+    if (preg_match('/rights|not enough|chat not found|forbidden|kicked|not a member|CHAT_WRITE|have no rights/i', $d) && function_exists('botAlertThrottle') && botAlertThrottle('chlost', 86400)) {
+        global $adminnumber;
+        if (!empty($adminnumber) && strpos(strval($adminnumber), '{') === false) {
+            telegram('sendmessage', ['chat_id' => $adminnumber, 'text' => "⚠️ <b>گزارشها به کانال گزارش نمیرسند</b>\n\nکانال: <code>" . htmlspecialchars($ch, ENT_QUOTES, 'UTF-8') . "</code>\nخطای تلگرام: <code>" . htmlspecialchars(mb_substr($d, 0, 200), ENT_QUOTES, 'UTF-8') . "</code>\n\nربات را دوباره در کانال ادمین کنید (با اجازه ارسال پیام) یا از تنظیمات ← کانال گزارش، کانال را دوباره ثبت کنید.\n(این پیام حداکثر روزی یکبار ارسال میشود.)", 'parse_mode' => 'HTML']);
+        }
+    }
     if (stripos($d, "can't parse") !== false) {
         // HTML خراب: نسخه ساده ارسال شود تا گزارش گم نشود
         $r2 = telegram('sendmessage', ['chat_id' => $ch, 'text' => strip_tags($text), 'disable_web_page_preview' => true]);
@@ -8205,6 +8265,265 @@ function botFeatureDangerWarning($type, $cur)
         return "⚠️ <b>روشن کردن عضویت اجباری</b>\n\nکاربرانی که عضو @" . htmlspecialchars($jl, ENT_QUOTES, 'UTF-8') . " نیستند تا عضو نشوند نمیتوانند از ربات استفاده کنند.\n{$line}\nروشن شود؟";
     }
     return '';
+}
+
+/** نسخه 2.4.6: محدودکننده تکرار هشدار — true یعنی اجازه ارسال */
+function botAlertThrottle($sig, $sec)
+{
+    $f = __DIR__ . '/cron/alerts.json';
+    $h = @fopen($f, 'c+');
+    if (!$h) {
+        return true;
+    }
+    @flock($h, LOCK_EX);
+    $d = json_decode(strval(stream_get_contents($h)) ?: '[]', true);
+    if (!is_array($d)) {
+        $d = [];
+    }
+    $k = md5(strval($sig));
+    $now = time();
+    if (!empty($d[$k]) && ($now - intval($d[$k])) < intval($sec)) {
+        @flock($h, LOCK_UN);
+        fclose($h);
+        return false;
+    }
+    $d[$k] = $now;
+    foreach ($d as $kk => $tt) {
+        if ($now - intval($tt) > 172800) {
+            unset($d[$kk]);
+        }
+    }
+    ftruncate($h, 0);
+    rewind($h);
+    fwrite($h, json_encode($d));
+    fflush($h);
+    @flock($h, LOCK_UN);
+    fclose($h);
+    return true;
+}
+
+/** نسخه 2.4.6: هشدار فنی به کانال با محدودیت تکرار */
+function botTechAlert($sig, $text, $throttle = 1800)
+{
+    static $busy = false;
+    if ($busy) {
+        return false;
+    }
+    $busy = true;
+    $sent = false;
+    try {
+        if (botAlertThrottle($sig, $throttle) && function_exists('sendChannelReport')) {
+            sendChannelReport('rpt_tech_error', $text);
+            $sent = true;
+        }
+    } catch (Throwable $e) {
+    }
+    $busy = false;
+    return $sent;
+}
+
+/** نسخه 2.4.6: وضعیت اتصال پنل + هشدار قطع (بعد از ۲ خطای پیاپی) و وصل شدن دوباره */
+function botPanelHealthMark($name, $ok, $err = '')
+{
+    $name = strval($name);
+    if ($name === '') {
+        return;
+    }
+    $f = __DIR__ . '/cron/panel_health.json';
+    $d = json_decode(strval(@file_get_contents($f)), true);
+    if (!is_array($d)) {
+        $d = [];
+    }
+    $s = is_array($d[$name] ?? null) ? $d[$name] : [];
+    $now = time();
+    $hn = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    if ($ok) {
+        if (($s['ok'] ?? null) === false && !empty($s['alerted']) && function_exists('sendChannelReport')) {
+            $mins = max(1, intval(($now - intval($s['since'] ?? $now)) / 60));
+            sendChannelReport('rpt_tech_error', "✅ <b>پنل دوباره وصل شد</b>\n\n🖥 پنل: <b>{$hn}</b>\n⏱ مدت قطعی: حدود {$mins} دقیقه");
+        }
+        if (($s['ok'] ?? null) !== true || ($now - intval($s['checked'] ?? 0)) > 600) {
+            $d[$name] = ['ok' => true, 'since' => (($s['ok'] ?? null) === true ? intval($s['since'] ?? $now) : $now), 'checked' => $now];
+            @file_put_contents($f, json_encode($d, JSON_UNESCAPED_UNICODE), LOCK_EX);
+        }
+        return;
+    }
+    if (($s['ok'] ?? null) !== false) {
+        $s = ['ok' => false, 'since' => $now, 'fails' => 0, 'alerted' => 0];
+    }
+    $s['fails'] = intval($s['fails'] ?? 0) + 1;
+    $s['err'] = mb_substr(strval($err), 0, 300);
+    $s['checked'] = $now;
+    if ($s['fails'] >= 2 && ($now - intval($s['alerted'] ?? 0)) > 1800 && function_exists('sendChannelReport')) {
+        $s['alerted'] = $now;
+        $e = strval($err);
+        if (preg_match('/password|incorrect|401|unauthor/i', $e)) {
+            $cause = 'ورود ناموفق (نام کاربری یا رمز پنل اشتباه است)';
+        } elseif (stripos($e, 'net:') === 0 || preg_match('/timed out|resolve|connect|ssl/i', $e)) {
+            $cause = 'ارتباط برقرار نشد (قطعی شبکه یا خاموش بودن سرور پنل)';
+        } else {
+            $cause = 'پاسخ نامعتبر از API پنل';
+        }
+        sendChannelReport('rpt_tech_error', "🚨 <b>پنل در دسترس نیست</b>\n\n🖥 پنل: <b>{$hn}</b>\n📝 علت: {$cause}\n<code>" . htmlspecialchars(mb_substr($e, 0, 200), ENT_QUOTES, 'UTF-8') . "</code>\n\nساخت و تمدید سرویس روی این پنل انجام نمیشود. وقتی وصل شد خبر میدهم.");
+    }
+    $d[$name] = $s;
+    @file_put_contents($f, json_encode($d, JSON_UNESCAPED_UNICODE), LOCK_EX);
+}
+
+/** نسخه 2.4.6: آمار لاگ ۲۴ ساعت اخیر */
+function botLogStats($path)
+{
+    $out = ['size' => 0, 'err' => 0, 'warn' => 0];
+    if (!is_file($path)) {
+        return $out;
+    }
+    $out['size'] = intval(@filesize($path));
+    $h = @fopen($path, 'rb');
+    if (!$h) {
+        return $out;
+    }
+    $len = 1500000;
+    if ($out['size'] > $len) {
+        fseek($h, -$len, SEEK_END);
+    }
+    $buf = strval(stream_get_contents($h));
+    fclose($h);
+    $since = time() - 86400;
+    foreach (explode("\n", $buf) as $ln) {
+        if (!preg_match('/^\[([^\]]+)\]/', $ln, $m)) {
+            continue;
+        }
+        $ts = @strtotime($m[1]);
+        if (!$ts || $ts < $since) {
+            continue;
+        }
+        if (stripos($ln, '[ERROR]') !== false || stripos($ln, 'fatal') !== false) {
+            $out['err']++;
+        } elseif (stripos($ln, 'warn') !== false) {
+            $out['warn']++;
+        }
+    }
+    return $out;
+}
+
+function botFmtSize($b)
+{
+    $b = intval($b);
+    if ($b >= 1048576) {
+        return round($b / 1048576, 1) . ' MB';
+    }
+    if ($b >= 1024) {
+        return round($b / 1024) . ' KB';
+    }
+    return $b . ' B';
+}
+
+function botAgoText($ts)
+{
+    $ts = intval($ts);
+    if ($ts <= 0) {
+        return 'ثبت نشده';
+    }
+    $a = max(0, time() - $ts);
+    if ($a < 120) {
+        return $a . ' ثانیه پیش';
+    }
+    if ($a < 7200) {
+        return intval($a / 60) . ' دقیقه پیش';
+    }
+    if ($a < 172800) {
+        return intval($a / 3600) . ' ساعت پیش';
+    }
+    return intval($a / 86400) . ' روز پیش';
+}
+
+/** نسخه 2.4.6: صفحه سلامت ربات */
+function botHealthPage($note = '')
+{
+    $dir = __DIR__ . '/cron';
+    $t = ($note !== '' ? $note . "\n\n" : '') . "🩺 <b>سلامت ربات</b>\n";
+    // پنلها
+    $t .= "\n🖥 <b>پنلها</b>\n";
+    $ph = json_decode(strval(@file_get_contents($dir . '/panel_health.json')), true);
+    $ph = is_array($ph) ? $ph : [];
+    $panels = select("marzban_panel", "name_panel", null, null, "fetchAll");
+    if (!is_array($panels) || !$panels) {
+        $t .= "• پنلی ثبت نشده\n";
+    } else {
+        foreach ($panels as $pr) {
+            $n = strval(is_array($pr) ? ($pr['name_panel'] ?? '') : $pr);
+            $st = $ph[$n] ?? null;
+            $hn = htmlspecialchars($n, ENT_QUOTES, 'UTF-8');
+            if (!is_array($st)) {
+                $t .= "• {$hn}: ℹ️ هنوز بررسی نشده\n";
+            } elseif (!empty($st['ok'])) {
+                $t .= "• {$hn}: 🟢 وصل (آخرین ورود موفق " . botAgoText($st['checked'] ?? 0) . ")\n";
+            } else {
+                $t .= "• {$hn}: 🔴 قطع از " . botAgoText($st['since'] ?? 0) . "\n";
+            }
+        }
+    }
+    // کرونها
+    $sc = intval(@file_get_contents($dir . '/smart_cron.last'));
+    $cc = intval(@file_get_contents($dir . '/croncard.last'));
+    $bk = intval(@file_get_contents($dir . '/backup.last'));
+    $t .= "\n⏱ <b>کرونها</b>\n";
+    $t .= "• کرون هوشمند: " . ($sc > 0 && time() - $sc <= 7200 ? '🟢 ' : '🔴 ') . botAgoText($sc) . "\n";
+    $auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
+    $t .= "• تأیید خودکار رسید: " . ($auto ? (($cc > 0 && time() - $cc <= 1800 ? '🟢 ' : '🔴 ') . botAgoText($cc)) : '⚪️ خاموش') . "\n";
+    $bk_on = function_exists('getPaySettingValue') && getPaySettingValue('backup_cron_enabled', '0') === '1';
+    $t .= "• آخرین بکاپ موفق: " . botAgoText($bk) . ($bk_on ? '' : ' (بکاپ خودکار خاموش)') . "\n";
+    $t .= "• پیام همگانی: " . (is_file($dir . '/info') ? '📨 در حال ارسال' : '—') . "\n";
+    // کانال گزارش
+    $st = select("setting", "*", null, null, "select");
+    $rc = is_array($st) ? trim(strval($st['Channel_Report'] ?? '')) : '';
+    $t .= "\n📣 کانال گزارش: " . (($rc !== '' && $rc !== '0') ? '✅ تنظیم شده' : '❌ تنظیم نشده') . "\n";
+    // لاگ
+    $l1 = botLogStats(__DIR__ . '/error_log');
+    $l2 = botLogStats($dir . '/error_log');
+    $t .= "\n📄 <b>لاگ خطا (۲۴ ساعت اخیر)</b>\n";
+    $t .= "• خطا: <b>" . number_format($l1['err'] + $l2['err']) . "</b> | هشدار: <b>" . number_format($l1['warn'] + $l2['warn']) . "</b>\n";
+    $t .= "• حجم: ربات " . botFmtSize($l1['size']) . " | کرون " . botFmtSize($l2['size']) . " (بالای ۵ مگ خودکار جابهجا میشود)";
+    $kb = json_encode(['inline_keyboard' => [
+        [['text' => '📄 ۵۰ خط آخر لاگ', 'callback_data' => 'bothealth_log'], ['text' => '🔄 بروزرسانی', 'callback_data' => 'bothealth']],
+        [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']],
+    ]], JSON_UNESCAPED_UNICODE);
+    return [$t, $kb];
+}
+
+/** نسخه 2.4.6: فایل متنی آخرین خطوط لاگ (توکنها حذف میشوند) */
+function botLogTailFile($lines = 50)
+{
+    $parts = [];
+    foreach (['ربات' => __DIR__ . '/error_log', 'کرون' => __DIR__ . '/cron/error_log'] as $lab => $path) {
+        if (!is_file($path) || @filesize($path) === 0) {
+            continue;
+        }
+        $h = @fopen($path, 'rb');
+        if (!$h) {
+            continue;
+        }
+        $sz = intval(@filesize($path));
+        if ($sz > 200000) {
+            fseek($h, -200000, SEEK_END);
+        }
+        $buf = strval(stream_get_contents($h));
+        fclose($h);
+        $arr = array_values(array_filter(explode("\n", $buf), 'strlen'));
+        $n = ($lab === 'ربات') ? intval($lines) : 20;
+        $parts[] = "===== {$lab} ({$path}) =====\n" . implode("\n", array_slice($arr, -$n));
+    }
+    if (!$parts) {
+        return '';
+    }
+    $txt = implode("\n\n", $parts);
+    $txt = preg_replace('/\d{6,12}:[A-Za-z0-9_-]{30,}/', '[TOKEN]', $txt);
+    $txt = preg_replace('/(password|passwd|secret)(["\']?\s*[:=]\s*)["\']?[^\s"\',}]+/i', '$1$2[HIDDEN]', $txt);
+    $f = rtrim(sys_get_temp_dir(), '/') . '/bot_log_' . time() . '_' . mt_rand(1000, 9999) . '.txt';
+    if (@file_put_contents($f, $txt) === false) {
+        return '';
+    }
+    return $f;
 }
 
 function adminUsertestPanel()

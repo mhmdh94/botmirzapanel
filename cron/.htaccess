@@ -1,4 +1,4 @@
 # Broadcast queue (user IDs + message) and logs must not be downloadable
-<FilesMatch "^(users\.json|info|error_log)$">
+<FilesMatch "^(users\.json|info|error_log(\.1)?|[a-z_]+\.json|[a-z_]+\.last|[a-z_]+\.ts|[a-z_]+\.date)$">
     Require all denied
 </FilesMatch>

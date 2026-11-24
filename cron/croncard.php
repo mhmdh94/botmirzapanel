@@ -11,6 +11,8 @@ require_once '../text.php';
 require '../vendor/autoload.php';
 $ManagePanel = new ManagePanel();
 $setting = select("setting", "*");
+// نسخه 2.4.6: زمان آخرین اجرا (صفحه سلامت ربات)
+@file_put_contents(__DIR__ . '/croncard.last', strval(time()));
 // فقط اگر در دیتابیس صریحاً روشن باشد اجرا شود — در غیر این صورت خروج
 // (اگر تابع نبود یا مقدار غیر از 1 بود، هیچ رسیدی تأیید نشود)
 // نسخه 2.4.0: پاکسازی ردیفهای قدیمی پیام رسید (حداکثر یکبار در ساعت)

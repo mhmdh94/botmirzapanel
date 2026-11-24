@@ -30,6 +30,9 @@ if (!function_exists('runDatabaseBackupAndSend')) {
     exit;
 }
 $res = runDatabaseBackupAndSend(null, false);
+if (!empty($res['ok'])) {
+    @file_put_contents(__DIR__ . '/backup.last', strval(time()));
+}
 if (empty($res['ok'])) {
     error_log('backup_cron: ' . strval($res['message'] ?? 'fail'));
     if (function_exists('sendChannelReport')) {

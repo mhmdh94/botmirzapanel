@@ -298,6 +298,27 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
 }
 
 
+# نسخه 2.4.6: صفحه سلامت ربات + دریافت لاگ (فقط ادمین اصلی)
+if (isset($datain) && ($datain === 'bothealth' || $datain === 'bothealth_log') && in_array($from_id, $admin_ids)) {
+    if ($datain === 'bothealth') {
+        list($__tx, $__kb) = botHealthPage();
+        Editmessagetext($from_id, $message_id, $__tx, $__kb);
+        return;
+    }
+    if (function_exists('isMainBotAdmin') && !isMainBotAdmin($from_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'فقط ادمین اصلی میتواند لاگ را دریافت کند.', 'show_alert' => true]);
+        return;
+    }
+    $__lf = botLogTailFile(50);
+    if ($__lf === '') {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'فایل لاگی وجود ندارد یا خالی است ✅', 'show_alert' => true]);
+        return;
+    }
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => '📄 در حال ارسال…', 'show_alert' => false]);
+    sendDocument($from_id, $__lf, "📄 آخرین خطوط لاگ\n🕐 " . (function_exists('jdate') ? jdate('Y/m/d H:i') : date('Y-m-d H:i')));
+    @unlink($__lf);
+    return;
+}
 # نسخه 2.4.3: توضیح قابلیتها و تأیید تغییرهای حساس
 if (isset($datain) && is_string($datain) && in_array($from_id, $admin_ids)) {
     if (preg_match('/^ftinfo:(\w+)$/', $datain, $__fi)) {
@@ -2324,6 +2345,9 @@ if ($datain === 'backup_now') {
         ? runDatabaseBackupAndSend($from_id, true)
         : (function_exists('runManualDatabaseBackupAndSend') ? runManualDatabaseBackupAndSend($from_id) : ['ok' => false, 'message' => 'تابع موجود نیست']);
     $msg = !empty($bres['ok']) ? ($bres['message'] ?? '✅ انجام شد') : ('❌ ' . strval($bres['message'] ?? 'خطا'));
+    if (!empty($bres['ok'])) {
+        @file_put_contents(__DIR__ . '/cron/backup.last', strval(time()));
+    }
     // نسخه 2.4.3: نتیجه در همان پیام
     Editmessagetext($from_id, $message_id, $msg . "\n\n" . (function_exists('backupSettingsText') ? backupSettingsText() : ''), function_exists('buildBackupSettingsKeyboard') ? buildBackupSettingsKeyboard() : json_encode(['inline_keyboard' => []]));
     return;

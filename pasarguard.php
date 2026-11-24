@@ -125,6 +125,9 @@ function token_panel($code_panel){
     if (curl_error($curl_token)) {
         $token = [];
         $token['errror'] = curl_error($curl_token);
+        if (function_exists('botPanelHealthMark')) {
+            botPanelHealthMark($panel['name_panel'] ?? '', false, 'net: ' . $token['errror']);
+        }
         return $token;
     }
     curl_close($curl_token);
@@ -137,6 +140,12 @@ function token_panel($code_panel){
             'access_token' => $body['access_token']
             ));
         update("marzban_panel","datelogin",$data,'name_panel',$panel['name_panel']);
+        if (function_exists('botPanelHealthMark')) {
+            botPanelHealthMark($panel['name_panel'], true);
+        }
+    }
+    if (!(is_array($body) && isset($body['access_token'])) && function_exists('botPanelHealthMark')) {
+        botPanelHealthMark($panel['name_panel'] ?? '', false, is_array($body) ? json_encode($body['detail'] ?? $body, JSON_UNESCAPED_UNICODE) : 'invalid response');
     }
     return $body;
 }

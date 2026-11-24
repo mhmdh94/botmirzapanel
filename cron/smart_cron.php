@@ -28,6 +28,10 @@ ensureSmartCronSettings();
 ensureSmartCronStateTable();
 // نسخه 2.4.3: زمان آخرین اجرا (برای نمایش در پنل)
 @file_put_contents(__DIR__ . '/smart_cron.last', strval(time()));
+// نسخه 2.4.6: چرخش لاگ کرون بالای ۵ مگابایت
+if (is_file(__DIR__ . '/error_log') && @filesize(__DIR__ . '/error_log') > 5242880) {
+    @rename(__DIR__ . '/error_log', __DIR__ . '/error_log.1');
+}
 // نسخه 2.4.4: خلاصه روزانه کانال گزارش
 if (function_exists('botDailySummaryTick')) {
     try {

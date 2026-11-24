@@ -8,3 +8,10 @@ cron/daily_report.date
 cron/daily_users.json
 cron/watchdog.ts
 cron/watchdog_alert.ts
+cron/croncard.last
+cron/backup.last
+cron/alerts.json
+cron/panel_health.json
+cron/schema_cache.json
+error_log.1
+cron/error_log.1
