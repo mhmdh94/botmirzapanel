@@ -193,6 +193,10 @@ function botButtonStyleFor($t)
     if ($t === '') {
         return '';
     }
+    // نسخه 2.6.36: دکمه منوی «💳 مالی و پرداخت» بیرنگ (فقط به خاطر کلمه «پرداخت» سبز میشد)
+    if (strpos($t, '💳') === 0 && strpos($t, 'مالی') !== false) {
+        return '';
+    }
     $starts = function ($pfx) use ($t) {
         foreach ((array)$pfx as $p) {
             if (strpos($t, $p) === 0) {
