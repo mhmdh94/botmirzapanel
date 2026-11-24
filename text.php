@@ -112,8 +112,12 @@ $textbotlang['users']['sell']['selectpayment'] = "💳 <b>روش پرداخت</b
 
 
 $textbotlang['users']['status']['notUsername'] = "اگر سرویس‌تان در لیست نیست، از دکمه زیر برای جستجو استفاده کنید.";
-$textbotlang['users']['status']['notUsernameget'] = "نام کاربری پیدا نشد.";
-$textbotlang['users']['status']['SendUsername'] = "نام کاربری سرویس را بفرستید:";
+$textbotlang['users']['status']['notUsernameget'] = "⚠️ <b>نام کاربری پیدا نشد</b>
+
+نام کاربری را بررسی کنید و دوباره بفرستید.";
+$textbotlang['users']['status']['SendUsername'] = "🔍 <b>جستجوی سرویس</b>
+
+نام کاربری سرویس را بفرستید:";
 $textbotlang['users']['status']['active'] = "✅ فعال";
 $textbotlang['users']['status']['limited'] = "🚫 پایان حجم";
 $textbotlang['users']['status']['onhold'] = "⏳ متصل نشده";
@@ -130,21 +134,26 @@ $textbotlang['users']['status']['usedTrafficGb'] = "حجم مصرف‌شده";
 $textbotlang['users']['status']['LastTraffic'] = "حجم کل";
 $textbotlang['users']['status']['RemainingVolume'] = "حجم باقی‌مانده";
 $textbotlang['users']['status']['info'] = "📊 اطلاعات سرویس";
-$textbotlang['users']['status']['error'] = "⚠️ مشکلی پیش آمد.
+$textbotlang['users']['status']['error'] = "⚠️ <b>مشکلی پیش آمد</b>
+
 لطفاً چند لحظه بعد دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
-$textbotlang['users']['status']['error_onhold'] = "⚠️ هنوز به سرویس متصل نشده‌اید.
-ابتدا یک‌بار متصل شوید، سپس تمدید کنید.";
-$textbotlang['users']['status']['error2'] = "⚠️ مراحل ناقص ماند.
+$textbotlang['users']['status']['error_onhold'] = "⏳ <b>هنوز به سرویس متصل نشدهاید</b>
+
+ابتدا یکبار متصل شوید، سپس تمدید کنید.";
+$textbotlang['users']['status']['error2'] = "⚠️ <b>مراحل ناقص ماند</b>
+
 از منوی اصلی دوباره شروع کنید.";
-$textbotlang['users']['status']['usernotfound'] = "⚠️ این سرویس روی سرور پیدا نشد.
-سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور حذف می‌شود.
+$textbotlang['users']['status']['usernotfound'] = "⚠️ <b>این سرویس روی سرور پیدا نشد</b>
+
+سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور حذف میشود.
 لطفاً اشتراک جدید تهیه کنید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗 دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
 $textbotlang['users']['status']['backlist'] = "↩️ لیست سرویس‌ها";
 $textbotlang['users']['status']['backservice'] = "↩️ جزئیات سرویس";
-$textbotlang['users']['status']['Invalidusername'] = "❌ نام کاربری معتبر نیست.
-دوباره بفرستید (فقط انگلیسی و عدد):";
+$textbotlang['users']['status']['Invalidusername'] = "❌ <b>نام کاربری معتبر نیست</b>
+
+دوباره بفرستید (فقط حروف انگلیسی و عدد):";
 $textbotlang['users']['status']['manageService'] = "⚙️ تنظیمات سرویس";
 $textbotlang['users']['status']['manageServicedec'] = "📌 یک کانفیگ در پنل بسازید، سرویس‌های مورد نظر را فعال کنید و نام کاربری همان کانفیگ را بفرستید.";
 $textbotlang['users']['status']['DecManageService'] = "⚙️ از دکمه‌های زیر برای مدیریت سرویس استفاده کنید.";
@@ -158,9 +167,15 @@ $textbotlang['users']['extend']['thanks'] = "✅ <b>تمدید با موفقیت
 
 از پرداخت شما متشکریم.
 برای مشاهده سرویس یا بازگشت به لیست، از دکمه‌های زیر استفاده کنید.";
-$textbotlang['users']['extend']['error'] = "⚠️ خطایی رخ داد. لطفاً با پشتیبانی در ارتباط باشید.";
-$textbotlang['users']['extend']['error2'] = "⚠️ تمدید انجام نشد. لطفاً مراحل را از اول انجام دهید.";
-$textbotlang['users']['extend']['selectservice'] = "🛍 محصول مورد نظر برای تمدید را انتخاب کنید:";
+$textbotlang['users']['extend']['error'] = "⚠️ <b>خطایی رخ داد</b>
+
+لطفاً با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['extend']['error2'] = "⚠️ <b>تمدید انجام نشد</b>
+
+لطفاً مراحل را از اول انجام دهید.";
+$textbotlang['users']['extend']['selectservice'] = "🔄 <b>تمدید سرویس</b>
+
+محصول مورد نظر برای تمدید را انتخاب کنید:";
 $textbotlang['users']['extend']['invoicExtend'] = "🧾 <b>پیش‌فاکتور تمدید</b>
 
 👤 نام کاربری: <code>%1\$s</code>
@@ -169,7 +184,7 @@ $textbotlang['users']['extend']['invoicExtend'] = "🧾 <b>پیش‌فاکتور
 💰 مبلغ: <b>%3\$s</b> تومان
 📊 حجم: %5\$s گیگ
 
-✅ برای تأیید تمدید، دکمه زیر را بزنید.
+✅ برای تأیید، دکمه «✅ تأیید تمدید» را بزنید.
 ⚠️ در صورت کمبود موجودی، ابتدا کیف پول را شارژ کنید.";
 
 
@@ -274,9 +289,13 @@ $textbotlang['users']['changetext']['faq_description'] = "📝 تنظیم متن
 $textbotlang['users']['Extra_volume']['SetPrice'] = "💰 قیمت هر گیگ حجم اضافه را به تومان بفرستید.\nقیمت فعلی:";
 $textbotlang['users']['Extra_volume']['ChangedPrice'] = "✅ قیمت حجم اضافه ذخیره شد.";
 $textbotlang['users']['Extra_volume']['sellextra'] = "➕ خرید حجم اضافه";
-$textbotlang['users']['Extra_volume']['extraadded'] = "✅ <b>حجم اضافه شد</b>\nحجم با موفقیت به سرویس شما اضافه شد.";
+$textbotlang['users']['Extra_volume']['extraadded'] = "✅ <b>حجم اضافه شد</b>
+
+حجم با موفقیت به سرویس شما اضافه شد.";
 $textbotlang['users']['Extra_volume']['extracheck'] = "✅ تأیید و دریافت حجم اضافه";
-$textbotlang['users']['Extra_volume']['invalidprice'] = "⚠️ حداقل حجم ۱ گیگابایت است.";
+$textbotlang['users']['Extra_volume']['invalidprice'] = "⚠️ <b>مقدار نامعتبر</b>
+
+حداقل حجم ۱ گیگابایت است؛ دوباره بفرستید.";
 $textbotlang['users']['Extra_volume']['VolumeValue'] = "📊 حجم مورد نظر را به گیگابایت بفرستید (حداقل ۱).
 
 قیمت هر گیگ: <b>%s</b> تومان";
@@ -286,7 +305,7 @@ $textbotlang['users']['Extra_volume']['invoiceExtraVolume'] = "🧾 <b>پیش‌
 💵 مبلغ کل: <b>%s</b> تومان
 📊 حجم: <b>%s</b> گیگ
 
-✅ برای پرداخت، دکمه زیر را بزنید.";
+✅ برای پرداخت، دکمه «✅ تأیید و دریافت حجم اضافه» را بزنید.";
 
 
 
@@ -374,14 +393,22 @@ $textbotlang['users']['removeconfig']['btnremoveuser'] = "💸 بازگشت وج
 $textbotlang['users']['removeconfig']['rejectremove'] = "❌ رد حذف";
 $textbotlang['users']['removeconfig']['acceptrequest'] = "✅ درخواست شما ثبت شد.\nپس از بررسی مدیریت، نتیجه از همین ربات اعلام می‌شود.";
 $textbotlang['users']['removeconfig']['accepetrequest'] = $textbotlang['users']['removeconfig']['acceptrequest'];
-$textbotlang['users']['status']['notusername'] = "❌ امکان حذف سرویس وجود ندارد.";
-$textbotlang['users']['status']['errorexits'] = "❌ برای این سرویس قبلاً درخواست حذف/بازگشت وجه ثبت شده است.\nبرای همین فاکتور درخواست دوم ممکن نیست.\nبرای سرویس‌های دیگر محدودیتی ندارید.";
+$textbotlang['users']['status']['notusername'] = "❌ <b>حذف سرویس ممکن نیست</b>
+
+برای راهنمایی با پشتیبانی در ارتباط باشید.";
+$textbotlang['users']['status']['errorexits'] = "ℹ️ <b>درخواست حذف قبلاً ثبت شده</b>
+
+برای این سرویس قبلاً درخواست حذف/بازگشت وجه ثبت شده و درخواست دوم ممکن نیست.
+برای سرویسهای دیگر محدودیتی ندارید.";
 $textbotlang['users']['status']['descriptions_removeservice'] = "با تأیید، درخواست حذف برای مدیریت ارسال می‌شود.
 
 در صورت موافقت، مبلغ باقی‌مانده (طبق نظر ادمین) به کیف پول برمی‌گردد.";
-$textbotlang['users']['status']['exitsrequsts'] = "⚠️ برای این سرویس قبلاً درخواست حذف ثبت شده است.";
-$textbotlang['users']['status']['sendrequestsremove'] ="✅ درخواست حذف ثبت شد و برای مدیریت ارسال شد.
+$textbotlang['users']['status']['exitsrequsts'] = "ℹ️ <b>درخواست حذف قبلاً ثبت شده</b>
+
 تا بررسی نهایی صبر کنید.";
+$textbotlang['users']['status']['sendrequestsremove'] ="✅ <b>درخواست حذف ثبت شد</b>
+
+درخواست برای مدیریت ارسال شد؛ تا بررسی نهایی صبر کنید.";
 $textbotlang['users']['status']['RemoveSerivecbtn'] = "🗑 حذف سرویس";
 $textbotlang['users']['status']['InfoSerivceDisable'] = "📌 وضعیت: %s
 
@@ -417,7 +444,9 @@ $textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "📌 وضعیت
 
 💡 برای قطع دسترسی دیگران از «تغییر لینک اتصال» استفاده کنید.";
 $textbotlang['users']['status']['RequestRemove'] = "✅ درخواست حذف سرویس";
-$textbotlang['users']['status']['RemovedService'] = "✅ سرویس با موفقیت حذف شد.";
+$textbotlang['users']['status']['RemovedService'] = "✅ <b>سرویس حذف شد</b>
+
+برای خرید سرویس جدید از منوی اصلی استفاده کنید.";
 $textbotlang['users']['status']['RequestInfoRemove'] = "🗑 <b>درخواست حذف سرویس</b>
 
 🆔 کاربر: <code>%s</code>
@@ -436,7 +465,9 @@ $textbotlang['users']['status']['RequestInfoRemove'] = "🗑 <b>درخواست �
 $textbotlang['users']['status']['residaccepted'] = "ℹ️ این درخواست قبلاً بررسی شده است.";
 $textbotlang['users']['status']['rejectreasonprompt'] = "دلیل رد درخواست حذف را بفرستید:";
 $textbotlang['users']['status']['acceptrequestnote'] = "✅ ثبت شد.";
-$textbotlang['users']['status']['rejectsendtouser'] = "❌ درخواست حذف سرویس <code>%s</code> پذیرفته نشد.
+$textbotlang['users']['status']['rejectsendtouser'] = "❌ <b>درخواست حذف پذیرفته نشد</b>
+
+🔑 سرویس: <code>%s</code>
 ✍️ دلیل: %s";
 $textbotlang['users']['status']['getpriceforadd'] = "💰 مبلغ بازگشت به کیف پول کاربر را به تومان بفرستید:";
 $textbotlang['users']['status']['addedbalanceremove'] = "💰 مبلغ <b>%s</b> تومان به موجودی شما اضافه شد.\n👛 موجودی فعلی: <b>%s</b> تومان";
@@ -637,18 +668,25 @@ $textbotlang['users']['cron']['removeexpire'] = "⚠️ سرویس <code>%s</cod
 $textbotlang['users']['cron']['sendedmessage'] = "📌 پیام برای تمامی کاربران ارسال شد.";
 
 
-$textbotlang['users']['search']['disabled'] = "⛔️ جستجوی سرویس فعلاً غیرفعال است.";
+$textbotlang['users']['search']['disabled'] = "⛔️ <b>جستجوی سرویس فعلاً غیرفعال است</b>
 
-$textbotlang['users']['search']['prompt'] = "🔍 نام کاربری سرویس را بفرستید:
+لطفاً بعداً دوباره سر بزنید.";
 
+$textbotlang['users']['search']['prompt'] = "🔍 <b>جستجوی سرویس</b>
+
+نام کاربری سرویس را بفرستید:
 مثال: <code>user123_1</code>";
 
-$textbotlang['users']['search']['notfound'] = "❌ سرویسی با این نام برای شما پیدا نشد.
-فقط سرویس‌های خرید خودتان قابل جستجو است.";
+$textbotlang['users']['search']['notfound'] = "❌ <b>سرویسی با این نام پیدا نشد</b>
 
-$textbotlang['users']['search']['multiple'] = "🔎 چند سرویس مشابه پیدا شد.\nیکی را انتخاب کنید:";
+فقط سرویسهای خرید خودتان قابل جستجو است.";
 
-$textbotlang['users']['search']['found'] = "✅ سرویس پیدا شد.
+$textbotlang['users']['search']['multiple'] = "🔎 <b>چند سرویس مشابه پیدا شد</b>
+
+یکی را انتخاب کنید:";
+
+$textbotlang['users']['search']['found'] = "✅ <b>سرویس پیدا شد</b>
+
 برای مدیریت، دکمه زیر را بزنید:";
 
 $textbotlang['users']['search']['again'] = "🔎 جستجوی مجدد";
@@ -1711,7 +1749,9 @@ $textbotlang['users']['support']['disabled'] = "⛔️ پشتیبانی فعلا
 $textbotlang['Admin']['Status']['status_deposit'] = "افزایش موجودی / واریز";
 $textbotlang['users']['Balance']['deposit_closed'] = "⛔️ واریز به حساب بسته است.
 لطفاً بعداً تلاش کنید.";
-$textbotlang['users']['Extra_volume']['disabled'] = "⛔️ خرید حجم اضافه فعلاً غیرفعال است.";
+$textbotlang['users']['Extra_volume']['disabled'] = "⛔️ <b>خرید حجم اضافه فعلاً غیرفعال است</b>
+
+لطفاً بعداً دوباره سر بزنید.";
 
 $textbotlang['Admin']['Status']['status_tariff_list'] = "دکمه لیست تعرفه";
 $textbotlang['users']['sell']['tariff_disabled'] = "⛔️ <b>لیست تعرفه فعلاً غیرفعال است</b>
