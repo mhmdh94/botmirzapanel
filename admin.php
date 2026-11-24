@@ -4621,6 +4621,9 @@ if ($text == $textbotlang['users']['status']['manageService']) {
     } elseif ($type == "status_search_service") {
         $valuenew = ($value == "1") ? "0" : "1";
         update("setting", "status_search_service", $valuenew);
+    } elseif ($type == "status_miniapp") {
+        $valuenew = ($value == "1") ? "0" : "1";
+        update("setting", "status_miniapp", $valuenew);
     } elseif ($type == "status_affiliates_btn") {
         $valuenew = ($value == "1") ? "0" : "1";
         update("setting", "status_affiliates_btn", $valuenew);

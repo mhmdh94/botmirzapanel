@@ -7424,6 +7424,7 @@ function ensureFeatureSettingsColumns()
         'status_usertest' => '1',
         'status_buy' => '1',
         'status_search_service' => '1',
+        'status_miniapp' => '1',
         'status_affiliates_btn' => '1',
         'status_tariff_list' => '1',
         'status_extra_volume' => '1',
@@ -8175,6 +8176,7 @@ function botFeatureGroups()
             ['force_channel', 'force_channel', '1', '📢 عضویت اجباری کانال'],
             ['NotUser', 'NotUser', '0', '👤 دکمه نام کاربری'],
             ['show_balance', 'show_balance', '0', '👛 نمایش موجودی در منو'],
+            ['status_miniapp', 'status_miniapp', '1', '📱 مینیاپ'],
         ]],
         ['🔐 احراز کاربر', [
             ['get_number', 'get_number', '0', '📱 احراز شماره موبایل'],
@@ -8267,6 +8269,7 @@ function botFeatureInfo($type)
         'category' => 'محصولات هنگام خرید بر اساس دسته‌بندی نمایش داده می‌شوند.',
         'status_tariff_list' => 'دکمه لیست تعرفه‌ها در منوی کاربر.',
         'status_search_service' => 'امکان جستجوی سرویس توسط کاربر.',
+        'status_miniapp' => 'دکمه «📱 مینیاپ» در سرویسهای من و حساب کاربری؛ نمایش سرویسها، لینک و QR، و کیف پول داخل تلگرام.',
         'status_support' => 'دکمه پشتیبانی در منوی کاربر.',
         'status_affiliates_btn' => 'دکمه مشارکت در فروش (لینک دعوت) در منوی کاربر.',
         'status_reseller_panel' => 'بخش پنل نمایندگان (فروش حجمی پنل).',
@@ -10009,4 +10012,21 @@ function processResellerVolumeWarnings()
     }
 }
 
-
+/**
+ * نسخه 2.7.0: ردیف دکمه «📱 مینیاپ» (web_app). اگر مینیاپ خاموش یا دامنه تنظیمنشده باشد null.
+ */
+function botMiniAppRow($setting = null)
+{
+    global $domainhosts;
+    if (!is_array($setting)) {
+        $setting = select("setting", "*");
+    }
+    if (is_array($setting) && strval($setting['status_miniapp'] ?? '1') === '0') {
+        return null;
+    }
+    $d = trim(strval($domainhosts ?? ''));
+    if ($d === '' || $d[0] === '{') {
+        return null;
+    }
+    return [['text' => '📱 مینیاپ', 'web_app' => ['url' => 'https://' . rtrim($d, '/') . '/miniapp/index.html']]];
+}

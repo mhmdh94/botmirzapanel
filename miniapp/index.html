@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>مینی‌اپ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:var(--tg-theme-bg-color,#fff);--bg2:var(--tg-theme-secondary-bg-color,#f1f2f6);--tx:var(--tg-theme-text-color,#111);--hint:var(--tg-theme-hint-color,#8a8f98);--btn:var(--tg-theme-button-color,#2481cc);--btx:var(--tg-theme-button-text-color,#fff)}
+*{box-sizing:border-box}
+body{margin:0;font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg2);color:var(--tx);font-size:15px;-webkit-tap-highlight-color:transparent}
+header{background:var(--bg);padding:16px}
+header .hi{color:var(--hint);font-size:13px}
+header .bal{font-size:20px;font-weight:700;margin-top:4px}
+.tabs{display:flex;background:var(--bg);position:sticky;top:0;z-index:2;border-bottom:1px solid rgba(128,128,128,.15)}
+.tabs button{flex:1;padding:12px 4px;border:0;background:none;color:var(--hint);font:inherit;border-bottom:2px solid transparent;cursor:pointer}
+.tabs button.on{color:var(--btn);border-color:var(--btn);font-weight:700}
+main{padding:12px 12px 24px}
+.card{background:var(--bg);border-radius:12px;padding:14px;margin-bottom:10px}
+.tap{cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.muted{color:var(--hint);font-size:13px;margin-top:4px}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(128,128,128,.12)}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--hint)}
+.bar{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;background:var(--btn)}
+.btn{display:block;width:100%;padding:12px;border:0;border-radius:10px;background:var(--btn);color:var(--btx);font:inherit;font-weight:700;margin-top:10px;cursor:pointer}
+.link{direction:ltr;text-align:left;word-break:break-all;font-family:monospace;font-size:12px;background:var(--bg2);padding:8px;border-radius:8px;margin-top:10px;user-select:all}
+.qr{display:block;margin:12px auto 0;width:210px;height:210px;background:#fff;padding:8px;border-radius:10px}
+.empty{text-align:center;padding:28px 10px;color:var(--hint)}
+.plus{color:#1a9e4b}.minus{color:#d93025}
+</style>
+</head>
+<body>
+<header><div class="hi" id="hi">سلام</div><div class="bal" id="bal">—</div></header>
+<nav class="tabs"><button data-t="svc" class="on">🛍 سرویس‌های من</button><button data-t="wal">👛 کیف پول</button></nav>
+<main id="main"><div class="empty">در حال بارگذاری…</div></main>
+<script>
+(function () {
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var main = document.getElementById('main');
+  var me = null, backFn = null;
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function fmt(n) { return Number(n || 0).toLocaleString('en-US'); }
+  function info(t) { main.textContent = ''; main.appendChild(el('div', 'empty', t)); }
+  function alertMsg(t) { if (tg && tg.showAlert) tg.showAlert(t); else alert(t); }
+  function setBack(fn) {
+    if (!tg || !tg.BackButton) return;
+    if (backFn) tg.BackButton.offClick(backFn);
+    backFn = fn;
+    if (fn) { tg.BackButton.onClick(fn); tg.BackButton.show(); } else { tg.BackButton.hide(); }
+  }
+  function api(action, extra) {
+    var p = { initData: tg ? tg.initData : '', action: action };
+    for (var k in (extra || {})) p[k] = extra[k];
+    return fetch('api.php', { method: 'POST', body: new URLSearchParams(p) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('پاسخ نامعتبر از سرور'); }); })
+      .then(function (j) { if (!j.ok) throw new Error(j.msg || 'خطا'); return j; });
+  }
+  function copy(t) {
+    function done() { if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); alertMsg('✅ لینک اشتراک کپی شد'); }
+    function fallback() {
+      var ta = el('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy') ? done() : alertMsg('لینک را لمس کنید و دستی کپی کنید.'); } catch (e) { alertMsg('لینک را لمس کنید و دستی کپی کنید.'); }
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
+  }
+  function header() {
+    document.getElementById('hi').textContent = 'سلام ' + (me.name || '') + ' 👋';
+    document.getElementById('bal').textContent = '👛 ' + fmt(me.balance) + ' تومان';
+  }
+  function renderServices() {
+    setBack(null); main.textContent = '';
+    if (!me.services.length) {
+      var c = el('div', 'card'); c.appendChild(el('div', 'empty', '📭 هنوز سرویسی ندارید'));
+      c.appendChild(el('div', 'muted', 'برای خرید، در ربات دکمه «خرید سرویس» را بزنید.')); main.appendChild(c); return;
+    }
+    me.services.forEach(function (s) {
+      var c = el('div', 'card tap'), r = el('div', 'row');
+      r.appendChild(el('b', null, s.emoji + ' ' + s.username)); r.appendChild(el('span', 'muted', s.left || ''));
+      c.appendChild(r); c.appendChild(el('div', 'muted', [s.product, s.location].filter(Boolean).join(' · ')));
+      c.onclick = function () { openService(s.username); }; main.appendChild(c);
+    });
+  }
+  function openService(u) {
+    info('در حال دریافت اطلاعات سرویس…'); setBack(renderServices);
+    api('service', { username: u }).then(function (j) {
+      var d = j.service; main.textContent = '';
+      var c = el('div', 'card'); var r = el('div', 'row');
+      r.appendChild(el('b', null, d.emoji + ' ' + d.username)); r.appendChild(el('span', null, d.status_label || ''));
+      c.appendChild(r);
+      if (d.usage_pct !== null) { var b = el('div', 'bar'), i = el('i'); i.style.width = d.usage_pct + '%'; b.appendChild(i); c.appendChild(b); c.appendChild(el('div', 'muted', d.usage_pct + '% مصرف شده')); }
+      d.lines.forEach(function (l) { var k = el('div', 'kv'); k.appendChild(el('span', null, l[0])); k.appendChild(el('span', null, l[1])); c.appendChild(k); });
+      if (!d.live) c.appendChild(el('div', 'muted', '⚠️ اطلاعات زنده از سرور دریافت نشد؛ اطلاعات ثبت‌شده در ربات نمایش داده شده است.'));
+      main.appendChild(c);
+      if (d.sub_url) {
+        var s = el('div', 'card'); s.appendChild(el('b', null, '🔗 لینک اشتراک'));
+        s.appendChild(el('div', 'link', d.sub_url));
+        var bt = el('button', 'btn', '📋 کپی لینک اشتراک'); bt.onclick = function () { copy(d.sub_url); }; s.appendChild(bt);
+        if (d.qr) { var im = el('img', 'qr'); im.src = d.qr; im.alt = 'QR'; s.appendChild(im); s.appendChild(el('div', 'muted', 'QR را با برنامه Happ اسکن کنید.')); }
+        main.appendChild(s);
+      }
+    }).catch(function (e) { info(e.message); });
+  }
+  function renderWallet() {
+    setBack(null); info('در حال دریافت تراکنش‌ها…');
+    api('tx').then(function (j) {
+      me.balance = j.balance; header(); main.textContent = '';
+      var c = el('div', 'card'); c.appendChild(el('div', 'muted', 'موجودی فعلی'));
+      c.appendChild(el('div', null, fmt(j.balance) + ' تومان')).style.cssText = 'font-size:22px;font-weight:700;margin-top:4px';
+      c.appendChild(el('div', 'muted', 'برای افزایش موجودی از منوی ربات «افزایش موجودی» را بزنید.'));
+      main.appendChild(c);
+      var t = el('div', 'card'); t.appendChild(el('b', null, '📜 تراکنش‌های اخیر'));
+      if (!j.items.length) t.appendChild(el('div', 'empty', 'هنوز تراکنشی ثبت نشده است.'));
+      j.items.forEach(function (x) {
+        var k = el('div', 'kv'), a = el('div'); a.appendChild(el('div', null, x.title)); a.appendChild(el('div', 'muted', x.date));
+        var b = el('div'); b.style.textAlign = 'left';
+        b.appendChild(el('div', x.sign === '-' ? 'minus' : 'plus', x.sign + fmt(x.amount)));
+        if (x.after !== null) b.appendChild(el('div', 'muted', 'مانده: ' + fmt(x.after)));
+        k.appendChild(a); k.appendChild(b); t.appendChild(k);
+      });
+      main.appendChild(t);
+    }).catch(function (e) { info(e.message); });
+  }
+  var tabs = document.querySelectorAll('.tabs button');
+  tabs.forEach(function (b) {
+    b.onclick = function () {
+      if (!me) return;
+      tabs.forEach(function (x) { x.classList.toggle('on', x === b); });
+      b.getAttribute('data-t') === 'wal' ? renderWallet() : renderServices();
+    };
+  });
+  if (!tg || !tg.initData) { info('این صفحه را از داخل ربات باز کنید.'); return; }
+  tg.ready(); tg.expand();
+  api('me').then(function (j) { me = j; header(); renderServices(); }).catch(function (e) { info(e.message); });
+})();
+</script>
+</body>
+</html>
