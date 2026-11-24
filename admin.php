@@ -317,7 +317,7 @@ if (isset($datain) && preg_match('/^shop_feat_(.+)$/', strval($datain), $__fm) &
     return;
 }
 # نسخه 2.4.8: روشن/خاموش دکمه‌های رنگی
-if (isset($datain) && $datain === 'btncolor_tg' && in_array($from_id, $admin_ids)) {
+if (isset($datain) && ($datain === 'btncolor_tg' || $datain === 'btncolor_tgf') && in_array($from_id, $admin_ids)) {
     if (function_exists('ensurePaySetting')) {
         ensurePaySetting('button_colors', '1');
     }
@@ -330,6 +330,12 @@ if (isset($datain) && $datain === 'btncolor_tg' && in_array($from_id, $admin_ids
         botAdminActionReport('دکمه‌های رنگی', 'وضعیت: <b>' . ($__bc_new === '1' ? '✅ روشن' : '❌ خاموش') . '</b>');
     }
     telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => ($__bc_new === '1' ? '🎨 دکمه‌های رنگی روشن شد' : 'دکمه‌های رنگی خاموش شد'), 'show_alert' => false]);
+    if ($datain === 'btncolor_tgf' && function_exists('botFeaturesPage')) {
+        // نسخه 2.5.5: از صفحه قابلیت‌ها
+        list($__ftx, $__fkb) = botFeaturesPage();
+        Editmessagetext($from_id, $message_id, $__ftx, $__fkb);
+        return;
+    }
     Editmessagetext($from_id, $message_id,
         function_exists('buildAdminSettingsSectionText') ? buildAdminSettingsSectionText() : '⚙️ تنظیمات',
         function_exists('buildAdminSettingsInlineKeyboard') ? buildAdminSettingsInlineKeyboard() : json_encode(['inline_keyboard' => []]));

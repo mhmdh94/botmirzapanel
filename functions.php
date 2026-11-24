@@ -8219,6 +8219,13 @@ function botFeaturesPage()
             ];
         }
     }
+    // نسخه 2.5.5: دکمه‌های رنگی (پیش‌فرض روشن)
+    $__bc_on = function_exists('botButtonColorsOn') ? botButtonColorsOn() : true;
+    $rows[] = [['text' => '— 🎨 ظاهر —', 'callback_data' => 'adm_noop']];
+    $rows[] = [
+        ['text' => ($__bc_on ? '✅ ' : '❌ ') . '🎨 دکمه‌های رنگی', 'callback_data' => 'btncolor_tgf'],
+        ['text' => 'ℹ️', 'callback_data' => 'ftinfo:btncolor'],
+    ];
     $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
     $t = "🎛 <b>روشن/خاموش قابلیت‌ها</b>\n\nروی هر گزینه بزنید تا روشن/خاموش شود. ℹ️ توضیح همان گزینه را نشان می‌دهد.\nگزینه‌های حساس قبل از تغییر تأیید می‌خواهند.";
     if (botFeatureValue($st, 'Bot_Status', '1') === '0') {
@@ -8253,6 +8260,7 @@ function botFeatureInfo($type)
         'status_affiliates_btn' => 'دکمه مشارکت در فروش (لینک دعوت) در منوی کاربر.',
         'status_reseller_panel' => 'بخش پنل نمایندگان (فروش حجمی پنل).',
         'status_reseller_request' => 'امکان ثبت درخواست نمایندگی توسط کاربر.',
+        'btncolor' => 'رنگی شدن دکمه‌ها (سبز: خرید/تمدید/تأیید، قرمز: حذف/انصراف/افزایش موجودی، آبی: تست/سرویس‌ها). اگر خاموش شود هیچ دکمه‌ای در ربات رنگی نمی‌شود.',
     ];
     return $m[$type] ?? 'توضیحی ثبت نشده است.';
 }
