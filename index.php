@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.7.0";
+$version = "2.6.2";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -972,9 +972,6 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
             ['text' => '🔎 جستجوی سرویس', 'callback_data' => 'search_myservice']
         ];
     }
-    if (function_exists('botMiniAppRow') && ($__mini = botMiniAppRow($setting))) {
-        $keyboardlists['inline_keyboard'][] = $__mini;
-    }
     if (($setting['NotUser'] ?? '') == "1") {
         $keyboardlists['inline_keyboard'][] = [
             ['text' => $textbotlang['Admin']['Status']['notusenameinbot'], 'callback_data' => 'usernotlist']
@@ -1040,9 +1037,6 @@ if ($datain == 'next_page') {
             ['text' => '🔎 جستجوی سرویس', 'callback_data' => 'search_myservice']
         ];
     }
-    if (function_exists('botMiniAppRow') && ($__mini = botMiniAppRow($setting))) {
-        $keyboardlists['inline_keyboard'][] = $__mini;
-    }
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;
     }
@@ -1093,9 +1087,6 @@ if ($datain == 'next_page') {
         $keyboardlists['inline_keyboard'][] = [
             ['text' => '🔎 جستجوی سرویس', 'callback_data' => 'search_myservice']
         ];
-    }
-    if (function_exists('botMiniAppRow') && ($__mini = botMiniAppRow($setting))) {
-        $keyboardlists['inline_keyboard'][] = $__mini;
     }
     if ($setting['NotUser'] == "1") {
         $keyboardlists['inline_keyboard'][] = $usernotlist;

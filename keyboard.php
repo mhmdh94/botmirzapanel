@@ -65,9 +65,6 @@ if ($__acc_aff) {
 if ($__acc_aff) {
     $__acc_rows[] = [['text' => '🤝 لینک دعوت من', 'callback_data' => 'acc_invite']];
 }
-if (function_exists('botMiniAppRow') && ($__mini = botMiniAppRow($setting))) {
-    $__acc_rows[] = $__mini;
-}
 $keyboardPanel = json_encode(['inline_keyboard' => $__acc_rows]);
 // منوی ادمین گروه‌بندی‌شده: آمار | فروش/مالی | پنل | کاربران | تنظیمات/متن
 $__kb_admin_rows = [

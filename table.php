@@ -143,7 +143,6 @@ $connect->query("INSERT INTO setting (Bot_Status,roll_Status,get_number,limit_us
         addFieldToTable($tableName, 'status_usertest', '1',"VARCHAR(20)");
         addFieldToTable($tableName, 'status_buy', '1',"VARCHAR(20)");
         addFieldToTable($tableName, 'status_search_service', '1',"VARCHAR(20)");
-        addFieldToTable($tableName, 'status_miniapp', '1',"VARCHAR(20)");
         addFieldToTable($tableName, 'status_affiliates_btn', '1',"VARCHAR(20)");
         addFieldToTable($tableName, 'status_tariff_list', '1',"VARCHAR(20)");
         addFieldToTable($tableName, 'status_extra_volume', '1',"VARCHAR(20)");
