@@ -2134,7 +2134,7 @@ function DirectPayment($order_id)
                     [['text' => $textbotlang['users']['status']['backservice'] ?? 'جزئیات سرویس', 'callback_data' => 'product_' . $ext_username]],
                 ]
             ]);
-            sendmessage($uid, $textbotlang['users']['extend']['thanks'] ?? '✅ تمدید با موفقیت انجام شد.', $keyb, 'HTML');
+            sendmessage($uid, function_exists('botRenewDoneText') ? botRenewDoneText($ext_username, $product, $price_ext, $bal_after ?? null, (!empty($__xd_used) ? $__xd_code : '')) : ($textbotlang['users']['extend']['thanks'] ?? '✅ تمدید با موفقیت انجام شد.'), $keyb, 'HTML');
             $GLOBALS['payment_user_notified'] = true;
             $tg_name = $Balance_id['username'] ?? '-';
             $active_svc = function_exists('countUserActiveServices') ? countUserActiveServices($uid) : 0;
@@ -10340,5 +10340,40 @@ function botAffiliateStats($uid)
         error_log('affiliate stats: ' . $e->getMessage());
     }
     return $o;
+}
+
+/** نسخه 2.6.10: پیام کامل «تمدید با موفقیت انجام شد» */
+function botRenewDoneText($username, $product, $paid, $balance_after, $discount_code = '')
+{
+    $paid = intval($paid);
+    $days = intval(is_array($product) ? ($product['Service_time'] ?? 0) : 0);
+    if ($days > 0) {
+        $exp_ts = time() + $days * 86400;
+        $exp = function_exists('jdate') ? jdate('Y/m/d', $exp_ts) : date('Y/m/d', $exp_ts);
+        $exp .= " ({$days} روز)";
+    } else {
+        $exp = 'نامحدود';
+    }
+    $vol = is_array($product) ? strval($product['Volume_constraint'] ?? '') : '';
+    $vol_txt = (is_numeric($vol) && floatval($vol) > 0) ? ($vol . ' گیگ') : 'نامحدود';
+    $h = function ($v) {
+        return htmlspecialchars(strval($v), ENT_QUOTES, 'UTF-8');
+    };
+    $t = "✅ <b>تمدید با موفقیت انجام شد</b>\n\n"
+        . "👤 سرویس: <code>" . $h($username) . "</code>\n"
+        . "📦 پلن: " . $h(is_array($product) ? ($product['name_product'] ?? '') : '') . "\n"
+        . "📊 حجم: " . $h($vol_txt) . "\n"
+        . "📅 تاریخ پایان جدید: <b>" . $h($exp) . "</b>\n";
+    if ($paid <= 0) {
+        $t .= "🎁 با کد تخفیف" . ($discount_code !== '' ? " <code>" . $h($discount_code) . "</code>" : '') . " رایگان تمدید شد\n";
+    } else {
+        $t .= "💰 مبلغ کسرشده: <b>" . number_format($paid) . "</b> تومان"
+            . ($discount_code !== '' ? " (با کد <code>" . $h($discount_code) . "</code>)" : '') . "\n";
+    }
+    if ($balance_after !== null) {
+        $t .= "👛 موجودی فعلی: <b>" . number_format(intval($balance_after)) . "</b> تومان\n";
+    }
+    $t .= "\nبرای مشاهده سرویس یا بازگشت به لیست، از دکمههای زیر استفاده کنید.";
+    return $t;
 }
 

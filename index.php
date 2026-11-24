@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.9";
+$version = "2.6.10";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -2242,7 +2242,18 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (!empty($__lock_path) && is_file($__lock_path)) {
         @unlink($__lock_path);
     }
-    sendmessage($from_id, $textbotlang['users']['extend']['thanks'], $keyboardextendfnished, 'HTML');
+    // نسخه 2.6.10: پیام «در حال تمدید» به پیام کامل موفقیت تبدیل میشود (نه پیام جدا)
+    $__done_txt = function_exists('botRenewDoneText')
+        ? botRenewDoneText($usernamepanel, $product, $__price_ext, $Balance_Low_user, $__ext_dc ?? '')
+        : $textbotlang['users']['extend']['thanks'];
+    $__done_ok = false;
+    if (!empty($message_id)) {
+        $__done_r = Editmessagetext($from_id, $message_id, $__done_txt, $keyboardextendfnished);
+        $__done_ok = is_array($__done_r) && !empty($__done_r['ok']);
+    }
+    if (!$__done_ok) {
+        sendmessage($from_id, $__done_txt, $keyboardextendfnished, 'HTML');
+    }
     // recordSale تمدید قبلاً در ابتدای مسیر ثبت شده — از ثبت تکراری جلوگیری می‌شود
 
     $tg_name = $user['username'] ?? ($username ?? '');
