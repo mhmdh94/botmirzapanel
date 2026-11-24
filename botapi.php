@@ -263,6 +263,18 @@ function botStyleMarkup($rm)
                 if (in_array(strval($b['callback_data'] ?? ''), ['prodlist_header', 'product_header'], true)) {
                     continue;
                 }
+                // نسخه 2.6.38: دکمههای صفحه «اطلاعات کاربر» (ادمین) بیرنگ؛ فقط مسدود کردن قرمز و دکمههای روشن/خاموش طبق وضعیت
+                $__cb = strval($b['callback_data'] ?? '');
+                $__plain = false;
+                foreach (['addbalanceuser_', 'lowbalanceuser_', 'unbanuserr_', 'confirmnumber_', 'limitusertest_', 'verify_', 'verifyun_', 'vieworderall_', 'addordermanual', 'Response_', 'set_panel_admin_user_'] as $__pfx) {
+                    if (strpos($__cb, $__pfx) === 0) {
+                        $__plain = true;
+                        break;
+                    }
+                }
+                if ($__plain) {
+                    continue;
+                }
                 // نسخه 2.6.31: سرویس تمامشده در «سرویسهای من» قرمز نشود (شبیه دکمه حذف بود)
                 if (strpos(strval($b['callback_data'] ?? ''), 'product_') === 0 && strpos(strval($b['text']), '🔴') === 0) {
                     continue;

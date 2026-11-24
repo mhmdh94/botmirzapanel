@@ -4528,15 +4528,14 @@ function sendAdminUserInfo($admin_id, $target_user_id)
                 ['text' => $textbotlang['Admin']['ManageUser']['banuserlist'] ?? '🔒 مسدود کردن کاربر', 'callback_data' => "banuserlist_" . $uid],
                 ['text' => $textbotlang['Admin']['ManageUser']['unbanuserlist'] ?? '🔓 رفع مسدودی کاربر', 'callback_data' => "unbanuserr_" . $uid],
             ],
+            // نسخه 2.6.38: دو دکمه در یک ردیف تا صفحه کوتاهتر شود
             [
-                ['text' => $textbotlang['Admin']['ManageUser']['confirmnumber'] ?? 'تایید دستی شماره تلفن', 'callback_data' => "confirmnumber_" . $uid],
+                ['text' => '🧪 محدودیت اکانت تست', 'callback_data' => "limitusertest_" . $uid],
+                ['text' => '📱 تایید دستی شماره', 'callback_data' => "confirmnumber_" . $uid],
             ],
             [
-                ['text' => $textbotlang['Admin']['getlimitusertest']['setlimitbtn'] ?? '➕ محدودیت ساخت اکانت تست', 'callback_data' => "limitusertest_" . $uid],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['ManageUser']['verify'] ?? 'احراز هویت', 'callback_data' => "verify_" . $uid],
-                ['text' => $textbotlang['Admin']['ManageUser']['removeverify'] ?? 'حذف احراز هویت', 'callback_data' => "verifyun_" . $uid],
+                ['text' => '🪪 احراز هویت', 'callback_data' => "verify_" . $uid],
+                ['text' => '🚫 حذف احراز هویت', 'callback_data' => "verifyun_" . $uid],
             ],
             [
                 ['text' => $textbotlang['Admin']['ManageUser']['vieworderuser'] ?? '🛍 مشاهده سفارشات کاربر', 'callback_data' => "vieworderall_" . $uid],
