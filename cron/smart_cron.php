@@ -67,7 +67,7 @@ if (function_exists('cleanupExpiredUnpaidInvoices')) {
 
 
 // نسخه 2.6.48: یادآوری رسید کارتبهکارتی که 30 دقیقه بررسی نشده
-if (smartCronFlag('smart_rcpt_remind', '1') && function_exists('botReceiptRemindTick')) {
+if (smartCronFlag('smart_rcpt_remind', '0') && function_exists('botReceiptRemindTick')) {
     $n_rr = botReceiptRemindTick();
     if ($n_rr > 0 && function_exists('smartCronDebugLog')) {
         smartCronDebugLog("🔔 یادآوری رسید برای {$n_rr} کاربر ارسال شد");
@@ -125,7 +125,7 @@ $do_time = smartCronFlag('smart_warn_time', '0');
 $do_exp = smartCronFlag('smart_warn_expired', '0');
 $do_emg = smartCronFlag('smart_emergency', '0');
 $do_tf = smartCronFlag('smart_test_followup', '0');
-$do_og = smartCronFlag('smart_onhold_guide', '1');
+$do_og = smartCronFlag('smart_onhold_guide', '0');
 
 // اگر هیچ‌کدام روشن نیست، فقط نشانگر را جلو ببر و خارج شو (بدون پیام)
 if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og) {

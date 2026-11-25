@@ -5235,8 +5235,9 @@ function ensureSmartCronSettings()
     // نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست
     ensurePaySetting('smart_test_followup', '0');
     // نسخه 2.6.48: راهنمای اتصال برای سرویس وصلنشده + یادآوری رسید بررسینشده
-    ensurePaySetting('smart_onhold_guide', '1');
-    ensurePaySetting('smart_rcpt_remind', '1');
+    // نسخه 2.6.49: پیشفرض خاموش
+    ensurePaySetting('smart_onhold_guide', '0');
+    ensurePaySetting('smart_rcpt_remind', '0');
 }
 
 /** نسخه 2.6.48: سرویسی که 24 ساعت بعد از خرید هنوز وصل نشده → یک بار پیام راهنمای اتصال */
@@ -5423,9 +5424,9 @@ function botTestFollowup($uid, $username, $location)
         }
         $msg = $textbotlang['users']['cron']['test_followup']
             ?? "🧪 <b>اکانت تست شما تمام شد</b>\n\nاگر از کیفیت راضی بودید، میتوانید همین حالا اشتراک بگیرید.";
+        // نسخه 2.6.49: فقط دکمه خرید (بدون پشتیبانی)
         sendmessage($uid, $msg, json_encode(['inline_keyboard' => [
             [['text' => '🛒 خرید اشتراک', 'callback_data' => 'buy_fromtest']],
-            [['text' => '🎟 پشتیبانی', 'callback_data' => 'support']],
         ]], JSON_UNESCAPED_UNICODE), 'HTML');
         return true;
     } catch (Throwable $e) {
@@ -6901,8 +6902,8 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_warn_time', '0') ? $on : $off) . ' اخطار زمان', 'callback_data' => 'smartcron_toggle_time']],
         [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']],
         [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
-        [['text' => (smartCronFlag('smart_onhold_guide', '1') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
-        [['text' => (smartCronFlag('smart_rcpt_remind', '1') ? $on : $off) . ' یادآوری رسید بررسینشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
+        [['text' => (smartCronFlag('smart_onhold_guide', '0') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
+        [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسینشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
