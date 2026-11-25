@@ -5947,7 +5947,7 @@ if ($__rv_is_admin && isset($text) && $text === $__rv_admin_btn) {
             [['text' => '📋 تنظیم پلن‌های پنل', 'callback_data' => 'rv_admin_plans']],
             [['text' => '🖥 تنظیم اطلاعات پنل', 'callback_data' => 'rv_admin_panel']],
         ]]);
-    sendmessage($from_id, "🛠 <b>مدیریت پنل نمایندگان</b>\n\nتنظیمات پنل و پلن‌های حجم ریسلر.", $kb, 'HTML');
+    sendmessage($from_id, (function_exists('resellerVolumeAdminHubText') ? resellerVolumeAdminHubText() : "🛠 <b>مدیریت پنل نمایندگان</b>"), $kb, 'HTML');
     return;
 }
 
@@ -5958,7 +5958,7 @@ if ($__rv_is_admin && function_exists('isResellerFeatureEnabled') && isResellerF
     if ($datain === 'rv_hub_back' || $datain === 'rv_admin_hub') {
         $__rv_load();
         $kb = function_exists('resellerVolumeAdminKeyboard') ? resellerVolumeAdminKeyboard() : null;
-        Editmessagetext($from_id, $message_id, "🛠 <b>مدیریت پنل نمایندگان</b>\n\nتنظیمات پنل و پلن‌های حجم ریسلر.", $kb);
+        Editmessagetext($from_id, $message_id, (function_exists('resellerVolumeAdminHubText') ? resellerVolumeAdminHubText() : "🛠 <b>مدیریت پنل نمایندگان</b>"), $kb);
         return;
     }
 

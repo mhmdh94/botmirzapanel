@@ -145,31 +145,72 @@ function saveResellerPanelCredentials($url, $username, $password)
  * منوی اصلی Reseller Panel — دو گزینه ثابت
  * فقط UI ادمین؛ هیچ تاثیری روی فروش اکانت / marzban_panel ندارد
  */
+/** نسخه 2.6.56: خلاصه وضعیت بالای صفحه مدیریت پنل نمایندگان */
+function resellerVolumeAdminStats()
+{
+    global $pdo;
+    $o = ['panel' => '', 'plans' => 0, 'users' => 0, 'warn' => false, 'levels' => '80,90,95'];
+    try {
+        $p = function_exists('getResellerPanel') ? getResellerPanel() : null;
+        if (is_array($p)) {
+            $u = strval($p['url_panel'] ?? ($p['url'] ?? ($p['panel_url'] ?? '')));
+            $h = parse_url($u, PHP_URL_HOST);
+            $o['panel'] = $h ? $h : ($u !== '' ? $u : strval($p['name_panel'] ?? ''));
+        }
+    } catch (Throwable $e) {
+    }
+    try {
+        $o['plans'] = count((array) resellerListPlans(true));
+    } catch (Throwable $e) {
+    }
+    try {
+        $o['users'] = intval($pdo->query("SELECT COUNT(*) FROM user WHERE panel_admin_enabled = 1")->fetchColumn());
+    } catch (Throwable $e) {
+    }
+    $o['warn'] = (function_exists('smartCronFlag') && smartCronFlag('smart_reseller_warn', '0'));
+    if (function_exists('getPaySettingValue')) {
+        $o['levels'] = strval(getPaySettingValue('smart_reseller_vol_levels', '80,90,95'));
+    }
+    return $o;
+}
+
+/** نسخه 2.6.56: متن صفحه مدیریت پنل نمایندگان */
+function resellerVolumeAdminHubText()
+{
+    $s = resellerVolumeAdminStats();
+    $panel = $s['panel'] !== ''
+        ? '✅ <code>' . htmlspecialchars($s['panel'], ENT_QUOTES, 'UTF-8') . '</code>'
+        : '⚠️ تنظیم نشده';
+    return "🛠 <b>مدیریت پنل نمایندگان</b>\n━━━━━━━━━━\n"
+        . "🖥 پنل: {$panel}\n"
+        . "📋 پلن‌های فعال: <b>" . number_format($s['plans']) . "</b>\n"
+        . "👥 کاربران پنل‌دار: <b>" . number_format($s['users']) . "</b>\n"
+        . "⏱ هشدار حجم: " . ($s['warn'] ? '✅ روشن (' . htmlspecialchars($s['levels'], ENT_QUOTES, 'UTF-8') . '٪)' : '❌ خاموش') . "\n"
+        . "━━━━━━━━━━\n"
+        . "یک بخش را انتخاب کنید:";
+}
+
 function resellerVolumeAdminKeyboard()
 {
     global $textbotlang;
-    $warn_on = (function_exists('smartCronFlag') && smartCronFlag('smart_reseller_warn', '0'));
-    $levels = function_exists('getPaySettingValue') ? getPaySettingValue('smart_reseller_vol_levels', '80,90,95') : '80,90,95';
-    $mark = $warn_on ? '✅' : '❌';
+    // نسخه 2.6.56: چیدمان دوستونه + شمارنده‌ها
+    $s = resellerVolumeAdminStats();
     return json_encode([
         'inline_keyboard' => [
             [
-                ['text' => $textbotlang['Admin']['reseller_volume']['btn_plans'] ?? '📋 تنظیم پلن‌های پنل', 'callback_data' => 'rv_admin_plans'],
+                ['text' => '🖥 اطلاعات پنل', 'callback_data' => 'rv_admin_panel'],
+                ['text' => '📋 پلن‌ها (' . number_format($s['plans']) . ')', 'callback_data' => 'rv_admin_plans'],
             ],
             [
-                ['text' => $textbotlang['Admin']['reseller_volume']['btn_panel'] ?? '🖥 تنظیم اطلاعات پنل', 'callback_data' => 'rv_admin_panel'],
+                ['text' => '📊 وضعیت حجم', 'callback_data' => 'rv_admin_volume_status'],
+                ['text' => '👥 پنل‌دارها (' . number_format($s['users']) . ')', 'callback_data' => 'rv_list_users'],
             ],
             [
-                ['text' => '👥 کاربران پنل‌دار', 'callback_data' => 'rv_list_users'],
+                ['text' => '⚙️ درصدها: ' . $s['levels'], 'callback_data' => 'rv_cron_set_levels'],
+                ['text' => ($s['warn'] ? '✅' : '❌') . ' هشدار حجم', 'callback_data' => 'rv_cron_settings'],
             ],
             [
-                ['text' => '📊 وضعیت حجم ادمین‌ها', 'callback_data' => 'rv_admin_volume_status'],
-            ],
-            [
-                ['text' => "⏱ کرون هشدار حجم {$mark}", 'callback_data' => 'rv_cron_settings'],
-            ],
-            [
-                ['text' => "⚙️ درصدها: {$levels}", 'callback_data' => 'rv_cron_set_levels'],
+                ['text' => '🔄 بروزرسانی', 'callback_data' => 'rv_admin_hub'],
             ],
         ],
     ], JSON_UNESCAPED_UNICODE);
