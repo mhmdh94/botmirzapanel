@@ -267,6 +267,10 @@ if (isset($datain) && is_string($datain) && (preg_match('/^(navshop_|navuser_|na
             return;
         }
         $__rv = botRemoteVersion();
+        // نسخه 2.6.44: کش نسخه گیتهاب هم تازه شود (برای رنگ دکمه آپدیت)
+        if ($__rv !== '') {
+            @file_put_contents(__DIR__ . '/cron/remote_version.json', json_encode(['v' => $__rv, 't' => time()]));
+        }
         $__cv = strval($version ?? '-');
         if ($__rv === '') {
             $__vs = "⚠️ دریافت نسخه گیتهاب ممکن نشد (اتصال سرور به گیتهاب).";

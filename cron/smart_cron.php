@@ -41,6 +41,14 @@ if (function_exists('botDailySummaryTick')) {
     }
 }
 
+// نسخه 2.6.44: کش نسخه گیتهاب (هر ۱ ساعت) برای سبز شدن دکمه «آپدیت ربات»
+if (function_exists('botRemoteVersionRefresh')) {
+    try {
+        botRemoteVersionRefresh(3600);
+    } catch (Throwable $e) {
+    }
+}
+
 // نسخه 2.6.41: حذف خودکار کدهای تخفیف منقضی
 if (function_exists('botPurgeExpiredDiscounts')) {
     $n_dsc = botPurgeExpiredDiscounts();

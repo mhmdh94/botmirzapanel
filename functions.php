@@ -3792,7 +3792,13 @@ function buildAdminSettingsInlineKeyboard()
     global $from_id;
     $__last = [];
     if (!function_exists('isMainBotAdmin') || isMainBotAdmin($from_id ?? 0)) {
-        $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['bot_update'] ?? '🔄 آپدیت ربات', 'callback_data' => 'navset_update'];
+        $__upd = ['text' => $textbotlang['Admin']['keyboardadmin']['bot_update'] ?? '🔄 آپدیت ربات', 'callback_data' => 'navset_update'];
+        // نسخه 2.6.44: فقط وقتی نسخه جدید روی گیتهاب هست سبز شود
+        if (function_exists('botUpdateAvailable') && botUpdateAvailable() && (!function_exists('botButtonColorsOn') || botButtonColorsOn())) {
+            $__upd['text'] = '🆕 ' . $__upd['text'];
+            $__upd['style'] = 'success';
+        }
+        $__last[] = $__upd;
     }
     $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'];
     $rows[] = $__last;
@@ -3886,7 +3892,11 @@ function buildAdminUserServicesInlineKeyboard()
                 ['text' => ($textbotlang['Admin']['ManageUser']['list_blocked'] ?? '🚫 مسدود شده‌ها') . ' (' . number_format($c['blocked']) . ')', 'callback_data' => 'navuser_block'],
             ],
             [
-                ['text' => ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده') . ' (' . number_format($c['rcpt']) . ')', 'callback_data' => 'navuser_rcpt'],
+                // نسخه 2.6.44: وقتی رسید منتظر هست قرمز
+                array_merge(
+                    ['text' => ($textbotlang['Admin']['ManageUser']['pending_receipts'] ?? '🧾 رسیدهای تایید نشده') . ' (' . number_format($c['rcpt']) . ')', 'callback_data' => 'navuser_rcpt'],
+                    (intval($c['rcpt']) > 0 && (!function_exists('botButtonColorsOn') || botButtonColorsOn())) ? ['style' => 'danger'] : []
+                ),
                 ['text' => '💰 موجودی بالای 500 هزار (' . number_format($c['rich']) . ')', 'callback_data' => 'navuser_rich'],
             ],
             [
@@ -8579,6 +8589,76 @@ function botSmartCronMenuText()
         . $st . $iss_t
         . "\n\nℹ️ <b>حذف فاکتور یوزر غایب:</b> فقط وقتی پنل صریحاً بگوید کاربر وجود ندارد، فاکتور از ربات حذف می‌شود."
         . "\nℹ️ <b>اخطارها:</b> طبق درصدها و روزهای تنظیم‌شده فرستاده می‌شوند؛ تنظیم هر اخطار وقتی روشن شود زیر آن می‌آید.";
+}
+
+/** نسخه 2.6.44: نسخه گیتهاب از کش (بدون اتصال به اینترنت؛ کش را کرون هوشمند و صفحه آپدیت تازه میکنند) */
+function botRemoteVersionCached()
+{
+    $d = json_decode(strval(@file_get_contents(__DIR__ . '/cron/remote_version.json')), true);
+    return is_array($d) ? strval($d['v'] ?? '') : '';
+}
+
+/** نسخه 2.6.44: کش نسخه گیتهاب را تازه کن (حداکثر هر $ttl ثانیه یک بار) */
+function botRemoteVersionRefresh($ttl = 3600)
+{
+    $f = __DIR__ . '/cron/remote_version.json';
+    $d = json_decode(strval(@file_get_contents($f)), true);
+    if (is_array($d) && (time() - intval($d['t'] ?? 0)) < $ttl) {
+        return strval($d['v'] ?? '');
+    }
+    $v = botRemoteVersion();
+    if ($v !== '') {
+        @file_put_contents($f, json_encode(['v' => $v, 't' => time()]));
+    } else {
+        // خطای اتصال: نسخه قبلی کش بماند، فقط زمان تلاش ثبت شود تا هر بار تلاش نکند
+        @file_put_contents($f, json_encode(['v' => is_array($d) ? strval($d['v'] ?? '') : '', 't' => time()]));
+    }
+    return $v !== '' ? $v : (is_array($d) ? strval($d['v'] ?? '') : '');
+}
+
+/** نسخه 2.6.44: آیا نسخه جدیدتری روی گیتهاب هست؟ (فقط از کش) */
+function botUpdateAvailable()
+{
+    global $version;
+    $rv = botRemoteVersionCached();
+    return $rv !== '' && isset($version) && version_compare($rv, strval($version), '>');
+}
+
+/** نسخه 2.6.44: آیا سلامت ربات مشکل دارد؟ (کرون/بکاپ از فایلها؛ وبهوک با کش ۱۰ دقیقه) */
+function botHealthHasIssue()
+{
+    static $res = null;
+    if ($res !== null) {
+        return $res;
+    }
+    $res = false;
+    try {
+        if (function_exists('botCronReminderIssues') && count(botCronReminderIssues()) > 0) {
+            $res = true;
+            return $res;
+        }
+    } catch (Throwable $e) {
+    }
+    $f = __DIR__ . '/cron/webhook_health.json';
+    $d = json_decode(strval(@file_get_contents($f)), true);
+    if (!is_array($d) || (time() - intval($d['t'] ?? 0)) > 600) {
+        $bad = false;
+        try {
+            $w = telegram('getWebhookInfo', []);
+            $wr = (is_array($w) && !empty($w['ok']) && is_array($w['result'] ?? null)) ? $w['result'] : null;
+            if (is_array($wr)) {
+                $le = intval($wr['last_error_date'] ?? 0);
+                $bad = strval($wr['url'] ?? '') === ''
+                    || intval($wr['pending_update_count'] ?? 0) > 100
+                    || ($le > 0 && time() - $le < 3600);
+            }
+        } catch (Throwable $e) {
+        }
+        $d = ['bad' => $bad ? 1 : 0, 't' => time()];
+        @file_put_contents($f, json_encode($d));
+    }
+    $res = !empty($d['bad']);
+    return $res;
 }
 
 /** نسخه 2.4.3: نسخه index.php روی گیتهاب */
