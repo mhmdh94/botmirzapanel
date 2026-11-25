@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.50";
+$version = "2.6.51";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -63,6 +63,17 @@ if (!empty($callback_query_id)) {
 #-----------duplicate update guard------------#
 if (!botClaimUpdate($update['update_id'] ?? 0))
     return;
+// نسخه 2.6.51: دکمههای بازگشت یکدست شدند (🔙)؛ دکمه قدیمی «↩️ …» روی کیبورد کاربران هم کار کند
+if (isset($text) && is_string($text)) {
+    $__legacy_back = [
+    '↩️ بازگشت' => '🔙 بازگشت',
+    '↩️ جزئیات سرویس' => '🔙 جزئیات سرویس',
+    '↩️ لیست سرویس‌ها' => '🔙 لیست سرویس‌ها',
+    ];
+    if (isset($__legacy_back[$text])) {
+        $text = $__legacy_back[$text];
+    }
+}
 #-------------Variable----------#
 $users_ids = select("user", "id", null, null, "FETCH_COLUMN");
 // قبل از INSERT: آیا این کاربر از قبل عضو ربات بوده؟
@@ -1355,7 +1366,7 @@ if ($user['step'] == "getusernameinfo") {
     ];
     $status_var = $__status_map[$status] ?? ($status !== '' && $status !== null ? strval($status) : ($textbotlang['users']['status']['disabled'] ?? 'نامشخص'));
     #--------------[ expire ]---------------#
-    $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
+    $expirationDate = $DataUserOut['expire'] ? jdate('l Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['Unlimited'];
     #---------------[ RemainingVolume ]--------------#
@@ -1536,7 +1547,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     ];
     $status_var = $__status_map[$status] ?? ($status !== '' && $status !== null ? strval($status) : ($textbotlang['users']['status']['disabled'] ?? 'نامشخص'));
     #--------------[ expire ]---------------#
-    $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
+    $expirationDate = $DataUserOut['expire'] ? jdate('l Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['Unlimited'];
     #---------------[ RemainingVolume ]--------------#
@@ -2843,7 +2854,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     ];
     $status_var = $__status_map[$status] ?? ($status !== '' && $status !== null ? strval($status) : ($textbotlang['users']['status']['disabled'] ?? 'نامشخص'));
     #--------------[ expire ]---------------#
-    $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
+    $expirationDate = $DataUserOut['expire'] ? jdate('l Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['Unlimited'];
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['Unlimited'];
     #---------------[ RemainingVolume ]--------------#
@@ -4120,6 +4131,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($info_product['Service_time'] ?? 0) . ' روز', intval($info_product['Volume_constraint'] ?? 0) . ' گیگابایت') : null;
     } else {
         $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $username_ac, $info_product['name_product'], $text_config, $link_config);
+        $GLOBALS['__bot_buy_effect'] = '5046509860389126442'; // نسخه 2.6.51: افکت 🎉
         $Shoppinginfo = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($info_product['Service_time'] ?? 0) . ' روز', intval($info_product['Volume_constraint'] ?? 0) . ' گیگابایت') : null;
     }
     // نسخه 2.6.11: مبلغ کسرشده و موجودی فعلی زیر پیام «سرویس فعال شد»

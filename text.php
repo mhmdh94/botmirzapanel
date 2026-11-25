@@ -34,7 +34,7 @@ $textbotlang['users']['channeldoesntjoin'] = "⚠️ برای استفاده ا�
 2️⃣ سپس «بررسی عضویت» را بزنید";
 $textbotlang['users']['channeldosntjoin'] = $textbotlang['users']['channeldoesntjoin'];
 $textbotlang['users']['back'] = "به منوی اصلی برگشتید.";
-$textbotlang['users']['backorder'] = "↩️ جزئیات سرویس";
+$textbotlang['users']['backorder'] = "🔙 جزئیات سرویس";
 $textbotlang['users']['spamtext'] = "ارسال بیش از حد پیام (اسپم)";
 $textbotlang['users']['spam']['spamedmessage'] = "⛔ <b>مسدود خودکار — اسپم</b>
 
@@ -150,8 +150,8 @@ $textbotlang['users']['status']['usernotfound'] = "⚠️ <b>این سرویس �
 لطفاً اشتراک جدید تهیه کنید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗 دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
-$textbotlang['users']['status']['backlist'] = "↩️ لیست سرویس‌ها";
-$textbotlang['users']['status']['backservice'] = "↩️ جزئیات سرویس";
+$textbotlang['users']['status']['backlist'] = "🔙 لیست سرویس‌ها";
+$textbotlang['users']['status']['backservice'] = "🔙 جزئیات سرویس";
 $textbotlang['users']['status']['Invalidusername'] = "❌ <b>نام کاربری معتبر نیست</b>
 
 • فقط حروف انگلیسی، عدد و _
@@ -230,14 +230,17 @@ $textbotlang['users']['buy']['createservice_mikrotik_buy'] = "✅ <b>سرویس 
 📦 محصول: %s
 
 📚 راهنمای اتصال را از دکمه زیر ببینید.";
-$textbotlang['users']['buy']['createservice'] = "✅ <b>سرویس فعال شد</b>
-
+$textbotlang['users']['buy']['createservice'] = "🎉 <b>سرویس شما آماده است</b>
+━━━━━━━━━━
 👤 نام کاربری: <code>%s</code>
-📦 محصول: %s
+📦 پلن: %s
+━━━━━━━━━━
 
-📎 لینک را داخل برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:
+📎 لینک اشتراک را در برنامه <b>Happ</b> (پیشنهادی) اضافه کنید:
 <code>%s</code>
-<code>%s</code>";
+<code>%s</code>
+
+👇 زمان و حجم سرویس، کپی لینک و راهنمای اتصال در دکمههای زیر است.";
 $textbotlang['users']['buy']['selectService'] = "🛒 <b>انتخاب محصول</b>
 
 📍 لوکیشن: <b>%s</b>
@@ -370,7 +373,7 @@ $textbotlang['users']['Balance']['sending'] = "⏳ <b>پرداخت در حال �
 $textbotlang['users']['Balance']['expired'] = "⚠️ <b>لینک پرداخت منقضی شده</b>
 
 از «افزایش موجودی» دوباره اقدام کنید.";
-$textbotlang['users']['Balance']['refunded'] = "↩️ <b>مبلغ برگشت داده شد</b>
+$textbotlang['users']['Balance']['refunded'] = "🔙 <b>مبلغ برگشت داده شد</b>
 
 مبلغ به کیف پول شما برگشت داده شد.";
 $textbotlang['users']['Balance']['waiting'] = "⏳ در انتظار تأیید پرداخت";
@@ -605,7 +608,7 @@ $textbotlang['users']['format']['TBbyte'] = "ترابایت";
 
 #--------------[ other users ]--------------#
 $textbotlang['users']['backhome'] = "🏠 منوی اصلی";
-$textbotlang['users']['backmenu'] = "↩️ بازگشت";
+$textbotlang['users']['backmenu'] = "🔙 بازگشت";
 $textbotlang['users']['time-Service'] = "⏳ زمان اشتراک";
 $textbotlang['users']['Volume-Service'] = "🌐 حجم سرویس";
 $textbotlang['users']['menu_main'] = "🏠 منوی اصلی";

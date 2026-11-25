@@ -1542,13 +1542,19 @@ function deliverServiceConfigToUser($uid, $textHtml, $replyMarkup = null, $qrPay
         return false;
     }
     $textHtml = strval($textHtml);
-    $sendText = function () use ($uid, $textHtml, $replyMarkup) {
+    // نسخه 2.6.51: افکت پیام (🎉) فقط یک بار و فقط اگر تنظیم شده باشد؛ اگر تلگرام نپذیرفت بدون افکت
+    $__eff = strval($GLOBALS['__bot_buy_effect'] ?? '');
+    unset($GLOBALS['__bot_buy_effect']);
+    $sendText = function () use ($uid, $textHtml, $replyMarkup, &$__eff) {
         $payload = [
             'chat_id' => $uid,
             'text' => $textHtml,
             'parse_mode' => 'HTML',
             'disable_web_page_preview' => true,
         ];
+        if ($__eff !== '') {
+            $payload['message_effect_id'] = $__eff;
+        }
         if (!empty($replyMarkup)) {
             $payload['reply_markup'] = $replyMarkup;
         }
@@ -1580,9 +1586,19 @@ function deliverServiceConfigToUser($uid, $textHtml, $replyMarkup = null, $qrPay
             if (!empty($replyMarkup)) {
                 $photo_payload['reply_markup'] = $replyMarkup;
             }
+            if ($__eff !== '') {
+                $photo_payload['message_effect_id'] = $__eff;
+            }
             $photo_res = function_exists('telegramRetry')
                 ? telegramRetry('sendPhoto', $photo_payload, 3)
                 : telegram('sendPhoto', $photo_payload);
+            if ($__eff !== '' && !(function_exists('telegramOk') ? telegramOk($photo_res) : (is_array($photo_res) && !empty($photo_res['ok'])))) {
+                $__eff = '';
+                unset($photo_payload['message_effect_id']);
+                $photo_res = function_exists('telegramRetry')
+                    ? telegramRetry('sendPhoto', $photo_payload, 2)
+                    : telegram('sendPhoto', $photo_payload);
+            }
             @unlink($urlimage);
             if (function_exists('telegramOk') ? telegramOk($photo_res) : (is_array($photo_res) && !empty($photo_res['ok']))) {
                 return true;
@@ -1605,6 +1621,7 @@ function deliverServiceConfigToUser($uid, $textHtml, $replyMarkup = null, $qrPay
         if (function_exists('telegramOk') ? telegramOk($res) : (is_array($res) && !empty($res['ok']))) {
             return true;
         }
+        $__eff = '';
         if ($i < 2) {
             @usleep(350000);
         }
@@ -1820,6 +1837,7 @@ function DirectPayment($order_id)
             $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
         } else {
             $textcreatuser = sprintf($textbotlang['users']['buy']['createservice'], $dataoutput['username'], $get_invoice['name_product'], $config, $output_config_link);
+            $GLOBALS['__bot_buy_effect'] = '5046509860389126442'; // نسخه 2.6.51: افکت 🎉
             $__svc_kb = function_exists('serviceInfoKeyboard') ? serviceInfoKeyboard(intval($get_invoice['Service_time'] ?? 0) . ' روز', intval($get_invoice['Volume'] ?? 0) . ' گیگابایت') : null;
         }
         // نسخه 2.6.14: مبلغ و موجودی فعلی زیر پیام سرویس (خرید بعد از تأیید رسید)
@@ -3342,7 +3360,11 @@ function serviceInfoKeyboard($time_label, $volume_label, $with_buy = false)
         $rows[] = [['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $__cl]]];
     }
     // نسخه 2.5.0: دکمه راهنمای اتصال زیر پیام ساخت سرویس/اکانت تست
-    $rows[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
+    // نسخه 2.6.51: راهنمای اتصال + سرویسهای من در یک ردیف
+    $rows[] = [
+        ['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu'],
+        ['text' => '🛍 سرویسهای من', 'callback_data' => 'goto_services'],
+    ];
     if ($with_buy && $__buy_on) {
         $lbl = strval($datatextbot['text_sell'] ?? '');
         if ($lbl === '') {
