@@ -2580,7 +2580,10 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
     $rows_plain = $rows_kb;
     unset($rows_plain[0][0]['style']);
     $kb_plain = json_encode(['inline_keyboard' => $rows_plain], JSON_UNESCAPED_UNICODE);
-    $__stamp = ($header !== '' ? '<b>' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . "</b>\n" : '') . '<b>' . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . '</b>';
+    // نسخه 2.6.40: اگر خط بالا (header) داریم، متن دکمه دوباره در متن تکرار نشود
+    $__stamp = $header !== ''
+        ? '<b>' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . '</b>'
+        : '<b>' . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . '</b>';
     $done = 0;
     foreach ($rows as $r) {
         $chat = strval($r['chat_id']);
@@ -10817,6 +10820,42 @@ function botEnsureDiscountExpireCol()
 }
 
 /** کد تخفیف منقضی شده؟ */
+/** نسخه 2.6.40: پایان اعتبار کد = ساعت 23:59:59 روز Nام (1 = امشب ساعت 12) به وقت تهران */
+function botDiscountExpireAt($days)
+{
+    $days = intval($days);
+    if ($days <= 0) {
+        return 0;
+    }
+    $tz = new DateTimeZone('Asia/Tehran');
+    $d = new DateTime('now', $tz);
+    if ($days > 1) {
+        $d->modify('+' . ($days - 1) . ' days');
+    }
+    $d->setTime(23, 59, 59);
+    return $d->getTimestamp();
+}
+
+/** نسخه 2.6.40: خط کد تخفیف در رسید پرداخت برای ادمین */
+function botReceiptDiscountLine($pv4)
+{
+    $pv4 = strval($pv4);
+    $code = '';
+    if (strpos($pv4, 'dis_') === 0) {
+        $p = explode('_', $pv4);
+        $code = strval($p[1] ?? '');
+    } elseif (strpos($pv4, 'extdis|') === 0) {
+        $p = explode('|', $pv4);
+        $code = strval($p[1] ?? '');
+    }
+    if ($code === '') {
+        return '';
+    }
+    $row = function_exists('select') ? select("DiscountSell", "*", "codeDiscount", $code, "select") : null;
+    $pct = is_array($row) ? rtrim(rtrim(number_format(floatval($row['price'] ?? 0), 2, '.', ''), '0'), '.') : '';
+    return "\n🏷 کد تخفیف: <code>" . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</code>" . ($pct !== '' ? " ({$pct}٪)" : '');
+}
+
 function botDiscountExpired($row)
 {
     $e = is_array($row) ? intval($row['expire_at'] ?? 0) : 0;

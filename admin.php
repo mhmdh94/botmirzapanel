@@ -3991,7 +3991,7 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
     if (function_exists('botEnsureDiscountExpireCol')) {
         botEnsureDiscountExpireCol();
     }
-    sendmessage($from_id, "⏳ <b>مدت اعتبار کد</b>\n\nتعداد روز اعتبار کد را بفرستید (مثلاً <code>7</code>).\nبرای بدون محدودیت زمانی <code>0</code> بفرستید.", $backadmin, 'HTML');
+    sendmessage($from_id, "⏳ <b>مدت اعتبار کد</b>\n\nتعداد روز اعتبار کد را بفرستید (مثلاً <code>7</code>).\nکد تا <b>ساعت 12 شب</b> روز آخر معتبر است (<code>1</code> = تا امشب ساعت 12).\nبرای بدون محدودیت زمانی <code>0</code> بفرستید.", $backadmin, 'HTML');
     step('getexpirecode', $from_id);
 } elseif ($user['step'] == "getexpirecode") {
     $__ed = strtr(trim(strval($text)), ['۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9']);
@@ -3999,11 +3999,35 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
         sendmessage($from_id, "❌ <b>مقدار نامعتبر</b>\n\nفقط عدد روز بفرستید (۰ تا ۳۶۵۰). برای بدون محدودیت <code>0</code> بفرستید.", $backadmin, 'HTML');
         return;
     }
-    $__exp_at = intval($__ed) > 0 ? (time() + intval($__ed) * 86400) : 0;
+    // نسخه 2.6.40: تا ساعت 23:59 روز آخر + تأیید ادمین
+    $__exp_at = function_exists('botDiscountExpireAt') ? botDiscountExpireAt(intval($__ed)) : (intval($__ed) > 0 ? (time() + intval($__ed) * 86400) : 0);
     try {
         $pdo->prepare("UPDATE DiscountSell SET expire_at = ? WHERE codeDiscount = ?")->execute([$__exp_at, $user['Processing_value']]);
     } catch (Throwable $e) {
         error_log('discount expire save: ' . $e->getMessage());
+    }
+    $__exp_txt = $__exp_at > 0
+        ? ((function_exists('jdate') ? jdate('l Y/m/d', $__exp_at) : date('Y-m-d', $__exp_at)) . " ساعت 23:59")
+        : 'بدون محدودیت زمانی';
+    $__exp_kb = json_encode(['inline_keyboard' => [
+        [['text' => '✅ تأیید', 'callback_data' => 'dexp_ok']],
+        [['text' => '✏️ تغییر مدت', 'callback_data' => 'dexp_edit']],
+    ]], JSON_UNESCAPED_UNICODE);
+    sendmessage($from_id, "🏷 کد <code>" . htmlspecialchars(strval($user['Processing_value']), ENT_QUOTES, 'UTF-8') . "</code>\n\n⏳ اعتبار تا: <b>{$__exp_txt}</b>\n\nدرست است؟", $__exp_kb, 'HTML');
+    step('confirmexpirecode', $from_id);
+    return;
+}
+if ($user['step'] == "confirmexpirecode" && isset($datain) && $datain === 'dexp_edit') {
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, "✏️ مدت جدید را بفرستید.", json_encode(['inline_keyboard' => []]));
+    }
+    sendmessage($from_id, "⏳ تعداد روز اعتبار کد را بفرستید (<code>1</code> = تا امشب ساعت 12، <code>0</code> = بدون محدودیت):", $backadmin, 'HTML');
+    step('getexpirecode', $from_id);
+    return;
+}
+if ($user['step'] == "confirmexpirecode" && isset($datain) && $datain === 'dexp_ok') {
+    if (!empty($message_id)) {
+        Editmessagetext($from_id, $message_id, "✅ مدت اعتبار تأیید شد.", json_encode(['inline_keyboard' => []]));
     }
     sendmessage($from_id, $textbotlang['Admin']['Discount']['SaveCode'], null, 'HTML');
     if (function_exists('codesDiscountListKeyboard')) {

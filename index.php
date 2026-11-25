@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.39";
+$version = "2.6.40";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4642,17 +4642,25 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
     $pv_tow_note = strval($user['Processing_value_tow'] ?? '');
     if (strpos($pv_tow_note, 'extendafterpay|') === 0) {
         $parts_n = explode('|', $pv_tow_note);
-        $pay_note = "\n🔄 نوع: تمدید سرویس <code>" . htmlspecialchars($parts_n[1] ?? '', ENT_QUOTES, 'UTF-8') . "</code>";
+        // نسخه 2.6.40: بدون «نوع:» تکراری و خط خالی
+        $pay_note = "🔄 تمدید سرویس <code>" . htmlspecialchars($parts_n[1] ?? '', ENT_QUOTES, 'UTF-8') . "</code>";
+        if (function_exists('botReceiptDiscountLine')) {
+            $pay_note .= botReceiptDiscountLine($user['Processing_value_four'] ?? '');
+        }
     } elseif (strpos($pv_tow_note, 'reseller_volume|') === 0) {
         $parts_n = explode('|', $pv_tow_note);
         $adm_n = htmlspecialchars($parts_n[2] ?? '', ENT_QUOTES, 'UTF-8');
-        $pay_note = "\n📦 نوع: خرید حجم پنل ریسلر" . ($adm_n !== '' ? "\n👤 ادمین: <code>{$adm_n}</code>" : '');
+        $pay_note = "📦 خرید حجم پنل ریسلر" . ($adm_n !== '' ? "\n👤 ادمین: <code>{$adm_n}</code>" : '');
     } elseif (($user['Processing_value_tow'] ?? '') === 'balpkg' && intval($user['Processing_value_one'] ?? 0) > 0) {
         $credit_fmt = number_format(intval($user['Processing_value_one']));
         $pay_note = "🎁 <b>پکیج افزایش موجودی</b>\n💎 اعتبار واریزی: <b>{$credit_fmt}</b> تومان\n💰 مبلغ قابل پرداخت: <b>{$Processing_value}</b> تومان";
     } elseif (($user['Processing_value_tow'] ?? '') === 'getconfigafterpay') {
         $svc = htmlspecialchars(strval($user['Processing_value_one'] ?? '-'), ENT_QUOTES, 'UTF-8');
         $pay_note = "🛒 پرداخت برای خرید سرویس\n🔑 نام کاربری: <code>{$svc}</code>";
+        // نسخه 2.6.40: اگر کد تخفیف زده، در رسید ادمین هم بیاید
+        if (function_exists('botReceiptDiscountLine')) {
+            $pay_note .= botReceiptDiscountLine($user['Processing_value_four'] ?? '');
+        }
     } else {
         $pay_note = 'افزایش موجودی (مبلغ دلخواه)';
         if (!empty($caption)) {
