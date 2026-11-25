@@ -439,7 +439,7 @@ $textbotlang['users']['status']['InfoSerivceDisable'] = "📌 وضعیت: %s
 
 👤 نام کاربری: <code>%s</code>
 📍 لوکیشن: %s
-🆔 کد سرویس: <code>%s</code>
+🆔 کد سرویس: ‎<code>%s</code>‎
 
 📊 حجم کل: %s
 📥 مصرف: %s
@@ -448,7 +448,7 @@ $textbotlang['users']['status']['InfoSerivceActive'] = "📌 وضعیت: %s
 
 👤 نام کاربری: <code>%s</code>
 📍 لوکیشن: %s
-🆔 کد سرویس: <code>%s</code>
+🆔 کد سرویس: ‎<code>%s</code>‎
 
 🕒 آخرین اتصال: %s
 📊 حجم کل: %s
@@ -461,7 +461,7 @@ $textbotlang['users']['status']['InfoSerivceActive_mikrotik'] = "📌 وضعیت
 👤 نام کاربری: <code>%s</code>
 🔑 رمز: <code>%s</code>
 📍 لوکیشن: %s
-🆔 کد سرویس: <code>%s</code>
+🆔 کد سرویس: ‎<code>%s</code>‎
 
 📊 حجم کل: %s
 📥 مصرف: %s

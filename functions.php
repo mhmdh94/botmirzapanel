@@ -3362,8 +3362,9 @@ function serviceInfoKeyboard($time_label, $volume_label, $with_buy = false)
     // نسخه 2.5.0: دکمه راهنمای اتصال زیر پیام ساخت سرویس/اکانت تست
     // نسخه 2.6.51: راهنمای اتصال + سرویس‌های من در یک ردیف
     $rows[] = [
-        ['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu'],
-        ['text' => '🛍 سرویس‌های من', 'callback_data' => 'goto_services'],
+        // نسخه 2.6.53: زیر پیام ساخت سرویس «راهنمای اتصال» آبی و «سرویس‌های من» بی‌رنگ
+        array_merge(['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu'], (!function_exists('botButtonColorsOn') || botButtonColorsOn()) ? ['style' => 'primary'] : []),
+        ['text' => '🛍 سرویس‌های من', 'callback_data' => 'goto_services_c'],
     ];
     if ($with_buy && $__buy_on) {
         $lbl = strval($datatextbot['text_sell'] ?? '');

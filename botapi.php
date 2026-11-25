@@ -279,6 +279,10 @@ function botStyleMarkup($rm)
                 if (strpos(strval($b['callback_data'] ?? ''), 'btxt_') === 0) {
                     continue;
                 }
+                // نسخه 2.6.53: «سرویس‌های من» زیر پیام ساخت سرویس بی‌رنگ
+                if (strval($b['callback_data'] ?? '') === 'goto_services_c') {
+                    continue;
+                }
                 // نسخه 2.6.33: ردیف عنوان لیست محصولات بی‌رنگ (دکمه نیست، فقط عنوان است)
                 if (in_array(strval($b['callback_data'] ?? ''), ['prodlist_header', 'product_header'], true)) {
                     continue;

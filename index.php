@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.52";
+$version = "2.6.53";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -282,7 +282,7 @@ if (isset($datain) && $datain === 'buy_fromtest') {
 if (isset($datain) && $datain === 'goto_buy') {
     $datain = '';
     $text = $datatextbot['text_sell'];
-} elseif (isset($datain) && $datain === 'goto_services') {
+} elseif (isset($datain) && ($datain === 'goto_services' || $datain === 'goto_services_c')) {
     $datain = '';
     $text = $datatextbot['text_Purchased_services'];
 } elseif (isset($datain) && $datain === 'dep_min_go') {
@@ -1376,7 +1376,7 @@ if ($user['step'] == "getusernameinfo") {
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['Notconsumed'];
     #--------------[ day ]---------------#
     $timeDiff = $DataUserOut['expire'] - time();
-    $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
+    $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . ' ' . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
 
 
@@ -1557,7 +1557,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['Notconsumed'];
     #--------------[ day ]---------------#
     $timeDiff = $DataUserOut['expire'] - time();
-    $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
+    $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) + 1 . ' ' . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
     if ($status === 'disabled') {
         // سرویس غیرفعال: فعال‌سازی، بازگشت وجه، حذف، لیست سرویس‌ها
@@ -2864,7 +2864,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['Notconsumed'];
     #--------------[ day ]---------------#
     $timeDiff = $DataUserOut['expire'] - time();
-    $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
+    $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) . ' ' . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['Unlimited'];
     #-----------------------------#
     // مبلغ پرداختی از فاکتور (و در صورت خالی بودن از جدول محصول)
     $paid_raw = $nameloc['price_product'] ?? ($nameloc['price'] ?? 0);
