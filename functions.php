@@ -2196,6 +2196,10 @@ function DirectPayment($order_id)
                 $nameloc['Service_location'],
                 $bal_fmt
             );
+            // نسخه 2.6.54: کد تخفیف تمدید (کارتبهکارت) در گزارش کانال
+            if (!empty($__xd_used) && $__xd_code !== '' && function_exists('botReceiptDiscountLine')) {
+                $text_report .= "\n" . botReceiptDiscountLine('extdis|' . $__xd_code);
+            }
             if (function_exists('sendChannelReport')) {
                 sendChannelReport('rpt_extend', $text_report);
             }

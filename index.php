@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.53";
+$version = "2.6.54";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -2410,6 +2410,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $tg_name = $user['username'] ?? ($username ?? '');
     $active_svc_ext = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
     $text_report = sprintf($textbotlang['Admin']['Report']['extend'], $nameloc['username'], $priceproductformat, $product['name_product'], $from_id, $tg_name, $active_svc_ext, $nameloc['Service_location'], $balanceformatsell);
+    // نسخه 2.6.54: کد تخفیف تمدید (کیف پول) در گزارش کانال
+    if (!empty($__ext_dc) && function_exists('botReceiptDiscountLine')) {
+        $text_report .= "\n" . botReceiptDiscountLine('extdis|' . $__ext_dc);
+    }
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_extend', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
