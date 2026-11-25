@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.49";
+$version = "2.6.50";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4686,8 +4686,10 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
         $parts_n = explode('|', $pv_tow_note);
         // نسخه 2.6.40: بدون «نوع:» تکراری و خط خالی
         $pay_note = "🔄 تمدید سرویس <code>" . htmlspecialchars($parts_n[1] ?? '', ENT_QUOTES, 'UTF-8') . "</code>";
+        // نسخه 2.6.50: در تمدید کارتبهکارت، کد تخفیف در Processing_value_tow است (extendafterpay|user|code|price|DC)
         if (function_exists('botReceiptDiscountLine')) {
-            $pay_note .= botReceiptDiscountLine($user['Processing_value_four'] ?? '');
+            $__rc_dc = strval($parts_n[4] ?? '');
+            $pay_note .= $__rc_dc !== '' ? botReceiptDiscountLine('extdis|' . $__rc_dc) : botReceiptDiscountLine($user['Processing_value_four'] ?? '');
         }
     } elseif (strpos($pv_tow_note, 'reseller_volume|') === 0) {
         $parts_n = explode('|', $pv_tow_note);
