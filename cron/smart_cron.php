@@ -224,7 +224,7 @@ foreach ($rows as $row) {
                 $username,
                 max(0, $days_left)
             );
-            sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false), 'HTML');
+            sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false, true), 'HTML');
             updateSmartCronState($username, $location, 'warn_time_level', $idx);
             smartCronDebugLog(
                 "⏰ اخطار زمان ارسال شد
@@ -251,7 +251,7 @@ foreach ($rows as $row) {
                 $username,
                 number_format($pct, 1)
             );
-            sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false), 'HTML');
+            sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false, true), 'HTML');
             updateSmartCronState($username, $location, 'warn_vol_level', $idx);
             smartCronDebugLog(
                 "📊 اخطار حجم ارسال شد

@@ -86,9 +86,10 @@ $textbotlang['users']['sell']['service_not_available'] = "📭 <b>هنوز سر�
 پس از خرید، سرویس‌ها اینجا نمایش داده می‌شوند.";
 $textbotlang['users']['sell']['service_sell'] = "🛍 <b>سرویس‌های من</b>
 
-روی نام کاربری بزنید تا جزئیات را ببینید.
+روی نام کاربری بزنید تا جزئیات را ببینید.";
+$textbotlang['users']['sell']['service_sell_endwarn'] = "
 
-⚠️ سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور و این لیست حذف می‌شود.";
+⚠️ سرویسی که تا 7 روز بعد از پایان تمدید نشود، از سرور و این لیست حذف میشود.";
 $textbotlang['users']['sell']['service_empty_hint'] = "برای خرید اشتراک جدید از منوی اصلی استفاده کنید.";
 $textbotlang['users']['sell']['Service-select'] = "🛒 <b>لوکیشن انتخاب شد</b>
 
@@ -145,7 +146,7 @@ $textbotlang['users']['status']['error2'] = "⚠️ <b>مراحل ناقص ما�
 از منوی اصلی دوباره شروع کنید.";
 $textbotlang['users']['status']['usernotfound'] = "⚠️ <b>این سرویس روی سرور پیدا نشد</b>
 
-سرویسی که تا ۷ روز بعد از پایان تمدید نشود، از سرور حذف می‌شود.
+سرویسی که تا 7 روز بعد از پایان تمدید نشود، از سرور حذف می‌شود.
 لطفاً اشتراک جدید تهیه کنید.";
 $textbotlang['users']['status']['getlinksub'] = "🔗 دریافت لینک اشتراک";
 $textbotlang['users']['status']['linksub'] = "🔗 لینک اشتراک";
@@ -153,7 +154,10 @@ $textbotlang['users']['status']['backlist'] = "↩️ لیست سرویس‌ها
 $textbotlang['users']['status']['backservice'] = "↩️ جزئیات سرویس";
 $textbotlang['users']['status']['Invalidusername'] = "❌ <b>نام کاربری معتبر نیست</b>
 
-دوباره بفرستید (فقط حروف انگلیسی و عدد):";
+• فقط حروف انگلیسی، عدد و _
+• بین 3 تا 32 کاراکتر
+
+دوباره بفرستید:";
 $textbotlang['users']['status']['manageService'] = "⚙️ تنظیمات سرویس";
 $textbotlang['users']['status']['manageServicedec'] = "📌 یک کانفیگ در پنل بسازید، سرویس‌های مورد نظر را فعال کنید و نام کاربری همان کانفیگ را بفرستید.";
 $textbotlang['users']['status']['DecManageService'] = "⚙️ از دکمه‌های زیر برای مدیریت سرویس استفاده کنید.";
@@ -295,8 +299,8 @@ $textbotlang['users']['Extra_volume']['extraadded'] = "✅ <b>حجم اضافه 
 $textbotlang['users']['Extra_volume']['extracheck'] = "✅ تأیید و دریافت حجم اضافه";
 $textbotlang['users']['Extra_volume']['invalidprice'] = "⚠️ <b>مقدار نامعتبر</b>
 
-حداقل حجم ۱ گیگابایت است؛ دوباره بفرستید.";
-$textbotlang['users']['Extra_volume']['VolumeValue'] = "📊 حجم مورد نظر را به گیگابایت بفرستید (حداقل ۱).
+حداقل حجم 1 گیگابایت است؛ دوباره بفرستید.";
+$textbotlang['users']['Extra_volume']['VolumeValue'] = "📊 حجم مورد نظر را به گیگابایت بفرستید (حداقل 1).
 
 قیمت هر گیگ: <b>%s</b> تومان";
 $textbotlang['users']['Extra_volume']['invoiceExtraVolume'] = "🧾 <b>پیش‌فاکتور حجم اضافه</b>
@@ -1833,9 +1837,9 @@ $textbotlang['users']['cron']['warn_volume'] = "📊 از حجم سرویس <cod
 $textbotlang['users']['cron']['service_ended'] = "⛔️ سرویس <code>%s</code> به پایان رسیده است.
 
 برای ادامه استفاده، سرویس را تمدید کنید.";
-$textbotlang['users']['cron']['emergency_btn'] = "🆘 تمدید اضطراری (۱ روز / ۱ گیگ)";
+$textbotlang['users']['cron']['emergency_btn'] = "🆘 تمدید اضطراری (1 روز / 1 گیگ)";
 $textbotlang['users']['cron']['emergency_ok'] = "✅ تمدید اضطراری برای <code>%s</code> فعال شد.
-⏱ ۱ روز و 📦 ۱ گیگ به سرویس اضافه شد.
+⏱ 1 روز و 📦 1 گیگ به سرویس اضافه شد.
 این امکان فقط یک‌بار برای هر سرویس قابل استفاده است.";
 $textbotlang['users']['cron']['emergency_used'] = "❌ تمدید اضطراری این سرویس قبلاً استفاده شده است.";
 $textbotlang['users']['cron']['emergency_off'] = "❌ تمدید اضطراری توسط مدیر غیرفعال است.";
@@ -1927,7 +1931,7 @@ $textbotlang['Admin']['Status']['status_reseller_panel'] = "پنل نمایند�
 $textbotlang['users']['reseller_request']['btn'] = "درخواست پنل نمایندگی";
 $textbotlang['users']['reseller_request']['info'] = "📋 <b>درخواست پنل نمایندگی</b>
 
-در صورتی که ماهانه بیش از <b>۱۰۰ کاربر فعال</b> دارید، می‌توانید درخواست پنل نمایندگی ثبت کنید.
+در صورتی که ماهانه بیش از <b>100 کاربر فعال</b> دارید، می‌توانید درخواست پنل نمایندگی ثبت کنید.
 
 با دریافت پنل نمایندگی، امکان راه‌اندازی ربات فروشگاهی و اتصال آن به پنل فراهم می‌شود تا فروش خود را حرفه‌ای‌تر مدیریت کنید و کنترل بهتری روی کاربران داشته باشید.
 

@@ -6620,7 +6620,53 @@ function isPanelUserMissing($dataUser)
     return false;
 }
 
-function buildServiceWarnKeyboard($username, $show_emergency = false)
+/** نسخه 2.6.45: دکمههای زیر پیام خطا (پشتیبانی + منوی اصلی) */
+function botErrorKeyboard()
+{
+    global $textbotlang;
+    return json_encode(['inline_keyboard' => [
+        [['text' => '🎟 پشتیبانی', 'callback_data' => 'support'], ['text' => $textbotlang['users']['backhome'] ?? '🏠 منوی اصلی', 'callback_data' => 'backuser']],
+    ]], JSON_UNESCAPED_UNICODE);
+}
+
+/** نسخه 2.6.45: پیشنهاد یکباره اکانت تست به کاربری که سرویس ندارد ($mark_only = فقط علامت بزن) */
+function botMaybeOfferTest($uid, $mark_only = false)
+{
+    global $pdo;
+    $uid = intval($uid);
+    if ($uid <= 0) {
+        return;
+    }
+    try {
+        $c = $pdo->query("SHOW COLUMNS FROM user LIKE 'test_offered'");
+        if ($c && $c->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE user ADD COLUMN test_offered TINYINT NOT NULL DEFAULT 0");
+        }
+        if ($mark_only) {
+            $pdo->prepare("UPDATE user SET test_offered = 1 WHERE id = ?")->execute([strval($uid)]);
+            return;
+        }
+        $u = select("user", "test_offered", "id", $uid, "select");
+        if (is_array($u) && intval($u['test_offered'] ?? 0) === 1) {
+            return;
+        }
+        if (!function_exists('botUserCanGetTest') || !botUserCanGetTest($uid)) {
+            return;
+        }
+        $pdo->prepare("UPDATE user SET test_offered = 1 WHERE id = ?")->execute([strval($uid)]);
+        $st = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = ?");
+        $st->execute([strval($uid)]);
+        if (intval($st->fetchColumn()) > 0) {
+            return;
+        }
+        sendmessage($uid, "🧪 <b>اکانت تست رایگان</b>\n\nقبل از خرید، کیفیت سرویس را رایگان امتحان کنید.", json_encode(['inline_keyboard' => [
+            [['text' => '🔑 دریافت اکانت تست رایگان', 'callback_data' => 'goto_usertest']],
+        ]], JSON_UNESCAPED_UNICODE), 'HTML');
+    } catch (Throwable $e) {
+    }
+}
+
+function buildServiceWarnKeyboard($username, $show_emergency = false, $only_same = false)
 {
     global $textbotlang;
     $rows = [];
@@ -6633,7 +6679,10 @@ function buildServiceWarnKeyboard($username, $show_emergency = false)
         }
     } catch (Throwable $e) {
     }
-    $rows[] = [['text' => $textbotlang['users']['extend']['title'] ?? '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]];
+    // نسخه 2.6.45: اخطار زمان/حجم فقط «تمدید همان پلن» (اگر پلن پیدا نشد، دکمه تمدید معمولی)
+    if (!$only_same || !$rows) {
+        $rows[] = [['text' => $textbotlang['users']['extend']['title'] ?? '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]];
+    }
     if ($show_emergency) {
         $rows[] = [['text' => $textbotlang['users']['cron']['emergency_btn'] ?? '🆘 تمدید اضطراری (۱روز / ۱گیگ)', 'callback_data' => 'emergency_ext_' . $username]];
     }

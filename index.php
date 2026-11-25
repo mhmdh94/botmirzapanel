@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.44";
+$version = "2.6.45";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -785,6 +785,10 @@ if ($text == "/start") {
         $__wk[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
         sendmessage($from_id, "👋 <b>خوش آمدید!</b>\n━━━━━━━━━━\n\nشروع در ۳ قدم:\n\n" . ($__ut_on ? "1️⃣ یک <b>اکانت تست رایگان</b> بگیرید و کیفیت را امتحان کنید\n" : "1️⃣ پلن‌ها را از «خرید اشتراک» ببینید\n") . "2️⃣ <b>پلن مناسب</b> خود را انتخاب و خرید کنید\n3️⃣ با <b>راهنمای اتصال</b> در کمتر از یک دقیقه وصل شوید ✅", json_encode(['inline_keyboard' => $__wk], JSON_UNESCAPED_UNICODE), 'HTML');
     }
+    // نسخه 2.6.45: کاربر قدیمی بدون سرویس → یک بار پیشنهاد اکانت تست (کاربر جدید همان خوشآمد را میبیند)
+    if (!in_array($from_id, (array)$admin_ids) && function_exists('botMaybeOfferTest')) {
+        botMaybeOfferTest($from_id, empty($__user_existed_before));
+    }
     step('home', $from_id);
     return;
 }
@@ -876,6 +880,9 @@ if ($text == "/status") {
                 'callback_data' => "product_" . $row['username']
             ],
         ];
+        if (function_exists('serviceListEmojiFromInvoice') && serviceListEmojiFromInvoice($row) === '🔴') {
+            $__has_ended = true;
+        }
     }
     if ($setting['NotUser'] == "onnotuser") {
         $keyboardlists['inline_keyboard'][] = [
@@ -901,7 +908,7 @@ if ($text == "/status") {
         ['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"],
     ];
     $keyboardlistss = json_encode($keyboardlists);
-    sendmessage($from_id, $textbotlang['users']['sell']['service_sell'], $keyboardlistss, 'HTML');
+    sendmessage($from_id, $textbotlang['users']['sell']['service_sell'] . (!empty($__has_ended) ? ($textbotlang['users']['sell']['service_sell_endwarn'] ?? '') : ''), $keyboardlistss, 'HTML');
     step('userservices', $from_id);
     return;
 }
@@ -1023,6 +1030,9 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
                 'callback_data' => "product_" . $row['username']
             ],
         ];
+        if (function_exists('serviceListEmojiFromInvoice') && serviceListEmojiFromInvoice($row) === '🔴') {
+            $__has_ended = true;
+        }
     }
     // اگر به هر دلیل لیست خالی بود
     if ($service_count === 0) {
@@ -1054,9 +1064,9 @@ if ($text == $datatextbot['text_Purchased_services'] || $datain == "backorder" |
     }
     $keyboard_json = json_encode($keyboardlists);
     if ($datain == "backorder") {
-        Editmessagetext($from_id, $message_id, $textbotlang['users']['sell']['service_sell'], $keyboard_json);
+        Editmessagetext($from_id, $message_id, $textbotlang['users']['sell']['service_sell'] . (!empty($__has_ended) ? ($textbotlang['users']['sell']['service_sell_endwarn'] ?? '') : ''), $keyboard_json);
     } else {
-        sendmessage($from_id, $textbotlang['users']['sell']['service_sell'], $keyboard_json, 'html');
+        sendmessage($from_id, $textbotlang['users']['sell']['service_sell'] . (!empty($__has_ended) ? ($textbotlang['users']['sell']['service_sell_endwarn'] ?? '') : ''), $keyboard_json, 'html');
     }
 }
 if ($datain == 'next_page') {
@@ -1083,6 +1093,9 @@ if ($datain == 'next_page') {
                 'callback_data' => "product_" . $row['username']
             ],
         ];
+        if (function_exists('serviceListEmojiFromInvoice') && serviceListEmojiFromInvoice($row) === '🔴') {
+            $__has_ended = true;
+        }
     }
     $pagination_buttons = [
         [
@@ -1134,6 +1147,9 @@ if ($datain == 'next_page') {
                 'callback_data' => "product_" . $row['username']
             ],
         ];
+        if (function_exists('serviceListEmojiFromInvoice') && serviceListEmojiFromInvoice($row) === '🔴') {
+            $__has_ended = true;
+        }
     }
     $pagination_buttons = [
         [
@@ -1453,13 +1469,13 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
     if (!$nameloc || !is_array($nameloc)) {
-        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? '❌ سرویس یافت نشد.', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? '❌ سرویس یافت نشد.', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
     if (!is_array($DataUserOut)) {
-        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? '❌ خطا در دریافت اطلاعات سرویس.', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? '❌ خطا در دریافت اطلاعات سرویس.', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     if (isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") {
@@ -1470,7 +1486,7 @@ if (preg_match('/product_(\w+)/', $datain, $dataget)) {
         return;
     }
     if (($DataUserOut['status'] ?? '') == "Unsuccessful") {
-        sendmessage($from_id, $textbotlang['users']['status']['error'], $keyboard, 'html');
+        sendmessage($from_id, $textbotlang['users']['status']['error'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'html');
         return;
     }
     if ($DataUserOut['online_at'] == "online") {
@@ -1672,7 +1688,7 @@ if (preg_match('/qrcode_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
     if ($nameloc == false || !is_array($nameloc)) {
-        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? 'سرویس یافت نشد.', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? 'سرویس یافت نشد.', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     // فقط سرویس خود کاربر
@@ -1682,7 +1698,7 @@ if (preg_match('/qrcode_(\w+)/', $datain, $dataget)) {
     }
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
     if (!is_array($DataUserOut) || ($DataUserOut['status'] ?? '') === 'Unsuccessful') {
-        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا در دریافت اطلاعات سرویس.', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا در دریافت اطلاعات سرویس.', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $subscriptionurl = strval($DataUserOut['subscription_url'] ?? '');
@@ -1860,13 +1876,13 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
     $nameloc = select("invoice", "*", "username", $username, "select");
     if (!$nameloc || !is_array($nameloc)) {
-        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? '❌ سرویس یافت نشد.', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? '❌ سرویس یافت نشد.', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $username);
     if (!is_array($DataUserOut) || ($DataUserOut['status'] ?? '') == "Unsuccessful") {
-        sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
+        sendmessage($from_id, $textbotlang['users']['status']['error'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : null), 'html');
         return;
     }
     if (($DataUserOut['status'] ?? '') == "on_hold") {
@@ -1916,7 +1932,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $codeproduct = $dataget[1];
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product " . (function_exists('botProductVisibleSql') ? botProductVisibleSql() : '') . " LIMIT 1");
@@ -1925,7 +1941,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->execute();
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($product == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     // نسخه 2.2.6: اطلاعات فاکتور فقط بعد از پرداخت موفق تمدید عوض می‌شود (نه هنگام انتخاب پلن)
@@ -1980,7 +1996,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if (!is_array($nameloc) || strval($nameloc['id_user'] ?? '') !== strval($from_id)) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         step('home', $from_id);
         return;
     }
@@ -1991,7 +2007,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->execute();
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($product == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         step('home', $from_id);
         return;
     }
@@ -2022,12 +2038,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     // پیام پیش‌فاکتور تمدید را حذف نکن — اگر موجودی کم باشد همان پیام باید به صفحه پرداخت تبدیل شود
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     if ($marzban_list_get == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $stmt = $pdo->prepare("SELECT * FROM product WHERE (Location = :Location OR location = '/all') AND code_product = :code_product LIMIT 1");
@@ -2036,7 +2052,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     $stmt->execute();
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($product == false) {
-        sendmessage($from_id, $textbotlang['users']['extend']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['extend']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
 
@@ -2505,7 +2521,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     // فقط وقتی حجم سرویس تمام شده (limited)
     $__inv_ev = select("invoice", "*", "username", $username, "select");
     if (!$__inv_ev || !is_array($__inv_ev) || strval($__inv_ev['id_user'] ?? '') !== strval($from_id)) {
-        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $__du_ev = $ManagePanel->DataUser($__inv_ev['Service_location'], $username);
@@ -2550,12 +2566,12 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     Editmessagetext($from_id, $message_id, $text_callback, json_encode(['inline_keyboard' => []]));
     $nameloc = select("invoice", "*", "username", $user['Processing_value'], "select");
     if ($nameloc == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
+        sendmessage($from_id, $textbotlang['users']['status']['error'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : null), 'html');
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
     if ($marzban_list_get == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
+        sendmessage($from_id, $textbotlang['users']['status']['error'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : null), 'html');
         return;
     }
 
@@ -2712,7 +2728,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     // بازگشت وجه فقط برای وضعیت فعال یا غیرفعال
     $__inv_rf = select("invoice", "*", "username", $username, "select");
     if (!$__inv_rf || !is_array($__inv_rf) || strval($__inv_rf['id_user'] ?? '') !== strval($from_id)) {
-        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا', $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error'] ?? 'خطا', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $__du_rf = $ManagePanel->DataUser($__inv_rf['Service_location'], $username);
@@ -2776,7 +2792,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     $nameloc = select("invoice", "*", "username", $usernamepanel, "select");
     if (!$nameloc || !is_array($nameloc)) {
-        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? 'سرویس یافت نشد.', null, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['usernotfound'] ?? 'سرویس یافت نشد.', (function_exists('botErrorKeyboard') ? botErrorKeyboard() : null), 'HTML');
         return;
     }
     // اطمینان از مالکیت فاکتور
@@ -3006,7 +3022,7 @@ if ($user['step'] == "createusertest" || preg_match('/locationtests_(.*)/', $dat
     }
     if ($dataoutput['username'] == null) {
         $dataoutput['msg'] = json_encode($dataoutput['msg']);
-        sendmessage($from_id, $textbotlang['users']['usertest']['errorcreat'], $keyboard, 'html');
+        sendmessage($from_id, $textbotlang['users']['usertest']['errorcreat'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'html');
         $texterros = sprintf($textbotlang['users']['buy']['errorInCreate'], $dataoutput['msg'], $from_id, $username);
         foreach ($admin_ids as $admin) {
             sendmessage($admin, $texterros, null, 'html');
@@ -3706,7 +3722,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $stmt->execute();
     $info_product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($info_product == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         step("home", $from_id);
         return;
     }
@@ -3744,12 +3760,12 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $stmt->execute();
     $info_product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($info_product == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if ($marzban_list_get == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         return;
     }
     if ($marzban_list_get['linksubx'] == null and in_array($marzban_list_get['type'], ["x-ui_single", "alireza"])) {
@@ -3956,7 +3972,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
 
 💰 مبلغ {$price_fmt} تومان به کیف پول کاربر برگشت داده شد.";
         } else {
-            sendmessage($from_id, $textbotlang['users']['sell']['ErrorConfig'], $keyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['users']['sell']['ErrorConfig'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
             $admin_extra = "
 
 ℹ️ موجودی کاربر کم نشده بود؛ برگشت وجه انجام نشد.";
@@ -4214,7 +4230,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $stmt->execute();
     $info_product = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($info_product == false) {
-        sendmessage($from_id, $textbotlang['users']['status']['error2'], $keyboard, 'HTML');
+        sendmessage($from_id, $textbotlang['users']['status']['error2'], (function_exists('botErrorKeyboard') ? botErrorKeyboard() : $keyboard), 'HTML');
         step('home', $from_id);
         return;
     }
