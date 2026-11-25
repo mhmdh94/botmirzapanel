@@ -5249,8 +5249,8 @@ function ensureSmartCronSettings()
     ensurePaySetting('smart_warn_time', '0');
     ensurePaySetting('smart_warn_expired', '0');
     ensurePaySetting('smart_emergency', '0');
-    ensurePaySetting('smart_vol_levels', '90,95,99');
-    ensurePaySetting('smart_time_days', '7,3,1');
+    ensurePaySetting('smart_vol_levels', '90');
+    ensurePaySetting('smart_time_days', '3,1');
     ensurePaySetting('smart_emergency_gb', '1');
     ensurePaySetting('smart_emergency_days', '1');
     ensurePaySetting('smart_debug', '0');
@@ -5472,7 +5472,7 @@ function smartCronFlag($name, $default = '0')
 function smartCronLevelsVolume()
 {
     ensureSmartCronSettings();
-    $raw = getPaySettingValue('smart_vol_levels', '90,95,99');
+    $raw = getPaySettingValue('smart_vol_levels', '90');
     $out = [];
     foreach (explode(',', $raw) as $p) {
         $p = floatval(trim($p));
@@ -5487,7 +5487,7 @@ function smartCronLevelsVolume()
 function smartCronLevelsTime()
 {
     ensureSmartCronSettings();
-    $raw = getPaySettingValue('smart_time_days', '7,3,1');
+    $raw = getPaySettingValue('smart_time_days', '3,1');
     $out = [];
     foreach (explode(',', $raw) as $p) {
         $p = intval(trim($p));
@@ -6941,10 +6941,10 @@ function buildSmartCronAdminKeyboard()
     }
     $rows[] = [['text' => '🔢 تعداد هر اجرا: ' . getPaySettingValue('smart_batch_limit', '20'), 'callback_data' => 'smartcron_set_limit']];
     if (smartCronFlag('smart_warn_volume', '0')) {
-        $rows[] = [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90,95,99'), 'callback_data' => 'smartcron_set_vol']];
+        $rows[] = [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90'), 'callback_data' => 'smartcron_set_vol']];
     }
     if (smartCronFlag('smart_warn_time', '0')) {
-        $rows[] = [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '7,3,1'), 'callback_data' => 'smartcron_set_time']];
+        $rows[] = [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '3,1'), 'callback_data' => 'smartcron_set_time']];
     }
     $rows[] = [
         ['text' => '📋 دستور کرون', 'callback_data' => 'smartcron_show_cmd'],

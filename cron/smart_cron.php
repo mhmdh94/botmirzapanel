@@ -236,6 +236,11 @@ foreach ($rows as $row) {
         continue;
     }
 
+    // نسخه 2.6.55: اخطار زمان و حجم یک سرویس در یک پیام
+    $__warn_t = '';
+    $__warn_v = '';
+    $__warn_days = 0;
+    $__warn_pct = 0.0;
     // اخطار زمان — فقط اگر روشن باشد
     if ($do_time && $expire > time()) {
         $days_left = floor(($expire - time()) / 86400);
@@ -253,7 +258,8 @@ foreach ($rows as $row) {
                 $username,
                 max(0, $days_left)
             );
-            sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false, true), 'HTML');
+            $__warn_t = $msg;
+            $__warn_days = max(0, $days_left);
             updateSmartCronState($username, $location, 'warn_time_level', $idx);
             smartCronDebugLog(
                 "⏰ اخطار زمان ارسال شد
@@ -280,7 +286,8 @@ foreach ($rows as $row) {
                 $username,
                 number_format($pct, 1)
             );
-            sendmessage($uid, $msg, buildServiceWarnKeyboard($username, false, true), 'HTML');
+            $__warn_v = $msg;
+            $__warn_pct = $pct;
             updateSmartCronState($username, $location, 'warn_vol_level', $idx);
             smartCronDebugLog(
                 "📊 اخطار حجم ارسال شد
@@ -288,6 +295,18 @@ foreach ($rows as $row) {
                 . "👤 <code>{$username}</code> | مصرف: " . number_format($pct, 1) . "% | مرحله: {$idx}"
             );
         }
+    }
+    if ($__warn_t !== '' && $__warn_v !== '') {
+        $__u = htmlspecialchars(strval($username), ENT_QUOTES, 'UTF-8');
+        $__warn_msg = "⚠️ <b>سرویس <code>{$__u}</code> رو به پایان است</b>\n\n"
+            . "⏰ زمان: حدود <b>{$__warn_days}</b> روز مانده\n"
+            . "📊 حجم: <b>" . number_format($__warn_pct, 1) . "٪</b> مصرف شده\n\n"
+            . "برای جلوگیری از قطعی، سرویس را تمدید کنید.";
+    } else {
+        $__warn_msg = $__warn_t !== '' ? $__warn_t : $__warn_v;
+    }
+    if ($__warn_msg !== '') {
+        sendmessage($uid, $__warn_msg, buildServiceWarnKeyboard($username, false, true), 'HTML');
     }
 }
 
