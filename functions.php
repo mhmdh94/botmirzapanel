@@ -5232,6 +5232,43 @@ function ensureSmartCronSettings()
     // هشدار حجم پنل ریسلر (زیرمجموعه اسمارت کرون)
     ensurePaySetting('smart_reseller_warn', '0');
     ensurePaySetting('smart_reseller_vol_levels', '80,90,95');
+    // نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست
+    ensurePaySetting('smart_test_followup', '0');
+}
+
+/** نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست (یک بار برای هر تست؛ فقط اگر کاربر هنوز خرید نکرده) */
+function botTestFollowup($uid, $username, $location)
+{
+    global $pdo, $textbotlang;
+    try {
+        $c = $pdo->query("SHOW COLUMNS FROM smart_cron_state LIKE 'test_followup'");
+        if ($c && $c->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE smart_cron_state ADD COLUMN test_followup TINYINT NOT NULL DEFAULT 0");
+        }
+        getSmartCronState($username, $location);
+        $st = $pdo->prepare("SELECT test_followup FROM smart_cron_state WHERE username = ? AND service_location = ? LIMIT 1");
+        $st->execute([$username, $location]);
+        if (intval($st->fetchColumn()) === 1) {
+            return false;
+        }
+        $pdo->prepare("UPDATE smart_cron_state SET test_followup = 1 WHERE username = ? AND service_location = ?")->execute([$username, $location]);
+        // اگر کاربر خرید کرده، پیام نرود
+        $b = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = ? AND name_product <> 'usertest' AND Status <> 'unpaid'");
+        $b->execute([strval($uid)]);
+        if (intval($b->fetchColumn()) > 0) {
+            return false;
+        }
+        $msg = $textbotlang['users']['cron']['test_followup']
+            ?? "🧪 <b>اکانت تست شما تمام شد</b>\n\nاگر از کیفیت راضی بودید، میتوانید همین حالا اشتراک بگیرید.";
+        sendmessage($uid, $msg, json_encode(['inline_keyboard' => [
+            [['text' => '🛒 خرید اشتراک', 'callback_data' => 'buy_fromtest']],
+            [['text' => '🎟 پشتیبانی', 'callback_data' => 'support']],
+        ]], JSON_UNESCAPED_UNICODE), 'HTML');
+        return true;
+    } catch (Throwable $e) {
+        error_log('test followup: ' . $e->getMessage());
+        return false;
+    }
 }
 
 function smartCronFlag($name, $default = '0')
@@ -6700,6 +6737,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_warn_volume', '0') ? $on : $off) . ' اخطار حجم', 'callback_data' => 'smartcron_toggle_vol']],
         [['text' => (smartCronFlag('smart_warn_time', '0') ? $on : $off) . ' اخطار زمان', 'callback_data' => 'smartcron_toggle_time']],
         [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']],
+        [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],

@@ -1841,6 +1841,10 @@ $textbotlang['users']['cron']['emergency_btn'] = "🆘 تمدید اضطراری
 $textbotlang['users']['cron']['emergency_ok'] = "✅ تمدید اضطراری برای <code>%s</code> فعال شد.
 ⏱ 1 روز و 📦 1 گیگ به سرویس اضافه شد.
 این امکان فقط یک‌بار برای هر سرویس قابل استفاده است.";
+$textbotlang['users']['cron']['test_followup'] = "🧪 <b>اکانت تست شما تمام شد</b>
+
+امیدواریم از کیفیت سرویس راضی بوده باشید.
+اگر خواستید ادامه دهید، همین حالا میتوانید اشتراک بگیرید 👇";
 $textbotlang['users']['cron']['emergency_used'] = "❌ تمدید اضطراری این سرویس قبلاً استفاده شده است.";
 $textbotlang['users']['cron']['emergency_off'] = "❌ تمدید اضطراری توسط مدیر غیرفعال است.";
 $textbotlang['users']['cron']['emergency_fail'] = "❌ انجام تمدید اضطراری ممکن نشد. با پشتیبانی در ارتباط باشید.";

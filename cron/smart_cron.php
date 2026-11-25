@@ -116,9 +116,10 @@ $do_vol = smartCronFlag('smart_warn_volume', '0');
 $do_time = smartCronFlag('smart_warn_time', '0');
 $do_exp = smartCronFlag('smart_warn_expired', '0');
 $do_emg = smartCronFlag('smart_emergency', '0');
+$do_tf = smartCronFlag('smart_test_followup', '0');
 
 // اگر هیچ‌کدام روشن نیست، فقط نشانگر را جلو ببر و خارج شو (بدون پیام)
-if (!$do_clean && !$do_vol && !$do_time && !$do_exp) {
+if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf) {
     saveSmartCronCursor($next_cursor);
     exit;
 }
@@ -167,7 +168,7 @@ foreach ($rows as $row) {
     }
 
     // اگر فقط clean روشن است و اخطارها خاموش‌اند، بعد از sync برو بعدی
-    if (!$do_vol && !$do_time && !$do_exp) {
+    if (!$do_vol && !$do_time && !$do_exp && !$do_tf) {
         continue;
     }
 
@@ -182,6 +183,16 @@ foreach ($rows as $row) {
         || ($data_limit > 0 && $used >= $data_limit);
 
     // اخطار اتمام + دکمه تمدید (+ اضطراری اگر روشن و یک‌بار)
+    // نسخه 2.6.46: اکانت تست تمامشده → فقط پیام پیگیری خرید (نه اخطار تمدید)
+    if (strval($row['name_product'] ?? '') === 'usertest' && $is_ended) {
+        if ($do_tf && function_exists('botTestFollowup') && botTestFollowup($uid, $username, $location)) {
+            smartCronDebugLog("🧪 پیام بعد از پایان تست ارسال شد\n👤 <code>{$username}</code> | 🆔 <code>{$uid}</code>");
+        }
+        continue;
+    }
+    if (!$do_vol && !$do_time && !$do_exp) {
+        continue;
+    }
     if ($is_ended) {
         if ($do_exp && intval($state['expired_notified']) === 0) {
             $show_emg = $do_emg && intval($state['emergency_used']) === 0;
