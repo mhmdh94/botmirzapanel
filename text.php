@@ -89,7 +89,7 @@ $textbotlang['users']['sell']['service_sell'] = "🛍 <b>سرویس‌های م�
 روی نام کاربری بزنید تا جزئیات را ببینید.";
 $textbotlang['users']['sell']['service_sell_endwarn'] = "
 
-⚠️ سرویسی که تا 7 روز بعد از پایان تمدید نشود، از سرور و این لیست حذف میشود.";
+⚠️ سرویسی که تا 7 روز بعد از پایان تمدید نشود، از سرور و این لیست حذف می‌شود.";
 $textbotlang['users']['sell']['service_empty_hint'] = "برای خرید اشتراک جدید از منوی اصلی استفاده کنید.";
 $textbotlang['users']['sell']['Service-select'] = "🛒 <b>لوکیشن انتخاب شد</b>
 
@@ -140,7 +140,7 @@ $textbotlang['users']['status']['error'] = "⚠️ <b>مشکلی پیش آمد</
 لطفاً چند لحظه بعد دوباره تلاش کنید یا با پشتیبانی در ارتباط باشید.";
 $textbotlang['users']['status']['error_onhold'] = "⏳ <b>هنوز به سرویس متصل نشدهاید</b>
 
-ابتدا یکبار متصل شوید، سپس تمدید کنید.";
+ابتدا یک‌بار متصل شوید، سپس تمدید کنید.";
 $textbotlang['users']['status']['error2'] = "⚠️ <b>مراحل ناقص ماند</b>
 
 از منوی اصلی دوباره شروع کنید.";
@@ -240,7 +240,7 @@ $textbotlang['users']['buy']['createservice'] = "🎉 <b>سرویس شما آم�
 <code>%s</code>
 <code>%s</code>
 
-👇 زمان و حجم سرویس، کپی لینک و راهنمای اتصال در دکمههای زیر است.";
+👇 زمان و حجم سرویس، کپی لینک و راهنمای اتصال در دکمه‌های زیر است.";
 $textbotlang['users']['buy']['selectService'] = "🛒 <b>انتخاب محصول</b>
 
 📍 لوکیشن: <b>%s</b>
@@ -268,7 +268,7 @@ $textbotlang['users']['buy']['configwg'] = "⚙️ کانفیگ شما";
 $textbotlang['users']['category']['NotFound'] = "📭 <b>دستهبندیای برای نمایش نیست</b>
 
 لطفاً بعداً دوباره سر بزنید.";
-$textbotlang['users']['category']['selectCategory'] = "📂 <b>انتخاب دستهبندی</b>
+$textbotlang['users']['category']['selectCategory'] = "📂 <b>انتخاب دسته‌بندی</b>
 
 یکی از دسته‌بندی‌های زیر را انتخاب کنید:";
 $textbotlang['users']['category']['error'] = "⚠️ <b>خرید کامل نشد</b>
@@ -508,7 +508,7 @@ $textbotlang['users']['Discount']['notcode'] = "❌ <b>کد نامعتبر اس�
 کد را بررسی کنید و دوباره بفرستید.";
 $textbotlang['users']['Discount']['onecode'] = "⚠️ <b>این کد قبلاً استفاده شده</b>
 
-هر کد فقط یکبار قابل استفاده است.";
+هر کد فقط یک‌بار قابل استفاده است.";
 $textbotlang['users']['Discount']['getcodesell'] = "🏷 <b>کد تخفیف</b>
 
 کد تخفیف را ارسال کنید:";
@@ -1787,9 +1787,9 @@ $textbotlang['users']['Balance']['choose_package'] = "💰 <b>افزایش مو�
 • مبلغ دلخواه
 • پکیج‌های واریزی تخفیف‌دار";
 $textbotlang['users']['Balance']['packages_header'] = "🎁 پکیج‌های واریزی تخفیف‌دار";
-$textbotlang['users']['Balance']['packages_list_title'] = "🎁 <b>پکیجهای واریزی تخفیفدار</b>
+$textbotlang['users']['Balance']['packages_list_title'] = "🎁 <b>پکیج‌های واریزی تخفیف‌دار</b>
 
-مبلغ کمتری میپردازید و موجودی بیشتری میگیرید (مبالغ به تومان).
+مبلغ کمتری می‌پردازید و موجودی بیشتری می‌گیرید (مبالغ به تومان).
 
 یک پکیج را انتخاب کنید:";
 $textbotlang['users']['Balance']['custom_amount_btn'] = "✍️ مبلغ دلخواه";
@@ -1847,7 +1847,7 @@ $textbotlang['users']['cron']['emergency_ok'] = "✅ تمدید اضطراری �
 $textbotlang['users']['cron']['test_followup'] = "🧪 <b>اکانت تست شما تمام شد</b>
 
 امیدواریم از کیفیت سرویس راضی بوده باشید.
-اگر خواستید ادامه دهید، همین حالا میتوانید اشتراک بگیرید 👇";
+اگر خواستید ادامه دهید، همین حالا می‌توانید اشتراک بگیرید 👇";
 $textbotlang['users']['cron']['emergency_used'] = "❌ تمدید اضطراری این سرویس قبلاً استفاده شده است.";
 $textbotlang['users']['cron']['emergency_off'] = "❌ تمدید اضطراری توسط مدیر غیرفعال است.";
 $textbotlang['users']['cron']['emergency_fail'] = "❌ انجام تمدید اضطراری ممکن نشد. با پشتیبانی در ارتباط باشید.";

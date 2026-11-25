@@ -2517,7 +2517,7 @@ function buildFinanceSummaryText()
         . "برای تغییر، یکی از گزینه‌ها را بزنید.";
 }
 
-/** نسخه 2.3.3: نگهداری پیام‌های رسید نزد ادمینها، تا بعد از تأیید/رد همه ویرایش شوند */
+/** نسخه 2.3.3: نگهداری پیام‌های رسید نزد ادمین‌ها، تا بعد از تأیید/رد همه ویرایش شوند */
 function botEnsureReceiptMsgsTable()
 {
     global $pdo;
@@ -2621,7 +2621,7 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
                 ? telegram('editMessageText', ['chat_id' => $chat, 'message_id' => $mid, 'text' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb, 'disable_web_page_preview' => true])
                 : telegram('editMessageCaption', ['chat_id' => $chat, 'message_id' => $mid, 'caption' => $new, 'parse_mode' => 'HTML', 'reply_markup' => $kb]);
             $ok = is_array($res) && !empty($res['ok']);
-            // نسخه 2.6.29: پیامی که تلگرام اجازه ویرایشش را نمیدهد (پاکشده/فورواردی/قدیمی) → تلاش دوباره بیفایده است
+            // نسخه 2.6.29: پیامی که تلگرام اجازه ویرایشش را نمی‌دهد (پاک‌شده/فورواردی/قدیمی) → تلاش دوباره بیفایده است
             if (!$ok && botTgCantEdit($res)) {
                 $done++;
                 continue;
@@ -3360,10 +3360,10 @@ function serviceInfoKeyboard($time_label, $volume_label, $with_buy = false)
         $rows[] = [['text' => '📋 کپی لینک اشتراک', 'copy_text' => ['text' => $__cl]]];
     }
     // نسخه 2.5.0: دکمه راهنمای اتصال زیر پیام ساخت سرویس/اکانت تست
-    // نسخه 2.6.51: راهنمای اتصال + سرویسهای من در یک ردیف
+    // نسخه 2.6.51: راهنمای اتصال + سرویس‌های من در یک ردیف
     $rows[] = [
         ['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu'],
-        ['text' => '🛍 سرویسهای من', 'callback_data' => 'goto_services'],
+        ['text' => '🛍 سرویس‌های من', 'callback_data' => 'goto_services'],
     ];
     if ($with_buy && $__buy_on) {
         $lbl = strval($datatextbot['text_sell'] ?? '');
@@ -3728,10 +3728,10 @@ function buildBalancePackageListKeyboard()
     foreach (getBalancePackages() as $p) {
         $pay = getBalancePackagePayAmount($p['amount'], $p['discount']);
         $disc = rtrim(rtrim(number_format($p['discount'], 1, '.', ''), '0'), '.');
-        // نسخه 2.6.31: «پرداخت ← دریافت» تا معلوم باشد چقدر میپردازد و چقدر میگیرد
+        // نسخه 2.6.31: «پرداخت ← دریافت» تا معلوم باشد چقدر می‌پردازد و چقدر می‌گیرد
         $label = $p['title'] !== '' ? $p['title'] . ' — ' : '';
         if ($p['discount'] > 0) {
-            // نسخه 2.6.35: بدون پرانتز (در متن راستبهچپ تلگرام پرانتز و ایموجی بههم میریخت)
+            // نسخه 2.6.35: بدون پرانتز (در متن راستبهچپ تلگرام پرانتز و ایموجی بههم می‌ریخت)
             $label .= "🎁 {$disc}٪ تخفیف | پرداخت " . formatToman($pay) . " ← دریافت " . formatToman($p['amount']);
         } else {
             $label .= "💳 " . formatToman($p['amount']) . " تومان";
@@ -3824,7 +3824,7 @@ function buildAdminSettingsInlineKeyboard()
     }
     $__last[] = ['text' => $textbotlang['Admin']['keyboardadmin']['db_backup'] ?? '💾 پشتیبان‌گیری', 'callback_data' => 'navset_backup'];
     $rows[] = $__last;
-    // نسخه 2.6.27: دکمه رنگی فقط در «روشن/خاموش قابلیتها»؛ سلامت ربات کنار آمار ربات
+    // نسخه 2.6.27: دکمه رنگی فقط در «روشن/خاموش قابلیت‌ها»؛ سلامت ربات کنار آمار ربات
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
 
@@ -5111,7 +5111,7 @@ function syncBotCrontabs()
 /**
  * حذف کرون‌های فقط همین ربات (بر اساس دامنه) از crontab
  */
-/** نسخه 2.6.23: کاربر لینوکسی که PHP با آن اجرا میشود (کرون در crontab همین کاربر نصب میشود) */
+/** نسخه 2.6.23: کاربر لینوکسی که PHP با آن اجرا می‌شود (کرون در crontab همین کاربر نصب می‌شود) */
 function getBotCronShellUser()
 {
     $who = '';
@@ -5256,8 +5256,8 @@ function ensureSmartCronSettings()
     ensurePaySetting('smart_reseller_vol_levels', '80,90,95');
     // نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست
     ensurePaySetting('smart_test_followup', '0');
-    // نسخه 2.6.48: راهنمای اتصال برای سرویس وصلنشده + یادآوری رسید بررسینشده
-    // نسخه 2.6.49: پیشفرض خاموش
+    // نسخه 2.6.48: راهنمای اتصال برای سرویس وصل‌نشده + یادآوری رسید بررسی‌نشده
+    // نسخه 2.6.49: پیش‌فرض خاموش
     ensurePaySetting('smart_onhold_guide', '0');
     ensurePaySetting('smart_rcpt_remind', '0');
 }
@@ -5320,7 +5320,7 @@ function botReceiptRemindTable()
     return $ok;
 }
 
-/** نسخه 2.6.48: رسید کارتبهکارتی که 30 دقیقه بررسی نشده → یک بار به کاربر دکمه «یادآوری به مدیریت» */
+/** نسخه 2.6.48: رسید کارت‌به‌کارتی که 30 دقیقه بررسی نشده → یک بار به کاربر دکمه «یادآوری به مدیریت» */
 function botReceiptRemindTick()
 {
     global $pdo;
@@ -5348,7 +5348,7 @@ function botReceiptRemindTick()
             }
             sendmessage($uid, "⏳ <b>رسید شما هنوز بررسی نشده است</b>\n\n"
                 . "💰 مبلغ: <b>" . number_format(intval($r['price'] ?? 0)) . "</b> تومان\n\n"
-                . "اگر میخواهید، با دکمه زیر به مدیریت یادآوری کنید تا رسیدتان را بررسی کند.", json_encode(['inline_keyboard' => [
+                . "اگر می‌خواهید، با دکمه زیر به مدیریت یادآوری کنید تا رسیدتان را بررسی کند.", json_encode(['inline_keyboard' => [
                 [['text' => '🔔 یادآوری به مدیریت', 'callback_data' => 'rcpt_remind_' . $order]],
                 [['text' => '🎟 پشتیبانی', 'callback_data' => 'support']],
             ]], JSON_UNESCAPED_UNICODE), 'HTML');
@@ -5360,7 +5360,7 @@ function botReceiptRemindTick()
     return $n;
 }
 
-/** نسخه 2.6.48: کاربر «یادآوری به مدیریت» را زد → رسید دوباره به ادمینها یادآوری شود (یک بار برای هر رسید) */
+/** نسخه 2.6.48: کاربر «یادآوری به مدیریت» را زد → رسید دوباره به ادمین‌ها یادآوری شود (یک بار برای هر رسید) */
 function botReceiptRemindAdmins($order, $uid)
 {
     global $pdo;
@@ -5393,7 +5393,7 @@ function botReceiptRemindAdmins($order, $uid)
         . "💰 مبلغ: <b>" . number_format(intval($pr['price'] ?? 0)) . "</b> تومان"
         . ($mins > 0 ? "\n⏱ ارسال رسید: {$mins} دقیقه پیش" : '');
     $sent = 0;
-    // پاسخ به همان پیام رسید نزد هر ادمین تا دکمههای تأیید/رد همانجا باشد
+    // پاسخ به همان پیام رسید نزد هر ادمین تا دکمه‌های تأیید/رد همانجا باشد
     try {
         if (function_exists('botEnsureReceiptMsgsTable') && botEnsureReceiptMsgsTable()) {
             $rs = $pdo->prepare("SELECT chat_id, message_id FROM receipt_msgs WHERE id_order = ?");
@@ -5445,7 +5445,7 @@ function botTestFollowup($uid, $username, $location)
             return false;
         }
         $msg = $textbotlang['users']['cron']['test_followup']
-            ?? "🧪 <b>اکانت تست شما تمام شد</b>\n\nاگر از کیفیت راضی بودید، میتوانید همین حالا اشتراک بگیرید.";
+            ?? "🧪 <b>اکانت تست شما تمام شد</b>\n\nاگر از کیفیت راضی بودید، می‌توانید همین حالا اشتراک بگیرید.";
         // نسخه 2.6.49: فقط دکمه خرید (بدون پشتیبانی)
         sendmessage($uid, $msg, json_encode(['inline_keyboard' => [
             [['text' => '🛒 خرید اشتراک', 'callback_data' => 'buy_fromtest']],
@@ -5820,7 +5820,7 @@ function botMaskTail($t)
 
 /** نسخه 2.4.4: هشدار اجرا نشدن کرون هوشمند (از وبهوک، حداکثر هر ۳۰ دقیقه بررسی) */
 /**
- * نسخه 2.6.24: کرونهای لازمی که تنظیم نشدهاند یا اجرا نمیشوند
+ * نسخه 2.6.24: کرون‌های لازمی که تنظیم نشدهاند یا اجرا نمی‌شوند
  */
 function botCronReminderIssues()
 {
@@ -5828,7 +5828,7 @@ function botCronReminderIssues()
     $out = [];
     $sc = intval(@file_get_contents($dir . '/smart_cron.last'));
     if ($sc <= 0) {
-        $out[] = "🛡 <b>کرون هوشمند</b> هنوز یکبار هم اجرا نشده؛ اخطار حجم و زمان، تمدید اضطراری و حذف فاکتورهای پرداختنشده انجام نمیشود.";
+        $out[] = "🛡 <b>کرون هوشمند</b> هنوز یک‌بار هم اجرا نشده؛ اخطار حجم و زمان، تمدید اضطراری و حذف فاکتورهای پرداخت‌نشده انجام نمی‌شود.";
     } elseif (time() - $sc > 7200) {
         $out[] = "🛡 <b>کرون هوشمند</b> از " . (function_exists('botAgoText') ? botAgoText($sc) : '') . " اجرا نشده؛ اخطارها و کارهای خودکار متوقف است.";
     }
@@ -5848,9 +5848,9 @@ function botCronReminderIssues()
         $bk = intval(@file_get_contents($dir . '/backup.last'));
         $grace = intval($h * 3600 * 1.5) + 1800;
         if ($bk <= 0) {
-            $out[] = "📦 <b>بکآپ خودکار</b> روشن است ولی هنوز هیچ بکآپی گرفته نشده؛ کرون بکآپ روی سرور تنظیم نیست.";
+            $out[] = "📦 <b>بک‌آپ خودکار</b> روشن است ولی هنوز هیچ بک‌آپی گرفته نشده؛ کرون بک‌آپ روی سرور تنظیم نیست.";
         } elseif (time() - $bk > $grace) {
-            $out[] = "📦 <b>بکآپ خودکار</b> هر {$h} ساعت تنظیم شده، ولی آخرین بکآپ موفق " . (function_exists('botAgoText') ? botAgoText($bk) : '') . " بوده است.";
+            $out[] = "📦 <b>بک‌آپ خودکار</b> هر {$h} ساعت تنظیم شده، ولی آخرین بک‌آپ موفق " . (function_exists('botAgoText') ? botAgoText($bk) : '') . " بوده است.";
         }
     }
     return $out;
@@ -5867,8 +5867,8 @@ function botCronReminderText($short = false)
         return "\n\n⚠️ <b>کرون تنظیم نیست:</b> " . count($iss) . " مورد — از «🛡 کرون هوشمند» گزینه «🛠 نصب خودکار کرون در سرور» را بزنید.";
     }
     return "⏰ <b>یادآوری: کرون ربات تنظیم نشده</b>\n\n• " . implode("\n\n• ", $iss)
-        . "\n\n🛠 دکمه «نصب خودکار کرون» را بزنید. اگر نصب خودکار ممکن نبود، با «📋 دستور کرون» خطها را بگیرید و دستی در crontab سرور بگذارید."
-        . "\n\nℹ️ تا وقتی مشکل حل نشود، این یادآوری هر ۶ ساعت یکبار تکرار میشود.";
+        . "\n\n🛠 دکمه «نصب خودکار کرون» را بزنید. اگر نصب خودکار ممکن نبود، با «📋 دستور کرون» خط‌ها را بگیرید و دستی در crontab سرور بگذارید."
+        . "\n\nℹ️ تا وقتی مشکل حل نشود، این یادآوری هر ۶ ساعت یک‌بار تکرار می‌شود.";
 }
 
 function botCronReminderKeyboard()
@@ -5879,7 +5879,7 @@ function botCronReminderKeyboard()
     ]], JSON_UNESCAPED_UNICODE);
 }
 
-/** نسخه 2.6.24: یادآوری به ادمینها در پیوی (بدون نیاز به کرون؛ با هر پیام به ربات، حداکثر هر ۶ ساعت) */
+/** نسخه 2.6.24: یادآوری به ادمین‌ها در پیوی (بدون نیاز به کرون؛ با هر پیام به ربات، حداکثر هر ۶ ساعت) */
 function botCronReminderTick($admin_ids)
 {
     $dir = __DIR__ . '/cron';
@@ -6156,7 +6156,7 @@ function botPeriodReportText($title, $from, $to)
 
 /**
  * نسخه 2.6.6: گزارش خودکار در ساعت اول روز جدید (۰۰:۰۰ تا ۰۰:۵۹ تهران)
- * روزانه = روز قبل؛ شنبه = هفته قبل؛ اول ماه شمسی = ماه قبل. هر گزارش فقط یکبار.
+ * روزانه = روز قبل؛ شنبه = هفته قبل؛ اول ماه شمسی = ماه قبل. هر گزارش فقط یک‌بار.
  */
 function botDailySummaryTick()
 {
@@ -6843,7 +6843,7 @@ function isPanelUserMissing($dataUser)
     return false;
 }
 
-/** نسخه 2.6.45: دکمههای زیر پیام خطا (پشتیبانی + منوی اصلی) */
+/** نسخه 2.6.45: دکمه‌های زیر پیام خطا (پشتیبانی + منوی اصلی) */
 function botErrorKeyboard()
 {
     global $textbotlang;
@@ -6893,7 +6893,7 @@ function buildServiceWarnKeyboard($username, $show_emergency = false, $only_same
 {
     global $textbotlang;
     $rows = [];
-    // نسخه 2.6.4: تمدید یکلمسی با همان پلن فعلی (مستقیم به پیش‌فاکتور تمدید)
+    // نسخه 2.6.4: تمدید یک‌لمسی با همان پلن فعلی (مستقیم به پیش‌فاکتور تمدید)
     try {
         $__inv = select("invoice", "*", "username", $username, "select");
         $__rp = function_exists('botFindRenewProduct') ? botFindRenewProduct($__inv) : null;
@@ -6925,7 +6925,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']],
         [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
         [['text' => (smartCronFlag('smart_onhold_guide', '0') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
-        [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسینشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
+        [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسی‌نشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
@@ -8866,7 +8866,7 @@ function botSmartCronMenuText()
         . "\nℹ️ <b>اخطارها:</b> طبق درصدها و روزهای تنظیم‌شده فرستاده می‌شوند؛ تنظیم هر اخطار وقتی روشن شود زیر آن می‌آید.";
 }
 
-/** نسخه 2.6.44: نسخه گیتهاب از کش (بدون اتصال به اینترنت؛ کش را کرون هوشمند و صفحه آپدیت تازه میکنند) */
+/** نسخه 2.6.44: نسخه گیتهاب از کش (بدون اتصال به اینترنت؛ کش را کرون هوشمند و صفحه آپدیت تازه می‌کنند) */
 function botRemoteVersionCached()
 {
     $d = json_decode(strval(@file_get_contents(__DIR__ . '/cron/remote_version.json')), true);
@@ -8899,7 +8899,7 @@ function botUpdateAvailable()
     return $rv !== '' && isset($version) && version_compare($rv, strval($version), '>');
 }
 
-/** نسخه 2.6.44: آیا سلامت ربات مشکل دارد؟ (کرون/بکاپ از فایلها؛ وبهوک با کش ۱۰ دقیقه) */
+/** نسخه 2.6.44: آیا سلامت ربات مشکل دارد؟ (کرون/بکاپ از فایل‌ها؛ وب‌هوک با کش ۱۰ دقیقه) */
 function botHealthHasIssue()
 {
     static $res = null;
@@ -9297,17 +9297,17 @@ function botAgoText($ts)
 }
 
 /** نسخه 2.4.6: صفحه سلامت ربات */
-/** نسخه 2.6.30: وبهوک تلگرام + وضعیت تنظیمهای ربات (بدون اطلاعات سرور و دیتابیس) */
+/** نسخه 2.6.30: وب‌هوک تلگرام + وضعیت تنظیم‌های ربات (بدون اطلاعات سرور و دیتابیس) */
 function botHealthExtraSection()
 {
     $t = '';
-    // وبهوک تلگرام
-    $t .= "\n🌐 <b>وبهوک تلگرام</b>\n";
+    // وب‌هوک تلگرام
+    $t .= "\n🌐 <b>وب‌هوک تلگرام</b>\n";
     try {
         $w = telegram('getWebhookInfo', []);
         $wr = (is_array($w) && !empty($w['ok']) && is_array($w['result'] ?? null)) ? $w['result'] : null;
         if ($wr === null) {
-            $t .= "• ⚠️ اطلاعات وبهوک دریافت نشد\n";
+            $t .= "• ⚠️ اطلاعات وب‌هوک دریافت نشد\n";
         } else {
             $url = strval($wr['url'] ?? '');
             $pend = intval($wr['pending_update_count'] ?? 0);
@@ -9321,11 +9321,11 @@ function botHealthExtraSection()
             }
         }
     } catch (Throwable $e) {
-        $t .= "• ⚠️ خطا در بررسی وبهوک\n";
+        $t .= "• ⚠️ خطا در بررسی وب‌هوک\n";
     }
 
-    // تنظیمهای ربات
-    $t .= "\n⚙️ <b>تنظیمهای ربات</b>\n";
+    // تنظیم‌های ربات
+    $t .= "\n⚙️ <b>تنظیم‌های ربات</b>\n";
     try {
         $st = select("setting", "*", null, null, "select");
         $fv = function ($col, $def) use ($st) {
@@ -9353,7 +9353,7 @@ function botHealthExtraSection()
         }
         $t .= "• کارهای کرون هوشمند: " . ($on ? '🟢 ' . implode('، ', $on) : '⚪️ همه خاموش') . "\n";
     }
-    // بکآپ خودکار
+    // بک‌آپ خودکار
     if (function_exists('getPaySettingValue')) {
         $bk_on = getPaySettingValue('backup_cron_enabled', '0') === '1';
         if ($bk_on) {
@@ -9365,9 +9365,9 @@ function botHealthExtraSection()
             if (getPaySettingValue('backup_send_channel', '0') === '1') {
                 $to[] = 'کانال';
             }
-            $t .= "• بکآپ خودکار: 🟢 هر {$h} ساعت" . ($to ? ' → ' . implode(' و ', $to) : ' — 🟡 مقصد ارسال انتخاب نشده') . "\n";
+            $t .= "• بک‌آپ خودکار: 🟢 هر {$h} ساعت" . ($to ? ' → ' . implode(' و ', $to) : ' — 🟡 مقصد ارسال انتخاب نشده') . "\n";
         } else {
-            $t .= "• بکآپ خودکار: ⚪️ خاموش\n";
+            $t .= "• بک‌آپ خودکار: ⚪️ خاموش\n";
         }
     }
     // یادآوری کرون
@@ -9417,7 +9417,7 @@ function botHealthPage($note = '')
     }
     $t .= "• آخرین بکاپ موفق: " . ($bk_on ? ($__bk_ok ? '🟢 ' : '🔴 ') : '') . botAgoText($bk) . ($bk_on ? '' : ' (بکاپ خودکار خاموش)') . "\n";
     $t .= "• پیام همگانی: " . (is_file($dir . '/info') ? '📨 در حال ارسال' : '—') . "\n";
-    // نسخه 2.6.27: وبهوک تلگرام، دیتابیس و سرور
+    // نسخه 2.6.27: وب‌هوک تلگرام، دیتابیس و سرور
     $t .= botHealthExtraSection();
     // کانال گزارش
     $st = select("setting", "*", null, null, "select");
@@ -9425,7 +9425,7 @@ function botHealthPage($note = '')
     if ($rc === '' || $rc === '0') {
         $t .= "\n📣 کانال گزارش: ❌ تنظیم نشده\n";
     } else {
-        // نسخه 2.6.30: بررسی دسترسی واقعی ربات به کانال + تعداد گزارشهای روشن
+        // نسخه 2.6.30: بررسی دسترسی واقعی ربات به کانال + تعداد گزارش‌های روشن
         $__gc = telegram('getChat', ['chat_id' => $rc]);
         $__acc = is_array($__gc) && !empty($__gc['ok']);
         $__on = 0;
@@ -11104,7 +11104,7 @@ function botSaveReceiptUserMsg($order, $chat_id, $res)
     }
 }
 
-/** پیام ذخیره‌شده را برمیگرداند و حذف میکند؛ فقط اگر جوانتر از $max_age ثانیه باشد */
+/** پیام ذخیره‌شده را برمیگرداند و حذف می‌کند؛ فقط اگر جوانتر از $max_age ثانیه باشد */
 function botTakeReceiptUserMsg($order, $max_age = 900)
 {
     global $pdo;
@@ -11224,7 +11224,7 @@ function botReceiptDiscountLine($pv4)
     return "\n🏷 کد تخفیف: <code>" . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</code>" . ($pct !== '' ? " ({$pct}٪)" : '');
 }
 
-/** نسخه 2.6.41: حذف خودکار کدهای تخفیفی که تاریخشان گذشته؛ تعداد حذفشده را برمیگرداند */
+/** نسخه 2.6.41: حذف خودکار کدهای تخفیفی که تاریخشان گذشته؛ تعداد حذف‌شده را برمیگرداند */
 function botPurgeExpiredDiscounts()
 {
     global $pdo;
@@ -11262,7 +11262,7 @@ function botDiscountExpireLabel($row)
     return "تا {$d} ({$ltxt})";
 }
 
-/** نسخه 2.6.19: کد واردشده را بدون حساسیت به حروف بزرگ/کوچک به کد ثبتشده تبدیل میکند */
+/** نسخه 2.6.19: کد واردشده را بدون حساسیت به حروف بزرگ/کوچک به کد ثبت‌شده تبدیل می‌کند */
 function botCanonCode($input, $list)
 {
     $in = trim(str_replace(["\u{200C}", "\u{200E}", "\u{200F}"], '', strval($input)));

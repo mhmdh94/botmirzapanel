@@ -4017,7 +4017,7 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
         [['text' => '✅ تأیید', 'callback_data' => 'dexp_ok']],
         [['text' => '✏️ تغییر مدت', 'callback_data' => 'dexp_edit']],
     ]], JSON_UNESCAPED_UNICODE);
-    sendmessage($from_id, "🏷 کد <code>" . htmlspecialchars(strval($user['Processing_value']), ENT_QUOTES, 'UTF-8') . "</code>\n\n⏳ اعتبار تا: <b>{$__exp_txt}</b>" . ($__exp_at > 0 ? "\n🗑 بعد از این زمان کد خودکار حذف میشود." : '') . "\n\nدرست است؟", $__exp_kb, 'HTML');
+    sendmessage($from_id, "🏷 کد <code>" . htmlspecialchars(strval($user['Processing_value']), ENT_QUOTES, 'UTF-8') . "</code>\n\n⏳ اعتبار تا: <b>{$__exp_txt}</b>" . ($__exp_at > 0 ? "\n🗑 بعد از این زمان کد خودکار حذف می‌شود." : '') . "\n\nدرست است؟", $__exp_kb, 'HTML');
     step('confirmexpirecode', $from_id);
     return;
 }
@@ -5290,9 +5290,9 @@ if ($datain == "smartcron_install_crontab") {
         $cu = strval($res['user'] ?? '');
         if ($cu !== '' && $cu !== 'root') {
             $cu_h = htmlspecialchars($cu, ENT_QUOTES, 'UTF-8');
-            $msg .= "\n\n👤 کرون در crontab کاربر <code>" . $cu_h . "</code> نصب شد (کاربری که PHP/وبسرور با آن اجرا میشود)، نه root.";
+            $msg .= "\n\n👤 کرون در crontab کاربر <code>" . $cu_h . "</code> نصب شد (کاربری که PHP/وبسرور با آن اجرا می‌شود)، نه root.";
             $msg .= "\n\nبرای دیدن آن، روی سرور با root بزنید:\n<code>crontab -u " . $cu_h . " -l</code>";
-            $msg .= "\n\nℹ️ دستور <code>crontab -l</code> با root فقط کرونهای خود root را نشان میدهد.";
+            $msg .= "\n\nℹ️ دستور <code>crontab -l</code> با root فقط کرون‌های خود root را نشان می‌دهد.";
         } else {
             $msg .= "\n\nبرای اطمینان روی سرور بزنید:\n<code>crontab -l</code>";
         }
@@ -5829,7 +5829,7 @@ if ($datain == "codes_noop") {
         $code = strval($row['codeDiscount'] ?? '');
         update("user", "Processing_value", $code, "id", $from_id);
         $cur = function_exists('botDiscountExpireLabel') ? botDiscountExpireLabel($row) : '-';
-        sendmessage($from_id, "⏳ <b>تغییر مدت اعتبار</b>\n\n🏷 کد: <code>" . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</code>\nاعتبار فعلی: {$cur}\n\nتعداد روز اعتبار جدید را از امروز بفرستید.\nکد تا <b>ساعت 12 شب</b> روز آخر معتبر است (<code>1</code> = تا امشب ساعت 12).\nبرای بدون محدودیت زمانی <code>0</code> بفرستید.\n\nبعد از رسیدن تاریخ، کد خودکار حذف میشود.", $backadmin, 'HTML');
+        sendmessage($from_id, "⏳ <b>تغییر مدت اعتبار</b>\n\n🏷 کد: <code>" . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</code>\nاعتبار فعلی: {$cur}\n\nتعداد روز اعتبار جدید را از امروز بفرستید.\nکد تا <b>ساعت 12 شب</b> روز آخر معتبر است (<code>1</code> = تا امشب ساعت 12).\nبرای بدون محدودیت زمانی <code>0</code> بفرستید.\n\nبعد از رسیدن تاریخ، کد خودکار حذف می‌شود.", $backadmin, 'HTML');
         step('getexpirecode', $from_id);
     } else {
         telegram('answerCallbackQuery', [

@@ -66,7 +66,7 @@ if (function_exists('cleanupExpiredUnpaidInvoices')) {
 }
 
 
-// نسخه 2.6.48: یادآوری رسید کارتبهکارتی که 30 دقیقه بررسی نشده
+// نسخه 2.6.48: یادآوری رسید کارت‌به‌کارتی که 30 دقیقه بررسی نشده
 if (smartCronFlag('smart_rcpt_remind', '0') && function_exists('botReceiptRemindTick')) {
     $n_rr = botReceiptRemindTick();
     if ($n_rr > 0 && function_exists('smartCronDebugLog')) {
@@ -201,7 +201,7 @@ foreach ($rows as $row) {
             smartCronDebugLog("📖 راهنمای اتصال ارسال شد (سرویس وصل نشده)\n👤 <code>{$username}</code> | 🆔 <code>{$uid}</code>");
         }
     }
-    // نسخه 2.6.46: اکانت تست تمامشده → فقط پیام پیگیری خرید (نه اخطار تمدید)
+    // نسخه 2.6.46: اکانت تست تمام‌شده → فقط پیام پیگیری خرید (نه اخطار تمدید)
     if (strval($row['name_product'] ?? '') === 'usertest' && $is_ended) {
         if ($do_tf && function_exists('botTestFollowup') && botTestFollowup($uid, $username, $location)) {
             smartCronDebugLog("🧪 پیام بعد از پایان تست ارسال شد\n👤 <code>{$username}</code> | 🆔 <code>{$uid}</code>");

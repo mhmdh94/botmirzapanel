@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.51";
+$version = "2.6.52";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -63,7 +63,7 @@ if (!empty($callback_query_id)) {
 #-----------duplicate update guard------------#
 if (!botClaimUpdate($update['update_id'] ?? 0))
     return;
-// نسخه 2.6.51: دکمههای بازگشت یکدست شدند (🔙)؛ دکمه قدیمی «↩️ …» روی کیبورد کاربران هم کار کند
+// نسخه 2.6.51: دکمه‌های بازگشت یکدست شدند (🔙)؛ دکمه قدیمی «↩️ …» روی کیبورد کاربران هم کار کند
 if (isset($text) && is_string($text)) {
     $__legacy_back = [
     '↩️ بازگشت' => '🔙 بازگشت',
@@ -157,7 +157,7 @@ if (intval($from_id) != 0) {
 }
 $user = select("user", "*", "id", $from_id, "select");
 // نسخه 2.6.25: بهروزرسانی یوزرنیم تلگرام اگر کاربر آن را عوض کرده باشد
-// فقط وقتی آپدیت از پیام یا دکمه خود کاربر است (نه آپدیتهایی که یوزرنیم ندارند و NOT_USERNAME میدهند)
+// فقط وقتی آپدیت از پیام یا دکمه خود کاربر است (نه آپدیت‌هایی که یوزرنیم ندارند و NOT_USERNAME می‌دهند)
 $__un_from = $update['message']['from'] ?? $update['callback_query']['from'] ?? null;
 if (is_array($user) && isset($user['id']) && is_array($__un_from) && intval($from_id) != 0 && intval($__un_from['id'] ?? 0) === intval($from_id)) {
     $__un = strval($__un_from['username'] ?? 'NOT_USERNAME');
@@ -253,7 +253,7 @@ if (isset($datain) && is_string($datain) && preg_match('/^guide_(menu|menu_e|and
     }
     return;
 }
-// نسخه 2.6.48: کاربر «🔔 یادآوری به مدیریت» را زد (رسید بررسینشده)
+// نسخه 2.6.48: کاربر «🔔 یادآوری به مدیریت» را زد (رسید بررسی‌نشده)
 if (isset($datain) && is_string($datain) && preg_match('/^rcpt_remind_(\w+)$/', $datain, $__rr)) {
     $__rr_res = function_exists('botReceiptRemindAdmins') ? botReceiptRemindAdmins($__rr[1], $from_id) : 'done';
     $__rr_msg = [
@@ -269,7 +269,7 @@ if (isset($datain) && is_string($datain) && preg_match('/^rcpt_remind_(\w+)$/', 
         $__rr_kb = json_encode(['inline_keyboard' => [[['text' => '🎟 پشتیبانی', 'callback_data' => 'support']]]], JSON_UNESCAPED_UNICODE);
         $__rr_tx = $__rr_res === 'done'
             ? "✅ <b>رسید شما بررسی شده است</b>\n\nنتیجه در پیام جداگانه برایتان ارسال شده است."
-            : "🔔 <b>یادآوری ارسال شد</b>\n\nرسید شما دوباره برای مدیریت فرستاده شد و بهزودی بررسی میشود.";
+            : "🔔 <b>یادآوری ارسال شد</b>\n\nرسید شما دوباره برای مدیریت فرستاده شد و به‌زودی بررسی می‌شود.";
         Editmessagetext($from_id, $message_id, $__rr_tx, $__rr_kb);
     }
     return;
@@ -693,7 +693,7 @@ if (function_exists('botWatchdogTick')) {
     } catch (Throwable $e) {
     }
 }
-// نسخه 2.6.24: یادآوری کرون تنظیمنشده به ادمینها (حداکثر هر ۶ ساعت)
+// نسخه 2.6.24: یادآوری کرون تنظیم‌نشده به ادمین‌ها (حداکثر هر ۶ ساعت)
 if (function_exists('botCronReminderTick')) {
     try {
         botCronReminderTick($admin_ids ?? []);
@@ -817,7 +817,7 @@ if ($text == "/start") {
         $__wk[] = [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']];
         sendmessage($from_id, "👋 <b>خوش آمدید!</b>\n━━━━━━━━━━\n\nشروع در ۳ قدم:\n\n" . ($__ut_on ? "1️⃣ یک <b>اکانت تست رایگان</b> بگیرید و کیفیت را امتحان کنید\n" : "1️⃣ پلن‌ها را از «خرید اشتراک» ببینید\n") . "2️⃣ <b>پلن مناسب</b> خود را انتخاب و خرید کنید\n3️⃣ با <b>راهنمای اتصال</b> در کمتر از یک دقیقه وصل شوید ✅", json_encode(['inline_keyboard' => $__wk], JSON_UNESCAPED_UNICODE), 'HTML');
     }
-    // نسخه 2.6.45: کاربر قدیمی بدون سرویس → یک بار پیشنهاد اکانت تست (کاربر جدید همان خوشآمد را میبیند)
+    // نسخه 2.6.45: کاربر قدیمی بدون سرویس → یک بار پیشنهاد اکانت تست (کاربر جدید همان خوش‌آمد را می‌بیند)
     if (!in_array($from_id, (array)$admin_ids) && function_exists('botMaybeOfferTest')) {
         botMaybeOfferTest($from_id, empty($__user_existed_before));
     }
@@ -1474,7 +1474,7 @@ if (is_string($datain) && preg_match('/^rebuy_(\w+)$/', $datain, $__rb)) {
             : "prodcutservice_" . $__rb_p['code_product'];
     } else {
         if (!empty($callback_query_id)) {
-            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این پلن دیگر فروخته نمیشود؛ یک پلن دیگر انتخاب کنید.', 'show_alert' => true]);
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این پلن دیگر فروخته نمی‌شود؛ یک پلن دیگر انتخاب کنید.', 'show_alert' => true]);
         }
         $datain = "buy";
     }
@@ -1492,7 +1492,7 @@ if (is_string($datain) && preg_match('/^renewsame_(\w+)$/', $datain, $__rs)) {
         $datain = "serviceextendselect_" . $__rs_p['code_product'];
     } else {
         if (!empty($callback_query_id)) {
-            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این پلن دیگر فروخته نمیشود؛ یک پلن دیگر انتخاب کنید.', 'show_alert' => true]);
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'این پلن دیگر فروخته نمی‌شود؛ یک پلن دیگر انتخاب کنید.', 'show_alert' => true]);
         }
         $datain = "extend_" . $__rs[1];
     }
@@ -4038,7 +4038,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $username_ac = $dataoutput['username'];
     }
     if ($datain == "confirmandgetserviceDiscount") {
-        // نسخه 2.6.47: کد در $partsdic[1] است (dis_CODE_PRICE)؛ قبلاً «dis» خوانده میشد و شمارش استفاده کد بالا نمیرفت
+        // نسخه 2.6.47: کد در $partsdic[1] است (dis_CODE_PRICE)؛ قبلاً «dis» خوانده می‌شد و شمارش استفاده کد بالا نمی‌رفت
         $__dcode = strval($partsdic[1] ?? '');
         $SellDiscountlimit = $__dcode !== '' ? select("DiscountSell", "*", "codeDiscount", $__dcode, "select") : false;
         if (is_array($SellDiscountlimit)) {
@@ -4271,7 +4271,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         step('home', $from_id);
         return;
     }
-    // نسخه 2.6.47: >= به جای == (اگر شمارش از سقف رد شده بود، کد باز هم قبول میشد)
+    // نسخه 2.6.47: >= به جای == (اگر شمارش از سقف رد شده بود، کد باز هم قبول می‌شد)
     if (intval($SellDiscountlimit['usedDiscount']) >= intval($SellDiscountlimit['limitDiscount'])) {
         sendmessage($from_id, $textbotlang['users']['Discount']['erorrlimit'], null, 'HTML');
         return;

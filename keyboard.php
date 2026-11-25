@@ -639,7 +639,7 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
     // ردیف عنوان (مثل اسکرین دو‌ستونه: محصول | قیمت)
     // در تلگرام اندیس ۰ = چپ، اندیس ۱ = راست → قیمت چپ، محصول راست
     $product['inline_keyboard'][] = [
-        // نسخه 2.6.33: callback جدید (product_header با هندلر سرویس «product_…» اشتباه گرفته میشد)
+        // نسخه 2.6.33: callback جدید (product_header با هندلر سرویس «product_…» اشتباه گرفته می‌شد)
         ['text' => '💵 قیمت', 'callback_data' => 'prodlist_header'],
         ['text' => '🛍 محصول', 'callback_data' => 'prodlist_header'],
     ];
