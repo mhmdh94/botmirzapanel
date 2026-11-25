@@ -4013,7 +4013,7 @@ if ($text == $textbotlang['Admin']['Discountsell']['create']) {
         [['text' => '✅ تأیید', 'callback_data' => 'dexp_ok']],
         [['text' => '✏️ تغییر مدت', 'callback_data' => 'dexp_edit']],
     ]], JSON_UNESCAPED_UNICODE);
-    sendmessage($from_id, "🏷 کد <code>" . htmlspecialchars(strval($user['Processing_value']), ENT_QUOTES, 'UTF-8') . "</code>\n\n⏳ اعتبار تا: <b>{$__exp_txt}</b>\n\nدرست است؟", $__exp_kb, 'HTML');
+    sendmessage($from_id, "🏷 کد <code>" . htmlspecialchars(strval($user['Processing_value']), ENT_QUOTES, 'UTF-8') . "</code>\n\n⏳ اعتبار تا: <b>{$__exp_txt}</b>" . ($__exp_at > 0 ? "\n🗑 بعد از این زمان کد خودکار حذف میشود." : '') . "\n\nدرست است؟", $__exp_kb, 'HTML');
     step('confirmexpirecode', $from_id);
     return;
 }
@@ -5804,6 +5804,26 @@ if ($datain == "codes_noop") {
 
 " . $tx, $kb);
         }
+    } else {
+        telegram('answerCallbackQuery', [
+            'callback_query_id' => $callback_query_id,
+            'text' => 'کد یافت نشد',
+            'show_alert' => true,
+        ]);
+    }
+} elseif (strpos(strval($datain), 'codes_disc_exp_') === 0) {
+    // نسخه 2.6.41: تغییر مدت اعتبار کد موجود (همان مراحل ساخت: عدد روز ← تأیید)
+    $tok = substr(strval($datain), strlen('codes_disc_exp_'));
+    $row = function_exists('codesResolveDiscountCode') ? codesResolveDiscountCode($tok) : null;
+    if ($row) {
+        if (function_exists('botEnsureDiscountExpireCol')) {
+            botEnsureDiscountExpireCol();
+        }
+        $code = strval($row['codeDiscount'] ?? '');
+        update("user", "Processing_value", $code, "id", $from_id);
+        $cur = function_exists('botDiscountExpireLabel') ? botDiscountExpireLabel($row) : '-';
+        sendmessage($from_id, "⏳ <b>تغییر مدت اعتبار</b>\n\n🏷 کد: <code>" . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</code>\nاعتبار فعلی: {$cur}\n\nتعداد روز اعتبار جدید را از امروز بفرستید.\nکد تا <b>ساعت 12 شب</b> روز آخر معتبر است (<code>1</code> = تا امشب ساعت 12).\nبرای بدون محدودیت زمانی <code>0</code> بفرستید.\n\nبعد از رسیدن تاریخ، کد خودکار حذف میشود.", $backadmin, 'HTML');
+        step('getexpirecode', $from_id);
     } else {
         telegram('answerCallbackQuery', [
             'callback_query_id' => $callback_query_id,

@@ -1922,8 +1922,11 @@ function DirectPayment($order_id)
 
         if ($partsdic[0] == "dis") {
             $SellDiscountlimit = select("DiscountSell", "*", "codeDiscount", $partsdic[1], "select");
-            $value = intval($SellDiscountlimit['usedDiscount']) + 1;
-            update("DiscountSell", "usedDiscount", $value, "codeDiscount", $partsdic[1]);
+            // نسخه 2.6.41: کد ممکن است بعد از رسید (با رسیدن تاریخ) حذف شده باشد
+            if (is_array($SellDiscountlimit)) {
+                $value = intval($SellDiscountlimit['usedDiscount']) + 1;
+                update("DiscountSell", "usedDiscount", $value, "codeDiscount", $partsdic[1]);
+            }
             $stmt = $pdo->prepare("INSERT INTO Giftcodeconsumed (id_user,code) VALUES (:id_user,:code)");
             $stmt->bindParam(':id_user', $Balance_id['id']);
             $stmt->bindParam(':code', $partsdic[1]);
@@ -9392,6 +9395,10 @@ function codesDiscountListKeyboard($page = 0)
     $rows = [];
     $total = 0;
     try {
+        // نسخه 2.6.41: کدهای منقضی قبل از نمایش لیست پاک شوند
+        if (function_exists('botPurgeExpiredDiscounts')) {
+            botPurgeExpiredDiscounts();
+        }
         $total = intval($pdo->query("SELECT COUNT(*) FROM DiscountSell")->fetchColumn());
         $st = $pdo->query(
             "SELECT * FROM DiscountSell ORDER BY codeDiscount ASC LIMIT " . intval($per) . " OFFSET " . intval($offset)
@@ -9591,8 +9598,14 @@ function codesDiscountDetail($row)
     if (strlen('codes_disc_del_' . $safe) > 60) {
         $safe = substr(md5($raw), 0, 12);
     }
+    // نسخه 2.6.41: دکمه تغییر مدت اعتبار
+    $safe_x = rawurlencode($raw);
+    if (strlen('codes_disc_exp_' . $safe_x) > 60) {
+        $safe_x = substr(md5($raw), 0, 12);
+    }
     $kb = json_encode([
         'inline_keyboard' => [
+            [['text' => '⏳ تغییر مدت اعتبار', 'callback_data' => 'codes_disc_exp_' . $safe_x]],
             [['text' => '🗑 حذف این کد', 'callback_data' => 'codes_disc_del_' . $safe]],
             [['text' => '🔙 لیست کدهای تخفیف', 'callback_data' => 'codes_disc_list']],
         ],
@@ -10854,6 +10867,22 @@ function botReceiptDiscountLine($pv4)
     $row = function_exists('select') ? select("DiscountSell", "*", "codeDiscount", $code, "select") : null;
     $pct = is_array($row) ? rtrim(rtrim(number_format(floatval($row['price'] ?? 0), 2, '.', ''), '0'), '.') : '';
     return "\n🏷 کد تخفیف: <code>" . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</code>" . ($pct !== '' ? " ({$pct}٪)" : '');
+}
+
+/** نسخه 2.6.41: حذف خودکار کدهای تخفیفی که تاریخشان گذشته؛ تعداد حذفشده را برمیگرداند */
+function botPurgeExpiredDiscounts()
+{
+    global $pdo;
+    if (function_exists('botEnsureDiscountExpireCol')) {
+        botEnsureDiscountExpireCol();
+    }
+    try {
+        $st = $pdo->prepare("DELETE FROM DiscountSell WHERE expire_at > 0 AND expire_at <= ?");
+        $st->execute([time()]);
+        return $st->rowCount();
+    } catch (Throwable $e) {
+        return 0;
+    }
 }
 
 function botDiscountExpired($row)

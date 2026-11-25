@@ -41,6 +41,14 @@ if (function_exists('botDailySummaryTick')) {
     }
 }
 
+// نسخه 2.6.41: حذف خودکار کدهای تخفیف منقضی
+if (function_exists('botPurgeExpiredDiscounts')) {
+    $n_dsc = botPurgeExpiredDiscounts();
+    if ($n_dsc > 0 && function_exists('smartCronDebugLog')) {
+        smartCronDebugLog("🏷 حذف {$n_dsc} کد تخفیف منقضی");
+    }
+}
+
 // حذف خودکار فاکتورهای unpaid منقضی (TTL قابل تنظیم، پیش‌فرض ۴۵ دقیقه)
 if (function_exists('cleanupExpiredUnpaidInvoices')) {
     $n_unpaid = cleanupExpiredUnpaidInvoices(null);
