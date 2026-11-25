@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.47";
+$version = "2.6.48";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -239,6 +239,27 @@ if (isset($datain) && is_string($datain) && preg_match('/^guide_(menu|menu_e|and
     } else {
         list($__gt, $__gk) = botGuidePage($__gm[1] === 'menu_e' ? '' : $__gm[1]);
         Editmessagetext($from_id, $message_id, $__gt, $__gk);
+    }
+    return;
+}
+// نسخه 2.6.48: کاربر «🔔 یادآوری به مدیریت» را زد (رسید بررسینشده)
+if (isset($datain) && is_string($datain) && preg_match('/^rcpt_remind_(\w+)$/', $datain, $__rr)) {
+    $__rr_res = function_exists('botReceiptRemindAdmins') ? botReceiptRemindAdmins($__rr[1], $from_id) : 'done';
+    $__rr_msg = [
+        'ok' => '✅ یادآوری برای مدیریت ارسال شد.',
+        'already' => 'یادآوری قبلاً ارسال شده است؛ لطفاً کمی صبر کنید.',
+        'done' => 'این رسید قبلاً بررسی شده است.',
+        'notyours' => '❌ این رسید متعلق به شما نیست.',
+    ][$__rr_res] ?? 'انجام نشد.';
+    if (!empty($callback_query_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => $__rr_msg, 'show_alert' => true]);
+    }
+    if (!empty($message_id) && in_array($__rr_res, ['ok', 'already', 'done'], true)) {
+        $__rr_kb = json_encode(['inline_keyboard' => [[['text' => '🎟 پشتیبانی', 'callback_data' => 'support']]]], JSON_UNESCAPED_UNICODE);
+        $__rr_tx = $__rr_res === 'done'
+            ? "✅ <b>رسید شما بررسی شده است</b>\n\nنتیجه در پیام جداگانه برایتان ارسال شده است."
+            : "🔔 <b>یادآوری ارسال شد</b>\n\nرسید شما دوباره برای مدیریت فرستاده شد و بهزودی بررسی میشود.";
+        Editmessagetext($from_id, $message_id, $__rr_tx, $__rr_kb);
     }
     return;
 }

@@ -66,6 +66,14 @@ if (function_exists('cleanupExpiredUnpaidInvoices')) {
 }
 
 
+// نسخه 2.6.48: یادآوری رسید کارتبهکارتی که 30 دقیقه بررسی نشده
+if (smartCronFlag('smart_rcpt_remind', '1') && function_exists('botReceiptRemindTick')) {
+    $n_rr = botReceiptRemindTick();
+    if ($n_rr > 0 && function_exists('smartCronDebugLog')) {
+        smartCronDebugLog("🔔 یادآوری رسید برای {$n_rr} کاربر ارسال شد");
+    }
+}
+
 $limit = intval(getPaySettingValue('smart_batch_limit', '20'));
 if ($limit < 1) {
     $limit = 20;
@@ -117,9 +125,10 @@ $do_time = smartCronFlag('smart_warn_time', '0');
 $do_exp = smartCronFlag('smart_warn_expired', '0');
 $do_emg = smartCronFlag('smart_emergency', '0');
 $do_tf = smartCronFlag('smart_test_followup', '0');
+$do_og = smartCronFlag('smart_onhold_guide', '1');
 
 // اگر هیچ‌کدام روشن نیست، فقط نشانگر را جلو ببر و خارج شو (بدون پیام)
-if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf) {
+if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og) {
     saveSmartCronCursor($next_cursor);
     exit;
 }
@@ -168,7 +177,7 @@ foreach ($rows as $row) {
     }
 
     // اگر فقط clean روشن است و اخطارها خاموش‌اند، بعد از sync برو بعدی
-    if (!$do_vol && !$do_time && !$do_exp && !$do_tf) {
+    if (!$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og) {
         continue;
     }
 
@@ -183,6 +192,15 @@ foreach ($rows as $row) {
         || ($data_limit > 0 && $used >= $data_limit);
 
     // اخطار اتمام + دکمه تمدید (+ اضطراری اگر روشن و یک‌بار)
+    // نسخه 2.6.48: سرویس پولی که 24 ساعت تا 7 روز بعد از خرید هنوز وصل نشده → یک بار راهنمای اتصال
+    if ($do_og && $status === 'on_hold' && strval($row['name_product'] ?? '') !== 'usertest') {
+        $__ts_raw = $row['time_sell'] ?? '';
+        $__ts = (is_numeric($__ts_raw) && intval($__ts_raw) > 100000) ? intval($__ts_raw) : intval(strtotime(strval($__ts_raw)));
+        $__age = $__ts > 0 ? time() - $__ts : 0;
+        if ($__age >= 86400 && $__age <= 7 * 86400 && function_exists('botOnholdGuide') && botOnholdGuide($uid, $username, $location)) {
+            smartCronDebugLog("📖 راهنمای اتصال ارسال شد (سرویس وصل نشده)\n👤 <code>{$username}</code> | 🆔 <code>{$uid}</code>");
+        }
+    }
     // نسخه 2.6.46: اکانت تست تمامشده → فقط پیام پیگیری خرید (نه اخطار تمدید)
     if (strval($row['name_product'] ?? '') === 'usertest' && $is_ended) {
         if ($do_tf && function_exists('botTestFollowup') && botTestFollowup($uid, $username, $location)) {

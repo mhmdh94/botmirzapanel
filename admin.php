@@ -5215,7 +5215,7 @@ if (preg_match('/^balpkgadm_del_(.+)$/', strval($datain), $m_del)) {
 
 
 #----------------[ Smart cron settings ]------------------#
-if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg|tf)$/', strval($datain), $m_sc)) {
+if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg|tf|og|rr)$/', strval($datain), $m_sc)) {
     ensureSmartCronSettings();
     $map = [
         'clean' => 'smart_clean_missing',
@@ -5225,6 +5225,8 @@ if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg|tf)$/', strval($d
         'emg' => 'smart_emergency',
         'dbg' => 'smart_debug',
         'tf' => 'smart_test_followup',
+        'og' => 'smart_onhold_guide',
+        'rr' => 'smart_rcpt_remind',
     ];
     $key = $map[$m_sc[1]];
     $cur = smartCronFlag($key, '0') ? '0' : '1';

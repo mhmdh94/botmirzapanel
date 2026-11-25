@@ -5234,6 +5234,169 @@ function ensureSmartCronSettings()
     ensurePaySetting('smart_reseller_vol_levels', '80,90,95');
     // نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست
     ensurePaySetting('smart_test_followup', '0');
+    // نسخه 2.6.48: راهنمای اتصال برای سرویس وصلنشده + یادآوری رسید بررسینشده
+    ensurePaySetting('smart_onhold_guide', '1');
+    ensurePaySetting('smart_rcpt_remind', '1');
+}
+
+/** نسخه 2.6.48: سرویسی که 24 ساعت بعد از خرید هنوز وصل نشده → یک بار پیام راهنمای اتصال */
+function botOnholdGuide($uid, $username, $location)
+{
+    global $pdo;
+    static $col = false;
+    try {
+        if (!$col) {
+            $c = $pdo->query("SHOW COLUMNS FROM smart_cron_state LIKE 'onhold_guided'");
+            if ($c && $c->rowCount() == 0) {
+                $pdo->exec("ALTER TABLE smart_cron_state ADD COLUMN onhold_guided TINYINT NOT NULL DEFAULT 0");
+            }
+            $col = true;
+        }
+        getSmartCronState($username, $location);
+        $st = $pdo->prepare("SELECT onhold_guided FROM smart_cron_state WHERE username = ? AND service_location = ? LIMIT 1");
+        $st->execute([$username, $location]);
+        if (intval($st->fetchColumn()) === 1) {
+            return false;
+        }
+        $pdo->prepare("UPDATE smart_cron_state SET onhold_guided = 1 WHERE username = ? AND service_location = ?")->execute([$username, $location]);
+        $u = htmlspecialchars(strval($username), ENT_QUOTES, 'UTF-8');
+        $msg = "📖 <b>هنوز به سرویس وصل نشدهاید</b>\n\n"
+            . "سرویس <code>{$u}</code> آماده است ولی هنوز به آن متصل نشدهاید.\n"
+            . "با راهنمای اتصال در کمتر از یک دقیقه وصل شوید. اگر مشکلی بود، به پشتیبانی پیام دهید.";
+        sendmessage($uid, $msg, json_encode(['inline_keyboard' => [
+            [['text' => '📖 راهنمای اتصال', 'callback_data' => 'guide_menu']],
+            [['text' => '🔗 دریافت لینک اشتراک', 'callback_data' => 'subscriptionurl_' . $username]],
+            [['text' => '🎟 پشتیبانی', 'callback_data' => 'support']],
+        ]], JSON_UNESCAPED_UNICODE), 'HTML');
+        return true;
+    } catch (Throwable $e) {
+        error_log('onhold guide: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/** نسخه 2.6.48: جدول یادآوری رسید */
+function botReceiptRemindTable()
+{
+    global $pdo;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS receipt_remind (
+            id_order VARCHAR(64) NOT NULL PRIMARY KEY,
+            user_notified_at INT NOT NULL DEFAULT 0,
+            admin_reminded_at INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $ok = true;
+    } catch (Throwable $e) {
+        error_log('receipt_remind table: ' . $e->getMessage());
+        $ok = false;
+    }
+    return $ok;
+}
+
+/** نسخه 2.6.48: رسید کارتبهکارتی که 30 دقیقه بررسی نشده → یک بار به کاربر دکمه «یادآوری به مدیریت» */
+function botReceiptRemindTick()
+{
+    global $pdo;
+    if (!botReceiptRemindTable()) {
+        return 0;
+    }
+    $n = 0;
+    try {
+        $st = $pdo->query("SELECT id_user, id_order, time, price FROM Payment_report WHERE payment_Status = 'waiting' AND Payment_Method = 'cart to cart' ORDER BY id DESC LIMIT 200");
+        foreach (($st ? $st->fetchAll(PDO::FETCH_ASSOC) : []) as $r) {
+            $t = intval(strtotime(strval($r['time'] ?? '')));
+            $age = time() - $t;
+            if ($t <= 0 || $age < 1800 || $age > 86400) {
+                continue;
+            }
+            $order = strval($r['id_order'] ?? '');
+            $uid = strval($r['id_user'] ?? '');
+            if ($order === '' || $uid === '') {
+                continue;
+            }
+            $ins = $pdo->prepare("INSERT IGNORE INTO receipt_remind (id_order, user_notified_at) VALUES (?, ?)");
+            $ins->execute([$order, time()]);
+            if ($ins->rowCount() === 0) {
+                continue;
+            }
+            sendmessage($uid, "⏳ <b>رسید شما هنوز بررسی نشده است</b>\n\n"
+                . "💰 مبلغ: <b>" . number_format(intval($r['price'] ?? 0)) . "</b> تومان\n\n"
+                . "اگر میخواهید، با دکمه زیر به مدیریت یادآوری کنید تا رسیدتان را بررسی کند.", json_encode(['inline_keyboard' => [
+                [['text' => '🔔 یادآوری به مدیریت', 'callback_data' => 'rcpt_remind_' . $order]],
+                [['text' => '🎟 پشتیبانی', 'callback_data' => 'support']],
+            ]], JSON_UNESCAPED_UNICODE), 'HTML');
+            $n++;
+        }
+    } catch (Throwable $e) {
+        error_log('receipt remind tick: ' . $e->getMessage());
+    }
+    return $n;
+}
+
+/** نسخه 2.6.48: کاربر «یادآوری به مدیریت» را زد → رسید دوباره به ادمینها یادآوری شود (یک بار برای هر رسید) */
+function botReceiptRemindAdmins($order, $uid)
+{
+    global $pdo;
+    if (!botReceiptRemindTable()) {
+        return 'done';
+    }
+    $pr = select("Payment_report", "*", "id_order", strval($order), "select");
+    if (!is_array($pr) || strval($pr['id_user'] ?? '') !== strval($uid)) {
+        return 'notyours';
+    }
+    if (strval($pr['payment_Status'] ?? '') !== 'waiting') {
+        return 'done';
+    }
+    try {
+        $st = $pdo->prepare("SELECT admin_reminded_at FROM receipt_remind WHERE id_order = ? LIMIT 1");
+        $st->execute([strval($order)]);
+        if (intval($st->fetchColumn()) > 0) {
+            return 'already';
+        }
+        $pdo->prepare("INSERT INTO receipt_remind (id_order, admin_reminded_at) VALUES (?, ?) ON DUPLICATE KEY UPDATE admin_reminded_at = VALUES(admin_reminded_at)")
+            ->execute([strval($order), time()]);
+    } catch (Throwable $e) {
+        return 'done';
+    }
+    $t = intval(strtotime(strval($pr['time'] ?? '')));
+    $mins = $t > 0 ? max(1, intval((time() - $t) / 60)) : 0;
+    $body = "🔔 <b>یادآوری رسید</b>\n\n"
+        . "کاربر <code>" . htmlspecialchars(strval($uid), ENT_QUOTES, 'UTF-8') . "</code> درخواست بررسی رسیدش را دارد.\n"
+        . "🧾 سفارش: <code>" . htmlspecialchars(strval($order), ENT_QUOTES, 'UTF-8') . "</code>\n"
+        . "💰 مبلغ: <b>" . number_format(intval($pr['price'] ?? 0)) . "</b> تومان"
+        . ($mins > 0 ? "\n⏱ ارسال رسید: {$mins} دقیقه پیش" : '');
+    $sent = 0;
+    // پاسخ به همان پیام رسید نزد هر ادمین تا دکمههای تأیید/رد همانجا باشد
+    try {
+        if (function_exists('botEnsureReceiptMsgsTable') && botEnsureReceiptMsgsTable()) {
+            $rs = $pdo->prepare("SELECT chat_id, message_id FROM receipt_msgs WHERE id_order = ?");
+            $rs->execute([strval($order)]);
+            foreach ($rs->fetchAll(PDO::FETCH_ASSOC) as $m) {
+                $res = telegram('sendMessage', [
+                    'chat_id' => strval($m['chat_id']),
+                    'text' => $body . "\n\n👆 رسید اصلی همین پیام است.",
+                    'parse_mode' => 'HTML',
+                    'reply_to_message_id' => intval($m['message_id']),
+                    'allow_sending_without_reply' => true,
+                ]);
+                if (is_array($res) && !empty($res['ok'])) {
+                    $sent++;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+    }
+    if ($sent === 0) {
+        $kb = json_encode(['inline_keyboard' => [[['text' => '🧾 رسیدهای تایید نشده', 'callback_data' => 'navuser_rcpt']]]], JSON_UNESCAPED_UNICODE);
+        foreach ((array) select("admin", "id_admin", null, null, "FETCH_COLUMN") as $aid) {
+            sendmessage($aid, $body, $kb, 'HTML');
+        }
+    }
+    return 'ok';
 }
 
 /** نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست (یک بار برای هر تست؛ فقط اگر کاربر هنوز خرید نکرده) */
@@ -6738,6 +6901,8 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_warn_time', '0') ? $on : $off) . ' اخطار زمان', 'callback_data' => 'smartcron_toggle_time']],
         [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']],
         [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
+        [['text' => (smartCronFlag('smart_onhold_guide', '1') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
+        [['text' => (smartCronFlag('smart_rcpt_remind', '1') ? $on : $off) . ' یادآوری رسید بررسینشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
