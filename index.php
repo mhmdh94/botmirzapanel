@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.46";
+$version = "2.6.47";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -4006,10 +4006,14 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         $username_ac = $dataoutput['username'];
     }
     if ($datain == "confirmandgetserviceDiscount") {
-        $SellDiscountlimit = select("DiscountSell", "*", "codeDiscount", $partsdic[0], "select");
-        $value = intval($SellDiscountlimit['usedDiscount']) + 1;
-        update("DiscountSell", "usedDiscount", $value, "codeDiscount", $partsdic[0]);
-        $text_report = sprintf($textbotlang['users']['Report']['discountused'], $username, $from_id, $partsdic[0]);
+        // نسخه 2.6.47: کد در $partsdic[1] است (dis_CODE_PRICE)؛ قبلاً «dis» خوانده میشد و شمارش استفاده کد بالا نمیرفت
+        $__dcode = strval($partsdic[1] ?? '');
+        $SellDiscountlimit = $__dcode !== '' ? select("DiscountSell", "*", "codeDiscount", $__dcode, "select") : false;
+        if (is_array($SellDiscountlimit)) {
+            $value = intval($SellDiscountlimit['usedDiscount']) + 1;
+            update("DiscountSell", "usedDiscount", $value, "codeDiscount", $__dcode);
+        }
+        $text_report = sprintf($textbotlang['users']['Report']['discountused'], $username, $from_id, $__dcode);
         if (function_exists('sendChannelReport')) { sendChannelReport('rpt_discount', $text_report); }
         elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
             sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
@@ -4234,7 +4238,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         step('home', $from_id);
         return;
     }
-    if ($SellDiscountlimit['limitDiscount'] == $SellDiscountlimit['usedDiscount']) {
+    // نسخه 2.6.47: >= به جای == (اگر شمارش از سقف رد شده بود، کد باز هم قبول میشد)
+    if (intval($SellDiscountlimit['usedDiscount']) >= intval($SellDiscountlimit['limitDiscount'])) {
         sendmessage($from_id, $textbotlang['users']['Discount']['erorrlimit'], null, 'HTML');
         return;
     }
