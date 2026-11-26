@@ -2675,10 +2675,12 @@ if (preg_match('/Confirm_pay_(\w+)/', $datain, $dataget)) {
             ],
         ]
     ]);
+    // نسخه 2.6.59: رسیدی که همین ادمین تأیید کرد هم خط «در صورت صحت رسید، تأیید کنید.» را نداشته باشد
+    $__acc_cap = rtrim(preg_replace('/\n*در صورت صحت رسید،?\s*تأیید کنید\.?\s*$/u', '', strval($caption ?? '')));
     telegram('editMessageCaption',[
         'chat_id' => $from_id,
         'message_id' => $message_id,
-        'caption' => $caption,
+        'caption' => $__acc_cap !== '' ? $__acc_cap : strval($caption ?? ''),
         'reply_markup' => $keyboard_accept
     ]);
     // نسخه 2.3.3: نسخه همین رسید نزد ادمین‌های دیگر هم «تأیید شد» شود
