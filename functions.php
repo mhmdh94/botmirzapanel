@@ -2203,6 +2203,10 @@ function DirectPayment($order_id)
             if (function_exists('sendChannelReport')) {
                 sendChannelReport('rpt_extend', $text_report);
             }
+            // نسخه 2.6.58: پورسانت معرف از تمدید (کارتبهکارت)
+            if (function_exists('botPayRenewCommission')) {
+                botPayRenewCommission($uid, $price_ext, $ext_username);
+            }
         } catch (Throwable $e) {
             // برگرداندن هزینه تمدید در صورت خطای پنل
             if (function_exists('atomicAddBalance')) {
@@ -11243,6 +11247,62 @@ function botPurgeExpiredDiscounts()
         $st->execute([time()]);
         return $st->rowCount();
     } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/** نسخه 2.6.58: پورسانت معرف از تمدید (همان درصد خرید، روی مبلغ پرداختی بعد از تخفیف) */
+function botPayRenewCommission($buyer_id, $amount, $svc = '')
+{
+    global $textbotlang;
+    try {
+        $buyer_id = intval($buyer_id);
+        $amount = intval($amount);
+        if ($buyer_id <= 0 || $amount <= 0) {
+            return 0;
+        }
+        $aff = select("affiliates", "*", null, null, "select");
+        if (!is_array($aff) || strval($aff['status_commission'] ?? '') !== 'oncommission') {
+            return 0;
+        }
+        $bu = select("user", "*", "id", $buyer_id, "select");
+        $aff_uid = is_array($bu) ? intval($bu['affiliates'] ?? 0) : 0;
+        if ($aff_uid <= 0 || $aff_uid === $buyer_id) {
+            return 0;
+        }
+        $pct = floatval($aff['affiliatespercentage'] ?? 0);
+        $res = intval(round(($amount * $pct) / 100.0));
+        if ($res <= 0 || !is_array(select("user", "id", "id", $aff_uid, "select"))) {
+            return 0;
+        }
+        if (function_exists('atomicAddBalance')) {
+            atomicAddBalance($aff_uid, $res);
+        } else {
+            $r = select("user", "Balance", "id", $aff_uid, "select");
+            update("user", "Balance", intval(is_array($r) ? ($r['Balance'] ?? 0) : 0) + $res, "id", $aff_uid);
+        }
+        if (function_exists('addAffiliatesBalance')) {
+            addAffiliatesBalance($aff_uid, $res);
+        }
+        $fmt = number_format($res);
+        $msg = sprintf($textbotlang['users']['affiliates']['porsantuser'] ?? "🎁 پورسانت %s تومان واریز شد.", $fmt)
+            . (function_exists('botUserBalanceLine') ? botUserBalanceLine($aff_uid) : '');
+        sendmessage($aff_uid, $msg, function_exists('botMenuForBalance') ? botMenuForBalance($aff_uid) : null, 'HTML');
+        if (function_exists('sendChannelReport')) {
+            $pl = rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.');
+            $s = htmlspecialchars(strval($svc), ENT_QUOTES, 'UTF-8');
+            sendChannelReport('rpt_affiliate_buy',
+                "🤝 <b>پورسانت تمدید (مشارکت در فروش)</b>\n"
+                . "👤 معرف: <code>{$aff_uid}</code>\n"
+                . "🔄 تمدیدکننده: <code>{$buyer_id}</code>\n"
+                . "📦 مبلغ تمدید: <b>" . number_format($amount) . "</b> تومان\n"
+                . "📊 درصد: <b>{$pl}٪</b>\n"
+                . "💰 پورسانت واریزی: <b>{$fmt}</b> تومان\n"
+                . "🔑 سرویس: <code>{$s}</code>\n");
+        }
+        return $res;
+    } catch (Throwable $e) {
+        error_log('renew commission: ' . $e->getMessage());
         return 0;
     }
 }

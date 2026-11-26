@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.57";
+$version = "2.6.58";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -2417,6 +2417,10 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_extend', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
+    }
+    // نسخه 2.6.58: پورسانت معرف از تمدید (کیف پول)
+    if (function_exists('botPayRenewCommission')) {
+        botPayRenewCommission($from_id, $__price_ext, $nameloc['username'] ?? '');
     }
 } elseif (preg_match('/changelink_(\w+)/', $datain, $dataget)) {
     $username = $dataget[1];
