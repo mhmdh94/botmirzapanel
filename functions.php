@@ -2617,6 +2617,8 @@ function botMarkReceiptMsgs($order, $note, $skip_chat = 0, $skip_mid = 0, $uid =
             continue;
         }
         $cap = strval($r['caption'] ?? '');
+        // نسخه 2.6.57: بعد از تأیید/رد، خط «در صورت صحت رسید، تأیید کنید.» از رسید حذف شود
+        $cap = rtrim(preg_replace('/\n*در صورت صحت رسید،?\s*تأیید کنید\.?\s*$/u', '', $cap));
         $max = ($r['kind'] === 'text') ? 4000 : 1000;
         $new = $cap !== '' ? ($cap . "\n\n" . $__stamp) : '';
         $ok = false;
