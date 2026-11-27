@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.59";
+$version = "2.6.60";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -156,6 +156,11 @@ if (intval($from_id) != 0) {
     }
 }
 $user = select("user", "*", "id", $from_id, "select");
+// نسخه 2.6.60: کاربری که دوباره به ربات پیام داد دیگر «بلاککرده» نیست
+if (is_array($user) && !empty($user['bot_blocked']) && function_exists('botMarkBotBlocked')) {
+    botMarkBotBlocked($from_id, 0);
+    $user['bot_blocked'] = 0;
+}
 // نسخه 2.6.25: بهروزرسانی یوزرنیم تلگرام اگر کاربر آن را عوض کرده باشد
 // فقط وقتی آپدیت از پیام یا دکمه خود کاربر است (نه آپدیت‌هایی که یوزرنیم ندارند و NOT_USERNAME می‌دهند)
 $__un_from = $update['message']['from'] ?? $update['callback_query']['from'] ?? null;

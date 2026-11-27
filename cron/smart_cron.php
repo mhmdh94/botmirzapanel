@@ -133,6 +133,7 @@ if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og) {
     exit;
 }
 
+$__bot_blocked_ids = function_exists('botBlockedUserIds') ? botBlockedUserIds() : [];
 foreach ($rows as $row) {
     $username = trim(strval($row['username'] ?? ''));
     $location = strval($row['Service_location'] ?? '');
@@ -181,6 +182,10 @@ foreach ($rows as $row) {
         continue;
     }
 
+    // نسخه 2.6.60: برای کاربری که ربات را بلاک کرده پیام اخطار نفرست (همگامسازی وضعیت بالا انجام شد)
+    if (isset($__bot_blocked_ids[strval($uid)])) {
+        continue;
+    }
     $state = getSmartCronState($username, $location);
     $status = strval($dataUser['status'] ?? '');
     $expire = intval($dataUser['expire'] ?? 0);

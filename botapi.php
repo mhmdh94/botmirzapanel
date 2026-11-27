@@ -460,6 +460,11 @@ function telegram($method, $datas = [])
             @error_log('button style rejected by telegram, retry without colors: ' . $desc);
             return telegram($method, $__orig);
         }
+        // نسخه 2.6.60: کاربری که ربات را بلاک کرده علامت بخورد (همگانی و کرون برایش نروند)
+        if ($chat !== '' && ctype_digit($chat) && (stripos($desc, 'bot was blocked') !== false || stripos($desc, 'user is deactivated') !== false)
+            && function_exists('botMarkBotBlocked')) {
+            botMarkBotBlocked($chat, 1);
+        }
         $ignore = [
             'chat not found',
             'bot was blocked by the user',

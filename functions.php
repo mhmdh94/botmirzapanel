@@ -3904,6 +3904,8 @@ function botAdminUserCounts()
     $c = [
         'users' => botAdmCount("SELECT COUNT(*) FROM user"),
         'blocked' => botAdmCount("SELECT COUNT(*) FROM user WHERE User_Status = 'block'"),
+        // نسخه 2.6.60
+        'botblocked' => (function_exists('botEnsureBotBlockedCol') && botEnsureBotBlockedCol()) ? botAdmCount("SELECT COUNT(*) FROM user WHERE bot_blocked = 1") : 0,
         'rcpt' => botAdmCount("SELECT COUNT(*) FROM Payment_report WHERE payment_Status = 'waiting'"),
         'rich' => botAdmCount("SELECT COUNT(*) FROM user WHERE CAST(Balance AS SIGNED) >= 500000"),
     ];
@@ -3946,6 +3948,7 @@ function buildAdminUserServicesText()
     return "👥 <b>مدیریت کاربران</b>\n\n"
         . "👤 کل کاربران: <b>" . number_format($c['users']) . "</b>\n"
         . "🚫 مسدود: <b>" . number_format($c['blocked']) . "</b>\n"
+        . "📵 ربات را بلاک کردهاند: <b>" . number_format(intval($c['botblocked'] ?? 0)) . "</b>\n"
         . "🧾 رسید در انتظار تأیید: <b>" . number_format($c['rcpt']) . "</b>\n"
         . "💰 موجودی بالای 500 هزار تومان: <b>" . number_format($c['rich']) . "</b>\n\n"
         . "برای پیدا کردن یک کاربر از «🔍 جستجوی کاربر» در منوی مدیریت استفاده کنید.";
@@ -3988,6 +3991,65 @@ function buildAdminBroadcastText()
 }
 
 /** نسخه 2.4.2: گیرنده‌های پیام همگانی بر اساس گروه — فقط کاربران فعال (غیر مسدود) */
+/** نسخه 2.6.60: ستون «ربات را بلاک کرده» (یک بار ساخته میشود) */
+function botEnsureBotBlockedCol()
+{
+    global $pdo;
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    $flag = __DIR__ . '/cron/bot_blocked_col.ok';
+    if (is_file($flag)) {
+        $done = true;
+        return true;
+    }
+    try {
+        $c = $pdo->query("SHOW COLUMNS FROM user LIKE 'bot_blocked'");
+        if ($c && $c->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE user ADD COLUMN bot_blocked TINYINT NOT NULL DEFAULT 0");
+        }
+        @file_put_contents($flag, strval(time()));
+        $done = true;
+        return true;
+    } catch (Throwable $e) {
+        error_log('bot_blocked col: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/** نسخه 2.6.60: علامت کاربری که ربات را بلاک کرده (1) یا برداشتن علامت (0) */
+function botMarkBotBlocked($uid, $flag = 1)
+{
+    global $pdo;
+    $uid = strval($uid);
+    if ($uid === '' || !ctype_digit($uid) || !botEnsureBotBlockedCol()) {
+        return;
+    }
+    try {
+        $pdo->prepare("UPDATE user SET bot_blocked = ? WHERE id = ? AND bot_blocked <> ?")->execute([intval($flag) ? 1 : 0, $uid, intval($flag) ? 1 : 0]);
+    } catch (Throwable $e) {
+    }
+}
+
+/** نسخه 2.6.60: شناسه کاربرانی که ربات را بلاک کردهاند */
+function botBlockedUserIds()
+{
+    global $pdo;
+    $out = [];
+    if (!botEnsureBotBlockedCol()) {
+        return $out;
+    }
+    try {
+        $st = $pdo->query("SELECT id FROM user WHERE bot_blocked = 1");
+        while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
+            $out[strval($r['id'])] = 1;
+        }
+    } catch (Throwable $e) {
+    }
+    return $out;
+}
+
 function botCastRecipientSets()
 {
     global $pdo;
@@ -3995,7 +4057,9 @@ function botCastRecipientSets()
     $balpos = [];
     $active = [];
     try {
-        $st = $pdo->query("SELECT id, Balance FROM user WHERE User_Status = 'Active'");
+        // نسخه 2.6.60: کاربرانی که ربات را بلاک کردهاند گیرنده همگانی نباشند
+        $__bb = function_exists('botEnsureBotBlockedCol') && botEnsureBotBlockedCol();
+        $st = $pdo->query("SELECT id, Balance FROM user WHERE User_Status = 'Active'" . ($__bb ? " AND bot_blocked = 0" : ''));
         while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
             $active[] = strval($r['id']);
             if (intval($r['Balance'] ?? 0) > 0) {
