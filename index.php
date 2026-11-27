@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.67";
+$version = "2.6.68";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -864,7 +864,7 @@ if ($text == "/new") {
                 sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], null, 'HTML');
                 return;
             }
-            $textproduct = sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']);
+            $textproduct = (sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']) . (function_exists('botProductLegend') ? botProductLegend() : ''));
             $kbprod = KeyboardProduct($panel['name_panel'], "backuser", $panel['MethodUsername']);
             if ($datain == "buy" && !empty($message_id)) {
                 Editmessagetext($from_id, $message_id, $textproduct, $kbprod);
@@ -979,7 +979,7 @@ if ($text == "/renew") {
         ['text' => $textbotlang['users']['backhome'], 'callback_data' => "backuser"],
     ];
     $keyboardlistss = json_encode($keyboardlists);
-    sendmessage($from_id, $textbotlang['users']['extend']['selectservice'], $keyboardlistss, 'HTML');
+    sendmessage($from_id, ($textbotlang['users']['extend']['selectservice'] . (function_exists('botProductLegend') ? botProductLegend() : '')), $keyboardlistss, 'HTML');
     return;
 }
 #-----------back------------#
@@ -1959,7 +1959,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     ];
 
     $json_list_product_lists = json_encode($productextend);
-    Editmessagetext($from_id, $message_id, $textbotlang['users']['extend']['selectservice'], $json_list_product_lists);
+    Editmessagetext($from_id, $message_id, ($textbotlang['users']['extend']['selectservice'] . (function_exists('botProductLegend') ? botProductLegend() : '')), $json_list_product_lists);
 } elseif (preg_match('/serviceextendselect_(\w+)/', $datain, $dataget)) {
     if (function_exists('isExtendEnabled') && !isExtendEnabled()) {
         sendmessage($from_id, getEditableBotText('msg_extend_disabled', $textbotlang['users']['extend']['disabled']), $keyboard, 'HTML');
@@ -3637,7 +3637,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
                 sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], $keyboard, 'HTML');
                 return;
             }
-            $textproduct = sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']);
+            $textproduct = (sprintf($textbotlang['users']['buy']['selectService'], $panel['name_panel']) . (function_exists('botProductLegend') ? botProductLegend() : ''));
             $kbprod = KeyboardProduct($panel['name_panel'], "backuser", $panel['MethodUsername']);
             if ($datain == "buy" && !empty($message_id)) {
                 Editmessagetext($from_id, $message_id, $textproduct, $kbprod);
@@ -3676,7 +3676,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
         sendmessage($from_id, $textbotlang['users']['category']['error'], $keyboard, 'HTML');
         return;
     }
-    Editmessagetext($from_id, $message_id, sprintf($textbotlang['users']['buy']['selectService'], $location['name_panel']), KeyboardProduct($location['name_panel'], "buy", $location['MethodUsername'], $categoryid));
+    Editmessagetext($from_id, $message_id, (sprintf($textbotlang['users']['buy']['selectService'], $location['name_panel']) . (function_exists('botProductLegend') ? botProductLegend() : '')), KeyboardProduct($location['name_panel'], "buy", $location['MethodUsername'], $categoryid));
     update("user", "Processing_value", $location['name_panel'], "id", $from_id);
 } elseif (preg_match('/^location_(.*)/', $datain, $dataget)) {
     $locationid = $dataget[1];
@@ -3689,7 +3689,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             sendmessage($from_id, $textbotlang['Admin']['Product']['nullpProduct'], $keyboard, 'HTML');
             return;
         }
-        Editmessagetext($from_id, $message_id, sprintf($textbotlang['users']['buy']['selectService'], $panellist['name_panel']), KeyboardProduct($panellist['name_panel'], "buy", $panellist['MethodUsername']));
+        Editmessagetext($from_id, $message_id, (sprintf($textbotlang['users']['buy']['selectService'], $panellist['name_panel']) . (function_exists('botProductLegend') ? botProductLegend() : '')), KeyboardProduct($panellist['name_panel'], "buy", $panellist['MethodUsername']));
     } else {
         $emptycategory = select("category", "*", null, null, "count");
         if ($emptycategory == 0) {

@@ -9673,6 +9673,19 @@ function botLogTailFile($lines = 50)
 }
 
 /** نسخه 2.5.0: کد محصول پیشنهادی (PaySetting: featured_product) */
+/** نسخه 2.6.68: راهنمای ⭐ و 🔥 زیر متن لیست محصولات (فقط اگر در لیست باشند) */
+function botProductLegend()
+{
+    $p = [];
+    if (function_exists('botFeaturedProductCode') && botFeaturedProductCode() !== '') {
+        $p[] = '⭐ پیشنهاد ما';
+    }
+    if (function_exists('botBestSellerName') && botBestSellerName() !== '') {
+        $p[] = '🔥 پرفروشترین ۳۰ روز اخیر';
+    }
+    return $p ? "\n\n" . implode(' | ', $p) : '';
+}
+
 function botFeaturedProductCode()
 {
     static $v = null;
