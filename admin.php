@@ -5228,7 +5228,7 @@ if (preg_match('/^balpkgadm_del_(.+)$/', strval($datain), $m_del)) {
 
 
 #----------------[ Smart cron settings ]------------------#
-if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg|tf|og|rr)$/', strval($datain), $m_sc)) {
+if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg|tf|og|rr|wb)$/', strval($datain), $m_sc)) {
     ensureSmartCronSettings();
     $map = [
         'clean' => 'smart_clean_missing',
@@ -5240,6 +5240,7 @@ if (preg_match('/^smartcron_toggle_(clean|vol|time|exp|emg|dbg|tf|og|rr)$/', str
         'tf' => 'smart_test_followup',
         'og' => 'smart_onhold_guide',
         'rr' => 'smart_rcpt_remind',
+        'wb' => 'smart_winback',
     ];
     $key = $map[$m_sc[1]];
     $cur = smartCronFlag($key, '0') ? '0' : '1';
@@ -5279,6 +5280,27 @@ if ($datain == "smartcron_set_time") {
     update("PaySetting", "ValuePay", $__lv, "NamePay", "smart_time_days");
     step('home', $from_id);
     sendmessage($from_id, "✅ روزهای اخطار زمان: <code>{$__lv}</code>\n\n" . botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
+}
+// نسخه 2.6.63: تنظیم کد برگشت مشتری
+if ($datain == "smartcron_set_wb_days" || $datain == "smartcron_set_wb_pct") {
+    $__wb_d = ($datain == "smartcron_set_wb_days");
+    sendmessage($from_id, $__wb_d
+        ? "⏳ <b>کد برگشت مشتری</b>\n\nچند روز بعد از پایان سرویس، اگر تمدید نشده بود، کد فرستاده شود؟\nعددی بین <code>1</code> تا <code>6</code> بفرستید.\n\nℹ️ سرویس تمامشده 7 روز بعد از سرور حذف میشود، پس بیشتر از 6 مجاز نیست."
+        : "🏷 <b>کد برگشت مشتری</b>\n\nدرصد تخفیف کد را بفرستید (عدد بین <code>1</code> تا <code>90</code>).", $backadmin, 'HTML');
+    step($__wb_d ? 'smartcron_set_wb_days' : 'smartcron_set_wb_pct', $from_id);
+} elseif (($user['step'] == 'smartcron_set_wb_days' || $user['step'] == 'smartcron_set_wb_pct') && empty($datain)) {
+    $__wb_d = ($user['step'] == 'smartcron_set_wb_days');
+    $__wb_v = strtr(trim(strval($text)), ['۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9', '٪' => '', '%' => '']);
+    $__wb_v = trim($__wb_v);
+    $__wb_max = $__wb_d ? 6 : 90;
+    if ($__wb_v === '' || !ctype_digit($__wb_v) || intval($__wb_v) < 1 || intval($__wb_v) > $__wb_max) {
+        sendmessage($from_id, "❌ نامعتبر است. عددی بین 1 تا {$__wb_max} بفرستید.", $backadmin, 'HTML');
+        return;
+    }
+    ensureSmartCronSettings();
+    update("PaySetting", "ValuePay", strval(intval($__wb_v)), "NamePay", $__wb_d ? "smart_winback_days" : "smart_winback_pct");
+    step('home', $from_id);
+    sendmessage($from_id, ($__wb_d ? "✅ کد برگشت: " . intval($__wb_v) . " روز بعد از پایان سرویس" : "✅ درصد کد برگشت: " . intval($__wb_v) . "٪") . "\n\n" . botSmartCronMenuText(), buildSmartCronAdminKeyboard(), 'HTML');
 }
 if ($datain == "smartcron_show_cmd") {
     global $domainhosts;

@@ -126,9 +126,10 @@ $do_exp = smartCronFlag('smart_warn_expired', '0');
 $do_emg = smartCronFlag('smart_emergency', '0');
 $do_tf = smartCronFlag('smart_test_followup', '0');
 $do_og = smartCronFlag('smart_onhold_guide', '0');
+$do_wb = smartCronFlag('smart_winback', '0');
 
 // اگر هیچ‌کدام روشن نیست، فقط نشانگر را جلو ببر و خارج شو (بدون پیام)
-if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og) {
+if (!$do_clean && !$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og && !$do_wb) {
     saveSmartCronCursor($next_cursor);
     exit;
 }
@@ -178,7 +179,7 @@ foreach ($rows as $row) {
     }
 
     // اگر فقط clean روشن است و اخطارها خاموش‌اند، بعد از sync برو بعدی
-    if (!$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og) {
+    if (!$do_vol && !$do_time && !$do_exp && !$do_tf && !$do_og && !$do_wb) {
         continue;
     }
 
@@ -207,6 +208,13 @@ foreach ($rows as $row) {
         }
     }
     // نسخه 2.6.46: اکانت تست تمام‌شده → فقط پیام پیگیری خرید (نه اخطار تمدید)
+    // نسخه 2.6.63: کد برگشت مشتری (سرویس پولی که N روز بعد از پایان تمدید نشده)
+    if ($do_wb && function_exists('botWinbackTick')) {
+        $__wb_code = botWinbackTick($uid, $username, $location, $is_ended, strval($row['name_product'] ?? '') === 'usertest');
+        if ($__wb_code) {
+            smartCronDebugLog("🎁 کد برگشت مشتری ارسال شد\n👤 <code>{$username}</code> | 🆔 <code>{$uid}</code> | 🏷 <code>{$__wb_code}</code>");
+        }
+    }
     if (strval($row['name_product'] ?? '') === 'usertest' && $is_ended) {
         if ($do_tf && function_exists('botTestFollowup') && botTestFollowup($uid, $username, $location)) {
             smartCronDebugLog("🧪 پیام بعد از پایان تست ارسال شد\n👤 <code>{$username}</code> | 🆔 <code>{$uid}</code>");

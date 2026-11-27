@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.62";
+$version = "2.6.63";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -2016,6 +2016,11 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     }
     $__xd = select("DiscountSell", "*", "codeDiscount", $__xd_code, "select");
     if (!is_array($__xd)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
+        return;
+    }
+    // نسخه 2.6.63: کد شخصی فقط برای صاحبش
+    if (function_exists('botDiscountNotOwner') && botDiscountNotOwner($__xd, $from_id)) {
         sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
         return;
     }
@@ -4272,6 +4277,11 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $SellDiscountlimit = select("DiscountSell", "*", "codeDiscount", $text, "select");
     if ($SellDiscountlimit == false) {
         sendmessage($from_id, $textbotlang['Admin']['Discount']['invalidcodedis'], null, 'HTML');
+        return;
+    }
+    // نسخه 2.6.63: کد شخصی فقط برای صاحبش
+    if (function_exists('botDiscountNotOwner') && botDiscountNotOwner($SellDiscountlimit, $from_id)) {
+        sendmessage($from_id, $textbotlang['users']['Discount']['notcode'], $backuser, 'HTML');
         return;
     }
     $stmt = $pdo->prepare("SELECT * FROM product WHERE code_product = :code AND (location = :loc1 OR location = '/all') LIMIT 1");

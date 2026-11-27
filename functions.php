@@ -5343,6 +5343,10 @@ function ensureSmartCronSettings()
     // نسخه 2.6.49: پیش‌فرض خاموش
     ensurePaySetting('smart_onhold_guide', '0');
     ensurePaySetting('smart_rcpt_remind', '0');
+    // نسخه 2.6.63: کد برگشت مشتری (پیشفرض خاموش)
+    ensurePaySetting('smart_winback', '0');
+    ensurePaySetting('smart_winback_days', '3');
+    ensurePaySetting('smart_winback_pct', '15');
 }
 
 /** نسخه 2.6.48: سرویسی که 24 ساعت بعد از خرید هنوز وصل نشده → یک بار پیام راهنمای اتصال */
@@ -7009,6 +7013,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
         [['text' => (smartCronFlag('smart_onhold_guide', '0') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
         [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسی‌نشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
+        [['text' => (smartCronFlag('smart_winback', '0') ? $on : $off) . ' کد برگشت مشتری (تمدیدنکرده)', 'callback_data' => 'smartcron_toggle_wb']],
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
@@ -7023,6 +7028,13 @@ function buildSmartCronAdminKeyboard()
     }
     if (smartCronFlag('smart_warn_time', '0')) {
         $rows[] = [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '3,1'), 'callback_data' => 'smartcron_set_time']];
+    }
+    // نسخه 2.6.63: تنظیم کد برگشت مشتری فقط وقتی روشن است
+    if (smartCronFlag('smart_winback', '0')) {
+        $rows[] = [
+            ['text' => '🏷 درصد: ' . botWinbackSetting('smart_winback_pct', 15, 1, 90) . '٪', 'callback_data' => 'smartcron_set_wb_pct'],
+            ['text' => '⏳ بعد از: ' . botWinbackSetting('smart_winback_days', 3, 1, 6) . ' روز', 'callback_data' => 'smartcron_set_wb_days'],
+        ];
     }
     $rows[] = [
         ['text' => '📋 دستور کرون', 'callback_data' => 'smartcron_show_cmd'],
@@ -9873,6 +9885,10 @@ function codesDiscountListKeyboard($page = 0)
                 $safe = substr(md5($code), 0, 12);
             }
             $label_code = mb_strlen($code) > 16 ? (mb_substr($code, 0, 14) . '…') : $code;
+            // نسخه 2.6.63: کد شخصی (برگشت مشتری)
+            if (trim(strval($r['owner_id'] ?? '')) !== '') {
+                $label_code = '👤 ' . $label_code;
+            }
             if (function_exists('botDiscountExpired') && botDiscountExpired($r)) {
                 $label_code = '⌛ ' . $label_code;
             }
@@ -11380,6 +11396,151 @@ function botPayRenewCommission($buyer_id, $amount, $svc = '')
     } catch (Throwable $e) {
         error_log('renew commission: ' . $e->getMessage());
         return 0;
+    }
+}
+
+/** نسخه 2.6.63: ستونهای لازم کد برگشت مشتری (یک بار) */
+function botWinbackEnsure()
+{
+    global $pdo;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    $ok = false;
+    try {
+        if (function_exists('botEnsureDiscountExpireCol')) {
+            botEnsureDiscountExpireCol();
+        }
+        $f1 = __DIR__ . '/cron/dsc_owner.ok';
+        if (!is_file($f1)) {
+            $c = $pdo->query("SHOW COLUMNS FROM DiscountSell LIKE 'owner_id'");
+            if ($c && $c->rowCount() == 0) {
+                $pdo->exec("ALTER TABLE DiscountSell ADD COLUMN owner_id VARCHAR(32) NOT NULL DEFAULT ''");
+            }
+            @file_put_contents($f1, strval(time()));
+        }
+        if (function_exists('ensureSmartCronStateTable')) {
+            ensureSmartCronStateTable();
+        }
+        $f2 = __DIR__ . '/cron/winback_state.ok';
+        if (!is_file($f2)) {
+            foreach (['ended_at' => "INT NOT NULL DEFAULT 0", 'winback_sent' => "TINYINT NOT NULL DEFAULT 0"] as $col => $def) {
+                $c = $pdo->query("SHOW COLUMNS FROM smart_cron_state LIKE '{$col}'");
+                if ($c && $c->rowCount() == 0) {
+                    $pdo->exec("ALTER TABLE smart_cron_state ADD COLUMN {$col} {$def}");
+                }
+            }
+            @file_put_contents($f2, strval(time()));
+        }
+        $ok = true;
+    } catch (Throwable $e) {
+        error_log('winback ensure: ' . $e->getMessage());
+    }
+    return $ok;
+}
+
+/** نسخه 2.6.63: کد شخصی فقط برای صاحبش؛ true یعنی این کاربر اجازه ندارد */
+function botDiscountNotOwner($row, $uid)
+{
+    $o = is_array($row) ? trim(strval($row['owner_id'] ?? '')) : '';
+    return $o !== '' && $o !== strval($uid);
+}
+
+/** نسخه 2.6.63: مقدار عددی تنظیم در بازه */
+function botWinbackSetting($name, $def, $min, $max)
+{
+    $v = function_exists('getPaySettingValue') ? intval(getPaySettingValue($name, strval($def))) : intval($def);
+    return max($min, min($max, $v > 0 ? $v : intval($def)));
+}
+
+/**
+ * نسخه 2.6.63: کد برگشت مشتری
+ * سرویس پولی که N روز بعد از پایان تمدید نشده → یک بار کد تخفیف شخصی، یکبارمصرف، 24 ساعته
+ */
+function botWinbackTick($uid, $username, $location, $is_ended, $is_test)
+{
+    global $pdo;
+    if (!botWinbackEnsure()) {
+        return false;
+    }
+    $uid = strval($uid);
+    try {
+        getSmartCronState($username, $location);
+        $st = $pdo->prepare("SELECT ended_at, winback_sent FROM smart_cron_state WHERE username = ? AND service_location = ? LIMIT 1");
+        $st->execute([$username, $location]);
+        $s = $st->fetch(PDO::FETCH_ASSOC) ?: ['ended_at' => 0, 'winback_sent' => 0];
+        $set = function ($ended_at, $sent) use ($pdo, $username, $location) {
+            $pdo->prepare("UPDATE smart_cron_state SET ended_at = ?, winback_sent = ? WHERE username = ? AND service_location = ?")
+                ->execute([intval($ended_at), intval($sent), $username, $location]);
+        };
+        // سرویس دوباره فعال شد → آماده برای دفعه بعد
+        if (!$is_ended) {
+            if (intval($s['ended_at']) !== 0 || intval($s['winback_sent']) !== 0) {
+                $set(0, 0);
+            }
+            return false;
+        }
+        if ($is_test || intval($s['winback_sent']) === 1) {
+            return false;
+        }
+        $ended_at = intval($s['ended_at']);
+        if ($ended_at <= 0) {
+            $set(time(), 0);
+            return false;
+        }
+        $days = botWinbackSetting('smart_winback_days', 3, 1, 6);
+        $age = time() - $ended_at;
+        if ($age < $days * 86400) {
+            return false;
+        }
+        // دیرتر از 7 روز (سرویس از سرور حذف شده) → فقط علامت
+        if ($age > 7 * 86400) {
+            $set($ended_at, 1);
+            return false;
+        }
+        // کاربری که سرویس پولی فعال دیگری دارد یا کد شخصی معتبر دارد → نفرست
+        $q = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE id_user = ? AND username <> ? AND name_product <> 'usertest' AND (Status = 'active' OR Status = 'sendedwarn')");
+        $q->execute([$uid, $username]);
+        $q2 = $pdo->prepare("SELECT COUNT(*) FROM DiscountSell WHERE owner_id = ? AND (expire_at = 0 OR expire_at > ?)");
+        $q2->execute([$uid, time()]);
+        if (intval($q->fetchColumn()) > 0 || intval($q2->fetchColumn()) > 0) {
+            $set($ended_at, 1);
+            return false;
+        }
+        $pct = botWinbackSetting('smart_winback_pct', 15, 1, 90);
+        $code = '';
+        for ($t = 0; $t < 5 && $code === ''; $t++) {
+            $try = 'BACK' . strtoupper(bin2hex(random_bytes(3)));
+            $ex = $pdo->prepare("SELECT COUNT(*) FROM DiscountSell WHERE codeDiscount = ?");
+            $ex->execute([$try]);
+            if (intval($ex->fetchColumn()) === 0) {
+                $code = $try;
+            }
+        }
+        if ($code === '') {
+            return false;
+        }
+        $exp = time() + 86400;
+        $pdo->prepare("INSERT INTO DiscountSell (codeDiscount, usedDiscount, price, limitDiscount, usefirst, expire_at, owner_id) VALUES (?, '0', ?, '1', '0', ?, ?)")
+            ->execute([$code, strval($pct), $exp, $uid]);
+        $set($ended_at, 1);
+        $u = htmlspecialchars(strval($username), ENT_QUOTES, 'UTF-8');
+        $msg = "🎁 <b>یک هدیه مخصوص شما</b>\n━━━━━━━━━━\n"
+            . "سرویس <code>{$u}</code> چند روز است تمام شده.\n"
+            . "با کد زیر روی تمدید یا خرید جدید <b>{$pct}٪</b> تخفیف دارید:\n\n"
+            . "🏷 کد: <code>{$code}</code>\n"
+            . "⏳ فقط تا 24 ساعت و فقط یک بار معتبر است.\n"
+            . "👤 این کد فقط برای شماست.\n━━━━━━━━━━\n"
+            . "👇 کد را کپی کنید و هنگام تمدید در بخش کد تخفیف وارد کنید.";
+        sendmessage($uid, $msg, json_encode(['inline_keyboard' => [
+            [['text' => '📋 کپی کد', 'copy_text' => ['text' => $code]]],
+            [['text' => '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]],
+        ]], JSON_UNESCAPED_UNICODE), 'HTML');
+        return $code;
+    } catch (Throwable $e) {
+        error_log('winback tick: ' . $e->getMessage());
+        return false;
     }
 }
 
