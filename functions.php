@@ -3282,6 +3282,16 @@ function describePaymentReport($Payment_report)
     } elseif (($parts[0] ?? '') === 'getconfigafterpay') {
         $uname = $parts[1] ?? '-';
         $type_label = "🛒 پرداخت برای خرید سرویس\n   └ نام کاربری سرویس: <code>{$uname}</code>";
+    } elseif (($parts[0] ?? '') === 'extendafterpay') {
+        // نسخه 2.6.69: رسید تمدید دیگر «افزایش موجودی» نوشته نمیشود
+        $uname = htmlspecialchars(strval($parts[1] ?? '-'), ENT_QUOTES, 'UTF-8');
+        $type_label = "🔄 پرداخت برای تمدید سرویس\n   └ نام کاربری سرویس: <code>{$uname}</code>";
+        $dc = trim(strval($parts[4] ?? ''));
+        if ($dc !== '') {
+            $type_label .= "\n   └ کد تخفیف: <code>" . htmlspecialchars($dc, ENT_QUOTES, 'UTF-8') . "</code>";
+        }
+    } elseif (($parts[0] ?? '') === 'reseller_volume') {
+        $type_label = "📦 خرید حجم پنل نمایندگی";
     }
     if (function_exists('getPaymentCreditAmount')) {
         $credit_amount = intval(getPaymentCreditAmount($Payment_report));
@@ -5854,7 +5864,7 @@ function reportChannelTypes()
         'rpt_discount' => '🏷 کد تخفیف',
         'rpt_winback' => '🎁 کد برگشت مشتری',
         'rpt_gift' => '🎁 کد هدیه',
-        'rpt_affiliate_buy' => '🤝 پورسانت خرید (مشارکت)',
+        'rpt_affiliate_buy' => '🤝 پورسانت (خرید و تمدید)',
         'rpt_cart_accept' => '✅ تأیید رسید (ادمین)',
         'rpt_cart_auto' => '🤖 تأیید خودکار رسید',
         'rpt_reject' => '🚫 رد رسید',
