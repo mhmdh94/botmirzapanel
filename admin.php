@@ -4188,7 +4188,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
     step('home', $from_id);
     $__aff = select("affiliates", "*", null, null, "select");
     $__old = intval(is_array($__aff) ? ($__aff['affiliatespercentage'] ?? 0) : 0);
-    sendmessage($from_id, "⚠️ <b>تغییر درصد پورسانت</b>\n\nفعلی: <b>{$__old}٪</b>\nجدید: <b>{$__n}٪</b>\n\nبعد از هر خرید زیرمجموعه، {$__n}٪ مبلغ به معرف پورسانت داده می‌شود.\nذخیره شود؟", json_encode(['inline_keyboard' => [
+    sendmessage($from_id, "⚠️ <b>تغییر درصد پورسانت</b>\n\nفعلی: <b>{$__old}٪</b>\nجدید: <b>{$__n}٪</b>\n\nبعد از هر خرید زیر‌مجموعه، {$__n}٪ مبلغ به معرف پورسانت داده می‌شود.\nذخیره شود؟", json_encode(['inline_keyboard' => [
         [['text' => '✅ بله، ذخیره شود', 'callback_data' => 'affpct_ok_' . $__n]],
         [['text' => '❌ انصراف', 'callback_data' => 'affpanel_refresh']],
     ]], JSON_UNESCAPED_UNICODE), 'HTML');
@@ -5309,7 +5309,7 @@ if ($datain == "smartcron_set_time") {
 if ($datain == "smartcron_set_wb_days" || $datain == "smartcron_set_wb_pct") {
     $__wb_d = ($datain == "smartcron_set_wb_days");
     sendmessage($from_id, $__wb_d
-        ? "⏳ <b>کد برگشت مشتری</b>\n\nچند روز بعد از پایان سرویس، اگر تمدید نشده بود، کد فرستاده شود؟\nعددی بین <code>1</code> تا <code>6</code> بفرستید.\n\nℹ️ سرویس تمامشده 7 روز بعد از سرور حذف میشود، پس بیشتر از 6 مجاز نیست."
+        ? "⏳ <b>کد برگشت مشتری</b>\n\nچند روز بعد از پایان سرویس، اگر تمدید نشده بود، کد فرستاده شود؟\nعددی بین <code>1</code> تا <code>6</code> بفرستید.\n\nℹ️ سرویس تمام‌شده 7 روز بعد از سرور حذف میشود، پس بیشتر از 6 مجاز نیست."
         : "🏷 <b>کد برگشت مشتری</b>\n\nدرصد تخفیف کد را بفرستید (عدد بین <code>1</code> تا <code>90</code>).", $backadmin, 'HTML');
     step($__wb_d ? 'smartcron_set_wb_days' : 'smartcron_set_wb_pct', $from_id);
 } elseif (($user['step'] == 'smartcron_set_wb_days' || $user['step'] == 'smartcron_set_wb_pct') && empty($datain)) {

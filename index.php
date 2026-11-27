@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.66";
+$version = "2.6.67";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -156,7 +156,7 @@ if (intval($from_id) != 0) {
     }
 }
 $user = select("user", "*", "id", $from_id, "select");
-// نسخه 2.6.60: کاربری که دوباره به ربات پیام داد دیگر «بلاککرده» نیست
+// نسخه 2.6.60: کاربری که دوباره به ربات پیام داد دیگر «بلاک‌کرده» نیست
 if (is_array($user) && !empty($user['bot_blocked']) && function_exists('botMarkBotBlocked')) {
     botMarkBotBlocked($from_id, 0);
     $user['bot_blocked'] = 0;
@@ -550,7 +550,7 @@ if ($user['User_Status'] == "block" && !in_array(strval($from_id), array_map('st
     return;
 }
 if (strpos($text, "/start ") !== false) {
-    // لینک مشارکت فقط برای اولین ورود (کاربر جدید) — عضو قبلی زیرمجموعه نمی‌شود
+    // لینک مشارکت فقط برای اولین ورود (کاربر جدید) — عضو قبلی زیر‌مجموعه نمی‌شود
     if (!empty($__user_existed_before)) {
         if (intval($user['affiliates'] ?? 0) != 0) {
             sendmessage($from_id, $textbotlang['users']['affiliates']['affiliateseduser'], $keyboard, 'HTML');
@@ -2235,7 +2235,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (function_exists('logWalletTx')) {
         logWalletTx($from_id, 'renew', $__price_ext, $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')) . ($__ext_dc !== '' ? ' (کد تخفیف ' . $__ext_dc . ')' : ''));
     }
-    // نسخه 2.6.62: گزارش جدای کد تخفیف تمدید حذف شد (کد در گزارش «تمدید سرویس» میآید)
+    // نسخه 2.6.62: گزارش جدای کد تخفیف تمدید حذف شد (کد در گزارش «تمدید سرویس» می‌آید)
     if (function_exists('recordSale')) {
         recordSale($from_id, $__price_ext, 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
     }
@@ -4061,7 +4061,7 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             $value = intval($SellDiscountlimit['usedDiscount']) + 1;
             update("DiscountSell", "usedDiscount", $value, "codeDiscount", $__dcode);
         }
-        // نسخه 2.6.62: گزارش جدای کد تخفیف حذف شد؛ کد در همان گزارش خرید میآید
+        // نسخه 2.6.62: گزارش جدای کد تخفیف حذف شد؛ کد در همان گزارش خرید می‌آید
         $__buy_dc_code = $__dcode;
     }
     $affiliatescommission = select("affiliates", "*", null, null, "select");
@@ -4721,7 +4721,7 @@ if ($datain == "cart_to_offline" || $datain == "iranpay" || $datain == "sheba_of
         $parts_n = explode('|', $pv_tow_note);
         // نسخه 2.6.40: بدون «نوع:» تکراری و خط خالی
         $pay_note = "🔄 تمدید سرویس <code>" . htmlspecialchars($parts_n[1] ?? '', ENT_QUOTES, 'UTF-8') . "</code>";
-        // نسخه 2.6.50: در تمدید کارتبهکارت، کد تخفیف در Processing_value_tow است (extendafterpay|user|code|price|DC)
+        // نسخه 2.6.50: در تمدید کارت‌به‌کارت، کد تخفیف در Processing_value_tow است (extendafterpay|user|code|price|DC)
         if (function_exists('botReceiptDiscountLine')) {
             $__rc_dc = strval($parts_n[4] ?? '');
             $pay_note .= $__rc_dc !== '' ? botReceiptDiscountLine('extdis|' . $__rc_dc) : botReceiptDiscountLine($user['Processing_value_four'] ?? '');
@@ -4983,7 +4983,7 @@ if ($text == $textbotlang['users']['affiliates']['btn'] || $datain == "acc_invit
         ]
     ]);
     // نسخه 2.2: توضیح + آمار + لینک دعوت در یک پیام
-    // نسخه 2.6.6: آمار دعوت (دعوتشده، خریدکرده، پورسانت)
+    // نسخه 2.6.6: آمار دعوت (دعوت‌شده، خریدکرده، پورسانت)
     $__aff_st = function_exists('botAffiliateStats') ? botAffiliateStats($from_id) : null;
     $__aff_inv = max(intval($user['affiliatescount'] ?? 0), intval($__aff_st['invited'] ?? 0));
     $__aff_stats = "\n\n📊 <b>آمار دعوت شما</b>"

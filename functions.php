@@ -975,7 +975,7 @@ function botBuyButtonKeyboard()
 
 /**
  * متن دکمه هر سرویس در «سرویس‌های من»: ایموجی + یوزرنیم + روزهای باقی‌مانده (تخمین از دیتابیس ربات).
- * برای سرویس نامحدود یا تمامشده، روز نشان داده نمی‌شود.
+ * برای سرویس نامحدود یا تمام‌شده، روز نشان داده نمی‌شود.
  */
 function serviceListButtonLabel(array $row)
 {
@@ -1951,7 +1951,7 @@ function DirectPayment($order_id)
             $stmt->execute();
             $result = ($SellDiscountlimit['price'] / 100) * $get_invoice['price_product'];
             $pricediscount = $get_invoice['price_product'] - $result;
-            // نسخه 2.6.62: گزارش جدای کد تخفیف حذف شد؛ کد در همان گزارش خرید میآید
+            // نسخه 2.6.62: گزارش جدای کد تخفیف حذف شد؛ کد در همان گزارش خرید می‌آید
             $__buy_dc_code_ap = strval($partsdic[1] ?? '');
         } else {
             $pricediscount = null;
@@ -2194,14 +2194,14 @@ function DirectPayment($order_id)
                 $nameloc['Service_location'],
                 $bal_fmt
             );
-            // نسخه 2.6.54: کد تخفیف تمدید (کارتبهکارت) در گزارش کانال
+            // نسخه 2.6.54: کد تخفیف تمدید (کارت‌به‌کارت) در گزارش کانال
             if (!empty($__xd_used) && $__xd_code !== '' && function_exists('botReceiptDiscountLine')) {
                 $text_report .= "\n" . botReceiptDiscountLine('extdis|' . $__xd_code);
             }
             if (function_exists('sendChannelReport')) {
                 sendChannelReport('rpt_extend', $text_report);
             }
-            // نسخه 2.6.58: پورسانت معرف از تمدید (کارتبهکارت)
+            // نسخه 2.6.58: پورسانت معرف از تمدید (کارت‌به‌کارت)
             if (function_exists('botPayRenewCommission')) {
                 botPayRenewCommission($uid, $price_ext, $ext_username);
             }
@@ -4268,7 +4268,7 @@ function buildAffiliatesAdminPanel()
     $com_on = (($aff['status_commission'] ?? '') === 'oncommission');
     $gift_on = (($aff['Discount'] ?? '') === 'onDiscountaffiliates');
     $pct = intval($aff['affiliatespercentage'] ?? 0);
-    // نسخه 2.6.61: پورسانت تمدید (پیشفرض روشن)
+    // نسخه 2.6.61: پورسانت تمدید (پیش‌فرض روشن)
     if (function_exists('ensurePaySetting')) {
         ensurePaySetting('aff_renew_commission', '1');
     }
@@ -4654,7 +4654,7 @@ function sendAdminUserInfo($admin_id, $target_user_id, $edit_mid = 0)
     ][strval($u['roll_Status'] ?? '0')] ?? ($textbotlang['Admin']['ManageUser']['Failedphone'] ?? 'تایید نشده');
 
     $uid = strval($target_user_id);
-    // نسخه 2.6.66: صفحه اطلاعات کاربر بازطراحی شد (متن گروهبندیشده، دکمههای وابسته به وضعیت)
+    // نسخه 2.6.66: صفحه اطلاعات کاربر بازطراحی شد (متن گروهبندی‌شده، دکمه‌های وابسته به وضعیت)
     $is_block = strval($u['User_Status'] ?? '') === 'block';
     $is_verify = strval($u['verify'] ?? '0') === '1';
     $is_botblocked = !empty($u['bot_blocked']);
@@ -4679,11 +4679,11 @@ function sendAdminUserInfo($admin_id, $target_user_id, $edit_mid = 0)
             ['text' => '📱 تأیید دستی شماره', 'callback_data' => "confirmnumber_" . $uid],
         ],
         [
-            ['text' => '🛍 سرویسهای کاربر', 'callback_data' => "vieworderall_" . $uid],
+            ['text' => '🛍 سرویس‌های کاربر', 'callback_data' => "vieworderall_" . $uid],
             ['text' => '🛒 افزودن دستی سفارش', 'callback_data' => "addordermanualـ" . $uid],
         ],
         [
-            ['text' => '📜 تاریخچه تراکنشها', 'callback_data' => "uinfo_tx_" . $uid],
+            ['text' => '📜 تاریخچه تراکنش‌ها', 'callback_data' => "uinfo_tx_" . $uid],
             ['text' => '🧾 رسیدهای کاربر', 'callback_data' => "uinfo_rcpt_" . $uid],
         ],
         [
@@ -4720,11 +4720,11 @@ function sendAdminUserInfo($admin_id, $target_user_id, $edit_mid = 0)
             $pa_user = implode(', ', $pa_list);
             $keyboardmanage['inline_keyboard'][] = [[
                 'text' => $pa_en
-                    ? (isset($textbotlang['Admin']['ManageUser']['panel_admin_on']) ? $textbotlang['Admin']['ManageUser']['panel_admin_on'] : '🛠 پنلدار: فعال ✅')
-                    : (isset($textbotlang['Admin']['ManageUser']['panel_admin_off']) ? $textbotlang['Admin']['ManageUser']['panel_admin_off'] : '🛠 پنلدار: غیرفعال ❌'),
+                    ? (isset($textbotlang['Admin']['ManageUser']['panel_admin_on']) ? $textbotlang['Admin']['ManageUser']['panel_admin_on'] : '🛠 پنل‌دار: فعال ✅')
+                    : (isset($textbotlang['Admin']['ManageUser']['panel_admin_off']) ? $textbotlang['Admin']['ManageUser']['panel_admin_off'] : '🛠 پنل‌دار: غیرفعال ❌'),
                 'callback_data' => 'toggle_panel_admin_' . $uid
             ]];
-            // نسخه 2.6.66: مدیریت ادمینهای پنل فقط وقتی پنلدار فعال است
+            // نسخه 2.6.66: مدیریت ادمین‌های پنل فقط وقتی پنل‌دار فعال است
             if ($pa_en) {
                 foreach ($pa_list as $idx => $paname) {
                     $keyboardmanage['inline_keyboard'][] = [[
@@ -4780,12 +4780,12 @@ function sendAdminUserInfo($admin_id, $target_user_id, $edit_mid = 0)
         . "🟢 سرویس فعال: <b>" . intval($active_svc_cnt) . "</b>\n"
         . "⚙️ تأیید خودکار رسید: {$cart_disp}\n"
         . "\n🤝 <b>دعوت</b>\n"
-        . "👥 معرف: {$ref_disp} | دعوتشدهها: " . intval($u['affiliatescount'] ?? 0) . "\n"
+        . "👥 معرف: {$ref_disp} | دعوت‌شده‌ها: " . intval($u['affiliatescount'] ?? 0) . "\n"
         . "💸 پورسانت: " . number_format(intval($aff_earn)) . " تومان";
     try {
         if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled() && !empty($pa_en) && $pa_user !== '') {
             $vol_lbl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($pa_vol_bought) : (number_format(intval($pa_vol_bought)) . ' گیگ');
-            $text_msg .= "\n\n🛠 <b>پنل نمایندگی</b>\n👤 ادمین(ها): <code>" . $h($pa_user) . "</code>\n📊 حجم خریداریشده: <b>" . $vol_lbl . "</b>";
+            $text_msg .= "\n\n🛠 <b>پنل نمایندگی</b>\n👤 ادمین(ها): <code>" . $h($pa_user) . "</code>\n📊 حجم خریداری‌شده: <b>" . $vol_lbl . "</b>";
         }
     } catch (Throwable $e) {}
     $text_msg .= "\n━━━━━━━━━━";
@@ -4803,7 +4803,7 @@ function sendAdminUserInfo($admin_id, $target_user_id, $edit_mid = 0)
     return true;
 }
 
-/** نسخه 2.6.66: تاریخچه تراکنشهای یک کاربر برای ادمین */
+/** نسخه 2.6.66: تاریخچه تراکنش‌های یک کاربر برای ادمین */
 function botAdminUserTxText($uid)
 {
     global $pdo;
@@ -4832,7 +4832,7 @@ function botAdminUserTxText($uid)
         }
     } catch (Throwable $e) {
     }
-    return "📜 <b>تاریخچه تراکنشهای کاربر</b> <code>{$uid}</code>\n━━━━━━━━━━\n"
+    return "📜 <b>تاریخچه تراکنش‌های کاربر</b> <code>{$uid}</code>\n━━━━━━━━━━\n"
         . ($lines ? implode("\n\n", $lines) : '📭 تراکنشی ثبت نشده است.')
         . "\n━━━━━━━━━━\n(۱۵ مورد آخر)";
 }
@@ -5423,7 +5423,7 @@ function ensureSmartCronSettings()
     ensurePaySetting('smart_debug', '0');
     ensurePaySetting('smart_cron_cursor', '0');
     ensurePaySetting('smart_batch_limit', '20');
-    // هشدار حجم پنل ریسلر (زیرمجموعه اسمارت کرون)
+    // هشدار حجم پنل ریسلر (زیر‌مجموعه اسمارت کرون)
     ensurePaySetting('smart_reseller_warn', '0');
     ensurePaySetting('smart_reseller_vol_levels', '80,90,95');
     // نسخه 2.6.46: پیام پیگیری بعد از پایان اکانت تست
@@ -5432,7 +5432,7 @@ function ensureSmartCronSettings()
     // نسخه 2.6.49: پیش‌فرض خاموش
     ensurePaySetting('smart_onhold_guide', '0');
     ensurePaySetting('smart_rcpt_remind', '0');
-    // نسخه 2.6.63: کد برگشت مشتری (پیشفرض خاموش)
+    // نسخه 2.6.63: کد برگشت مشتری (پیش‌فرض خاموش)
     ensurePaySetting('smart_winback', '0');
     ensurePaySetting('smart_winback_days', '3');
     ensurePaySetting('smart_winback_pct', '15');
@@ -5995,7 +5995,7 @@ function botMaskTail($t)
     return strlen($d) >= 4 ? '…' . substr($d, -4) : '-';
 }
 
-/** نسخه 2.4.4: هشدار اجرا نشدن کرون هوشمند (از وبهوک، حداکثر هر ۳۰ دقیقه بررسی) */
+/** نسخه 2.4.4: هشدار اجرا نشدن کرون هوشمند (از وب‌هوک، حداکثر هر ۳۰ دقیقه بررسی) */
 /**
  * نسخه 2.6.24: کرون‌های لازمی که تنظیم نشدهاند یا اجرا نمی‌شوند
  */
@@ -7103,7 +7103,7 @@ function buildSmartCronAdminKeyboard()
         [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
         [['text' => (smartCronFlag('smart_onhold_guide', '0') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
         [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسی‌نشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
-        [['text' => (smartCronFlag('smart_winback', '0') ? $on : $off) . ' کد برگشت مشتری (تمدیدنکرده)', 'callback_data' => 'smartcron_toggle_wb']],
+        [['text' => (smartCronFlag('smart_winback', '0') ? $on : $off) . ' کد برگشت مشتری (تمدید‌نکرده)', 'callback_data' => 'smartcron_toggle_wb']],
         [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
         [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
         [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
@@ -9293,7 +9293,7 @@ function botFeatureDangerWarning($type, $cur)
     }
     if ($type === 'verify' && $cur === '0') {
         $n = function_exists('botAdmCount') ? botAdmCount("SELECT COUNT(*) FROM user WHERE COALESCE(verify, '0') IN ('0', '')") : 0;
-        return "⚠️ <b>روشن کردن احراز هویت</b>\n\nکاربرانی که تأیید نشده‌اند تا تأیید ادمین نتوانند از ربات استفاده کنند.\n👥 کاربران تأییدنشده: <b>" . number_format($n) . "</b>\nروشن شود؟";
+        return "⚠️ <b>روشن کردن احراز هویت</b>\n\nکاربرانی که تأیید نشده‌اند تا تأیید ادمین نتوانند از ربات استفاده کنند.\n👥 کاربران تأیید‌نشده: <b>" . number_format($n) . "</b>\nروشن شود؟";
     }
     if ($type === 'get_number' && $cur === '0') {
         return "⚠️ <b>روشن کردن احراز شماره</b>\n\nکاربرانی که شماره نفرستاده‌اند تا شماره نفرستند نمی‌توانند از ربات استفاده کنند.\nروشن شود؟";
@@ -11131,7 +11131,7 @@ function processResellerVolumeWarnings()
     }
 }
 
-/** نسخه 2.6.4: نام پرفروشترین محصول ۳۰ روز اخیر (حداقل ۲ فروش) برای برچسب 🔥 */
+/** نسخه 2.6.4: نام پرفروش‌ترین محصول ۳۰ روز اخیر (حداقل ۲ فروش) برای برچسب 🔥 */
 function botBestSellerName()
 {
     global $pdo;
@@ -11159,7 +11159,7 @@ function botBestSellerName()
     return $v;
 }
 
-/** نسخه 2.6.4: «💡 قیمت هر گیگ» برای پیشفاکتور؛ برای حجم نامحدود یا قیمت صفر رشته خالی */
+/** نسخه 2.6.4: «💡 قیمت هر گیگ» برای پیش‌فاکتور؛ برای حجم نامحدود یا قیمت صفر رشته خالی */
 function botPricePerGbText($price, $volume, $suffix = '', $prefix = '')
 {
     $p = intval($price);
@@ -11489,7 +11489,7 @@ function botPayRenewCommission($buyer_id, $amount, $svc = '')
     }
 }
 
-/** نسخه 2.6.63: ستونهای لازم کد برگشت مشتری (یک بار) */
+/** نسخه 2.6.63: ستون‌های لازم کد برگشت مشتری (یک بار) */
 function botWinbackEnsure()
 {
     global $pdo;

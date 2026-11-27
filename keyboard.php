@@ -656,7 +656,7 @@ function KeyboardProduct($location, $backdata, $MethodUsername, $categoryid = nu
         } else {
             $__feat = false;
         }
-        // نسخه 2.6.4: پرفروشترین محصول ۳۰ روز اخیر فقط با 🔥
+        // نسخه 2.6.4: پرفروش‌ترین محصول ۳۰ روز اخیر فقط با 🔥
         if (function_exists('botBestSellerName') && botBestSellerName() !== '' && botBestSellerName() === strval($result['name_product'] ?? '')) {
             $name = '🔥 ' . $name;
         }

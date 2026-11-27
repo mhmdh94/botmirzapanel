@@ -1853,7 +1853,7 @@ $textbotlang['users']['cron']['emergency_off'] = "❌ تمدید اضطراری 
 $textbotlang['users']['cron']['emergency_fail'] = "❌ انجام تمدید اضطراری ممکن نشد. با پشتیبانی در ارتباط باشید.";
 
 $textbotlang['Admin']['keyboardadmin']['codes_section'] = "🎟 کد تخفیف و هدیه";
-$textbotlang['Admin']['keyboardadmin']['resend_pending'] = "📨 رسیدهای تأییدنشده";
+$textbotlang['Admin']['keyboardadmin']['resend_pending'] = "📨 رسیدهای تأیید‌نشده";
 $textbotlang['Admin']['keyboardadmin']['resend_support'] = "💬 پشتیبانی بدون پاسخ";
 $textbotlang['Admin']['ManageUser']['cart_auto_on'] = "✅ تأیید خودکار رسید کاربر: فعال";
 $textbotlang['Admin']['ManageUser']['cart_auto_off'] = "❌ تأیید خودکار رسید کاربر: غیرفعال";
