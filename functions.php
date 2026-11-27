@@ -4051,7 +4051,7 @@ function botBlockedUserIds()
 function botCastRecipientSets()
 {
     global $pdo;
-    $out = ['all' => [], 'act' => [], 'nobuy' => [], 'exp7' => [], 'ended' => [], 'bal' => []];
+    $out = ['all' => [], 'act' => [], 'nobuy' => [], 'exp7' => [], 'ended' => [], 'bal' => [], 'panel' => []];
     $balpos = [];
     $active = [];
     try {
@@ -4092,9 +4092,23 @@ function botCastRecipientSets()
         error_log('cast recipients: ' . $e->getMessage());
         $inv_ok = false;
     }
+    // نسخه 2.6.65: کاربران دارای پنل نمایندگی (فقط اگر قابلیت روشن باشد)
+    $panelers = [];
+    if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()) {
+        try {
+            $st = $pdo->query("SELECT id FROM user WHERE panel_admin_enabled = 1");
+            while ($st && ($r = $st->fetch(PDO::FETCH_ASSOC))) {
+                $panelers[strval($r['id'])] = 1;
+            }
+        } catch (Throwable $e) {
+        }
+    }
     foreach ($active as $id) {
         $row = ['id' => $id];
         $out['all'][] = $row;
+        if (isset($panelers[$id])) {
+            $out['panel'][] = $row;
+        }
         if (isset($balpos[$id])) {
             $out['bal'][] = $row;
         }

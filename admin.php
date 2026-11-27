@@ -1367,10 +1367,16 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         [['text' => '⏳ انقضا تا ۷ روز آینده (' . number_format(count($__sets['exp7'])) . ')', 'callback_data' => 'cast_ok_exp7']],
         [['text' => '🔚 سرویس تمام‌شده (' . number_format(count($__sets['ended'])) . ')', 'callback_data' => 'cast_ok_ended']],
         [['text' => '👛 دارای موجودی (' . number_format(count($__sets['bal'])) . ')', 'callback_data' => 'cast_ok_bal']],
-        [['text' => '❌ انصراف', 'callback_data' => 'cast_no']],
     ]], JSON_UNESCAPED_UNICODE);
+    // نسخه 2.6.65: گروه «دارای پنل نمایندگی» فقط وقتی قابلیت پنل نمایندگان روشن است
+    $__ckb_a = json_decode($__ckb, true);
+    if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled()) {
+        $__ckb_a['inline_keyboard'][] = [['text' => '🛠 دارای پنل نمایندگی (' . number_format(count($__sets['panel'] ?? [])) . ')', 'callback_data' => 'cast_ok_panel']];
+    }
+    $__ckb_a['inline_keyboard'][] = [['text' => '❌ انصراف', 'callback_data' => 'cast_no']];
+    $__ckb = json_encode($__ckb_a, JSON_UNESCAPED_UNICODE);
     sendmessage($from_id, "👆 پیش‌نمایش پیام بالاست.\n\n🎯 <b>گیرنده‌ها را انتخاب کنید</b> (عدد داخل پرانتز = تعداد گیرنده).\nکاربران مسدود در هیچ گروهی نیستند.\n\nبا زدن هر گروه، ارسال شروع می‌شود.", $__ckb, 'HTML');
-} elseif (isset($datain) && preg_match('/^cast_(ok|no)(?:_(act|nobuy|exp7|ended|bal))?$/', strval($datain), $__cm)) {
+} elseif (isset($datain) && preg_match('/^cast_(ok|no)(?:_(act|nobuy|exp7|ended|bal|panel))?$/', strval($datain), $__cm)) {
     $__bc = json_decode(strval($user['Processing_value'] ?? ''), true);
     if ($__cm[1] === 'no' || !is_array($__bc) || empty($__bc['cast_pending'])) {
         if (is_array($__bc) && !empty($__bc['cast_pending'])) {
@@ -1384,7 +1390,7 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['send_message'] || $datain =
         return;
     }
     $__tg = (isset($__cm[2]) && $__cm[2] !== '') ? $__cm[2] : 'all';
-    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده', 'ended' => 'سرویس تمام‌شده', 'bal' => 'دارای موجودی'];
+    $__labels = ['all' => 'همه کاربران', 'act' => 'دارای سرویس فعال', 'nobuy' => 'بدون خرید', 'exp7' => 'انقضا تا ۷ روز آینده', 'ended' => 'سرویس تمام‌شده', 'bal' => 'دارای موجودی', 'panel' => 'دارای پنل نمایندگی'];
     $__sets = botCastRecipientSets();
     $result = $__sets[$__tg] ?? [];
     if (count($result) === 0) {
