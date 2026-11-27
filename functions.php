@@ -4608,7 +4608,7 @@ function getAffiliatesEarned($user_id)
  * نمایش کامل اطلاعات کاربر برای ادمین (متن + دکمه‌های مدیریت)
  * همان صفحه‌ای که از «جستجوی کاربر» می‌آید
  */
-function sendAdminUserInfo($admin_id, $target_user_id)
+function sendAdminUserInfo($admin_id, $target_user_id, $edit_mid = 0)
 {
     global $pdo, $textbotlang, $keyboardadmin;
     $target_user_id = intval($target_user_id);
@@ -4654,34 +4654,42 @@ function sendAdminUserInfo($admin_id, $target_user_id)
     ][strval($u['roll_Status'] ?? '0')] ?? ($textbotlang['Admin']['ManageUser']['Failedphone'] ?? 'تایید نشده');
 
     $uid = strval($target_user_id);
-    $keyboardmanage = [
-        'inline_keyboard' => [
-            [
-                ['text' => $textbotlang['Admin']['ManageUser']['addbalanceuser'] ?? '⬆️ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $uid],
-                ['text' => $textbotlang['Admin']['ManageUser']['lowbalanceuser'] ?? '⬇️ کم کردن موجودی', 'callback_data' => "lowbalanceuser_" . $uid],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['ManageUser']['banuserlist'] ?? '🔒 مسدود کردن کاربر', 'callback_data' => "banuserlist_" . $uid],
-                ['text' => $textbotlang['Admin']['ManageUser']['unbanuserlist'] ?? '🔓 رفع مسدودی کاربر', 'callback_data' => "unbanuserr_" . $uid],
-            ],
-            // نسخه 2.6.38: دو دکمه در یک ردیف تا صفحه کوتاهتر شود
-            [
-                ['text' => '🧪 محدودیت اکانت تست', 'callback_data' => "limitusertest_" . $uid],
-                ['text' => '📱 تایید دستی شماره', 'callback_data' => "confirmnumber_" . $uid],
-            ],
-            [
-                ['text' => '🪪 احراز هویت', 'callback_data' => "verify_" . $uid],
-                ['text' => '🚫 حذف احراز هویت', 'callback_data' => "verifyun_" . $uid],
-            ],
-            [
-                ['text' => $textbotlang['Admin']['ManageUser']['vieworderuser'] ?? '🛍 مشاهده سفارشات کاربر', 'callback_data' => "vieworderall_" . $uid],
-                ['text' => $textbotlang['Admin']['ManageUser']['addorder'] ?? '🛒 افزودن دستی سفارش', 'callback_data' => "addordermanualـ" . $uid],
-            ],
-            [
-                ['text' => '✉️ ارسال پیام به کاربر', 'callback_data' => "Response_" . $uid],
-            ],
-        ]
-    ];
+    // نسخه 2.6.66: صفحه اطلاعات کاربر بازطراحی شد (متن گروهبندیشده، دکمههای وابسته به وضعیت)
+    $is_block = strval($u['User_Status'] ?? '') === 'block';
+    $is_verify = strval($u['verify'] ?? '0') === '1';
+    $is_botblocked = !empty($u['bot_blocked']);
+    $h = function ($v) {
+        return htmlspecialchars(strval($v), ENT_QUOTES, 'UTF-8');
+    };
+    $keyboardmanage = ['inline_keyboard' => [
+        [
+            ['text' => '➕ افزایش موجودی', 'callback_data' => "addbalanceuser_" . $uid],
+            ['text' => '➖ کم کردن موجودی', 'callback_data' => "lowbalanceuser_" . $uid],
+        ],
+        [
+            $is_block
+                ? ['text' => '🔓 رفع مسدودی کاربر', 'callback_data' => "unbanuserr_" . $uid]
+                : ['text' => '🔒 مسدود کردن کاربر', 'callback_data' => "banuserlist_" . $uid],
+            $is_verify
+                ? ['text' => '🚫 حذف احراز هویت', 'callback_data' => "verifyun_" . $uid]
+                : ['text' => '🪪 احراز هویت', 'callback_data' => "verify_" . $uid],
+        ],
+        [
+            ['text' => '🧪 محدودیت اکانت تست', 'callback_data' => "limitusertest_" . $uid],
+            ['text' => '📱 تأیید دستی شماره', 'callback_data' => "confirmnumber_" . $uid],
+        ],
+        [
+            ['text' => '🛍 سرویسهای کاربر', 'callback_data' => "vieworderall_" . $uid],
+            ['text' => '🛒 افزودن دستی سفارش', 'callback_data' => "addordermanualـ" . $uid],
+        ],
+        [
+            ['text' => '📜 تاریخچه تراکنشها', 'callback_data' => "uinfo_tx_" . $uid],
+            ['text' => '🧾 رسیدهای کاربر', 'callback_data' => "uinfo_rcpt_" . $uid],
+        ],
+        [
+            ['text' => '✉️ ارسال پیام به کاربر', 'callback_data' => "Response_" . $uid],
+        ],
+    ]];
 
     if (function_exists('ensureUserCartAutoColumn')) {
         ensureUserCartAutoColumn();
@@ -4689,11 +4697,6 @@ function sendAdminUserInfo($admin_id, $target_user_id)
     $aff_earn = function_exists('getAffiliatesEarned') ? getAffiliatesEarned($target_user_id) : intval($u['affiliates_balance'] ?? 0);
     $cart_auto_off = intval($u['cart_auto_off'] ?? 0);
     $global_auto = function_exists('isAutomaticCartConfirmEnabled') ? isAutomaticCartConfirmEnabled() : false;
-    $cart_label = !$global_auto
-        ? '—'
-        : ($cart_auto_off
-            ? ($textbotlang['Admin']['ManageUser']['cart_auto_status_off'] ?? '❌ غیرفعال')
-            : ($textbotlang['Admin']['ManageUser']['cart_auto_status_on'] ?? '✅ فعال'));
     if ($global_auto) {
         $keyboardmanage['inline_keyboard'][] = [[
             'text' => $cart_auto_off
@@ -4702,7 +4705,6 @@ function sendAdminUserInfo($admin_id, $target_user_id)
             'callback_data' => 'toggle_cart_auto_' . $uid
         ]];
     }
-
 
     // Reseller Panel — فقط اگر قابلیت روشن باشد
     $pa_en = 0;
@@ -4718,73 +4720,146 @@ function sendAdminUserInfo($admin_id, $target_user_id)
             $pa_user = implode(', ', $pa_list);
             $keyboardmanage['inline_keyboard'][] = [[
                 'text' => $pa_en
-                    ? (isset($textbotlang['Admin']['ManageUser']['panel_admin_on']) ? $textbotlang['Admin']['ManageUser']['panel_admin_on'] : '🛠 پنل‌دار: فعال ✅')
-                    : (isset($textbotlang['Admin']['ManageUser']['panel_admin_off']) ? $textbotlang['Admin']['ManageUser']['panel_admin_off'] : '🛠 پنل‌دار: غیرفعال ❌'),
+                    ? (isset($textbotlang['Admin']['ManageUser']['panel_admin_on']) ? $textbotlang['Admin']['ManageUser']['panel_admin_on'] : '🛠 پنلدار: فعال ✅')
+                    : (isset($textbotlang['Admin']['ManageUser']['panel_admin_off']) ? $textbotlang['Admin']['ManageUser']['panel_admin_off'] : '🛠 پنلدار: غیرفعال ❌'),
                 'callback_data' => 'toggle_panel_admin_' . $uid
             ]];
-            foreach ($pa_list as $idx => $paname) {
-                $keyboardmanage['inline_keyboard'][] = [[
-                    'text' => '👤 ' . $paname . '  — 🗑 حذف',
-                    'callback_data' => 'pa_rm_' . $uid . '_' . $idx
-                ]];
-            }
-            if (count($pa_list) < (defined('PANEL_ADMIN_MAX_PER_USER') ? PANEL_ADMIN_MAX_PER_USER : 5)) {
-                $keyboardmanage['inline_keyboard'][] = [[
-                    'text' => '➕ افزودن ادمین پنل' . (count($pa_list) ? ' (' . count($pa_list) . '/' . PANEL_ADMIN_MAX_PER_USER . ')' : ''),
-                    'callback_data' => 'set_panel_admin_user_' . $uid
-                ]];
+            // نسخه 2.6.66: مدیریت ادمینهای پنل فقط وقتی پنلدار فعال است
+            if ($pa_en) {
+                foreach ($pa_list as $idx => $paname) {
+                    $keyboardmanage['inline_keyboard'][] = [[
+                        'text' => '👤 ' . $paname . '  — 🗑 حذف',
+                        'callback_data' => 'pa_rm_' . $uid . '_' . $idx
+                    ]];
+                }
+                if (count($pa_list) < (defined('PANEL_ADMIN_MAX_PER_USER') ? PANEL_ADMIN_MAX_PER_USER : 5)) {
+                    $keyboardmanage['inline_keyboard'][] = [[
+                        'text' => '➕ افزودن ادمین پنل' . (count($pa_list) ? ' (' . count($pa_list) . '/' . PANEL_ADMIN_MAX_PER_USER . ')' : ''),
+                        'callback_data' => 'set_panel_admin_user_' . $uid
+                    ]];
+                }
             }
             if ($pa_en && $pa_list && function_exists('getResellerVolumePurchasedGb')) {
                 $pa_vol_bought = getResellerVolumePurchasedGb($target_user_id);
             }
         }
     } catch (Throwable $e) {}
+    $keyboardmanage['inline_keyboard'][] = [
+        ['text' => '🔄 بروزرسانی', 'callback_data' => 'uinfo_refresh_' . $uid],
+        ['text' => '🔙 مدیریت کاربران', 'callback_data' => 'nav_user'],
+    ];
 
-    $Balance_fmt = number_format(intval($u['Balance'] ?? 0));
     $lmt = intval($u['last_message_time'] ?? 0);
     $lastmessage = $lmt > 0
-        ? (function_exists('jdate') ? jdate('Y/m/d H:i:s', $lmt) : date('Y-m-d H:i:s', $lmt))
+        ? (function_exists('jdate') ? jdate('Y/m/d H:i', $lmt, '', 'Asia/Tehran', 'en') : date('Y/m/d H:i', $lmt))
         : '-';
-    $username_disp = $u['username'] ?? '';
-    if ($username_disp === 'none' || $username_disp === null) {
-        $username_disp = '';
+    $username_disp = trim(strval($u['username'] ?? ''));
+    $username_disp = ($username_disp === '' || $username_disp === 'none') ? 'ندارد' : '@' . $h($username_disp);
+    $number_disp = trim(strval($u['number'] ?? ''));
+    $number_disp = ($number_disp === '' || $number_disp === 'none') ? 'ثبت نشده' : '<code>' . $h($number_disp) . '</code>';
+    $active_svc_cnt = function_exists('countUserActiveServices') ? countUserActiveServices($target_user_id) : intval($dayListSell);
+    $ref = intval($u['affiliates'] ?? 0);
+    $ref_disp = $ref > 0 ? '<a href="tg://user?id=' . $ref . '">' . $ref . '</a>' : 'ندارد';
+    $status_disp = $is_block ? '🔒 مسدود' : '✅ فعال';
+    if ($is_botblocked) {
+        $status_disp .= ' | 📵 ربات را بلاک کرده';
     }
-    $number_disp = $u['number'] ?? 'none';
-    if ($number_disp === '' || $number_disp === null) {
-        $number_disp = 'none';
-    }
-    $active_svc_cnt = function_exists('countUserActiveServices')
-        ? countUserActiveServices($target_user_id)
-        : intval($dayListSell);
-    $text_msg = sprintf(
-        $textbotlang['Admin']['ManageUser']['infouser'],
-        $u['User_Status'] ?? '-',
-        $username_disp,
-        $uid,
-        $uid,
-        $lastmessage,
-        $u['limit_usertest'] ?? '0',
-        $roll_Status,
-        $number_disp,
-        $Balance_fmt,
-        $active_svc_cnt,
-        number_format(intval($balanceall)),
-        number_format(intval($subbuyuser)),
-        $u['affiliatescount'] ?? '0',
-        $u['affiliates'] ?? '0',
-        $u['verify'] ?? '0',
-        number_format(intval($aff_earn)),
-        $cart_label
-    );
-        try {
+    $roll_disp = (strval($u['roll_Status'] ?? '0') === '1') ? '✅ تأیید شده' : '❌ تأیید نشده';
+    $cart_disp = !$global_auto ? '—' : ($cart_auto_off ? '❌ غیرفعال' : '✅ فعال');
+    $text_msg = "👤 <b>اطلاعات کاربر</b>\n━━━━━━━━━━\n"
+        . "🆔 <a href=\"tg://user?id={$uid}\">{$uid}</a> | {$username_disp}\n"
+        . "📌 وضعیت: {$status_disp}\n"
+        . "🕒 آخرین فعالیت: {$lastmessage}\n"
+        . "📱 موبایل: {$number_disp}\n"
+        . "🪪 احراز هویت: " . ($is_verify ? '✅ احراز شده' : '❌ احراز نشده') . "\n"
+        . "📋 قوانین: {$roll_disp} | 🧪 محدودیت تست: " . intval($u['limit_usertest'] ?? 0) . "\n"
+        . "\n💰 <b>مالی</b>\n"
+        . "👛 موجودی: <b>" . number_format(intval($u['Balance'] ?? 0)) . "</b> تومان\n"
+        . "💵 مبلغ پرداختی: " . number_format(intval($balanceall)) . " تومان\n"
+        . "🛍 جمع خرید: " . number_format(intval($subbuyuser)) . " تومان\n"
+        . "🟢 سرویس فعال: <b>" . intval($active_svc_cnt) . "</b>\n"
+        . "⚙️ تأیید خودکار رسید: {$cart_disp}\n"
+        . "\n🤝 <b>دعوت</b>\n"
+        . "👥 معرف: {$ref_disp} | دعوتشدهها: " . intval($u['affiliatescount'] ?? 0) . "\n"
+        . "💸 پورسانت: " . number_format(intval($aff_earn)) . " تومان";
+    try {
         if (function_exists('isResellerFeatureEnabled') && isResellerFeatureEnabled() && !empty($pa_en) && $pa_user !== '') {
-            $text_msg .= "\n🛠 ادمین(های) پنل: <code>" . htmlspecialchars($pa_user, ENT_QUOTES, 'UTF-8') . "</code>";
             $vol_lbl = function_exists('formatResellerVolumeLabel') ? formatResellerVolumeLabel($pa_vol_bought) : (number_format(intval($pa_vol_bought)) . ' گیگ');
-            $text_msg .= "\n📊 حجم خریداری‌شده پنل: <b>" . $vol_lbl . "</b>";
+            $text_msg .= "\n\n🛠 <b>پنل نمایندگی</b>\n👤 ادمین(ها): <code>" . $h($pa_user) . "</code>\n📊 حجم خریداریشده: <b>" . $vol_lbl . "</b>";
         }
     } catch (Throwable $e) {}
-sendmessage($admin_id, $text_msg, json_encode($keyboardmanage), 'HTML');
+    $text_msg .= "\n━━━━━━━━━━";
+    $kb_json = json_encode($keyboardmanage, JSON_UNESCAPED_UNICODE);
+    if (intval($edit_mid) > 0) {
+        $r = Editmessagetext($admin_id, intval($edit_mid), $text_msg, $kb_json);
+        if (is_array($r) && !empty($r['ok'])) {
+            return true;
+        }
+        if (is_array($r) && stripos(strval($r['description'] ?? ''), 'not modified') !== false) {
+            return true;
+        }
+    }
+    sendmessage($admin_id, $text_msg, $kb_json, 'HTML');
     return true;
+}
+
+/** نسخه 2.6.66: تاریخچه تراکنشهای یک کاربر برای ادمین */
+function botAdminUserTxText($uid)
+{
+    global $pdo;
+    $uid = intval($uid);
+    if (function_exists('ensureWalletLog')) {
+        ensureWalletLog();
+    }
+    $map = [
+        'deposit' => ['🟢', 'شارژ کیف پول', '+'], 'admin_add' => ['🟢', 'افزایش توسط ادمین', '+'],
+        'admin_low' => ['🔴', 'کاهش توسط ادمین', '-'], 'buy' => ['🔴', 'خرید سرویس', '-'],
+        'renew' => ['🔴', 'تمدید سرویس', '-'], 'extra_volume' => ['🔴', 'حجم اضافه', '-'],
+        'refund' => ['🟢', 'بازگشت وجه', '+'], 'affiliate' => ['🟢', 'پورسانت', '+'],
+    ];
+    $lines = [];
+    try {
+        $st = $pdo->prepare("SELECT * FROM wallet_log WHERE id_user = ? ORDER BY created_at DESC, id DESC LIMIT 15");
+        $st->execute([$uid]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $t = strval($r['type'] ?? '');
+            $m = $map[$t] ?? ['⚪', $t, ''];
+            $tm = !empty($r['created_at']) ? (function_exists('jdate') ? jdate('Y/m/d H:i', intval($r['created_at']), '', 'Asia/Tehran', 'en') : date('Y/m/d H:i', intval($r['created_at']))) : '-';
+            $d = trim(strval($r['detail'] ?? ''));
+            $lines[] = "{$m[0]} <b>{$m[1]}</b> {$m[2]}" . number_format(intval($r['amount'] ?? 0)) . " ت\n"
+                . "🕒 {$tm}" . ($r['balance_after'] !== null ? " | 👛 " . number_format(intval($r['balance_after'])) . " ت" : '')
+                . ($d !== '' ? "\n📝 " . htmlspecialchars(mb_substr($d, 0, 80), ENT_QUOTES, 'UTF-8') : '');
+        }
+    } catch (Throwable $e) {
+    }
+    return "📜 <b>تاریخچه تراکنشهای کاربر</b> <code>{$uid}</code>\n━━━━━━━━━━\n"
+        . ($lines ? implode("\n\n", $lines) : '📭 تراکنشی ثبت نشده است.')
+        . "\n━━━━━━━━━━\n(۱۵ مورد آخر)";
+}
+
+/** نسخه 2.6.66: رسیدهای یک کاربر برای ادمین */
+function botAdminUserReceiptsText($uid)
+{
+    global $pdo;
+    $uid = strval(intval($uid));
+    $stmap = ['paid' => '✅ تأیید شده', 'waiting' => '⏳ در انتظار', 'reject' => '❌ رد شده', 'Unpaid' => '⚪ پرداخت نشده', 'unpaid' => '⚪ پرداخت نشده', 'expire' => '⌛ منقضی'];
+    $lines = [];
+    try {
+        $st = $pdo->prepare("SELECT * FROM Payment_report WHERE id_user = ? ORDER BY id DESC LIMIT 10");
+        $st->execute([$uid]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $s = strval($r['payment_Status'] ?? '');
+            $why = trim(strval($r['dec_not_confirmed'] ?? ''));
+            $lines[] = ($stmap[$s] ?? ('• ' . htmlspecialchars($s, ENT_QUOTES, 'UTF-8')))
+                . " | 💰 " . number_format(intval($r['price'] ?? 0)) . " ت\n"
+                . "🧾 <code>" . htmlspecialchars(strval($r['id_order'] ?? ''), ENT_QUOTES, 'UTF-8') . "</code> | 🕒 " . htmlspecialchars(strval($r['time'] ?? '-'), ENT_QUOTES, 'UTF-8')
+                . (($s === 'reject' && $why !== '') ? "\n✍️ " . htmlspecialchars(mb_substr($why, 0, 80), ENT_QUOTES, 'UTF-8') : '');
+        }
+    } catch (Throwable $e) {
+    }
+    return "🧾 <b>رسیدهای کاربر</b> <code>{$uid}</code>\n━━━━━━━━━━\n"
+        . ($lines ? implode("\n\n", $lines) : '📭 رسیدی ثبت نشده است.')
+        . "\n━━━━━━━━━━\n(۱۰ مورد آخر)";
 }
 
 

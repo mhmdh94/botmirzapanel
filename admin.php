@@ -422,6 +422,23 @@ if ($text == $textbotlang['Admin']['Back-Adminment'] || $datain == "back_admin")
     return;
 }
 
+#----- نسخه 2.6.66: صفحه اطلاعات کاربر — بروزرسانی / تاریخچه / رسیدها -----
+if (isset($datain) && is_string($datain) && preg_match('/^uinfo_(refresh|tx|rcpt|back)_(\d+)$/', $datain, $__ui) && in_array($from_id, (array) $admin_ids)) {
+    if (!empty($callback_query_id)) {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
+    }
+    if ($__ui[1] === 'refresh' || $__ui[1] === 'back') {
+        sendAdminUserInfo($from_id, $__ui[2], intval($message_id ?? 0));
+        return;
+    }
+    $__ui_txt = $__ui[1] === 'tx' ? botAdminUserTxText($__ui[2]) : botAdminUserReceiptsText($__ui[2]);
+    $__ui_kb = json_encode(['inline_keyboard' => [[['text' => '🔙 اطلاعات کاربر', 'callback_data' => 'uinfo_back_' . $__ui[2]]]]], JSON_UNESCAPED_UNICODE);
+    $__ui_r = Editmessagetext($from_id, intval($message_id ?? 0), $__ui_txt, $__ui_kb);
+    if (!(is_array($__ui_r) && !empty($__ui_r['ok']))) {
+        sendmessage($from_id, $__ui_txt, $__ui_kb, 'HTML');
+    }
+    return;
+}
 #----- پاسخ / ارسال پیام به کاربر (دکمه Response_) -----
 if (isset($datain) && is_string($datain) && preg_match('/^Response_(\d+)$/', $datain, $dataget)) {
     $iduser = $dataget[1];
@@ -4916,7 +4933,8 @@ if ($text == $textbotlang['users']['status']['manageService']) {
 } elseif (preg_match('/verifyun_(\w+)/', $datain, $dataget)) {
     $iduser = $dataget[1];
     $userunverify = select("user", "*", "id", $iduser, "select");
-    if ($userunblock['verify'] == "0") {
+    // نسخه 2.6.66: قبلاً متغیر اشتباه ($userunblock) بررسی میشد
+    if (is_array($userunverify) && strval($userunverify['verify'] ?? '0') == "0") {
         sendmessage($from_id, $textbotlang['Admin']['ManageUser']['verifyed'], $backadmin, 'HTML');
         return;
     }
