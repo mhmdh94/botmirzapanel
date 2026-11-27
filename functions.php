@@ -5763,6 +5763,7 @@ function reportChannelTypes()
         'rpt_extra_volume' => '➕ حجم اضافه',
         'rpt_test' => '🧪 اکانت تست',
         'rpt_discount' => '🏷 کد تخفیف',
+        'rpt_winback' => '🎁 کد برگشت مشتری',
         'rpt_gift' => '🎁 کد هدیه',
         'rpt_affiliate_buy' => '🤝 پورسانت خرید (مشارکت)',
         'rpt_cart_accept' => '✅ تأیید رسید (ادمین)',
@@ -11537,6 +11538,20 @@ function botWinbackTick($uid, $username, $location, $is_ended, $is_test)
             [['text' => '📋 کپی کد', 'copy_text' => ['text' => $code]]],
             [['text' => '🔄 تمدید سرویس', 'callback_data' => 'extend_' . $username]],
         ]], JSON_UNESCAPED_UNICODE), 'HTML');
+        // نسخه 2.6.64: گزارش کانال
+        if (function_exists('sendChannelReport')) {
+            $__tu = select("user", "username", "id", $uid, "select");
+            $__tg = is_array($__tu) ? trim(strval($__tu['username'] ?? '')) : '';
+            $__tg = ($__tg !== '' && $__tg !== 'none') ? '@' . htmlspecialchars($__tg, ENT_QUOTES, 'UTF-8') : '-';
+            $__exp_txt = function_exists('jdate') ? jdate('Y/m/d H:i', $exp) : date('Y-m-d H:i', $exp);
+            sendChannelReport('rpt_winback', "🎁 <b>کد برگشت مشتری ارسال شد</b>\n━━━━━━━━━━\n"
+                . "🆔 کاربر: <code>{$uid}</code>\n"
+                . "👤 {$__tg}\n"
+                . "🔑 سرویس: <code>{$u}</code>\n"
+                . "🏷 کد: <code>{$code}</code>\n"
+                . "📊 تخفیف: <b>{$pct}٪</b>\n"
+                . "⏳ اعتبار تا: {$__exp_txt}");
+        }
         return $code;
     } catch (Throwable $e) {
         error_log('winback tick: ' . $e->getMessage());
