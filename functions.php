@@ -4256,6 +4256,11 @@ function buildAffiliatesAdminPanel()
     $com_on = (($aff['status_commission'] ?? '') === 'oncommission');
     $gift_on = (($aff['Discount'] ?? '') === 'onDiscountaffiliates');
     $pct = intval($aff['affiliatespercentage'] ?? 0);
+    // نسخه 2.6.61: پورسانت تمدید (پیشفرض روشن)
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('aff_renew_commission', '1');
+    }
+    $renew_on = !function_exists('getPaySettingValue') || strval(getPaySettingValue('aff_renew_commission', '1')) === '1';
     $gift_price = number_format(intval($aff['price_Discount'] ?? 0));
     $has_banner = !empty($aff['id_media']) && $aff['id_media'] !== 'none';
 
@@ -4264,6 +4269,7 @@ function buildAffiliatesAdminPanel()
         . "📊 <b>وضعیت فعلی</b>\n"
         . "• سیستم مشارکت در فروش: " . ($sys_on ? $on_lbl : $off_lbl) . "\n"
         . "• پورسانت بعد از خرید: " . ($com_on ? $on_lbl : $off_lbl) . "\n"
+        . "• پورسانت تمدید: " . ($renew_on ? $on_lbl : $off_lbl) . "\n"
         . "• هدیه استارت برای معرف: " . ($gift_on ? $on_lbl : $off_lbl) . "\n"
         . "• درصد پورسانت: <b>{$pct}٪</b>\n"
         . "• مبلغ هدیه استارت: <b>{$gift_price}</b> تومان\n"
@@ -4278,6 +4284,10 @@ function buildAffiliatesAdminPanel()
             [
                 ['text' => $com_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_commission'],
                 ['text' => 'پورسانت بعد خرید', 'callback_data' => 'affpanel_noop'],
+            ],
+            [
+                ['text' => $renew_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_renew'],
+                ['text' => 'پورسانت تمدید', 'callback_data' => 'affpanel_noop'],
             ],
             [
                 ['text' => $gift_on ? $on_lbl : $off_lbl, 'callback_data' => 'affpanel_toggle_gift'],
@@ -11327,6 +11337,10 @@ function botPayRenewCommission($buyer_id, $amount, $svc = '')
         }
         $aff = select("affiliates", "*", null, null, "select");
         if (!is_array($aff) || strval($aff['status_commission'] ?? '') !== 'oncommission') {
+            return 0;
+        }
+        // نسخه 2.6.61: پورسانت تمدید از تنظیمات مشارکت در فروش قابل خاموش شدن است
+        if (function_exists('getPaySettingValue') && strval(getPaySettingValue('aff_renew_commission', '1')) !== '1') {
             return 0;
         }
         $bu = select("user", "*", "id", $buyer_id, "select");

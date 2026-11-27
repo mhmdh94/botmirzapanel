@@ -4132,6 +4132,17 @@ if ($text == $textbotlang['Admin']['keyboardadmin']['affiliate_settings']) {
         list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
         Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
     }
+} elseif ($datain == "affpanel_toggle_renew") {
+    // نسخه 2.6.61: روشن/خاموش پورسانت تمدید
+    if (function_exists('ensurePaySetting')) {
+        ensurePaySetting('aff_renew_commission', '1');
+    }
+    $__rn = function_exists('getPaySettingValue') ? strval(getPaySettingValue('aff_renew_commission', '1')) : '1';
+    update("PaySetting", "ValuePay", ($__rn === '1' ? '0' : '1'), "NamePay", "aff_renew_commission");
+    if (function_exists('buildAffiliatesAdminPanel')) {
+        list($aff_txt, $aff_kb) = buildAffiliatesAdminPanel();
+        Editmessagetext($from_id, $message_id, $aff_txt, $aff_kb);
+    }
 } elseif ($datain == "affpanel_toggle_gift") {
     $aff = select("affiliates", "*", null, null, "select");
     $cur = $aff['Discount'] ?? 'offDiscountaffiliates';
