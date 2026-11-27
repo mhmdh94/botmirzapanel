@@ -10,7 +10,7 @@ if (function_exists('fastcgi_finish_request')) {
 
 ini_set('error_log', 'error_log');
 // نسخه ربات — با هر تغییر یک عدد بالا می‌رود (در پیام ورود ادمین نمایش داده می‌شود)
-$version = "2.6.61";
+$version = "2.6.62";
 date_default_timezone_set('Asia/Tehran');
 require_once 'config.php';
 require_once 'botapi.php';
@@ -2230,9 +2230,7 @@ if (preg_match('/subscriptionurl_(\w+)/', $datain, $dataget)) {
     if (function_exists('logWalletTx')) {
         logWalletTx($from_id, 'renew', $__price_ext, $Balance_Low_user, 'تمدید سرویس: ' . ($usernamepanel ?? ($nameloc['username'] ?? '')) . ($__ext_dc !== '' ? ' (کد تخفیف ' . $__ext_dc . ')' : ''));
     }
-    if ($__ext_dc !== '' && function_exists('sendChannelReport') && isset($textbotlang['users']['Report']['discountused'])) {
-        sendChannelReport('rpt_discount', sprintf($textbotlang['users']['Report']['discountused'], $username, $from_id, $__ext_dc) . "\n🔄 نوع: تمدید سرویس");
-    }
+    // نسخه 2.6.62: گزارش جدای کد تخفیف تمدید حذف شد (کد در گزارش «تمدید سرویس» میآید)
     if (function_exists('recordSale')) {
         recordSale($from_id, $__price_ext, 'renew', $usernamepanel ?? ($nameloc['username'] ?? null), $nameloc['id_invoice'] ?? null);
     }
@@ -4058,11 +4056,8 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
             $value = intval($SellDiscountlimit['usedDiscount']) + 1;
             update("DiscountSell", "usedDiscount", $value, "codeDiscount", $__dcode);
         }
-        $text_report = sprintf($textbotlang['users']['Report']['discountused'], $username, $from_id, $__dcode);
-        if (function_exists('sendChannelReport')) { sendChannelReport('rpt_discount', $text_report); }
-        elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
-            sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');
-        }
+        // نسخه 2.6.62: گزارش جدای کد تخفیف حذف شد؛ کد در همان گزارش خرید میآید
+        $__buy_dc_code = $__dcode;
     }
     $affiliatescommission = select("affiliates", "*", null, null, "select");
     if (is_array($affiliatescommission)
@@ -4248,6 +4243,11 @@ if ($text == $datatextbot['text_sell'] || $datain == "buy" || $text == "/buy") {
     $price_fmt = number_format(intval(str_replace(',', '', strval($info_product['price_product']))));
     $active_svc_buy = function_exists('countUserActiveServices') ? countUserActiveServices($from_id) : 0;
     $text_report = sprintf($textbotlang['users']['Report']['reportbuy'], $username_ac, $price_fmt, $info_product['Volume_constraint'], $from_id, $username, $active_svc_buy, $user['Processing_value'], $bal_after_fmt);
+    // نسخه 2.6.62: کد تخفیف و مبلغ پرداختی در همان گزارش خرید
+    if (!empty($__buy_dc_code) && function_exists('botReceiptDiscountLine')) {
+        $text_report .= "\n" . botReceiptDiscountLine('extdis|' . $__buy_dc_code)
+            . "\n💸 پرداختی بعد از تخفیف: <b>" . number_format(intval($priceproduct)) . "</b> تومان";
+    }
     if (function_exists('sendChannelReport')) { sendChannelReport('rpt_buy', $text_report); }
     elseif (isset($setting['Channel_Report']) && strlen($setting['Channel_Report']) > 0) {
         sendmessage($setting['Channel_Report'], $text_report, null, 'HTML');

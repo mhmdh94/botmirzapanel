@@ -1951,15 +1951,8 @@ function DirectPayment($order_id)
             $stmt->execute();
             $result = ($SellDiscountlimit['price'] / 100) * $get_invoice['price_product'];
             $pricediscount = $get_invoice['price_product'] - $result;
-            $text_report = sprintf($textbotlang['users']['Report']['discountused'], $Balance_id['username'], $Balance_id['id'], $partsdic[1]);
-            if (function_exists('sendChannelReport')) {
-                sendChannelReport('rpt_discount', $text_report);
-            } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
-                telegram('sendmessage', [
-                    'chat_id' => $setting['Channel_Report'],
-                    'text' => $text_report,
-                ]);
-            }
+            // نسخه 2.6.62: گزارش جدای کد تخفیف حذف شد؛ کد در همان گزارش خرید میآید
+            $__buy_dc_code_ap = strval($partsdic[1] ?? '');
         } else {
             $pricediscount = null;
         }
@@ -2043,6 +2036,11 @@ function DirectPayment($order_id)
             $balanceformatsell,
             $order_id_rep
         );
+        // نسخه 2.6.62: کد تخفیف در همان گزارش خرید
+        if (!empty($__buy_dc_code_ap) && function_exists('botReceiptDiscountLine')) {
+            $text_report .= "\n" . botReceiptDiscountLine('extdis|' . $__buy_dc_code_ap)
+                . (isset($pricediscount) && $pricediscount !== null ? "\n💸 قیمت بعد از تخفیف: <b>" . number_format(intval(round($pricediscount))) . "</b> تومان" : '');
+        }
         if (function_exists('sendChannelReport')) {
             sendChannelReport('rpt_buy_after_pay', $text_report);
         } elseif (strlen($setting['Channel_Report'] ?? '') > 0) {
