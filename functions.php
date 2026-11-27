@@ -5861,7 +5861,6 @@ function reportChannelTypes()
         'rpt_extend' => '🔄 تمدید سرویس',
         'rpt_extra_volume' => '➕ حجم اضافه',
         'rpt_test' => '🧪 اکانت تست',
-        'rpt_discount' => '🏷 کد تخفیف',
         'rpt_winback' => '🎁 کد برگشت مشتری',
         'rpt_gift' => '🎁 کد هدیه',
         'rpt_affiliate_buy' => '🤝 پورسانت (خرید و تمدید)',
@@ -5925,6 +5924,9 @@ function botReportSend($key, $text)
         return false;
     }
     $text = trim(strval($text));
+    // نسخه 2.6.70: کاربر بدون یوزرنیم «@NOT_USERNAME» یا «@» خالی نشان داده نشود
+    $text = str_replace(['@NOT_USERNAME', '@-'], 'بدون یوزرنیم', $text);
+    $text = preg_replace('/👤 @(?=\s*(\n|$))/u', '👤 بدون یوزرنیم', $text);
     // نسخه 2.4.6: قالب یک‌دست — نام ربات بالا، خط جداکننده و زمان پایین
     global $usernamebot;
     $__bn = trim(strval($usernamebot ?? ''));
@@ -5946,6 +5948,10 @@ function botReportSend($key, $text)
         $text = mb_substr($text, 0, 3990) . '…';
     }
     $r = telegram('sendmessage', ['chat_id' => $ch, 'text' => $text, 'parse_mode' => 'HTML', 'disable_web_page_preview' => true]);
+    // نسخه 2.6.70: اگر HTML خراب بود، گزارش بدون قالب برود و گم نشود
+    if (is_array($r) && empty($r['ok']) && stripos(strval($r['description'] ?? ''), 'parse') !== false) {
+        $r = telegram('sendmessage', ['chat_id' => $ch, 'text' => html_entity_decode(strip_tags($text), ENT_QUOTES, 'UTF-8'), 'disable_web_page_preview' => true]);
+    }
     if (is_array($r) && !empty($r['ok'])) {
         return true;
     }

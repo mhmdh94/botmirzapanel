@@ -1562,7 +1562,7 @@ $textbotlang['Admin']['Report']['extend'] = "🔄 <b>تمدید سرویس</b>
 🛍 سرویس فعال: <b>%s</b>
 
 📍 پنل: %s
-💳 موجودی بعد از خرید: %s تومان";
+💳 موجودی بعد از تمدید: %s تومان";
 $textbotlang['Admin']['Report']['Extra_volume'] = "📦 <b>حجم اضافه</b>
 
 🆔 <code>%s</code>

@@ -2914,7 +2914,7 @@ if (preg_match('/reject_pay_(\w+)/', $datain, $datagetr)) {
         } catch (Throwable $e2) {}
     }
     if (function_exists('sendChannelReport')) {
-        sendChannelReport('rpt_reject', "❌ <b>رد رسید پرداخت</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n🆔 کاربر: <code>{$rj_uid}</code>\n🧾 سفارش: <code>{$rj_order}</code>\n📝 دلیل: {$text}");
+        sendChannelReport('rpt_reject', "❌ <b>رد رسید پرداخت</b>\n\n👨‍💼 ادمین: <code>{$from_id}</code>\n🆔 کاربر: <code>{$rj_uid}</code>\n🧾 سفارش: <code>{$rj_order}</code>\n📝 دلیل: " . htmlspecialchars(strval($text), ENT_QUOTES, 'UTF-8'));
     }
     // پاک‌سازی مقادیر موقت
     update("user", "Processing_value", "0", "id", $from_id);
