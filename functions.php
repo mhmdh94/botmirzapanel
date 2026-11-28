@@ -7111,37 +7111,49 @@ function buildSmartCronAdminKeyboard()
     ensureSmartCronSettings();
     $on = '✅';
     $off = '❌';
-    $rows = [
-        [['text' => (smartCronFlag('smart_clean_missing', '0') ? $on : $off) . ' حذف فاکتور یوزر غایب پنل', 'callback_data' => 'smartcron_toggle_clean']],
-        [['text' => (smartCronFlag('smart_warn_volume', '0') ? $on : $off) . ' اخطار حجم', 'callback_data' => 'smartcron_toggle_vol']],
-        [['text' => (smartCronFlag('smart_warn_time', '0') ? $on : $off) . ' اخطار زمان', 'callback_data' => 'smartcron_toggle_time']],
-        [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']],
-        [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']],
-        [['text' => (smartCronFlag('smart_onhold_guide', '0') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']],
-        [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسی‌نشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']],
-        [['text' => (smartCronFlag('smart_winback', '0') ? $on : $off) . ' کد برگشت مشتری (تمدید‌نکرده)', 'callback_data' => 'smartcron_toggle_wb']],
-        [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']],
-        [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']],
-        [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']],
-    ];
-    // نسخه 2.6.26: تنظیم هر اخطار فقط وقتی همان اخطار روشن است
-    if (smartCronFlag('smart_reseller_warn', '0')) {
-        $rows[] = [['text' => '⚙️ درصد حجم Reseller: ' . getPaySettingValue('smart_reseller_vol_levels', '80,90,95'), 'callback_data' => 'smartcron_set_reseller_vol']];
-    }
-    $rows[] = [['text' => '🔢 تعداد هر اجرا: ' . getPaySettingValue('smart_batch_limit', '20'), 'callback_data' => 'smartcron_set_limit']];
+    $hdr = function ($t) {
+        return [['text' => $t, 'callback_data' => 'none']];
+    };
+    $rows = [];
+    // نسخه 2.6.71: دستهبندی شده + تنظیم هر گزینه بلافاصله زیر خودش
+    $rows[] = $hdr('🧹 — پاکسازی —');
+    $rows[] = [['text' => (smartCronFlag('smart_clean_missing', '0') ? $on : $off) . ' حذف فاکتور یوزر غایب پنل', 'callback_data' => 'smartcron_toggle_clean']];
+
+    $rows[] = $hdr('⚠️ — اخطارها —');
+    $row_vol = [['text' => (smartCronFlag('smart_warn_volume', '0') ? $on : $off) . ' اخطار حجم', 'callback_data' => 'smartcron_toggle_vol']];
     if (smartCronFlag('smart_warn_volume', '0')) {
-        $rows[] = [['text' => '⚙️ تنظیم درصد حجم: ' . getPaySettingValue('smart_vol_levels', '90'), 'callback_data' => 'smartcron_set_vol']];
+        $row_vol[] = ['text' => '⚙️ ' . getPaySettingValue('smart_vol_levels', '90') . '٪', 'callback_data' => 'smartcron_set_vol'];
     }
+    $rows[] = $row_vol;
+    $row_time = [['text' => (smartCronFlag('smart_warn_time', '0') ? $on : $off) . ' اخطار زمان', 'callback_data' => 'smartcron_toggle_time']];
     if (smartCronFlag('smart_warn_time', '0')) {
-        $rows[] = [['text' => '⚙️ تنظیم روز زمان: ' . getPaySettingValue('smart_time_days', '3,1'), 'callback_data' => 'smartcron_set_time']];
+        $row_time[] = ['text' => '⚙️ ' . getPaySettingValue('smart_time_days', '3,1') . ' روز', 'callback_data' => 'smartcron_set_time'];
     }
-    // نسخه 2.6.63: تنظیم کد برگشت مشتری فقط وقتی روشن است
+    $rows[] = $row_time;
+    $rows[] = [['text' => (smartCronFlag('smart_warn_expired', '0') ? $on : $off) . ' اخطار اتمام سرویس', 'callback_data' => 'smartcron_toggle_exp']];
+    $row_rs = [['text' => (smartCronFlag('smart_reseller_warn', '0') ? $on : $off) . ' اخطار حجم Reseller Panel', 'callback_data' => 'smartcron_toggle_reseller']];
+    if (smartCronFlag('smart_reseller_warn', '0')) {
+        $row_rs[] = ['text' => '⚙️ ' . getPaySettingValue('smart_reseller_vol_levels', '80,90,95') . '٪', 'callback_data' => 'smartcron_set_reseller_vol'];
+    }
+    $rows[] = $row_rs;
+
+    $rows[] = $hdr('💬 — پیامهای خودکار —');
+    $rows[] = [['text' => (smartCronFlag('smart_test_followup', '0') ? $on : $off) . ' پیام بعد از پایان اکانت تست', 'callback_data' => 'smartcron_toggle_tf']];
+    $rows[] = [['text' => (smartCronFlag('smart_onhold_guide', '0') ? $on : $off) . ' راهنمای اتصال (24 ساعت وصل نشده)', 'callback_data' => 'smartcron_toggle_og']];
+    $rows[] = [['text' => (smartCronFlag('smart_rcpt_remind', '0') ? $on : $off) . ' یادآوری رسید بررسینشده (30 دقیقه)', 'callback_data' => 'smartcron_toggle_rr']];
+    $row_wb = [['text' => (smartCronFlag('smart_winback', '0') ? $on : $off) . ' کد برگشت مشتری (تمدیدنکرده)', 'callback_data' => 'smartcron_toggle_wb']];
+    $rows[] = $row_wb;
     if (smartCronFlag('smart_winback', '0')) {
         $rows[] = [
             ['text' => '🏷 درصد: ' . botWinbackSetting('smart_winback_pct', 15, 1, 90) . '٪', 'callback_data' => 'smartcron_set_wb_pct'],
             ['text' => '⏳ بعد از: ' . botWinbackSetting('smart_winback_days', 3, 1, 6) . ' روز', 'callback_data' => 'smartcron_set_wb_days'],
         ];
     }
+    $rows[] = [['text' => (smartCronFlag('smart_emergency', '0') ? $on : $off) . ' تمدید اضطراری', 'callback_data' => 'smartcron_toggle_emg']];
+
+    $rows[] = $hdr('🛠 — ابزار و دیباگ —');
+    $rows[] = [['text' => (smartCronFlag('smart_debug', '0') ? $on : $off) . ' دیباگ لاگ کانال', 'callback_data' => 'smartcron_toggle_dbg']];
+    $rows[] = [['text' => '🔢 تعداد هر اجرا: ' . getPaySettingValue('smart_batch_limit', '20'), 'callback_data' => 'smartcron_set_limit']];
     $rows[] = [
         ['text' => '📋 دستور کرون', 'callback_data' => 'smartcron_show_cmd'],
         ['text' => '🛠 نصب کرون', 'callback_data' => 'smartcron_install_crontab'],
@@ -7150,6 +7162,7 @@ function buildSmartCronAdminKeyboard()
     $rows[] = [['text' => '🔙 بازگشت به تنظیمات', 'callback_data' => 'nav_settings']];
     return json_encode(['inline_keyboard' => $rows], JSON_UNESCAPED_UNICODE);
 }
+
 
 function ensurePaySetting($name, $value)
 {
